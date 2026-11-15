@@ -18,6 +18,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Disclosure,
   defaultBotAvatarValue,
   Tabs,
   TabsContent,
@@ -28,6 +29,7 @@ import { Button } from "@robots/ui-web/components/ui/button";
 import { Check, Pencil, Upload, X } from "lucide-react";
 import type { ClipboardEvent, DragEvent } from "react";
 import { useRef, useState } from "react";
+import { RobotBuilder } from "./robot-builder";
 
 export function BotLookPicker({
   value,
@@ -48,108 +50,117 @@ export function BotLookPicker({
     photo,
     shapeIndex,
     color: currentColor,
+    robot,
     defaultLook: isDefaultLook,
   } = botLookState(value);
 
   return (
     <div className="space-y-4">
-      {onAvatarSetChange ? (
-        <Tabs
-          value={avatarSet}
-          onValueChange={(next) =>
-            onAvatarSetChange(resolveBotAvatarSet(next), defaultBotAvatarValue(value))
-          }
-        >
-          <TabsList className="w-full" aria-label={t`Icon set`}>
-            <TabsTrigger value="organic" className="flex-1">
-              <Trans>Original</Trans>
-            </TabsTrigger>
-            <TabsTrigger value="robots" className="flex-1">
-              <Trans>RoBots</Trans>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      ) : null}
-      {avatarSet === "organic" ? (
+      <RobotBuilder look={robot} onChange={(next) => onChange(next)} />
+      <Disclosure
+        summary={<Trans>More styles</Trans>}
+        summaryClassName="text-body-sm text-muted-foreground"
+        contentClassName="space-y-4 pt-3"
+        defaultOpen={robot === null}
+      >
+        {onAvatarSetChange ? (
+          <Tabs
+            value={avatarSet}
+            onValueChange={(next) =>
+              onAvatarSetChange(resolveBotAvatarSet(next), defaultBotAvatarValue(value))
+            }
+          >
+            <TabsList className="w-full" aria-label={t`Icon set`}>
+              <TabsTrigger value="organic" className="flex-1">
+                <Trans>Original</Trans>
+              </TabsTrigger>
+              <TabsTrigger value="robots" className="flex-1">
+                <Trans>RoBots</Trans>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        ) : null}
+        {avatarSet === "organic" ? (
+          <div>
+            {organicIdentities ? null : (
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-caption font-medium tracking-wider text-muted-foreground uppercase">
+                  <Trans>Shape</Trans>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  data-testid="avatar-studio-default"
+                  aria-pressed={isDefaultLook}
+                  onClick={() => {
+                    const next = defaultBotAvatarValue(value);
+                    if (next !== value) onChange(next);
+                  }}
+                  className={`px-3 py-1 text-label font-medium transition-colors ${
+                    isDefaultLook
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Trans>Default</Trans>
+                </Button>
+              </div>
+            )}
+            <div
+              className={`grid place-items-center gap-2 ${organicIdentities ? "grid-cols-4 sm:grid-cols-8 sm:gap-1" : "grid-cols-4"}`}
+            >
+              {organicIdentities?.map((organicIdentity, index) => (
+                <BotShapePreview
+                  key={organicIdentity}
+                  identity={organicIdentity}
+                  label={t`Shape ${index + 1}`}
+                  color={currentColor}
+                  selected={isDefaultLook && identity === organicIdentity}
+                  onClick={() => onChange(currentColor, organicIdentity)}
+                />
+              ))}
+              {SHIPPED_BOT_AVATAR_SHAPE_KEYS.map((key, index) => (
+                <BotShapePreview
+                  key={key}
+                  shapeIndex={index}
+                  color={currentColor}
+                  selected={shapeIndex === index}
+                  onClick={() => onChange(botLookWithShape(currentColor, index))}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div>
           {organicIdentities ? null : (
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-caption font-medium tracking-wider text-muted-foreground uppercase">
-                <Trans>Shape</Trans>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                data-testid="avatar-studio-default"
-                aria-pressed={isDefaultLook}
-                onClick={() => {
-                  const next = defaultBotAvatarValue(value);
-                  if (next !== value) onChange(next);
-                }}
-                className={`px-3 py-1 text-label font-medium transition-colors ${
-                  isDefaultLook
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Trans>Default</Trans>
-              </Button>
+            <div className="mb-2 text-caption font-medium tracking-wider text-muted-foreground uppercase">
+              <Trans>Color</Trans>
             </div>
           )}
-          <div
-            className={`grid place-items-center gap-2 ${organicIdentities ? "grid-cols-4 sm:grid-cols-8 sm:gap-1" : "grid-cols-4"}`}
-          >
-            {organicIdentities?.map((organicIdentity, index) => (
-              <BotShapePreview
-                key={organicIdentity}
-                identity={organicIdentity}
-                label={t`Shape ${index + 1}`}
-                color={currentColor}
-                selected={isDefaultLook && identity === organicIdentity}
-                onClick={() => onChange(currentColor, organicIdentity)}
-              />
-            ))}
-            {SHIPPED_BOT_AVATAR_SHAPE_KEYS.map((key, index) => (
-              <BotShapePreview
-                key={key}
-                shapeIndex={index}
-                color={currentColor}
-                selected={shapeIndex === index}
-                onClick={() => onChange(botLookWithShape(currentColor, index))}
-              />
-            ))}
+          <div className="grid grid-cols-6 place-items-center gap-2">
+            {BOT_COLORS.map((color) => {
+              const selected = currentColor.toLowerCase() === color.toLowerCase() && !photo;
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => onChange(botLookWithColor(value, color))}
+                  aria-label={t`Color ${color}`}
+                  aria-pressed={selected}
+                  className={`size-6 rounded-full border transition-transform hover:scale-110 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring ${
+                    selected
+                      ? "scale-105 border-transparent ring-2 ring-foreground ring-offset-2 ring-offset-popover"
+                      : "border-border"
+                  }`}
+                  style={{ backgroundColor: color }}
+                />
+              );
+            })}
           </div>
         </div>
-      ) : null}
-
-      <div>
-        {organicIdentities ? null : (
-          <div className="mb-2 text-caption font-medium tracking-wider text-muted-foreground uppercase">
-            <Trans>Color</Trans>
-          </div>
-        )}
-        <div className="grid grid-cols-6 place-items-center gap-2">
-          {BOT_COLORS.map((color) => {
-            const selected = currentColor.toLowerCase() === color.toLowerCase() && !photo;
-            return (
-              <button
-                key={color}
-                type="button"
-                onClick={() => onChange(botLookWithColor(value, color))}
-                aria-label={t`Color ${color}`}
-                aria-pressed={selected}
-                className={`size-6 rounded-full border transition-transform hover:scale-110 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring ${
-                  selected
-                    ? "scale-105 border-transparent ring-2 ring-foreground ring-offset-2 ring-offset-popover"
-                    : "border-border"
-                }`}
-                style={{ backgroundColor: color }}
-              />
-            );
-          })}
-        </div>
-      </div>
+      </Disclosure>
     </div>
   );
 }
@@ -261,7 +272,7 @@ export function AvatarStudioPopover({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           showCloseButton={false}
-          className="w-[360px] max-w-full gap-4 rounded-3xl p-5 sm:max-w-[360px]"
+          className="max-h-[calc(100dvh-2rem)] w-[360px] max-w-full gap-4 overflow-y-auto rounded-3xl p-5 sm:max-w-[360px]"
           data-testid="avatar-studio"
         >
           <DialogHeader className="flex-row items-center justify-between space-y-0">
@@ -269,7 +280,7 @@ export function AvatarStudioPopover({
               <Trans>Avatar Studio</Trans>
             </DialogTitle>
             <DialogDescription className="sr-only">
-              <Trans>Choose a bot shape, color, or upload an image</Trans>
+              <Trans>Build a robot, choose another style, or upload an image</Trans>
             </DialogDescription>
             <Button
               variant="ghost"
@@ -308,15 +319,17 @@ export function AvatarStudioPopover({
                 </TabsTrigger>
               </TabsList>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                onClick={restoreDefaultAvatar}
-                className="text-label text-muted-foreground"
-              >
-                <Trans>Reset</Trans>
-              </Button>
+              {botLookState(value).robot ? null : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={restoreDefaultAvatar}
+                  className="text-label text-muted-foreground"
+                >
+                  <Trans>Reset</Trans>
+                </Button>
+              )}
             </div>
 
             <TabsContent value="bot" className="pt-1" data-testid="avatar-studio-bot-tab">

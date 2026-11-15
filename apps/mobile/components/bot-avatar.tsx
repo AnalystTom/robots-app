@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import type { BotAvatarSet } from "@robots/contracts";
+import type { BotAvatarSet, RobotLook } from "@robots/contracts";
 import type { AvatarEyes, AvatarMotionMode, LogoAvatarActivity } from "@robots/core";
 import {
   AVATAR_LID_CLOSE,
@@ -22,18 +22,19 @@ import {
   ORGANIC_AVATAR_VIEWBOX,
   organicAvatarEyeTilt,
   organicAvatarPath,
+  robotCharacterSvg,
   SHIPPED_BOT_AVATAR_EYES,
   SHIPPED_BOT_AVATAR_VIEWBOX,
   usesLogoAvatar,
 } from "@robots/core";
-import { memo, useSyncExternalStore } from "react";
+import { memo, useMemo, useSyncExternalStore } from "react";
 import { Image, Pressable, View } from "react-native";
 import Animated, {
   useAnimatedProps,
   useAnimatedStyle,
   useReducedMotion,
 } from "react-native-reanimated";
-import Svg, { G, Path, Rect } from "react-native-svg";
+import Svg, { G, Path, Rect, SvgXml } from "react-native-svg";
 import type { AvatarLife } from "../lib/avatar-life";
 import { useAvatarOnScreen, useLife, usePoke, useSettling } from "../lib/avatar-life";
 import { mobileBotAvatarPresentation } from "../lib/bot-avatar";
@@ -276,7 +277,12 @@ function LegacyBotAvatar({
   // itself that sign, so it carries none.
   const isWorking = isRunWorking(status) && !composing && motion !== "running";
   const parsed = mobileBotAvatarPresentation(color);
-  const fillColor = parsed.kind === "shape" || parsed.kind === "color" ? parsed.color : color;
+  const fillColor =
+    parsed.kind === "shape" || parsed.kind === "color" || parsed.kind === "robot"
+      ? parsed.color
+      : color;
+  // A photo or a robot character is a still picture: no eyes to animate.
+  const picturePainted = parsed.kind === "image" || parsed.kind === "robot";
   const eyeColor = botEyeInk(fillColor, tokens);
   const onScreen = useAvatarOnScreen();
   const reducedMotion = useReducedMotion();
@@ -284,7 +290,7 @@ function LegacyBotAvatar({
   const clock = avatarClock({
     mode: motion,
     onScreen,
-    hasEyes: parsed.kind !== "image",
+    hasEyes: !picturePainted,
     size,
     state,
     settling,
@@ -307,6 +313,8 @@ function LegacyBotAvatar({
       >
         <Image source={{ uri: parsed.imageUrl }} style={{ width: size, height: size }} />
       </View>
+    ) : parsed.kind === "robot" ? (
+      <RobotCharacter look={parsed.look} size={size} />
     ) : parsed.kind === "shape" ? (
       <ShippedShapeAvatar
         color={parsed.color}
@@ -329,7 +337,7 @@ function LegacyBotAvatar({
   const avatar = (
     <View style={{ width: size, height: size }}>
       {picture}
-      {parsed.kind !== "image" && clock !== "still" ? (
+      {!picturePainted && clock !== "still" ? (
         <ThinkingDots color={fillColor} size={size} life={life} />
       ) : null}
       {isWorking ? <WorkingDot size={size} muted={muted} /> : null}
@@ -401,6 +409,22 @@ function useBarEyes(eyes: AvatarEyes, viewBox: string, life: AvatarLife) {
   };
   return [useAnimatedProps(eyeProps(eyes.leftCx)), useAnimatedProps(eyeProps(eyes.rightCx))];
 }
+
+/** A robot character, drawn once per look from fixed artwork and clipped to a circle. */
+const RobotCharacter = memo(function RobotCharacter({
+  look,
+  size,
+}: {
+  look: RobotLook;
+  size: number;
+}) {
+  const xml = useMemo(() => robotCharacterSvg(look), [look]);
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: "hidden" }}>
+      <SvgXml xml={xml} width={size} height={size} />
+    </View>
+  );
+});
 
 function ShippedShapeAvatar({
   color,
