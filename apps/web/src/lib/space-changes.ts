@@ -15,6 +15,11 @@ const READS: Record<ReadChangeKind, readonly Procedure[]> = {
     ["routines", "history"],
   ],
   routines: [["routines", "list"]],
+  email: [
+    ["email", "mailboxes"],
+    ["email", "messages"],
+    ["email", "message"],
+  ],
 };
 
 export const isReadChangeKind = (kind: string): kind is ReadChangeKind =>
