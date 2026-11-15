@@ -1,5 +1,5 @@
-import type { Actor, RunActivityRow } from "@robots/contracts";
-import { MessageBlock } from "@robots/contracts";
+import type { Actor, RunActivityRow, TodayRunsOutput } from "@robots/contracts";
+import { MessageBlock, TODAY_RUNS_LIMIT } from "@robots/contracts";
 import {
   ACTIVE_RUN_STATUSES,
   BACKGROUND_HELPER_TRIGGER,
@@ -65,6 +65,40 @@ export function activityNotificationsEnabled(
   return groupId !== null || notifyOnFinish;
 }
 
+const ACTIVITY_ROW_INCLUDE = {
+  bot: { select: { name: true, archivedAt: true, notifyOnFinish: true } },
+  task: { select: { prompt: true } },
+  sourceMessage: { select: { blocks: true } },
+  thread: {
+    select: {
+      groupId: true,
+      group: { select: { name: true } },
+    },
+  },
+} as const;
+
+type ActivityRunRow = Prisma.RunGetPayload<{ include: typeof ACTIVITY_ROW_INCLUDE }>;
+
+function activityRow(row: ActivityRunRow, finished: boolean): RunActivityRow {
+  return {
+    runId: row.id,
+    botId: row.botId,
+    botName: row.bot.name,
+    groupId: row.thread.groupId,
+    groupName: row.thread.group ? row.thread.group.name : null,
+    threadId: row.threadId,
+    status: row.status as RunActivityRow["status"],
+    trigger: row.trigger as RunActivityRow["trigger"],
+    notificationsEnabled: activityNotificationsEnabled(row.thread.groupId, row.bot.notifyOnFinish),
+    ...activityPreview({
+      trigger: row.trigger,
+      prompt: row.task.prompt,
+      sourceBlocks: row.sourceMessage?.blocks,
+    }),
+    updatedAt: (finished && row.completedAt ? row.completedAt : row.updatedAt).toISOString(),
+  };
+}
+
 export async function listSpaceRuns(
   prisma: PrismaClient,
   actor: Actor,
@@ -80,43 +114,38 @@ export async function listSpaceRuns(
             status: { in: [...ACTIVE_RUN_STATUSES] },
           }
         : { spaceId: actor.spaceId, id: { in: await latestFinishedRunPerChat(prisma, actor) } },
-    include: {
-      bot: { select: { name: true, archivedAt: true, notifyOnFinish: true } },
-      task: { select: { prompt: true } },
-      sourceMessage: { select: { blocks: true } },
-      thread: {
-        select: {
-          groupId: true,
-          group: { select: { name: true } },
-        },
-      },
-    },
+    include: ACTIVITY_ROW_INCLUDE,
     orderBy:
       filter === "active"
         ? [{ updatedAt: "desc" }, { id: "desc" }]
         : [{ completedAt: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
   });
+  return rows.map((row) => activityRow(row, filter === "recent"));
+}
 
-  return rows.map((row) => ({
-    runId: row.id,
-    botId: row.botId,
-    botName: row.bot.name,
-    groupId: row.thread.groupId,
-    groupName: row.thread.group ? row.thread.group.name : null,
-    threadId: row.threadId,
-    status: row.status as RunActivityRow["status"],
-    trigger: row.trigger as RunActivityRow["trigger"],
-    notificationsEnabled: activityNotificationsEnabled(row.thread.groupId, row.bot.notifyOnFinish),
-    ...activityPreview({
-      trigger: row.trigger,
-      prompt: row.task.prompt,
-      sourceBlocks: row.sourceMessage?.blocks,
+/** Runs the activity list would show that ended since `since`, newest first, and how many completed. */
+export async function listRunsEndedSince(
+  prisma: PrismaClient,
+  actor: Actor,
+  since: Date,
+): Promise<TodayRunsOutput> {
+  const where = {
+    spaceId: actor.spaceId,
+    bot: { archivedAt: null },
+    trigger: { notIn: [...ACTIVITY_HIDDEN_TRIGGERS] },
+    status: { in: [...TERMINAL_STATUSES] },
+    completedAt: { gte: since },
+  };
+  const [rows, finished] = await Promise.all([
+    prisma.run.findMany({
+      where,
+      include: ACTIVITY_ROW_INCLUDE,
+      orderBy: [{ completedAt: "desc" }, { id: "desc" }],
+      take: TODAY_RUNS_LIMIT,
     }),
-    updatedAt: (filter === "recent" && row.completedAt
-      ? row.completedAt
-      : row.updatedAt
-    ).toISOString(),
-  }));
+    prisma.run.count({ where: { ...where, status: "completed" } }),
+  ]);
+  return { runs: rows.map((row) => activityRow(row, true)), finished };
 }
 
 /** Recent lists chats keyed like `activitySections`, so one busy chat must not push the others out of the limit. */

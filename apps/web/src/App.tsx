@@ -67,6 +67,9 @@ const ArtifactsPage = lazyComponent(() =>
   import("./pages/Artifacts").then((module) => module.ArtifactsPage),
 );
 const BoardPage = lazyComponent(() => import("./pages/Board").then((module) => module.BoardPage));
+const TasksPage = lazyComponent(() =>
+  import("./pages/workspace/TasksPage").then((module) => module.TasksPage),
+);
 const TodayPage = lazyComponent(() =>
   import("./pages/workspace/TodayPage").then((module) => module.TodayPage),
 );
@@ -315,7 +318,7 @@ function SessionApp() {
                   <Route path="/app/artifacts" element={<ArtifactsPage />} />
                   <Route path="/app/artifacts/:artifactId" element={<ArtifactsPage />} />
                   {boardEnabled ? <Route path="/app/board" element={<BoardPage />} /> : null}
-                  {boardEnabled ? <Route path="/app/tasks" element={<BoardPage />} /> : null}
+                  {boardEnabled ? <Route path="/app/tasks" element={<TasksPage />} /> : null}
                   {labs.includes("today") ? (
                     <Route path="/app/today" element={<TodayPage />} />
                   ) : null}
