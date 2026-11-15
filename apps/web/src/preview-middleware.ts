@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import type { ClientRequest, IncomingMessage, ServerResponse } from "node:http";
 import http from "node:http";
 import https from "node:https";
+import type { Socket } from "node:net";
 import net from "node:net";
 import path from "node:path";
 import type { Duplex } from "node:stream";
@@ -37,6 +38,7 @@ import {
   rewrittenNovncHeaders,
   shouldInjectNovncStorageShim,
 } from "./novnc-html.js";
+import { attachPrivatePeerFilter } from "./private-peers.js";
 import type { ScreenTargetFailure } from "./screen-proxy.js";
 import {
   checkScreenAuthorization,
@@ -65,6 +67,7 @@ export type WebServerHost = {
       event: "upgrade",
       listener: (req: IncomingMessage, socket: Duplex, head: Buffer) => void,
     ): unknown;
+    on(event: "connection", listener: (socket: Socket) => void): unknown;
   } | null;
 };
 
@@ -503,6 +506,7 @@ export function webServerSettings(read: (name: string) => string | undefined, lo
       }),
     performanceAssetDelayMs: Number(read("ROBOTS_PERFORMANCE_ASSET_DELAY_MS") ?? 0),
     desktopStackToken: read("ROBOTS_DESKTOP_STACK_TOKEN") ?? "",
+    privatePeersOnly: read("ROBOTS_WEB_PRIVATE_PEERS_ONLY") === "true",
     instanceTheme:
       themeFile &&
       instanceThemeMiddleware(themeFile, (reason) =>
@@ -535,6 +539,7 @@ export function attachPreviewMiddleware(
   site: { root: string; outDir: string; assetsDir: string; assetsUrl: string },
 ): () => void {
   const { middlewares } = server;
+  attachPrivatePeerFilter(server, settings.privatePeersOnly);
   middlewares.use((req, res, next) => {
     const pathname = req.url?.split("?", 1)[0] ?? "/";
     if (pathname !== COMPUTER_SCREEN_RUNTIME_PATH) res.setHeader("x-frame-options", "SAMEORIGIN");

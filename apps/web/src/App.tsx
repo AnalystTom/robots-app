@@ -2,6 +2,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type { LinkFavicons } from "@robots/chat-ui/web";
 import { LinkFaviconsContext, RemoteImagesContext } from "@robots/chat-ui/web";
 import type { LabFeature } from "@robots/contracts";
+import { PAIR_PAGE_PATH } from "@robots/contracts";
 import { analyticsScreen } from "@robots/core";
 import { Button } from "@robots/ui-web";
 import {
@@ -88,6 +89,7 @@ const AdminAccessPage = lazyComponent(() =>
 const NavLinkPage = lazyComponent(() =>
   import("./pages/NavLinkPage").then((module) => module.NavLinkPage),
 );
+const PairPage = lazyComponent(() => import("./pages/PairPage").then((module) => module.PairPage));
 const InvitePage = lazyComponent(() =>
   import("./pages/Invite").then((module) => module.InvitePage),
 );
@@ -236,6 +238,7 @@ function SessionApp() {
                 }
               />
               <Route path="/reset-password" element={<PasswordResetPage />} />
+              <Route path={PAIR_PAGE_PATH} element={<PairPage />} />
               <Route path="/p/:slugToken" element={<SharedPagePage />} />
               <Route
                 path={MCP_OAUTH_CALLBACK_PATH}

@@ -37,6 +37,8 @@ export const SESSIONLESS_ROUTES: Readonly<Record<string, string>> = {
   "GET /api/v1/assets/page-runtime.js": "public: a script that is the same for every caller",
   "GET /.well-known/apple-app-site-association":
     "public: the apps this domain's passkeys work in, from configuration",
+  "GET /.well-known/robots/environment":
+    "public: an id derived from the auth secret, the same for every caller; no database",
   "GET /.well-known/assetlinks.json":
     "public: the apps this domain's passkeys work in, from configuration",
   "GET /api/monitoring/config": "public: where clients send error reports, from configuration",

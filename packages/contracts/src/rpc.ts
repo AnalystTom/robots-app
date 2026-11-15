@@ -68,6 +68,7 @@ import {
   ComputerStatusSchema,
   ComputerUpdateSchema,
 } from "./computer.js";
+import { PairedDeviceSchema, PairingCodeSchema } from "./device-pairing.js";
 import { CreateDocInput, DocRevisionSchema, DocSchema } from "./docs.js";
 import {
   AccessGrantInputSchema,
@@ -397,6 +398,18 @@ export const appContract = {
     claimReferral: oc
       .input(z.object({ code: z.string().min(1).max(64) }))
       .output(z.object({ ok: z.literal(true) })),
+  },
+  /** Signs the account in on another device with a one-time code; see `device-pairing.ts`. */
+  devicePairing: {
+    /** A new single-use code. Only its hash is stored; it expires after five minutes. */
+    create: oc.output(PairingCodeSchema),
+    /** Devices signed in with a code that are still signed in. */
+    devices: oc.output(z.array(PairedDeviceSchema)),
+    revoke: oc
+      .input(z.object({ id: z.string().min(1).max(64) }))
+      .output(z.object({ ok: z.literal(true) })),
+    /** Signs out every paired device except the one asking. */
+    revokeOthers: oc.output(z.object({ revoked: z.number().int() })),
   },
   /** Admins only, on deployments that sell model credits. */
   accessGrants: {

@@ -30,7 +30,9 @@ options as your install. Allow TCP port 5173 only from your LAN subnet in the ho
 then enter `http://<LAN-IP>:5173` in the app's **Use a custom server** field.
 
 This exposes plain-HTTP sign-in to everyone on the local network. Tailscale or an HTTPS
-reverse proxy is the safer option.
+reverse proxy is the safer option. Add `ROBOTS_WEB_PRIVATE_PEERS_ONLY=true` so the web server
+closes connections from outside private networks, and sign other devices in with a pairing code
+instead of a password: see [Connect other devices](./connect.md).
 
 ## Mobile push notifications
 

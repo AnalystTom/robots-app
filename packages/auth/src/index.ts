@@ -43,6 +43,7 @@ import {
 } from "./account-security.js";
 import { createAppleClientSecretCache } from "./apple-client-secret.js";
 import { breachedPasswordCheck } from "./breached-password.js";
+import { devicePairing, issuePairingCode, PAIRING_CODE_PREFIX } from "./device-pairing.js";
 import { DEACTIVATED_AT_FIELD } from "./directory.js";
 import type { EmailLocaleOf } from "./email.js";
 import { emailLocale, passwordResetEmail, signInCodeEmail, verificationEmail } from "./email.js";
@@ -115,6 +116,8 @@ export interface AuthEnv {
   afterSignIn?: (userId: string, headers?: Headers) => Promise<void>;
   /** The operator provisions accounts from a directory over SCIM (see `createDirectory`). */
   directoryProvisioning?: boolean;
+  /** Runs after a device signed in with a pairing code. */
+  afterDevicePaired?: (userId: string) => Promise<void>;
 }
 
 type AuthSession = { id: string; userId: string };
@@ -171,6 +174,7 @@ export function authRateLimitOptions(nodeEnv = process.env.NODE_ENV) {
       "/request-account-deletion": { window: 600, max: 3 },
       "/request-identity-code": { window: 600, max: 3 },
       "/confirm-identity": rule,
+      "/pairing/exchange": rule,
       "/passkey/verify-authentication": rule,
       "/passkey/verify-registration": rule,
       // Sign-in pages request a challenge on load for passkey autofill.
@@ -299,6 +303,7 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
           "reset-password:": "hashed",
           "delete-account-": "hashed",
           [ACCOUNT_EXPORT_TOKEN_PREFIX]: "hashed",
+          [PAIRING_CODE_PREFIX]: "hashed",
         },
       },
     },
@@ -507,6 +512,7 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
         env.passwordAuth !== false,
       ),
       identityConfirmation(env.email, emailLocaleOf),
+      devicePairing({ clientIpHeader: CLIENT_IP_HEADER, onPaired: env.afterDevicePaired }),
       ...(discovery ? [discovery.plugin] : []),
       ...(emailCodeSignIn
         ? [
@@ -964,6 +970,12 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
       issueAccountExportToken((await auth.$context).internalAdapter, userId),
     consumeAccountExportToken: async (token: string) =>
       consumeAccountExportToken((await auth.$context).internalAdapter, token),
+    issuePairingCode: async (userId: string) =>
+      issuePairingCode((await auth.$context).internalAdapter, userId),
+    /** Ends these sessions as sign-out does, running the session-deletion hooks for each. */
+    endSessions: async (tokens: string[]) => {
+      if (tokens.length) await (await auth.$context).internalAdapter.deleteSessions(tokens);
+    },
     disposeOidcDiscovery: () => {
       discovery?.dispose();
     },

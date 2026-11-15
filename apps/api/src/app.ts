@@ -150,6 +150,7 @@ import { configuredEmailProvider } from "./email.js";
 import { mountEmailInboundRoute } from "./email-inbound.js";
 import type { AppEnv } from "./env.js";
 import { loadEnv } from "./env.js";
+import { mountEnvironmentRoute } from "./environment-id.js";
 import { createExperiments } from "./experiments.js";
 import { healthRoutes } from "./health.js";
 import { homeRetentionSweep } from "./home-retention.js";
@@ -602,6 +603,9 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
         getLogger().error("user device revocation failed", error),
       );
     },
+    afterDevicePaired: async (userId) => {
+      await events.publishRosterChange?.({ userIds: [userId] });
+    },
     afterReplaceSession: async (previous, session) => {
       await pushTokens
         .endSession(session.userId, previous.id, session.id)
@@ -883,6 +887,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     } satisfies AuthCapabilities);
   });
   mountAppAssociation(app, env);
+  mountEnvironmentRoute(app, env.authSecret);
   if (localEmailEmulator && env.nodeEnv === "development") {
     app.get(
       "/api/dev/emails",

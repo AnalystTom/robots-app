@@ -229,4 +229,7 @@ export const NL_MESSAGES: Record<string, string> = {
   "Waiting for Docker…": "Wachten op Docker…",
   "Docker is installed but not running. Start the Docker service to continue.":
     "Docker is geïnstalleerd maar draait niet. Start de Docker-service om door te gaan.",
+  "Let other devices open RoBots?": "Andere apparaten RoBots laten openen?",
+  "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.":
+    "Apparaten in je netwerk kunnen RoBots op deze computer bereiken via {address}. Elk apparaat moet nog steeds inloggen of koppelen.",
 };

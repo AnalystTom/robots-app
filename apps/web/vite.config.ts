@@ -22,6 +22,7 @@ import {
   sharedPageHeaders,
   webServerSettings,
 } from "./src/preview-middleware.js";
+import { attachPrivatePeerFilter } from "./src/private-peers.js";
 import { robotsPwa } from "./src/pwa/plugin.js";
 
 export default defineConfig(({ command, mode }) => {
@@ -101,6 +102,7 @@ export default defineConfig(({ command, mode }) => {
           server.middlewares.use(sharedPageHeaders);
           if (instanceTheme) server.middlewares.use(instanceTheme);
           attachDesktopStackProbe(server, settings);
+          attachPrivatePeerFilter(server, settings.privatePeersOnly);
           // The hosts the running server allows, as Vite resolved them, for proxied upgrades.
           proxyHosts = server.config.server.allowedHosts;
           attachNovncProxy(server, settings);

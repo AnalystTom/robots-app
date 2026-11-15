@@ -18,6 +18,8 @@ export const API_ROUTES: Readonly<Record<string, boolean>> = {
   // Native app domain association, served by the API from deployment settings.
   "/.well-known/apple-app-site-association": false,
   "/.well-known/assetlinks.json": false,
+  // Which RoBots this is, read by a pairing client before it sends a code.
+  "/.well-known/robots/environment": false,
 };
 
 /** Whether the API takes this request, or with `upgrade`, this upgrade; matched as Vite does. */

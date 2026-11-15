@@ -143,6 +143,8 @@ model Session {
   userId               String
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   activeOrganizationId String?
+  /// Set for a sign-in made with a pairing code: the name the device gave, or empty.
+  pairedDevice         String?
 
   @@unique([token])
   @@index([userId])

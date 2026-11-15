@@ -12,6 +12,7 @@ import {
   Monitor,
   Settings,
   ShieldCheck,
+  Smartphone,
   Volume2,
   Wallet,
 } from "lucide-react";
@@ -52,6 +53,12 @@ export function useSettingsNavItems(available: {
       label: t`Vault`,
       icon: KeyRound,
       description: t`Logins and keys your bots can use.`,
+    },
+    {
+      id: "devices",
+      label: t`Devices`,
+      icon: Smartphone,
+      description: t`Sign in on your other devices.`,
     },
     ...(available.wallet
       ? [

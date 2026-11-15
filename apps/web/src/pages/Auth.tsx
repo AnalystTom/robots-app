@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { BOT_COLOR_LIST, signInProviders } from "@robots/contracts";
+import { BOT_COLOR_LIST, PAIR_PAGE_PATH, signInProviders } from "@robots/contracts";
 import {
   credentialIssue,
   MAX_PASSWORD_LENGTH,
@@ -494,6 +494,14 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                   onSignedIn={enterApp}
                   onError={setError}
                 />
+              ) : null}
+              {mode === "in" && !codeStep ? (
+                <Link
+                  to={PAIR_PAGE_PATH}
+                  className="mt-3 text-body text-muted-foreground hover:text-foreground"
+                >
+                  <Trans>Pair with a code</Trans>
+                </Link>
               ) : null}
               {codeStep ? (
                 <Button

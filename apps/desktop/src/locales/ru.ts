@@ -227,4 +227,7 @@ export const RU_MESSAGES: Record<string, string> = {
   "Waiting for Docker…": "Ожидание Docker…",
   "Docker is installed but not running. Start the Docker service to continue.":
     "Docker установлен, но не запущен. Запустите службу Docker, чтобы продолжить.",
+  "Let other devices open RoBots?": "Разрешить другим устройствам открывать RoBots?",
+  "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.":
+    "Устройства в вашей сети смогут открыть RoBots на этом компьютере по адресу {address}. Каждому из них всё равно нужно войти или выполнить сопряжение.",
 };
