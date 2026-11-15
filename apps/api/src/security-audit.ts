@@ -64,6 +64,9 @@ export const AUDITED_PROCEDURES: Record<string, AuditedProcedure> = {
   // Starting a sign-in replaces any wallet already connected.
   "paymentWallet.connect": { type: "credential.changed", kind: "payment_wallet" },
   "paymentWallet.disconnect": { type: "credential.deleted", kind: "payment_wallet" },
+  "devicePairing.create": { type: "credential.created", kind: "pairing_code" },
+  "devicePairing.revoke": { type: "auth.session.revoked", kind: "paired_device", fields: ["id"] },
+  "devicePairing.revokeOthers": { type: "auth.session.revoked", kind: "paired_device" },
   "deployment.update": {
     type: "deployment.settings.changed",
     fields: ["signupsEnabled", "computerHost"],
@@ -168,6 +171,7 @@ const FAILED_CREDENTIAL_PATHS: Record<string, SecurityEventType> = {
   "/sign-in/email-otp": "auth.sign_in.failed",
   "/passkey/verify-authentication": "auth.sign_in.failed",
   "/sign-up/email": "auth.sign_up.failed",
+  "/pairing/exchange": "auth.sign_in.failed",
 };
 const RATE_LIMIT_EVENT_WINDOW_MS = 60_000;
 const RATE_LIMIT_KEYS_MAX = 10_000;
