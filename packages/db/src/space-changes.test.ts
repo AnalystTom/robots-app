@@ -34,7 +34,13 @@ describe("followSpaceChanges", () => {
   it("signals every kind on open, then each change in its own Space only", async () => {
     const fanout = fakeFanout();
     const iterator = followSpaceChanges(fanout as never, "space-1");
-    expect(await opened(iterator)).toEqual(["computerUpdates", "runs", "routines", "email", "memory"]);
+    expect(await opened(iterator)).toEqual([
+      "computerUpdates",
+      "runs",
+      "routines",
+      "email",
+      "memory",
+    ]);
 
     const next = iterator.next();
     let signalled = false;
@@ -91,7 +97,13 @@ describe("followSpaceChanges", () => {
     const iterator = followSpaceChanges(fanout as never, "space-1");
     await opened(iterator);
     await fanout.publish("space-changes:space-1", "");
-    expect(await opened(iterator)).toEqual(["computerUpdates", "runs", "routines", "email", "memory"]);
+    expect(await opened(iterator)).toEqual([
+      "computerUpdates",
+      "runs",
+      "routines",
+      "email",
+      "memory",
+    ]);
     await iterator.return(undefined);
   });
 });
