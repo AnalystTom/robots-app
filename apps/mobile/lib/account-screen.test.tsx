@@ -914,7 +914,7 @@ it("hides Labs when the server turns every feature on for everyone", async () =>
 it("saves a Labs switch at once and turns it back off when the save fails", async () => {
   account.me = { ...account.me, labs: [] };
   const view = await renderAccount(Labs);
-  const board = () => view.screen.querySelector('[role="switch"][aria-label="Board"]')!;
+  const board = () => view.screen.querySelector('[role="switch"][aria-label="Tasks"]')!;
   expect(board().getAttribute("aria-checked")).toBe("false");
 
   vi.mocked(rpc).mockResolvedValueOnce({ ...account.me, labs: ["board"] } as never);

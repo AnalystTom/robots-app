@@ -12,7 +12,10 @@ export function initialBootstrapTarget(path: string, desktop: boolean) {
 
 function botIdFromPath(pathname: string) {
   const segments = pathname.split("/");
-  if (["g", "artifacts", "board", "x"].includes(segments[2] ?? "")) return undefined;
+  if (
+    ["g", "artifacts", "board", "tasks", "today", "email", "docs", "x"].includes(segments[2] ?? "")
+  )
+    return undefined;
   return decoded(segments[2]);
 }
 

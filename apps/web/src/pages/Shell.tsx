@@ -6,7 +6,7 @@ import type {
   ThreadMessage,
   VoiceStatus,
 } from "@robots/contracts";
-import { DEFAULT_NEW_BOT_AVATAR_SET, hasLab } from "@robots/contracts";
+import { DEFAULT_NEW_BOT_AVATAR_SET } from "@robots/contracts";
 import {
   activeThreadRuns,
   answerableAskMessageIds,
@@ -1039,7 +1039,6 @@ function SpaceShell() {
         }
         footerLogos={footerLogos}
         user={session.data?.user}
-        boardEnabled={hasLab(bootstrapMe?.labs, "board")}
         navLinks={desktopBridge() ? [] : (bootstrapMe?.navLinks ?? [])}
         openSettings={openSettings}
         openIntegrations={() => setOverlay({ kind: "integrations" })}
