@@ -5,6 +5,7 @@ import type { LabFeature } from "@robots/contracts";
 import { PAIR_PAGE_PATH } from "@robots/contracts";
 import { analyticsScreen } from "@robots/core";
 import { Button } from "@robots/ui-web";
+import type { ReactNode } from "react";
 import {
   Suspense,
   useEffect,
@@ -21,7 +22,7 @@ import { MarkdownLinkPrompt } from "./components/markdown-link-prompt";
 import { PageLoading } from "./components/PageLoading";
 import { SubscriptionGate } from "./components/SubscriptionGate";
 import { authClient } from "./lib/auth";
-import { getLabs, subscribeLabs } from "./lib/bootstrap";
+import { getLoadedLabs, subscribeLabs } from "./lib/bootstrap";
 import { syncCallIdentity } from "./lib/call-session";
 import { desktopBridge } from "./lib/desktop";
 import { syncWebLogoAvatarIdentity } from "./lib/logo-avatar-activity";
@@ -128,13 +129,22 @@ export function App() {
 function SessionApp() {
   const [searchParams] = useSearchParams();
   const next = signInNext(searchParams.get("next"));
-  // A joined string, so a fresh but equal list never re-renders the routes.
-  const labs = useSyncExternalStore(
+  // A joined string, so a fresh but equal list never re-renders the routes; null until loaded.
+  const labsKey = useSyncExternalStore(
     subscribeLabs,
-    () => getLabs().join(","),
-    () => "",
-  ).split(",") as LabFeature[];
-  const boardEnabled = labs.includes("board");
+    () => getLoadedLabs()?.join(",") ?? null,
+    () => null,
+  );
+  const labs = labsKey === null ? null : (labsKey.split(",") as LabFeature[]);
+  /** A Labs page waits for the account's Labs, so it never falls through to a chat route. */
+  const lab = (feature: LabFeature, page: ReactNode) =>
+    labs === null ? (
+      <PageLoading />
+    ) : labs.includes(feature) ? (
+      page
+    ) : (
+      <Navigate to="/app" replace />
+    );
   const session = authClient.useSession();
   const { pathname, search } = useLocation();
   const screen = analyticsScreen(pathname);
@@ -320,15 +330,11 @@ function SessionApp() {
                   <Route path="/onboarding/:step?" element={<OnboardingPage />} />
                   <Route path="/app/artifacts" element={<ArtifactsPage />} />
                   <Route path="/app/artifacts/:artifactId" element={<ArtifactsPage />} />
-                  {boardEnabled ? <Route path="/app/board" element={<BoardPage />} /> : null}
-                  {boardEnabled ? <Route path="/app/tasks" element={<TasksPage />} /> : null}
-                  {labs.includes("today") ? (
-                    <Route path="/app/today" element={<TodayPage />} />
-                  ) : null}
-                  {labs.includes("email") ? (
-                    <Route path="/app/email" element={<EmailPage />} />
-                  ) : null}
-                  {labs.includes("docs") ? <Route path="/app/docs" element={<DocsPage />} /> : null}
+                  <Route path="/app/board" element={lab("board", <BoardPage />)} />
+                  <Route path="/app/tasks" element={lab("board", <TasksPage />)} />
+                  <Route path="/app/today" element={lab("today", <TodayPage />)} />
+                  <Route path="/app/email" element={lab("email", <EmailPage />)} />
+                  <Route path="/app/docs" element={lab("docs", <DocsPage />)} />
                   <Route path="/app/x/:linkId" element={<NavLinkPage />} />
                 </Route>
               </Route>

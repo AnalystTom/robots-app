@@ -25,7 +25,8 @@ vi.mock("@lingui/react/macro", () => ({
   useLingui: () => ({ t: (parts: TemplateStringsArray) => parts.join("") }),
 }));
 vi.mock("./lib/bootstrap", () => ({
-  getLabs: () => (capability.enabled ? ["board"] : []),
+  // Labs not yet loaded until enabled, as on a first load before bootstrap answers.
+  getLoadedLabs: () => (capability.enabled ? ["board"] : null),
   subscribeLabs: () => () => {},
 }));
 vi.mock("./lib/auth", () => ({
@@ -115,7 +116,8 @@ it("loads the board chunk only after bootstrap enables the route", async () => {
   );
   try {
     await act(async () => root.render(render()));
-    expect(container.textContent).toBe("Shell");
+    // Waits for Labs instead of opening /app/board as a chat.
+    expect(container.textContent).not.toBe("Shell");
     expect(capability.screen).toHaveBeenCalledExactlyOnceWith({ screen: "board", surface: "web" });
     expect(capability.boardLoaded).not.toHaveBeenCalled();
     capability.enabled = true;

@@ -88,7 +88,7 @@ export function TasksPage() {
             </Button>
           ) : null}
           <Button onClick={() => setCreating(true)} disabled={bots.length === 0}>
-            <Trans>New ticket</Trans>
+            <Trans>New task</Trans>
           </Button>
         </>
       }
