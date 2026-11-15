@@ -208,6 +208,8 @@ import {
   RoutineHistorySchema,
   RoutineRunCursorSchema,
   RunsListOutputSchema,
+  TodayRunsInputSchema,
+  TodayRunsOutputSchema,
 } from "./runs.js";
 import { SearchQueryOutputSchema } from "./search.js";
 import { SecurityEventListInputSchema, SecurityEventSchema } from "./security-events.js";
@@ -1504,7 +1506,7 @@ export const appContract = {
     /**
      * Run alerts for the signed-in user's chats in this space, live while connected. `roster`
      * says `spaces.list` may have changed, `computerUpdates` that `computer.updates` may have,
-     * `runs` that `runs.list` and `routines.history` may have, and `routines` that `routines.list`
+     * `runs` that `runs.list`, `today.runs` and `routines.history` may have, and `routines` that `routines.list`
      * may have; each is sent once when the stream opens.
      */
     subscribe: oc.output(
@@ -1591,6 +1593,11 @@ export const appContract = {
   },
   runs: {
     list: oc.input(z.object({ filter: z.enum(["active", "recent"]) })).output(RunsListOutputSchema),
+  },
+  /** The Today page (a Labs feature). */
+  today: {
+    /** Runs that ended since the start of the user's day. */
+    runs: oc.input(TodayRunsInputSchema).output(TodayRunsOutputSchema),
   },
   /** The account's spending limit for payments its bots make. */
   spendingLimit: {

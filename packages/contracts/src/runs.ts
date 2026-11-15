@@ -133,3 +133,14 @@ export const RunsListOutputSchema = z.object({
   runs: z.array(RunActivityRowSchema),
 });
 export type RunsListOutput = z.infer<typeof RunsListOutputSchema>;
+
+/** The newest runs a Today read lists; `finished` still counts every one. */
+export const TODAY_RUNS_LIMIT = 20;
+export const TodayRunsInputSchema = z.object({ since: IsoDate });
+export const TodayRunsOutputSchema = z.object({
+  /** Runs that ended since then, newest first. */
+  runs: z.array(RunActivityRowSchema).max(TODAY_RUNS_LIMIT),
+  /** How many of them completed. */
+  finished: z.number().int().nonnegative(),
+});
+export type TodayRunsOutput = z.infer<typeof TodayRunsOutputSchema>;
