@@ -160,6 +160,12 @@ import {
   VoiceInfoSchema,
   VoiceStatusSchema,
 } from "./domain.js";
+import {
+  EmailMailboxesSchema,
+  EmailMessageSchema,
+  EmailMessagesInput,
+  EmailMessagesPageSchema,
+} from "./email-inbox.js";
 import { ComputerCommandSchema, ProductEventSchema } from "./events.js";
 import { Id, IsoDate, ThinkingLevelSchema } from "./ids.js";
 import {
@@ -291,7 +297,7 @@ const threadSendWithRoutinesInput = threadSendFields.safeExtend({
 });
 
 /** What a Space change signal tells apps to read again; each is a `notifications.subscribe` frame. */
-export const SpaceChangeKind = z.enum(["computerUpdates", "runs", "routines"]);
+export const SpaceChangeKind = z.enum(["computerUpdates", "runs", "routines", "email"]);
 export type SpaceChangeKind = z.infer<typeof SpaceChangeKind>;
 
 const spaceName = z.string().trim().min(1).max(60);
@@ -1046,6 +1052,12 @@ export const appContract = {
       .output(ScratchpadItemSchema),
     remove: oc.input(z.object({ itemId: Id })).output(z.object({ ok: z.literal(true) })),
   },
+  /** The caller's own bots' mail in this Space, for the Email page. Reads only. */
+  email: {
+    mailboxes: oc.output(EmailMailboxesSchema),
+    messages: oc.input(EmailMessagesInput).output(EmailMessagesPageSchema),
+    message: oc.input(z.object({ id: Id })).output(EmailMessageSchema),
+  },
   boards: {
     list: oc.output(z.array(BoardSchema)),
     get: oc.output(BoardSchema),
@@ -1504,8 +1516,9 @@ export const appContract = {
     /**
      * Run alerts for the signed-in user's chats in this space, live while connected. `roster`
      * says `spaces.list` may have changed, `computerUpdates` that `computer.updates` may have,
-     * `runs` that `runs.list` and `routines.history` may have, and `routines` that `routines.list`
-     * may have; each is sent once when the stream opens.
+     * `runs` that `runs.list` and `routines.history` may have, `routines` that `routines.list`
+     * may have, and `email` that the `email` reads may have; each is sent once when the stream
+     * opens.
      */
     subscribe: oc.output(
       eventIterator(
