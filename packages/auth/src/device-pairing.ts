@@ -106,8 +106,6 @@ export function createPairingAttemptLimiter(
   };
 }
 
-export type PairingAttemptLimiter = ReturnType<typeof createPairingAttemptLimiter>;
-
 const invalidCode = () =>
   new APIError("BAD_REQUEST", { code: "INVALID_PAIRING_CODE", message: "Invalid pairing code" });
 
@@ -119,11 +117,10 @@ const invalidCode = () =>
 export function devicePairing(options: {
   /** The header the API sets from the socket peer, so a caller cannot pick its own address. */
   clientIpHeader: string;
-  limiter?: PairingAttemptLimiter;
   /** After a device paired, so the account's open screens re-read their devices. */
   onPaired?: (userId: string) => Promise<void> | void;
 }): BetterAuthPlugin {
-  const limiter = options.limiter ?? createPairingAttemptLimiter();
+  const limiter = createPairingAttemptLimiter();
   return {
     id: "device-pairing",
     schema: {

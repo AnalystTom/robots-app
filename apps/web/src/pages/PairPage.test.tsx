@@ -30,7 +30,9 @@ vi.mock("@lingui/react/macro", () => {
 });
 vi.mock("@robots/ui-web", () => ({
   Input: (props: ComponentProps<"input">) => <input {...props} />,
-  Label: (props: ComponentProps<"label">) => <label {...props} />,
+  Label: ({ children, htmlFor }: ComponentProps<"label">) => (
+    <label htmlFor={htmlFor}>{children}</label>
+  ),
   Button: ({
     variant: _variant,
     size: _size,

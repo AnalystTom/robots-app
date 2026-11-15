@@ -63,8 +63,6 @@ import { socialCallbackProtection } from "./social-callback-protection.js";
 import type { TokenKey } from "./token-storage.js";
 import { encryptStoredOAuthTokens, openIdToken, sealIdToken } from "./token-storage.js";
 
-export type { PairingAttemptLimiter } from "./device-pairing.js";
-export { createPairingAttemptLimiter, PAIRED_DEVICE_FIELD } from "./device-pairing.js";
 export type { DirectoryAccountChange } from "./directory.js";
 export { createDirectory } from "./directory.js";
 export {
