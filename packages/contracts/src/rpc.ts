@@ -68,6 +68,7 @@ import {
   ComputerStatusSchema,
   ComputerUpdateSchema,
 } from "./computer.js";
+import { CreateDocInput, DocRevisionSchema, DocSchema } from "./docs.js";
 import {
   AccessGrantInputSchema,
   AccessGrantSchema,
@@ -299,7 +300,7 @@ const threadSendWithRoutinesInput = threadSendFields.safeExtend({
 });
 
 /** What a Space change signal tells apps to read again; each is a `notifications.subscribe` frame. */
-export const SpaceChangeKind = z.enum(["computerUpdates", "runs", "routines", "email"]);
+export const SpaceChangeKind = z.enum(["computerUpdates", "runs", "routines", "email", "memory"]);
 export type SpaceChangeKind = z.infer<typeof SpaceChangeKind>;
 
 const spaceName = z.string().trim().min(1).max(60);
@@ -1060,6 +1061,12 @@ export const appContract = {
     messages: oc.input(EmailMessagesInput).output(EmailMessagesPageSchema),
     message: oc.input(z.object({ id: Id })).output(EmailMessageSchema),
   },
+  docs: {
+    /** Every memory document in the Space, newest first. */
+    list: oc.output(z.array(DocSchema)),
+    create: oc.input(CreateDocInput).output(DocSchema),
+    revisions: oc.input(z.object({ documentId: Id })).output(z.array(DocRevisionSchema)),
+  },
   boards: {
     list: oc.output(z.array(BoardSchema)),
     get: oc.output(BoardSchema),
@@ -1519,8 +1526,8 @@ export const appContract = {
      * Run alerts for the signed-in user's chats in this space, live while connected. `roster`
      * says `spaces.list` may have changed, `computerUpdates` that `computer.updates` may have,
      * `runs` that `runs.list`, `today.runs` and `routines.history` may have, `routines` that
-     * `routines.list` may have, and `email` that the `email` reads may have; each is sent once
-     * when the stream opens.
+     * `routines.list` may have, `email` that the `email` reads may have, and `memory` that
+     * `memory.list` and `docs.*` may have; each is sent once when the stream opens.
      */
     subscribe: oc.output(
       eventIterator(

@@ -9,6 +9,9 @@ const SPACE_CHANGE_PROCEDURES: Record<string, readonly SpaceChangeKind[]> = {
   "routines.create": ["routines"],
   "routines.update": ["routines"],
   "routines.remove": ["routines"],
+  "memory.update": ["memory"],
+  "memory.remove": ["memory"],
+  "docs.create": ["memory"],
   "routines.testRun": ["runs"],
   // These can queue a run.
   "threads.sendWithRoutines": ["runs"],
