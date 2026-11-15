@@ -1,6 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { LinkFavicons } from "@robots/chat-ui/web";
 import { LinkFaviconsContext, RemoteImagesContext } from "@robots/chat-ui/web";
+import type { LabFeature } from "@robots/contracts";
 import { analyticsScreen } from "@robots/core";
 import { Button } from "@robots/ui-web";
 import {
@@ -66,6 +67,15 @@ const ArtifactsPage = lazyComponent(() =>
   import("./pages/Artifacts").then((module) => module.ArtifactsPage),
 );
 const BoardPage = lazyComponent(() => import("./pages/Board").then((module) => module.BoardPage));
+const TodayPage = lazyComponent(() =>
+  import("./pages/workspace/TodayPage").then((module) => module.TodayPage),
+);
+const EmailPage = lazyComponent(() =>
+  import("./pages/workspace/EmailPage").then((module) => module.EmailPage),
+);
+const DocsPage = lazyComponent(() =>
+  import("./pages/workspace/DocsPage").then((module) => module.DocsPage),
+);
 const AdminPluginsPage = lazyComponent(() =>
   import("./pages/AdminPluginsPage").then((module) => module.AdminPluginsPage),
 );
@@ -112,11 +122,13 @@ export function App() {
 function SessionApp() {
   const [searchParams] = useSearchParams();
   const next = signInNext(searchParams.get("next"));
-  const boardEnabled = useSyncExternalStore(
+  // A joined string, so a fresh but equal list never re-renders the routes.
+  const labs = useSyncExternalStore(
     subscribeLabs,
-    () => getLabs().includes("board"),
-    () => false,
-  );
+    () => getLabs().join(","),
+    () => "",
+  ).split(",") as LabFeature[];
+  const boardEnabled = labs.includes("board");
   const session = authClient.useSession();
   const { pathname, search } = useLocation();
   const screen = analyticsScreen(pathname);
@@ -304,6 +316,14 @@ function SessionApp() {
                   <Route path="/app/artifacts" element={<ArtifactsPage />} />
                   <Route path="/app/artifacts/:artifactId" element={<ArtifactsPage />} />
                   {boardEnabled ? <Route path="/app/board" element={<BoardPage />} /> : null}
+                  {boardEnabled ? <Route path="/app/tasks" element={<BoardPage />} /> : null}
+                  {labs.includes("today") ? (
+                    <Route path="/app/today" element={<TodayPage />} />
+                  ) : null}
+                  {labs.includes("email") ? (
+                    <Route path="/app/email" element={<EmailPage />} />
+                  ) : null}
+                  {labs.includes("docs") ? <Route path="/app/docs" element={<DocsPage />} /> : null}
                   <Route path="/app/x/:linkId" element={<NavLinkPage />} />
                 </Route>
               </Route>

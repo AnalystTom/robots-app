@@ -55,7 +55,7 @@ async function render(props: React.ComponentProps<typeof LabsSettingsPanel>) {
 it("turns Board on by saving the whole Labs list", async () => {
   const onLabsChange = vi.fn(async () => undefined);
   const container = await render({ labs: [], available: ["board"], onLabsChange });
-  expect(container.textContent).toContain("Board");
+  expect(container.textContent).toContain("Tasks");
   const toggle = container.querySelector<HTMLButtonElement>('[data-testid="lab-board-toggle"]');
   expect(toggle?.getAttribute("aria-checked")).toBe("false");
 
