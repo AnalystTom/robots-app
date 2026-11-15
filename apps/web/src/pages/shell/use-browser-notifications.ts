@@ -8,6 +8,7 @@ import {
   shouldNotifyBrowser,
 } from "../../lib/browser-notifications";
 import { computerUpdates } from "../../lib/computer-updates";
+import { pairedDevicesChanged } from "../../lib/device-pairing";
 import { followStream } from "../../lib/follow-stream";
 import { notificationIcon, prepareNotificationIcons } from "../../lib/notification-icon";
 import type { RpcClient } from "../../lib/rpc";
@@ -123,8 +124,11 @@ export function useBrowserNotifications(
     const stop = followStream(
       (signal) => rpc.notifications.subscribe(undefined, { signal }),
       (frame) => {
-        if (frame.type === "roster") rosterRef.current?.changed();
-        else if (frame.type === "computerUpdates") computerUpdates.signalled();
+        if (frame.type === "roster") {
+          rosterRef.current?.changed();
+          // The same signal follows a device pairing or being signed out.
+          void pairedDevicesChanged();
+        } else if (frame.type === "computerUpdates") computerUpdates.signalled();
         else if (isReadChangeKind(frame.type)) void spaceChanged(frame.type);
         else if (frame.alert) show(frame.alert);
       },

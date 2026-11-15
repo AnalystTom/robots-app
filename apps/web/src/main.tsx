@@ -1,4 +1,6 @@
 import "./zod-config";
+// Before monitoring starts: takes a pairing code out of the address.
+import "./pairing-capture";
 import "./monitoring-bootstrap";
 import { rememberSignupAttribution } from "@robots/core/signup-attribution";
 import { BotAvatarActivityProvider, Toaster, TooltipProvider } from "@robots/ui-web";
