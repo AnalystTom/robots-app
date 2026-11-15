@@ -23,6 +23,7 @@ import {
   logoAvatarEyeInk,
 } from "./logo-avatar-art.js";
 import { logoAvatarTraits } from "./logo-avatar-traits.js";
+import { robotCharacterDataUri } from "./robot-character.js";
 
 /** A static notification portrait, with the same identity, saved photo and silhouette as chat. */
 export function notificationAvatarSource(bot: {
@@ -34,6 +35,7 @@ export function notificationAvatarSource(bot: {
     ? parseBotAvatarValue(bot.color)
     : null;
   if (parsed?.kind === "image") return parsed.imageUrl;
+  if (parsed?.kind === "robot") return robotCharacterDataUri(parsed.look);
   const color = resolvePersonaColorDef(
     bot.id,
     parsed && "color" in parsed ? parsed.color : bot.color,

@@ -1,5 +1,10 @@
 import type { BotAvatarSet, BotColorDef } from "@robots/contracts";
-import { BOT_COLOR_LIST, BOT_COLORS } from "@robots/contracts";
+import {
+  BOT_COLOR_LIST,
+  BOT_COLORS,
+  parseRobotCharacter,
+  ROBOT_COLOUR_FILLS,
+} from "@robots/contracts";
 import type { AvatarEyes, LogoAvatarActivity } from "@robots/core";
 import {
   ACTIVE_RUN_STATUSES,
@@ -12,6 +17,7 @@ import {
   organicAvatarEyeTilt,
   organicAvatarPath,
   resolvePersonaColorDef,
+  robotCharacterDataUri,
   SHIPPED_BOT_AVATAR_EYES,
   SHIPPED_BOT_AVATAR_SHAPE_KEYS,
   SHIPPED_BOT_AVATAR_SHAPES,
@@ -54,6 +60,15 @@ export function parseBotAvatar(
   if (rawColor.startsWith("data:image/")) {
     return { color: "#F97316", isImage: true, imageUrl: rawColor };
   }
+  // A robot character is drawn from fixed parts; its colour is its backdrop.
+  const robot = parseRobotCharacter(rawColor);
+  if (robot) {
+    return {
+      color: ROBOT_COLOUR_FILLS[robot.colour],
+      isImage: true,
+      imageUrl: robotCharacterDataUri(robot),
+    };
+  }
   if (rawColor.includes("::shape_")) {
     const parts = rawColor.split("::shape_");
     const rawShapeIdx = parts[1] ?? "0";
@@ -70,7 +85,10 @@ export function parseBotAvatar(
 
 const AVATAR_HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
+/** The plain colour value for an avatar; a robot character gives its backdrop. */
 export function defaultBotAvatarValue(rawColor: string): string {
+  const robot = parseRobotCharacter(rawColor);
+  if (robot) return ROBOT_COLOUR_FILLS[robot.colour];
   const parsed = parseBotAvatar(rawColor);
   if (rawColor && !parsed.isImage && AVATAR_HEX.test(parsed.color)) return parsed.color;
   return DEFAULT_BOT_AVATAR_COLOR;
@@ -108,38 +126,12 @@ export const BotAvatar = memo(function BotAvatar({
 
   if (parsed.isImage && parsed.imageUrl) {
     return (
-      <div
-        className={cn("robots-bot-avatar relative shrink-0 select-none", className)}
-        data-working={isWorking}
-        style={{ width: size, height: size }}
-      >
-        <div className="robots-bot-avatar-picture relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-border bg-secondary">
-          <img src={parsed.imageUrl} alt="" className="h-full w-full object-cover" />
-        </div>
-        {isWorking ? (
-          <svg
-            className="robots-bot-avatar-ring robots-bot-avatar-ring-working absolute pointer-events-none"
-            style={{
-              inset: -4,
-              width: size + 8,
-              height: size + 8,
-            }}
-            viewBox="0 0 48 48"
-            fill="none"
-            aria-hidden="true"
-          >
-            <circle
-              cx="24"
-              cy="24"
-              r="22"
-              className="stroke-status-working"
-              strokeWidth="3.2"
-              strokeLinecap="round"
-              strokeDasharray="45 80"
-            />
-          </svg>
-        ) : null}
-      </div>
+      <PictureAvatar
+        src={parsed.imageUrl}
+        size={size}
+        isWorking={isWorking}
+        className={className}
+      />
     );
   }
 
@@ -238,6 +230,54 @@ export const BotAvatar = memo(function BotAvatar({
     </div>
   );
 });
+
+/** A photo or a robot character, in a circle, with the working ring around it. */
+function PictureAvatar({
+  src,
+  size,
+  isWorking,
+  className,
+}: {
+  src: string;
+  size: number;
+  isWorking: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn("robots-bot-avatar relative shrink-0 select-none", className)}
+      data-working={isWorking}
+      style={{ width: size, height: size }}
+    >
+      <div className="robots-bot-avatar-picture relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-border bg-secondary">
+        <img src={src} alt="" className="h-full w-full object-cover" />
+      </div>
+      {isWorking ? (
+        <svg
+          className="robots-bot-avatar-ring robots-bot-avatar-ring-working absolute pointer-events-none"
+          style={{
+            inset: -4,
+            width: size + 8,
+            height: size + 8,
+          }}
+          viewBox="0 0 48 48"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle
+            cx="24"
+            cy="24"
+            r="22"
+            className="stroke-status-working"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+            strokeDasharray="45 80"
+          />
+        </svg>
+      ) : null}
+    </div>
+  );
+}
 
 /** Only live RoBots consumers subscribe to public activity updates. */
 function LiveLogoAvatar({

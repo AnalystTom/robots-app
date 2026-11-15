@@ -1,4 +1,6 @@
 import * as z from "zod";
+import type { RobotLook } from "./robot-character.js";
+import { parseRobotCharacter, ROBOT_COLOUR_FILLS } from "./robot-character.js";
 
 export const BotAvatarSetSchema = z.enum(["organic", "robots"]);
 export type BotAvatarSet = z.infer<typeof BotAvatarSetSchema>;
@@ -92,6 +94,8 @@ const DATA_IMAGE = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,
 
 export type ParsedBotAvatar =
   | { kind: "image"; imageUrl: string }
+  /** A robot character; `color` is its backdrop, which names and bubbles take. */
+  | { kind: "robot"; look: RobotLook; color: string }
   | { kind: "shape"; color: string; shapeIndex: number }
   | { kind: "color"; color: string }
   | { kind: "other"; raw: string };
@@ -100,6 +104,8 @@ export function parseBotAvatarValue(raw: string): ParsedBotAvatar {
   if (raw.startsWith("data:image/")) {
     return { kind: "image", imageUrl: raw };
   }
+  const look = parseRobotCharacter(raw);
+  if (look) return { kind: "robot", look, color: ROBOT_COLOUR_FILLS[look.colour] };
   if (raw.includes("::shape_")) {
     const parts = raw.split("::shape_");
     const color = parts[0] || "#F97316";
@@ -114,7 +120,12 @@ export function parseBotAvatarValue(raw: string): ParsedBotAvatar {
 
 export function isBotAvatarValue(raw: string): boolean {
   if (!raw || raw.length > BOT_AVATAR_VALUE_MAX_LENGTH) return false;
-  return HEX_COLOR.test(raw) || SHAPE_SUFFIX.test(raw) || DATA_IMAGE.test(raw);
+  return (
+    HEX_COLOR.test(raw) ||
+    SHAPE_SUFFIX.test(raw) ||
+    DATA_IMAGE.test(raw) ||
+    parseRobotCharacter(raw) !== null
+  );
 }
 
 export const BotAvatarValueSchema = z
