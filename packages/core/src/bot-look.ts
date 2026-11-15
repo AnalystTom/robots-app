@@ -18,6 +18,7 @@ function pick<T>(options: readonly T[]): T {
 
 export interface NewBotLook {
   id: string;
+  /** A random robot character until someone picks another look. */
   color: string;
   identity: string;
 }

@@ -1,4 +1,10 @@
-import { BOT_COLOR_LIST, BOT_COLORS } from "@robots/contracts";
+import {
+  BOT_COLOR_LIST,
+  BOT_COLORS,
+  isBotAvatarValue,
+  parseRobotCharacter,
+  ROBOT_PARTS,
+} from "@robots/contracts";
 import {
   ORGANIC_AVATAR_FAMILY_COUNT,
   ORGANIC_AVATAR_HEART_FAMILY,
