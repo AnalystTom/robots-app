@@ -19,6 +19,7 @@ export * from "./client-build.js";
 export * from "./computer.js";
 export * from "./connector-errors.js";
 export * from "./desktop.js";
+export * from "./docs.js";
 export * from "./domain.js";
 export * from "./events.js";
 export * from "./experiments.js";

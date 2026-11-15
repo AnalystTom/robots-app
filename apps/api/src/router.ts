@@ -48,6 +48,7 @@ import { computerProviderRoutes } from "./routes/computer-provider.js";
 import { connectionsRoutes } from "./routes/connections.js";
 import { contentRoutes } from "./routes/content.js";
 import { createRouterContext } from "./routes/context.js";
+import { docsRoutes } from "./routes/docs.js";
 import { mcpRoutes } from "./routes/mcp.js";
 import { memoryRoutes } from "./routes/memory.js";
 import { messagingRoutes } from "./routes/messaging.js";
@@ -178,6 +179,7 @@ export function createRouter(deps: RouterDeps) {
     ...computerRoutes(ctx),
     ...computerProviderRoutes(ctx),
     ...memoryRoutes(ctx),
+    ...docsRoutes(ctx),
     ...routinesRoutes(ctx),
     ...boardsRoutes(ctx),
     ...capabilitiesRoutes(ctx),

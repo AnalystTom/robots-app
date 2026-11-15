@@ -1,3 +1,4 @@
+import { SpaceChangeKind } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import { followSpaceChanges, publishSpaceChange } from "./space-changes.js";
 
@@ -24,7 +25,8 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 async function opened(iterator: AsyncGenerator<string>) {
   const kinds = [];
-  for (let i = 0; i < 3; i += 1) kinds.push((await iterator.next()).value);
+  for (let i = 0; i < SpaceChangeKind.options.length; i += 1)
+    kinds.push((await iterator.next()).value);
   return kinds;
 }
 
@@ -32,7 +34,7 @@ describe("followSpaceChanges", () => {
   it("signals every kind on open, then each change in its own Space only", async () => {
     const fanout = fakeFanout();
     const iterator = followSpaceChanges(fanout as never, "space-1");
-    expect(await opened(iterator)).toEqual(["computerUpdates", "runs", "routines"]);
+    expect(await opened(iterator)).toEqual(["computerUpdates", "runs", "routines", "memory"]);
 
     const next = iterator.next();
     let signalled = false;
@@ -89,7 +91,7 @@ describe("followSpaceChanges", () => {
     const iterator = followSpaceChanges(fanout as never, "space-1");
     await opened(iterator);
     await fanout.publish("space-changes:space-1", "");
-    expect(await opened(iterator)).toEqual(["computerUpdates", "runs", "routines"]);
+    expect(await opened(iterator)).toEqual(["computerUpdates", "runs", "routines", "memory"]);
     await iterator.return(undefined);
   });
 });

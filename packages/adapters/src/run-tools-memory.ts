@@ -126,6 +126,7 @@ export const memoryTools: ToolHandlers = {
           },
           context,
         );
+        await deps.events?.publishSpaceChange?.(context.spaceId, "memory");
         return call.finish({ ok: true });
       } catch (error) {
         const message = error instanceof Error ? error.message : "";
@@ -155,6 +156,7 @@ export const memoryTools: ToolHandlers = {
         },
         context,
       );
+      await deps.events?.publishSpaceChange?.(context.spaceId, "memory");
       return call.finish({ ok: true, path: saved.path, revision: saved.revision });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not save shared memory.";
