@@ -17,6 +17,7 @@ import {
   appConnectCard,
   BOT_TEMPLATES,
   botTemplateApps,
+  botTemplateLook,
   buildSkillMd,
   findBotTemplate,
   renameRoutineSkillMentions,
@@ -147,6 +148,7 @@ export async function createBotFromTemplate<PreparedKey>(
     digest: requestDigest({ templateId: template.id }),
     name: input.name ?? template.name,
     description: template.description,
+    color: botTemplateLook(template.id),
     selection: {
       instructions: ["instructions"],
       memory: [],

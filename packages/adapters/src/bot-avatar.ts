@@ -65,7 +65,7 @@ export async function resolveUpdateBotAvatar(input: {
     if (!isBotAvatarValue(color)) {
       return {
         error:
-          "color must be a hex value, an encoded shape like #8B5CF6::shape_3, or a data image.",
+          "color must be a robot character like robot:blue.antenna.happy.t-shirt.none, a hex value, an encoded shape like #8B5CF6::shape_3, or a data image.",
       };
     }
     return { color };

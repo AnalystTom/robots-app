@@ -1,5 +1,7 @@
 import type { BotTemplate, ConnectionCatalogItem } from "@robots/contracts";
 import { matchConnectedAppCatalog } from "./app-connect.js";
+import type { ReadyMadeRobot } from "./robot-character.js";
+import { readyMadeRobotValue } from "./robot-character.js";
 
 /**
  * Reviewed, ready-made bots. Bump a template's `version` whenever any of its content changes:
@@ -221,6 +223,19 @@ export const BOT_TEMPLATES: readonly BotTemplate[] = [
     apps: [],
   },
 ];
+
+/** Templates whose role matches a ready-made robot wear it; the others get a random robot. */
+const BOT_TEMPLATE_ROBOTS: Readonly<Record<string, ReadyMadeRobot>> = {
+  "morning-briefing": "host",
+  "pr-reviewer": "chef",
+  "topic-watch": "professor",
+};
+
+/** The look a template's bot is created with, or undefined for the usual random robot. */
+export function botTemplateLook(templateId: string): string | undefined {
+  const robot = BOT_TEMPLATE_ROBOTS[templateId];
+  return robot ? readyMadeRobotValue(robot) : undefined;
+}
 
 export function findBotTemplate(id: string): BotTemplate | undefined {
   return BOT_TEMPLATES.find((template) => template.id === id);

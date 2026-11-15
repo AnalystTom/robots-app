@@ -109,6 +109,29 @@ describe("BotAvatar", () => {
     expect(html).not.toContain("robots-bot-avatar-ring");
   });
 
+  it("draws a robot character as an image in any set, sized and ringed like a photo", () => {
+    const value = "robot:red.chef-hat.grumpy.chef-jacket.steam";
+    for (const avatarSet of ["organic", "robots"] as const) {
+      const html = renderToString(
+        <BotAvatar color={value} avatarSet={avatarSet} identity="b1" size={40} status="running" />,
+      );
+      expect(html).toMatch(/<img src="data:image\/svg\+xml,%3Csvg[^"]*"/);
+      expect(html).toContain("width:40px;height:40px");
+      expect(html).toContain('data-working="true"');
+      expect(html).toContain("robots-bot-avatar-ring-working");
+    }
+    expect(defaultBotAvatarValue(value)).toBe("#D9483B");
+    expect(resolvePersonaColorDef("b1", value).hex).toBe("#D9483B");
+  });
+
+  it("does not draw a robot value that names an unknown part", () => {
+    const html = renderToString(
+      <BotAvatar color={'robot:red."><script>x</script>.grumpy.chef-jacket.none'} size={32} />,
+    );
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain("<script");
+  });
+
   it("does not treat arbitrary http(s) color values as remote images", () => {
     const parsed = parseBotAvatar("https://evil.example/track.png");
     expect(parsed.isImage).toBe(false);
