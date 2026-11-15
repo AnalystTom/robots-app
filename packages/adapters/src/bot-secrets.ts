@@ -1,6 +1,6 @@
 import { createHmac, randomBytes } from "node:crypto";
-import type { SecretStore } from "@rakazo/adapter-kit";
-import { SecretNotFoundError, SecretStoreUnavailableError } from "@rakazo/adapter-kit";
+import type { SecretStore } from "@robots/adapter-kit";
+import { SecretNotFoundError, SecretStoreUnavailableError } from "@robots/adapter-kit";
 import type {
   BotSecretDestination,
   CardSecretValue,
@@ -10,7 +10,7 @@ import type {
   SettingsScope,
   VaultPolicy,
   VaultPreview,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   authenticatorKey,
   BLOCKED_ITEM_ANSWER,
@@ -44,9 +44,9 @@ import {
   UNCHOSEN_ITEM_ANSWER,
   VAULT_ITEM_LIMIT,
   vaultLoginKey,
-} from "@rakazo/contracts";
-import { resolveEncryptionKey } from "@rakazo/core";
-import type { Prisma, PrismaClient } from "@rakazo/db";
+} from "@robots/contracts";
+import { resolveEncryptionKey } from "@robots/core";
+import type { Prisma, PrismaClient } from "@robots/db";
 import {
   ContentDecryptionError,
   ciphertextKeyId,
@@ -57,8 +57,8 @@ import {
   runLoginKind,
   settingsTarget,
   withTransactionRetry,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { z } from "zod";
 import { combineSignals, redactConnectorPayload } from "./connector-safety.js";
 import type { RemoteTransportDependencies } from "./remote-mcp.js";
@@ -276,7 +276,7 @@ function credentialHeader(destination: BotSecretDestination, plaintext: string) 
 
 /** Owner escape enabling plain-HTTP origins on private LAN hosts (see #907). */
 export function allowPrivateHttpSecretOrigins(): boolean {
-  return process.env.RAKAZO_SECRETS_ALLOW_PRIVATE_HTTP === "1";
+  return process.env.ROBOTS_SECRETS_ALLOW_PRIVATE_HTTP === "1";
 }
 
 export function normalizeSecretDestination(value: unknown): BotSecretDestination {
@@ -2336,7 +2336,7 @@ export function loginCodeClaim(input: {
   // six-digit code could be reversed by anyone who can read the table.
   const keyed = (text: string, length: number) =>
     createHmac("sha256", resolveEncryptionKey())
-      .update("rakazo:vault-code-claim:v1\0")
+      .update("robots:vault-code-claim:v1\0")
       .update(text)
       .digest("hex")
       .slice(0, length);

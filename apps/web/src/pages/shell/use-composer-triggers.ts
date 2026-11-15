@@ -1,11 +1,11 @@
-import type { AgentSkillCatalogEntry } from "@rakazo/contracts";
+import type { AgentSkillCatalogEntry } from "@robots/contracts";
 import type {
   ComposerMention,
   ComposerMentionBinding,
   ComposerMentionQuery,
   ComposerMentionRange,
   SlashActionId,
-} from "@rakazo/core";
+} from "@robots/core";
 import {
   bindComposerMention,
   clampMentionHighlightIndex,
@@ -15,7 +15,7 @@ import {
   filterComposerMentionTargets,
   mentionChipKey,
   removeComposerSlashQuery,
-} from "@rakazo/core";
+} from "@robots/core";
 import type { RefObject } from "react";
 import { useEffect, useId, useMemo, useState } from "react";
 import { slashActionLabel } from "./composer-mentions";

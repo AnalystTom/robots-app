@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { ModelHeaderRow } from "@rakazo/contracts";
-import { serverHeadersFromRows } from "@rakazo/contracts";
+import type { ModelHeaderRow } from "@robots/contracts";
+import { serverHeadersFromRows } from "@robots/contracts";
 import { Stack, useRouter } from "expo-router";
 import { useContext, useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput } from "react-native";

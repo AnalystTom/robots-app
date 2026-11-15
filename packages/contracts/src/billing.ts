@@ -105,7 +105,7 @@ export function creditAmountChoices(current: HeldCreditAmount): HeldCreditAmount
 /** Where checkout returns: the mobile app's in-app browser instead of the web app. */
 export const BillingClientSchema = z.literal("mobile").optional();
 /** The deep link the API sends a mobile checkout back to; it closes the in-app browser. */
-export const MOBILE_BILLING_CALLBACK_URL = "rakazo://billing";
+export const MOBILE_BILLING_CALLBACK_URL = "robots://billing";
 
 export const BILLING_CANCELLATION_REASONS = [
   "too_expensive",

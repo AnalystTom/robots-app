@@ -1,5 +1,5 @@
-import type { PrismaClient } from "@rakazo/db";
-import { asSystem, createDb, runAsSystem, runAsTenant } from "@rakazo/db";
+import type { PrismaClient } from "@robots/db";
+import { asSystem, createDb, runAsSystem, runAsTenant } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { changeUserTimezone, createScheduleFromTool } from "./schedule-tools.js";
 
@@ -59,7 +59,7 @@ describePostgres("moving routines with the account timezone (PostgreSQL)", () =>
         data: {
           id,
           name: id,
-          email: `${id}@rakazo.test`,
+          email: `${id}@robots.test`,
           emailVerified: true,
           timezone: "Africa/Cairo",
         },

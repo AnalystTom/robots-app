@@ -1,6 +1,6 @@
-import type { TransactionalEmail, TransactionalEmailProvider } from "@rakazo/adapter-kit";
-import { EmailRecipientRejectedError } from "@rakazo/adapter-kit";
-import { retry } from "@rakazo/core";
+import type { TransactionalEmail, TransactionalEmailProvider } from "@robots/adapter-kit";
+import { EmailRecipientRejectedError } from "@robots/adapter-kit";
+import { retry } from "@robots/core";
 import type { NodemailerError, Transporter } from "nodemailer";
 import nodemailer from "nodemailer";
 

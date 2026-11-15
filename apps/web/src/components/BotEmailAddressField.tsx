@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { parseBotEmailName, suggestedEmailName } from "@rakazo/contracts";
-import { Button, Input } from "@rakazo/ui-web";
+import { parseBotEmailName, suggestedEmailName } from "@robots/contracts";
+import { Button, Input } from "@robots/ui-web";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";

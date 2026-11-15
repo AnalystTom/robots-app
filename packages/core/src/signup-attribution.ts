@@ -1,10 +1,10 @@
-import type { SignupAttribution as Attribution } from "@rakazo/contracts";
+import type { SignupAttribution as Attribution } from "@robots/contracts";
 import {
   SIGNUP_ATTRIBUTION_COOKIE,
   SIGNUP_SURFACE_HEADER,
   SignupAttribution,
   SignupSurface,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 
 export function signupAttributionFromCookie(cookie: string): Attribution {
   const encoded = cookie

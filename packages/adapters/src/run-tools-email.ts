@@ -3,9 +3,9 @@ import {
   BOT_EMAIL_NAME_TAKEN,
   BotEmailNameSchema,
   BotEmailRecipientSchema,
-} from "@rakazo/contracts";
-import { attachmentComputerPath, matchesSearchQuery, redactSecrets } from "@rakazo/core";
-import { claimBotEmailName, contentEncryptionOf, reserveBotEmailSend } from "@rakazo/db";
+} from "@robots/contracts";
+import { attachmentComputerPath, matchesSearchQuery, redactSecrets } from "@robots/core";
+import { claimBotEmailName, contentEncryptionOf, reserveBotEmailSend } from "@robots/db";
 import { z } from "zod";
 import { redactConnectorPayload } from "./connector-safety.js";
 import type { RunContext } from "./run-context.js";

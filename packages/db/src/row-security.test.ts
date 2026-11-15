@@ -4,16 +4,16 @@ import { rlsBypassKey, runAsSystem, runAsTenant, withRowLevelSecurity } from "./
 
 describe("rlsBypassKey", () => {
   it("follows the password pg logs in with", () => {
-    const key = rlsBypassKey("postgres://app:secret@db/rakazo");
+    const key = rlsBypassKey("postgres://app:secret@db/robots");
     expect(key).toMatch(/^[0-9a-f]{64}$/);
-    expect(rlsBypassKey("postgres://app@db/rakazo?password=secret")).toBe(key);
-    expect(rlsBypassKey("postgres://app:other@db/rakazo?password=secret")).toBe(key);
-    expect(rlsBypassKey("postgres://app:secret@db/rakazo?password=")).toBe(key);
-    expect(rlsBypassKey("postgres://app:s%cret@db/rakazo")).toMatch(/^[0-9a-f]{64}$/);
+    expect(rlsBypassKey("postgres://app@db/robots?password=secret")).toBe(key);
+    expect(rlsBypassKey("postgres://app:other@db/robots?password=secret")).toBe(key);
+    expect(rlsBypassKey("postgres://app:secret@db/robots?password=")).toBe(key);
+    expect(rlsBypassKey("postgres://app:s%cret@db/robots")).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("is empty without a password", () => {
-    expect(rlsBypassKey("postgres://app@db/rakazo")).toBe("");
+    expect(rlsBypassKey("postgres://app@db/robots")).toBe("");
     expect(rlsBypassKey("not a url")).toBe("");
   });
 });

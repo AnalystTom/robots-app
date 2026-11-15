@@ -6,8 +6,8 @@ import type {
   LoginFieldInput,
   MessageReaction,
   ThreadMessage,
-} from "@rakazo/contracts";
-import type { ChildBotBlock, FoldedTranscript } from "@rakazo/core";
+} from "@robots/contracts";
+import type { ChildBotBlock, FoldedTranscript } from "@robots/core";
 import {
   expandPeerReplies,
   groupVoiceChats,
@@ -21,9 +21,9 @@ import {
   timeSeparatorIds,
   unreadDividerMessageId,
   voiceChatHoldsMessage,
-} from "@rakazo/core";
-import type { GroupAvatarMember } from "@rakazo/ui-web";
-import { Button, cn, Spinner } from "@rakazo/ui-web";
+} from "@robots/core";
+import type { GroupAvatarMember } from "@robots/ui-web";
+import { Button, cn, Spinner } from "@robots/ui-web";
 import { ArrowDown } from "lucide-react";
 import type { CSSProperties, RefObject } from "react";
 import {

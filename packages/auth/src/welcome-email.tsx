@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
-import type { TransactionalEmail } from "@rakazo/adapter-kit";
-import { ANDROID_APP_STORE_URL, IOS_APP_STORE_URL } from "@rakazo/contracts";
+import type { TransactionalEmail } from "@robots/adapter-kit";
+import { ANDROID_APP_STORE_URL, IOS_APP_STORE_URL } from "@robots/contracts";
 import { Link, Text } from "react-email";
 import { emailText, greeting, linkStyle, message, withNodes } from "./email.js";
 
@@ -23,18 +23,18 @@ export function welcomeEmail(
   return message(
     user.email,
     locale,
-    say("Welcome to Rakazo"),
+    say("Welcome to RoBots"),
     <>
       <Text>{greeting(say, user.name)}</Text>
       <Text>
-        {say("Welcome to Rakazo. The people who get the most out of it do three things:")}
+        {say("Welcome to RoBots. The people who get the most out of it do three things:")}
       </Text>
       <Text style={stepStyle}>
         <strong>1. {say("Get the apps")}</strong>
       </Text>
       <Text style={{ marginTop: 0 }}>
         {withNodes(
-          say("Rakazo runs on {platforms}, so your bots can reach you wherever you are."),
+          say("RoBots runs on {platforms}, so your bots can reach you wherever you are."),
           {
             // The language's own list ("A, B, and C", "A, B y C"), with each app a link.
             platforms: new Intl.ListFormat(locale, { type: "conjunction" })
@@ -72,9 +72,9 @@ export function welcomeEmail(
         <strong>3. {say("Star us on GitHub")}</strong>
       </Text>
       <Text style={{ marginTop: 0 }}>
-        {withNodes(say("Rakazo is open source. {star} helps more people find it."), {
+        {withNodes(say("RoBots is open source. {star} helps more people find it."), {
           star: (
-            <Link href="https://github.com/elie222/rakazo" style={linkStyle}>
+            <Link href="https://github.com/AnalystTom/robots-app" style={linkStyle}>
               {say("A star on GitHub")}
             </Link>
           ),
@@ -84,6 +84,6 @@ export function welcomeEmail(
       <Text>Elie</Text>
     </>,
     unsubscribeUrl,
-    { src: "https://rakazo.com/email/welcome.jpg", alt: "Rakazo" },
+    { src: "https://rakazo.com/email/welcome.jpg", alt: "RoBots" },
   );
 }

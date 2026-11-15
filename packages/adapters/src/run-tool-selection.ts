@@ -2,8 +2,8 @@ import {
   disabledBuiltinToolSet,
   FLEET_TOOL_NAMES,
   FLEET_WRITE_TOOL_NAMES,
-} from "@rakazo/contracts";
-import { BACKGROUND_HELPER_TRIGGER, isBackgroundRunTrigger, isOwnerStartedRun } from "@rakazo/core";
+} from "@robots/contracts";
+import { BACKGROUND_HELPER_TRIGGER, isBackgroundRunTrigger, isOwnerStartedRun } from "@robots/core";
 import { builtinAgentTools } from "./builtin.tool-definition.js";
 import { selectCloudAgentTools } from "./cloud-agent-tools-select.js";
 import { selectMemoryTools } from "./memory-tools.js";

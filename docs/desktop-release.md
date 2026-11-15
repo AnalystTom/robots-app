@@ -68,7 +68,7 @@ merged pull requests.
 
 ## Apple silicon server bundle
 
-The macOS job also builds `rakazo-server-darwin-arm64-<version>.tar.xz` with
+The macOS job also builds `robots-server-darwin-arm64-<version>.tar.xz` with
 `scripts/build-server-bundle.mjs` and publishes it as an asset of the same
 release. It holds the API, worker, web server and migrations with their
 production dependencies, so This computer can run them without Docker. The app

@@ -1,4 +1,4 @@
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { describe, expect, it, vi } from "vitest";
 import { deleteUnreferencedMachine, recordUnreferencedMachine } from "./sandbox-cleanup.js";
 import { MachineRecords, settleMachineCleanup, untilAborted } from "./sandbox-test-support.js";

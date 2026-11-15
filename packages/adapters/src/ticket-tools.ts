@@ -1,12 +1,12 @@
-import type { TicketStatus } from "@rakazo/contracts";
+import type { TicketStatus } from "@robots/contracts";
 import {
   CommentTicketInput,
   CreateTicketInput,
   isTicketCompletedStatus,
   TicketStatusSchema,
   UpdateTicketInput,
-} from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
 import {
   allocateTicketNumber,
   ensureBoard,
@@ -14,7 +14,7 @@ import {
   listTicketComments,
   toTicketCommentDto,
   toTicketDto,
-} from "@rakazo/db";
+} from "@robots/db";
 import type { TicketChangeNotifier } from "./ticket-changes.js";
 import { sliceWellFormed } from "./utf8.js";
 

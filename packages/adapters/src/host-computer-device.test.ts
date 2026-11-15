@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { PrismaClient } from "@rakazo/db";
+import type { PrismaClient } from "@robots/db";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HOST_COMPUTER_DEVICE_ID, withHostComputerScreen } from "./host-computer-device.js";
 import { startHostComputerServer } from "./host-computer-server.js";
@@ -33,7 +33,7 @@ describe("this computer's screen on the desktop app's own server", () => {
   } as unknown as PrismaClient;
 
   beforeEach(async () => {
-    root = await mkdtemp(path.join(tmpdir(), "rakazo-host-device-"));
+    root = await mkdtemp(path.join(tmpdir(), "robots-host-device-"));
     server = await startHostComputerServer({ root, token, hostname: "127.0.0.1", screen });
     server.setEnabled(true);
     computerHost = "this-mac";

@@ -1,6 +1,6 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { AgentSkillCatalogEntry } from "@rakazo/contracts";
+import type { AgentSkillCatalogEntry } from "@robots/contracts";
 import {
   buildComposerMentionOptions,
   channelMessageSender,
@@ -14,7 +14,7 @@ import {
   otherAuthor,
   displayName as safeDisplayName,
   workingRoutineName,
-} from "@rakazo/core";
+} from "@robots/core";
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from "expo-router";
 import { useHeaderHeight } from "expo-router/react-navigation";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";

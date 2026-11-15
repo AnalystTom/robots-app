@@ -19,7 +19,7 @@
   "apps/mobile/lib/chat-model-picker.test.tsx": 1,
   "apps/mobile/lib/thread-feedback.test.tsx": 1,
   "apps/mobile/lib/vault-settings.test.tsx": 1,
-  "apps/mobile/modules/rakazo-notifications/android/src/main/java/com/rakazo/notifications/RakazoNotificationService.kt": 1,
+  "apps/mobile/modules/robots-notifications/android/src/main/java/com/robots/notifications/RobotsNotificationService.kt": 1,
   "apps/web/src/components/ModelCredits.tsx": 1,
   "apps/web/src/components/VaultSettings.test.tsx": 1,
   "apps/web/src/lib/call-session.test.ts": 1,

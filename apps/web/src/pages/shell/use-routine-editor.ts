@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
-import type { Bot, Routine, ThinkingLevel, ThreadSnapshot } from "@rakazo/contracts";
-import { isIdentityConfirmationRequired } from "@rakazo/contracts";
-import { cronFromPreset } from "@rakazo/core";
+import type { Bot, Routine, ThinkingLevel, ThreadSnapshot } from "@robots/contracts";
+import { isIdentityConfirmationRequired } from "@robots/contracts";
+import { cronFromPreset } from "@robots/core";
 import type { ComponentProps, Dispatch, RefObject, SetStateAction } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { REVEAL_MS } from "../../components/vault/VaultItemDetail";

@@ -1,5 +1,5 @@
-import type { PrismaClient } from "@rakazo/db";
-import { installAuditEventStore } from "@rakazo/db";
+import type { PrismaClient } from "@robots/db";
+import { installAuditEventStore } from "@robots/db";
 import { vi } from "vitest";
 
 /**

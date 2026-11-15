@@ -1,11 +1,11 @@
-import type { AgentRunRequest, AgentSteeringMessage } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
+import type { AgentRunRequest, AgentSteeringMessage } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
 import {
   ATTACHMENT_MAX_BYTES,
   isAttachmentImageMimeType,
   storedImageMimeType,
-} from "@rakazo/contracts";
-import { blocksToAgentHistoryText } from "@rakazo/core";
+} from "@robots/contracts";
+import { blocksToAgentHistoryText } from "@robots/core";
 import type { ExecutorDeps } from "./executor-deps.js";
 import { loadReplyContext } from "./reply-context.js";
 import {

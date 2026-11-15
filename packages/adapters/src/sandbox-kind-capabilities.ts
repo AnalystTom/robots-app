@@ -1,6 +1,6 @@
-import type { SandboxKindCapabilities } from "@rakazo/adapter-kit";
-import type { SandboxKind } from "@rakazo/contracts";
-import { DEFAULT_COMPUTER_SCREEN } from "@rakazo/core";
+import type { SandboxKindCapabilities } from "@robots/adapter-kit";
+import type { SandboxKind } from "@robots/contracts";
+import { DEFAULT_COMPUTER_SCREEN } from "@robots/core";
 import { appleContainerSandboxCapabilities } from "./apple-container-capabilities.js";
 import { boatSandboxCapabilities } from "./boat-capabilities.js";
 import { boxdSandboxCapabilities } from "./boxd-capabilities.js";

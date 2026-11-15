@@ -7,22 +7,22 @@ import {
   loadUserIncomingCalls,
   PushSessionEndedError,
   settleCallRequest,
-} from "@rakazo/adapters";
+} from "@robots/adapters";
 import type {
   ActionApprovalRule,
   Actor,
   Me,
   SettingsScope,
   SpaceChangeKind,
-} from "@rakazo/contracts";
-import { parseLabs } from "@rakazo/contracts";
+} from "@robots/contracts";
+import { parseLabs } from "@robots/contracts";
 import {
   abortableDelay,
   approvalModeFromPreference,
   approvalPreferenceFromMode,
   callRequestClientNonce,
-} from "@rakazo/core";
-import { urlSite } from "@rakazo/core/egress";
+} from "@robots/core";
+import { urlSite } from "@robots/core/egress";
 import {
   auditLogOrganization,
   commitBotUpdate,
@@ -45,8 +45,8 @@ import {
   selectVoicePreference,
   voicePreferenceTarget,
   withTransactionRetry,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { createAccessGrant, listAccessGrants, revokeAccessGrant } from "../access-grants.js";
 import { requireAdmin } from "../admins.js";
 import { aiConsentStatus, allowAiConsent } from "../ai-consent.js";

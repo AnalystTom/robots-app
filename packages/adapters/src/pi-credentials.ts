@@ -5,9 +5,9 @@ import type {
   CredentialStore,
   OAuthCredential,
 } from "@earendil-works/pi-ai";
-import type { AgentModelOAuthCredential, AgentRunRequest } from "@rakazo/adapter-kit";
-import { canonicalPiProviderId } from "@rakazo/contracts";
-import { withAbort } from "@rakazo/core";
+import type { AgentModelOAuthCredential, AgentRunRequest } from "@robots/adapter-kit";
+import { canonicalPiProviderId } from "@robots/contracts";
+import { withAbort } from "@robots/core";
 import type { RetireModelCredential } from "./pi-oauth.js";
 import {
   isRetiredModelCredentialError,
@@ -25,7 +25,7 @@ export function toOAuthCredential(value: AgentModelOAuthCredential): OAuthCreden
 
 /**
  * Request-scoped Pi store for one already-authorized provider. Pi's default
- * in-memory store cannot see Rakazo's encrypted database; refreshes are
+ * in-memory store cannot see RoBots's encrypted database; refreshes are
  * serialized here and published back for encryption.
  */
 export class PiRuntimeCredentialStore implements CredentialStore {

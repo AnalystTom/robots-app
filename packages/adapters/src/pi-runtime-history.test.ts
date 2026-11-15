@@ -1,4 +1,4 @@
-import type { AgentRunRequest } from "@rakazo/adapter-kit";
+import type { AgentRunRequest } from "@robots/adapter-kit";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const captured = vi.hoisted(() => ({
@@ -127,15 +127,15 @@ describe("Pi history replay", () => {
     expect(reply).toEqual({
       role: "assistant",
       content: [{ type: "text", text: "Hello" }],
-      api: "rakazo-history",
-      provider: "rakazo-history",
+      api: "robots-history",
+      provider: "robots-history",
       model: "history",
       usage: expect.objectContaining({ input: 0, output: 0, totalTokens: 0 }),
       stopReason: "stop",
       timestamp: Date.parse("2026-01-02T03:04:06.000Z"),
-      rakazoHistory: true,
-      rakazoMessageId: "m2",
-      rakazoCreatedAt: "2026-01-02T03:04:06.000Z",
+      robotsHistory: true,
+      robotsMessageId: "m2",
+      robotsCreatedAt: "2026-01-02T03:04:06.000Z",
     });
   });
 
@@ -414,7 +414,7 @@ describe("replaying an earlier reply's tool steps", () => {
     ]);
     expect(JSON.stringify(messages)).not.toContain("[tool calls this reply made]");
     for (const message of messages.slice(1)) {
-      expect(message).toMatchObject({ rakazoHistory: true, rakazoMessageId: "m2" });
+      expect(message).toMatchObject({ robotsHistory: true, robotsMessageId: "m2" });
       expect(isHistoryReply(message)).toBe(true);
     }
   });

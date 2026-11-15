@@ -3,13 +3,13 @@ import type {
   AdapterContext,
   BackgroundJobPayloads,
   CloudAgentSnapshot,
-} from "@rakazo/adapter-kit";
-import { CloudAgentRequestRejected, CloudAgentRetryLater } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
-import { cloudAgentHttpsUrl } from "@rakazo/core";
-import type { CloudAgent } from "@rakazo/db";
-import { appendEventInTransaction, Prisma, THREAD_LOCK_TRANSACTION_OPTIONS } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import { CloudAgentRequestRejected, CloudAgentRetryLater } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
+import { cloudAgentHttpsUrl } from "@robots/core";
+import type { CloudAgent } from "@robots/db";
+import { appendEventInTransaction, Prisma, THREAD_LOCK_TRANSACTION_OPTIONS } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { CloudAgentDeps } from "./cloud-agent-service.js";
 import { cloudAgentBlock, cloudAgentFor, enqueueCloudAgent } from "./cloud-agent-service.js";
 import { cloudAgentLaunchSchema, cloudAgentPromptSchema } from "./cloud-agent-tools.js";

@@ -1,4 +1,4 @@
-import type { MessagingInboundMessage } from "@rakazo/adapter-kit";
+import type { MessagingInboundMessage } from "@robots/adapter-kit";
 import { describe, expect, it, vi } from "vitest";
 import { prefersTeamChatSurface, settleWithTimeout } from "./team-chat-startup.js";
 

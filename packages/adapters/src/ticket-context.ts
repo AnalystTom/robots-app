@@ -1,7 +1,7 @@
-import { parseTicketRef } from "@rakazo/contracts";
-import { escapePromptData } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { coerceTicketStatus } from "@rakazo/db";
+import { parseTicketRef } from "@robots/contracts";
+import { escapePromptData } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { coerceTicketStatus } from "@robots/db";
 import { byteLength, truncateUtf8 } from "./utf8.js";
 
 const MAX_TICKET_CONTEXT_BYTES = 4 * 1024;

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { BackgroundJob } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
+import type { BackgroundJob } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
 import {
   appendEvent,
   asSystem,
@@ -9,7 +9,7 @@ import {
   createRepos,
   provisionMessagingIdentity,
   runAsSystem,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createRunExecutor } from "./executor.js";
 
@@ -42,7 +42,7 @@ describePostgres("a deactivated account's work (PostgreSQL)", () => {
     const { userId, spaceId, botId, threadId } = await runAsSystem("deactivation fixture", () =>
       provisionMessagingIdentity(
         db.prisma,
-        { provider: "email", address: `deactivation-${randomUUID()}@rakazo.test` },
+        { provider: "email", address: `deactivation-${randomUUID()}@robots.test` },
         { signupsEnabled: undefined, signupAllowlist: undefined },
       ),
     );

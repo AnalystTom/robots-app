@@ -1,6 +1,6 @@
-import type { DurableMemoryScope, SecretStore, SemanticMemoryProvider } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+import type { DurableMemoryScope, SecretStore, SemanticMemoryProvider } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import {
   createHindsightProvider,
   HINDSIGHT_PROVIDER_ID,

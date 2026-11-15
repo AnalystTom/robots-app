@@ -1,5 +1,5 @@
-import type { ActionApprovalRule as StoredActionApprovalRule } from "@rakazo/contracts";
-import { BUILTIN_TOOL_NAMES } from "@rakazo/contracts";
+import type { ActionApprovalRule as StoredActionApprovalRule } from "@robots/contracts";
+import { BUILTIN_TOOL_NAMES } from "@robots/contracts";
 
 export { isSecretAskBlock } from "./ask-kind.js";
 

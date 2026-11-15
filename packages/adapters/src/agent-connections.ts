@@ -1,13 +1,13 @@
-import type { JobPublisher } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
+import type { JobPublisher } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
 import {
   botMessageHopExhausted,
   buildBotMessageWakePrompt,
   clampBotMessage,
   nextBotMessageHop,
   sanitizeMessagingLabel,
-} from "@rakazo/core";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
 import {
   appendEventInTransaction,
   createThreadMessageInTransaction,
@@ -15,7 +15,7 @@ import {
   isUniqueViolation,
   runAsSystem,
   THREAD_LOCK_TRANSACTION_OPTIONS,
-} from "@rakazo/db";
+} from "@robots/db";
 import { currentBotMessageHop } from "./bot-messages.js";
 import type { ExecutorDeps } from "./executor-deps.js";
 import type { MessagingDelivery } from "./messaging-delivery.js";

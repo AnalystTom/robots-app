@@ -5,17 +5,17 @@ import type {
   VaultCsv,
   VaultKind,
   VaultRevealed,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   isIdentityConfirmationRequired,
   parseVaultCsv,
   VAULT_IMPORT_FILE_LIMIT,
   VAULT_KINDS,
   vaultKind,
-} from "@rakazo/contracts";
-import { vaultBotsChoosable } from "@rakazo/core";
-import { fetchFresh, writeSaved } from "@rakazo/core/query";
-import { vaultBotsNote, vaultSaveNotice } from "@rakazo/i18n/vault";
+} from "@robots/contracts";
+import { vaultBotsChoosable } from "@robots/core";
+import { fetchFresh, writeSaved } from "@robots/core/query";
+import { vaultBotsNote, vaultSaveNotice } from "@robots/i18n/vault";
 import {
   Button,
   DropdownMenu,
@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   ListSearchInput,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, FileUp, Plus } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";

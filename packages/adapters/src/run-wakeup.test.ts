@@ -1,8 +1,8 @@
-import type { BackgroundJobHandlers, JobPublisher } from "@rakazo/adapter-kit";
-import { runContinueJob } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { currentDbContext } from "@rakazo/db";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import type { BackgroundJobHandlers, JobPublisher } from "@robots/adapter-kit";
+import { runContinueJob } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { currentDbContext } from "@robots/db";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { InMemoryRealtimeFanout } from "./realtime.js";
 import { RunExecutionHost } from "./run-execution.js";

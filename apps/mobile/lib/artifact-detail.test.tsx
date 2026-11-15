@@ -59,7 +59,7 @@ vi.mock("react-native", () => {
     Alert: { alert: state.alert },
   };
 });
-vi.mock("@rakazo/chat-ui/native", () => ({ ChatMarkdown: () => null }));
+vi.mock("@robots/chat-ui/native", () => ({ ChatMarkdown: () => null }));
 vi.mock("../components/native-symbol", () => ({ NativeSymbol: () => null }));
 vi.mock("../components/pdf-preview", () => ({ PdfPreview: () => null }));
 vi.mock("../components/sandboxed-html-preview", () => ({ SandboxedHtmlPreview: () => null }));

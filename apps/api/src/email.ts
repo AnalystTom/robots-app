@@ -1,5 +1,5 @@
-import type { TransactionalEmailProvider } from "@rakazo/adapter-kit";
-import { configuredEmailProvider as providerFor } from "@rakazo/adapters";
+import type { TransactionalEmailProvider } from "@robots/adapter-kit";
+import { configuredEmailProvider as providerFor } from "@robots/adapters";
 import type { AppEnv } from "./env.js";
 
 export function configuredEmailProvider(

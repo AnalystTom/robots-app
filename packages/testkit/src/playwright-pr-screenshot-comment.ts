@@ -1,7 +1,7 @@
 import type { PlaywrightScreenshot } from "./playwright-report-dashboard.js";
 import commitMarker from "./screenshot-commit-marker.json" with { type: "json" };
 
-export const PLAYWRIGHT_PR_SCREENSHOT_COMMENT_MARKER = "<!-- rakazo-playwright-screenshots -->";
+export const PLAYWRIGHT_PR_SCREENSHOT_COMMENT_MARKER = "<!-- robots-playwright-screenshots -->";
 export const PLAYWRIGHT_PR_FEATURE_FRAME_LIMIT = 8;
 
 export type PlaywrightPrCommentScreenshot = Pick<

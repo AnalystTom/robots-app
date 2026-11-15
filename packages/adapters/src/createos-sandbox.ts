@@ -16,13 +16,13 @@ import type {
   ScreenSession,
   UnreferencedMachine,
   UnreferencedMachineRecords,
-} from "@rakazo/adapter-kit";
-import { boundedSandboxCommandTimeoutMs, cancelResponseBody } from "@rakazo/core";
+} from "@robots/adapter-kit";
+import { boundedSandboxCommandTimeoutMs, cancelResponseBody } from "@robots/core";
 import {
   browserProfilePathForScreen,
   DEFAULT_DESKTOP_ENV,
   quiesceBrowserProfilesCommand,
-} from "@rakazo/core/node/desktop-runtime";
+} from "@robots/core/node/desktop-runtime";
 import { computerIdleSleepEnabled, sandboxIdleMs } from "./computer-idle.js";
 import { screenSessionKey } from "./computer-screens.js";
 import {
@@ -43,7 +43,7 @@ import { shellExportScript } from "./sandbox-shell-environment.js";
 import { readBodyCapped } from "./web-ssrf.js";
 import { shouldSkipPortableWorkspaceFile } from "./workspace-save-policy.js";
 
-const CREATEOS_WORKSPACE = "/home/desktop/rakazo-home";
+const CREATEOS_WORKSPACE = "/home/desktop/robots-home";
 const CREATEOS_BROWSER_PROFILES = `${CREATEOS_WORKSPACE}/.browser-profiles`;
 const CREATEOS_FIREFOX_PROFILE = `${CREATEOS_BROWSER_PROFILES}/firefox`;
 
@@ -61,8 +61,8 @@ function createosChromiumProfile(screenId: string) {
   return browserProfilePathForScreen(screenId, createosDesktopEnv());
 }
 const CREATEOS_DRAINING_SCREEN = "draining:";
-const CREATEOS_SCREEN_MAP_PATH = `${CREATEOS_WORKSPACE}/.rakazo/screens.json`;
-export const CREATEOS_SCREEN_MAP_SENTINEL = "RAKAZO_SCREEN_MAP_V1";
+const CREATEOS_SCREEN_MAP_PATH = `${CREATEOS_WORKSPACE}/.robots/screens.json`;
+export const CREATEOS_SCREEN_MAP_SENTINEL = "ROBOTS_SCREEN_MAP_V1";
 const CREATEOS_SCREEN_MAP_NEED_CREATE = "NEED_CREATE";
 const DEFAULT_CREATEOS_BASE_URL = "https://api.sb.createos.sh";
 const CREATEOS_INGRESS_ZONE = "sb.createos.sh";
@@ -1208,7 +1208,7 @@ print(json.dumps(out))
         `--user-data-dir=${profileQuoted}`,
         "--new-tab",
         shellQuote(uri),
-        ">/tmp/rakazo-chrome.log 2>&1 </dev/null &",
+        ">/tmp/robots-chrome.log 2>&1 </dev/null &",
       ].join(" "),
       "else",
       `python3 -c ${shellQuote(CHROME_STOP_PROFILE_SCRIPT)} ${profileQuoted}`,
@@ -1241,7 +1241,7 @@ print(json.dumps(out))
         "--remote-debugging-port=$debug_port",
         `--user-data-dir=${profileQuoted}`,
         shellQuote(uri),
-        ">/tmp/rakazo-chrome.log 2>&1 </dev/null &",
+        ">/tmp/robots-chrome.log 2>&1 </dev/null &",
       ].join(" "),
       "probe=0",
       'while [ "$probe" -lt 8 ]; do',
@@ -1805,7 +1805,7 @@ function isTransientCreateOSHttpStatus(status: number): boolean {
 }
 
 function shouldSkipCreateOSWorkspaceFile(relative: string, isDirectory = false): boolean {
-  if (relative === ".rakazo" || relative.startsWith(".rakazo/")) return true;
+  if (relative === ".robots" || relative.startsWith(".robots/")) return true;
   return shouldSkipPortableWorkspaceFile(relative, isDirectory);
 }
 

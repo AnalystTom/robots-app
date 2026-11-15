@@ -1,4 +1,4 @@
-import { BOT_COLORS } from "@rakazo/contracts";
+import { BOT_COLORS } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import { seededLogoAvatarColor } from "./logo-avatar-traits.js";
 

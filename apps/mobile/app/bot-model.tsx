@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import type { ChatModelChoice } from "@rakazo/core";
+import type { ChatModelChoice } from "@robots/core";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ModelPickerList } from "../components/model-picker-list";

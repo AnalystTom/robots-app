@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { ModelApiProtocol, ModelHeaderRow } from "@rakazo/contracts";
-import { toggleEnabledModelId } from "@rakazo/core";
+import type { ModelApiProtocol, ModelHeaderRow } from "@robots/contracts";
+import { toggleEnabledModelId } from "@robots/core";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { native, useThemedStyles } from "../lib/native";
@@ -111,7 +111,7 @@ export function CompatibleEndpointForm({
           {showEndpointHelp ? (
             <Text
               style={styles.hint}
-            >{t`Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed.`}</Text>
+            >{t`Paste the OpenAI-compatible address from your server. RoBots adds /v1 if needed.`}</Text>
           ) : null}
         </>
       ) : null}

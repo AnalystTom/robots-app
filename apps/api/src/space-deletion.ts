@@ -5,16 +5,16 @@ import type {
   JobPublisher,
   SandboxProvider,
   SecretStore,
-} from "@rakazo/adapter-kit";
-import type { MemoryProviderResolver } from "@rakazo/adapters";
+} from "@robots/adapter-kit";
+import type { MemoryProviderResolver } from "@robots/adapters";
 import {
   destroyBot,
   forgetPageShareSecrets,
   removeAgentHome,
   toComputerRef,
-} from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
 import {
   claimSpaceDeletionForMember,
   deleteClaimedSpaceForMember,
@@ -25,8 +25,8 @@ import {
   renewSpaceDeletionClaim,
   SPACE_DELETION_CLAIM_TIMEOUT_MS,
   SpaceDeletionInProgressError,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { rehomeItemsLeaving } from "./availability.js";
 
 /** Bound for one bot or sandbox teardown. Providers may ignore the abort signal,

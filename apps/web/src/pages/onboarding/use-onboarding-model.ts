@@ -7,8 +7,8 @@ import {
   modelRoutingInput,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   openAiCompatibleConnectReady,
-} from "@rakazo/contracts";
-import { connectionFormFields, pickCatalogModelId, popularModelProvidersFirst } from "@rakazo/core";
+} from "@robots/contracts";
+import { connectionFormFields, pickCatalogModelId, popularModelProvidersFirst } from "@robots/core";
 import { useMemo, useState } from "react";
 import { useCopyText } from "../../lib/copy-text";
 import { providerDisplayName } from "../../lib/localized-provider-hint";
@@ -17,8 +17,8 @@ import { rpc } from "../../lib/rpc";
 import { useModelOAuthSignIn } from "../../lib/use-model-oauth-signin";
 import { useModelConnectionForm } from "../model-settings/use-model-connection-form";
 
-/** Rakazo credits sit among the providers as the one choice that needs no account of its own. */
-const CREDITS_OPTION = "__rakazo_credits__";
+/** RoBots credits sit among the providers as the one choice that needs no account of its own. */
+const CREDITS_OPTION = "__robots_credits__";
 /** Select value for a hosted compatible service; the rest of the value is its base URL. */
 const ENDPOINT_PRESET_OPTION = "endpoint-preset:";
 /** A provider whose catalog entry offers both sign-in and a key appears once per way to connect. */
@@ -140,7 +140,7 @@ export function useOnboardingModel({
       return providerDisplayName(id, byId.get(id)?.providerName ?? id, auth);
     };
     const main = [
-      ...(billingEnabled ? [{ value: CREDITS_OPTION, label: t`Rakazo credits` }] : []),
+      ...(billingEnabled ? [{ value: CREDITS_OPTION, label: t`RoBots credits` }] : []),
       ...MAIN_PROVIDER_OPTIONS.filter((option) => byId.has(option.provider)).map((option) => ({
         value: providerOptionValue(option.provider, option.auth),
         label: optionLabel(option.provider, option.auth),

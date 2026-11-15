@@ -1,5 +1,5 @@
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
-import { toggleEnabledModelId } from "@rakazo/core";
+import { toggleEnabledModelId } from "@robots/core";
 import {
   Button,
   Checkbox,
@@ -9,7 +9,7 @@ import {
   ListSearchInput,
   NativeSelect,
   NativeSelectOption,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { ModelPreflightFeedback } from "../../components/ModelConnectionPreflightNotice";
 import { ModelHeadersEditor } from "../../components/ModelHeadersEditor";
 import { useListSearch } from "../../lib/use-list-search";
@@ -120,7 +120,7 @@ export function CompatibleModelFields({
           summary={<Trans>Setup help</Trans>}
         >
           <p className="mt-1">
-            {t`Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed.`}
+            {t`Paste the OpenAI-compatible address from your server. RoBots adds /v1 if needed.`}
           </p>
         </Disclosure>
       ) : null}

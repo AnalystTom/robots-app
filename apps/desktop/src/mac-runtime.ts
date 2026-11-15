@@ -1,5 +1,5 @@
 // What This computer runs on an Apple silicon Mac without Docker, fetched only when it is chosen:
-// the Rakazo server bundle and, unless the person already runs one, the computer runtime. Every
+// the RoBots server bundle and, unless the person already runs one, the computer runtime. Every
 // download is pinned by size and SHA-256 and checked before it is unpacked.
 import { createHash, randomUUID } from "node:crypto";
 import { createWriteStream } from "node:fs";
@@ -228,7 +228,7 @@ export interface ServerManifest {
   entrypoints: Record<"api" | "worker" | "web" | "migrate", string>;
 }
 
-/** Returns the unpacked `rakazo-server/` directory and its manifest. */
+/** Returns the unpacked `robots-server/` directory and its manifest. */
 export async function installServerBundle(
   deps: RuntimeDeps,
   bundle: ServerBundle,
@@ -240,7 +240,7 @@ export async function installServerBundle(
       () => undefined,
     ),
   );
-  const dir = path.join(root, "rakazo-server");
+  const dir = path.join(root, "robots-server");
   const manifest = JSON.parse(
     await readFile(path.join(dir, "manifest.json"), "utf8"),
   ) as ServerManifest;

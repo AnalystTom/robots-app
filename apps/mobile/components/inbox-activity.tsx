@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { RunActivityRow } from "@rakazo/contracts";
-import { activitySections } from "@rakazo/core";
+import type { RunActivityRow } from "@robots/contracts";
+import { activitySections } from "@robots/core";
 import type { Href } from "expo-router";
 import type { ReactElement, ReactNode } from "react";
 import { useMemo } from "react";

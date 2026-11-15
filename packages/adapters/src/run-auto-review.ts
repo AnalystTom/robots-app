@@ -1,5 +1,5 @@
-import type { AgentRuntimeEvent, AutoReviewProvider } from "@rakazo/adapter-kit";
-import { recordUsage } from "@rakazo/db";
+import type { AgentRuntimeEvent, AutoReviewProvider } from "@robots/adapter-kit";
+import { recordUsage } from "@robots/db";
 import type { AutoReviewChecker } from "./auto-review.js";
 import { autoReviewTimeoutMs, resolveAutoReviewProviderKind } from "./auto-review.js";
 import { createAutoReviewProvider } from "./auto-review-factory.js";

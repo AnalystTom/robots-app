@@ -6,9 +6,9 @@ import type {
   Space,
   SpaceMemoryConfig,
   UsageSummary,
-} from "@rakazo/contracts";
-import { parseLabs } from "@rakazo/contracts";
-import { writeSaved } from "@rakazo/core/query";
+} from "@robots/contracts";
+import { parseLabs } from "@robots/contracts";
+import { writeSaved } from "@robots/core/query";
 import { useQuery } from "@tanstack/react-query";
 import type { RefObject } from "react";
 import { useCallback } from "react";

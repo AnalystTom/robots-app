@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { MemoryDocument, ScratchpadItem } from "@rakazo/contracts";
-import { isEmptyBotMemory } from "@rakazo/contracts";
+import type { MemoryDocument, ScratchpadItem } from "@robots/contracts";
+import { isEmptyBotMemory } from "@robots/contracts";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";

@@ -1,8 +1,8 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { MessageBlock } from "@rakazo/contracts";
-import { appConnectedInput, waitForConnection } from "@rakazo/core";
-import { fontWeight, typeScale } from "@rakazo/ui-tokens";
+import type { MessageBlock } from "@robots/contracts";
+import { appConnectedInput, waitForConnection } from "@robots/core";
+import { fontWeight, typeScale } from "@robots/ui-tokens";
 import { useEffect, useRef, useState } from "react";
 import type { ViewProps } from "react-native";
 import { Linking, Text, View } from "react-native";

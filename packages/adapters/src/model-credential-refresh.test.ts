@@ -1,5 +1,5 @@
-import type { RealtimeFanout } from "@rakazo/adapter-kit";
-import type { Prisma, PrismaClient } from "@rakazo/db";
+import type { RealtimeFanout } from "@robots/adapter-kit";
+import type { Prisma, PrismaClient } from "@robots/db";
 import { describe, expect, it } from "vitest";
 import { updateStoredModelSecret } from "./model-credential-refresh.js";
 import { parseModelSecret, serializeModelSecret } from "./model-secret.js";

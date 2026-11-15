@@ -20,7 +20,7 @@ vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
 vi.mock("./api", () => ({
   authHeaders: vi.fn(async () => ({ authorization: "Bearer old-session" })),
-  currentApiBase: vi.fn(() => "https://rakazo.example.test"),
+  currentApiBase: vi.fn(() => "https://robots.example.test"),
   fetchMobileJson: vi.fn(),
 }));
 vi.mock("./api-server", () => ({
@@ -39,7 +39,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(fetchMobileJson).mockReset();
   vi.mocked(replaceSessionTokenIfCurrent).mockReset().mockResolvedValue(true);
-  vi.mocked(currentApiBase).mockReturnValue("https://rakazo.example.test");
+  vi.mocked(currentApiBase).mockReturnValue("https://robots.example.test");
   vi.mocked(currentSessionGeneration).mockReturnValue(1);
   vi.mocked(clearSpace).mockResolvedValue(true);
   vi.mocked(fetchMobileJson).mockResolvedValue({
@@ -54,17 +54,17 @@ beforeEach(() => {
   });
   vi.mocked(openAuthSessionAsync).mockResolvedValue({
     type: "success",
-    url: `rakazo://sign-in?cookie=${encodeURIComponent("better-auth.session_token=new-session; Path=/; HttpOnly")}`,
+    url: `robots://sign-in?cookie=${encodeURIComponent("better-auth.session_token=new-session; Path=/; HttpOnly")}`,
   });
 });
 afterEach(() => vi.restoreAllMocks());
 it("uses the Expo proxy, validates the session, and saves the existing session store", async () => {
   await expect(continueWithSso()).resolves.toBe(true);
   expect(vi.mocked(fetchMobileJson).mock.calls[0]?.[1]?.headers).toMatchObject({
-    "x-rakazo-signup-surface": "ios",
+    "x-robots-signup-surface": "ios",
   });
   const [url, callback] = vi.mocked(openAuthSessionAsync).mock.calls[0]!;
-  expect(callback).toBe("rakazo://sign-in");
+  expect(callback).toBe("robots://sign-in");
   expect(new URL(url).pathname).toBe("/api/auth/expo-authorization-proxy");
   expect(new URL(url).searchParams.get("oauthState")).toBe("encrypted-state");
   expect(replaceSessionTokenIfCurrent).toHaveBeenCalledWith(1, "new-session");
@@ -80,8 +80,8 @@ it.each([WebBrowserResultType.CANCEL, WebBrowserResultType.DISMISS])(
 );
 it.each([
   "https://attacker.example.test/?cookie=token",
-  "rakazo://sign-in?error=account_not_linked",
-  "rakazo://sign-in",
+  "robots://sign-in?error=account_not_linked",
+  "robots://sign-in",
 ])("rejects invalid callbacks", async (url) => {
   vi.mocked(openAuthSessionAsync).mockResolvedValue({ type: "success", url });
   await expect(continueWithSso()).rejects.toThrow();
@@ -90,7 +90,7 @@ it.each([
 it("says when the server refused a deactivated account", async () => {
   vi.mocked(openAuthSessionAsync).mockResolvedValue({
     type: "success",
-    url: "rakazo://sign-in?error=ACCOUNT_DEACTIVATED",
+    url: "robots://sign-in?error=ACCOUNT_DEACTIVATED",
   });
   await expect(continueWithSso()).rejects.toThrow("This account is deactivated");
   expect(replaceSessionTokenIfCurrent).not.toHaveBeenCalled();
@@ -102,7 +102,7 @@ it.each(["server", "session"])("drops results when the %s changes", async (chang
     else vi.mocked(currentSessionGeneration).mockReturnValue(2);
     return {
       type: "success",
-      url: `rakazo://sign-in?cookie=${encodeURIComponent("better-auth.session_token=new-session; Path=/; HttpOnly")}`,
+      url: `robots://sign-in?cookie=${encodeURIComponent("better-auth.session_token=new-session; Path=/; HttpOnly")}`,
     };
   });
   await expect(continueWithSso()).rejects.toThrow();
@@ -121,7 +121,7 @@ it("requires reauthentication to return the same account", async () => {
     .mockResolvedValueOnce({ response: Response.json({}), body: { user: { id: "other-user" } } });
   vi.mocked(openAuthSessionAsync).mockResolvedValue({
     type: "success",
-    url: `rakazo://account?cookie=${encodeURIComponent("better-auth.session_token=new-session; Path=/; HttpOnly")}`,
+    url: `robots://account?cookie=${encodeURIComponent("better-auth.session_token=new-session; Path=/; HttpOnly")}`,
   });
   await expect(continueWithSso("reauthenticate")).rejects.toThrow();
   expect(authHeaders).toHaveBeenCalled();
@@ -138,7 +138,7 @@ it("keeps unsent messages when reauthentication returns the same account", async
     .mockResolvedValueOnce({ response: Response.json({}), body: { user: { id: "user-1" } } });
   vi.mocked(openAuthSessionAsync).mockResolvedValue({
     type: "success",
-    url: `rakazo://account?cookie=${encodeURIComponent("better-auth.session_token=new-session; Path=/; HttpOnly")}`,
+    url: `robots://account?cookie=${encodeURIComponent("better-auth.session_token=new-session; Path=/; HttpOnly")}`,
   });
   await expect(continueWithSso("reauthenticate")).resolves.toBe(true);
   // Like a password change: the queue and its cache namespace move to the new token.
@@ -157,7 +157,7 @@ it("moves unsent messages from the token the reauthentication request carried", 
     .mockResolvedValueOnce({ response: Response.json({}), body: { user: { id: "user-1" } } });
   vi.mocked(openAuthSessionAsync).mockResolvedValue({
     type: "success",
-    url: `rakazo://account?cookie=${encodeURIComponent("better-auth.session_token=new-session; Path=/; HttpOnly")}`,
+    url: `robots://account?cookie=${encodeURIComponent("better-auth.session_token=new-session; Path=/; HttpOnly")}`,
   });
   // A second read of the session store fails and reads as no session.
   vi.mocked(loadSessionToken).mockResolvedValueOnce("");
@@ -165,7 +165,7 @@ it("moves unsent messages from the token the reauthentication request carried", 
   expect(rotateSessionTokenIfCurrent).toHaveBeenCalledWith(1, "old-session", "new-session");
 });
 it("starts authenticated linking without replacing the session", async () => {
-  vi.mocked(openAuthSessionAsync).mockResolvedValue({ type: "success", url: "rakazo://account" });
+  vi.mocked(openAuthSessionAsync).mockResolvedValue({ type: "success", url: "robots://account" });
   await expect(continueWithSso("link")).resolves.toBe(true);
   expect(vi.mocked(fetchMobileJson).mock.calls[0]?.[0]).toContain("/link-social");
   expect(vi.mocked(fetchMobileJson).mock.calls[0]?.[1]?.headers).toMatchObject({

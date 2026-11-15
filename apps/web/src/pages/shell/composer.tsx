@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { AgentSkillCatalogEntry, ThreadMessage } from "@rakazo/contracts";
-import type { ComposerMention, ComposerMentionRange, SlashActionId } from "@rakazo/core";
+import type { AgentSkillCatalogEntry, ThreadMessage } from "@robots/contracts";
+import type { ComposerMention, ComposerMentionRange, SlashActionId } from "@robots/core";
 import {
   composerMentionQuery,
   composerMentionsForPrompt,
@@ -12,8 +12,8 @@ import {
   resolveMentionPickerKey,
   serializeComposerPrompt,
   updateComposerMentionBindings,
-} from "@rakazo/core";
-import { Button } from "@rakazo/ui-web";
+} from "@robots/core";
+import { Button } from "@robots/ui-web";
 import { Box, Plus } from "lucide-react";
 import type { ClipboardEvent, ComponentProps, RefObject } from "react";
 import {

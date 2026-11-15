@@ -1,4 +1,4 @@
-import { newClientId } from "@rakazo/core";
+import { newClientId } from "@robots/core";
 import Constants from "expo-constants";
 import { requireOptionalNativeModule } from "expo-modules-core";
 import * as Notifications from "expo-notifications";
@@ -47,7 +47,7 @@ export async function registerPushToken() {
       token,
       ...(Platform.OS === "android" &&
       nativeSession &&
-      requireOptionalNativeModule<{ supportsSenderAvatars?: boolean }>("RakazoNotifications")
+      requireOptionalNativeModule<{ supportsSenderAvatars?: boolean }>("RobotsNotifications")
         ?.supportsSenderAvatars
         ? { presentation: "android_sender" as const }
         : {}),
@@ -69,10 +69,10 @@ let registeredKey: string | undefined;
 let deviceIdPromise: Promise<string> | undefined;
 async function installationId() {
   deviceIdPromise ??= (async () => {
-    const stored = await SecureStore.getItemAsync("rakazo.call-device");
+    const stored = await SecureStore.getItemAsync("robots.call-device");
     if (stored) return stored;
     const id = newClientId();
-    await SecureStore.setItemAsync("rakazo.call-device", id);
+    await SecureStore.setItemAsync("robots.call-device", id);
     return id;
   })();
   const pending = deviceIdPromise;
@@ -85,7 +85,7 @@ async function installationId() {
 }
 /** Builds without native call handling keep the account's ordinary push for incoming calls. */
 const nativeCalls = Boolean(
-  requireOptionalNativeModule<{ incomingState?: unknown }>("RakazoNotifications")?.incomingState,
+  requireOptionalNativeModule<{ incomingState?: unknown }>("RobotsNotifications")?.incomingState,
 );
 
 export async function registerCallPushToken(tokens: { expoToken?: string; voipToken?: string }) {

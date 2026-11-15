@@ -7,8 +7,8 @@ import type {
   ModelCatalogEntry,
   ReplyMode,
   ThinkingLevel,
-} from "@rakazo/contracts";
-import { BOT_NAME_MAX_LENGTH, isBuiltinToolName, resolveBotAvatarSet } from "@rakazo/contracts";
+} from "@robots/contracts";
+import { BOT_NAME_MAX_LENGTH, isBuiltinToolName, resolveBotAvatarSet } from "@robots/contracts";
 import {
   chatModelChoices,
   connectedModelChoices,
@@ -17,8 +17,8 @@ import {
   modelThinkingLevels,
   parseModelOptionKey,
   resolveSelectableModelId,
-} from "@rakazo/core";
-import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger } from "@rakazo/ui-web";
+} from "@robots/core";
+import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger } from "@robots/ui-web";
 import { useQuery } from "@tanstack/react-query";
 import { Mail } from "lucide-react";
 import type { ReactNode } from "react";

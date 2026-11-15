@@ -1,4 +1,4 @@
-import type { AgentRunRequest } from "@rakazo/adapter-kit";
+import type { AgentRunRequest } from "@robots/adapter-kit";
 import { expect, it, vi } from "vitest";
 import type { ExecutorDeps } from "./executor-deps.js";
 import type * as ModelSelection from "./model-selection.js";

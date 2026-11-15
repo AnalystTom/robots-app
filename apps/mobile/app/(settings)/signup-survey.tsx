@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { SignupSurvey as SignupSurveyAnswers } from "@rakazo/contracts";
-import { signupSurveyAsksTeamSize } from "@rakazo/contracts";
+import type { SignupSurvey as SignupSurveyAnswers } from "@robots/contracts";
+import { signupSurveyAsksTeamSize } from "@robots/contracts";
 import { useContext, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -68,7 +68,7 @@ export default function SignupSurvey() {
         <SettingsGroup>
           <ChoiceRow
             choices={uses}
-            label={t`How will you use Rakazo?`}
+            label={t`How will you use RoBots?`}
             onChange={setUse}
             value={use}
           />
@@ -90,9 +90,9 @@ export default function SignupSurvey() {
             value={source}
           />
         </SettingsGroup>
-        <SettingsGroup label={t`What do you most want Rakazo to help with?`}>
+        <SettingsGroup label={t`What do you most want RoBots to help with?`}>
           <TextInput
-            accessibilityLabel={t`What do you most want Rakazo to help with?`}
+            accessibilityLabel={t`What do you most want RoBots to help with?`}
             maxLength={2000}
             multiline
             onChangeText={setReason}

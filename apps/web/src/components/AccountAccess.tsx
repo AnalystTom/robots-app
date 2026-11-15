@@ -1,7 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { AccountSecurity, SignInProvider } from "@rakazo/contracts";
-import { identityConfirmationProviders } from "@rakazo/contracts";
-import { Button, Input, Label } from "@rakazo/ui-web";
+import type { AccountSecurity, SignInProvider } from "@robots/contracts";
+import { identityConfirmationProviders } from "@robots/contracts";
+import { Button, Input, Label } from "@robots/ui-web";
 import { useEffect, useState } from "react";
 import { fetchAccountSecurity, requestAccountDeletionCode } from "../lib/account-security";
 import { authClient } from "../lib/auth";

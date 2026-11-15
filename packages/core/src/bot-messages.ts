@@ -1,4 +1,4 @@
-import type { BotMessageIntent, MessageBlock } from "@rakazo/contracts";
+import type { BotMessageIntent, MessageBlock } from "@robots/contracts";
 import { truncatePlainText } from "./markdown-plain.js";
 
 export const BOT_MESSAGE_MAX_LENGTH = 8_000;

@@ -1,12 +1,12 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { BOT_COLOR_LIST, signInProviders } from "@rakazo/contracts";
+import { BOT_COLOR_LIST, signInProviders } from "@robots/contracts";
 import {
   credentialIssue,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
   signupRequiresEmailVerification,
   suggestEmailCorrection,
-} from "@rakazo/core";
+} from "@robots/core";
 import {
   Button,
   Input,
@@ -15,7 +15,7 @@ import {
   InputOTPSlot,
   Label,
   LogoAvatar,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { ChevronLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -89,7 +89,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
     ) : presented && mode === "in" ? (
       <Trans>Welcome back</Trans>
     ) : mode === "in" ? (
-      <Trans>Sign in to Rakazo</Trans>
+      <Trans>Sign in to RoBots</Trans>
     ) : mode === "up" ? (
       <Trans>Create your account</Trans>
     ) : (
@@ -638,7 +638,7 @@ export function AuthFrame({
   return (
     <div
       className="flex min-h-full flex-col bg-background text-foreground"
-      data-rakazo-surface="auth"
+      data-robots-surface="auth"
     >
       <div className="app-drag flex items-center gap-2 px-5 py-[18px]">
         <WindowChrome />

@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
-import type { Routine } from "@rakazo/contracts";
+import type { Routine } from "@robots/contracts";
 import { captureScreenshot, completeOnboarding, rpc, signup } from "./helpers";
 
 test("a bot template previews what it adds, then creates a bot with a paused routine", async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await signup(page, `templates-${Date.now()}@rakazo.test`, "password12", "Template Test");
+  await signup(page, `templates-${Date.now()}@robots.test`, "password12", "Template Test");
   await completeOnboarding(page);
 
   await page.getByRole("button", { name: "Connect apps", exact: true }).click();

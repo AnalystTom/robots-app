@@ -1,4 +1,4 @@
-import type { CreateBotInput } from "@rakazo/contracts";
+import type { CreateBotInput } from "@robots/contracts";
 import type { Href } from "expo-router";
 import { captureApiRequestContext, rpc, selectedSpaceId, spaceSelectionSeq } from "./api";
 import { allowFocusPrompt, scheduleFocusPrompt } from "./focus-prompt";

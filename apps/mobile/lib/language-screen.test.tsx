@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { APP_LOCALE_LABELS } from "@rakazo/core";
+import { APP_LOCALE_LABELS } from "@robots/core";
 import { setItemAsync } from "expo-secure-store";
 import type { ReactNode } from "react";
 import { act } from "react";
@@ -19,13 +19,13 @@ vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
 const scope = vi.hoisted(() => ({ spaceId: "space-1" }));
 vi.mock("./api", () => ({
-  currentApiBase: () => "https://rakazo.test",
+  currentApiBase: () => "https://robots.test",
   rpc: vi.fn(async () => ({})),
   selectedSpaceId: () => scope.spaceId,
   captureApiRequestContext: async (spaceId: string | null = scope.spaceId) => ({
-    apiBase: "https://rakazo.test",
+    apiBase: "https://robots.test",
     sessionGeneration: 1,
-    headers: spaceId ? { "x-rakazo-space-id": spaceId } : {},
+    headers: spaceId ? { "x-robots-space-id": spaceId } : {},
   }),
 }));
 vi.mock("./session", () => ({
@@ -76,9 +76,9 @@ vi.mock("react-native", () => {
 /** What every write carries: the server, session and space its save was started in. */
 const pinned = {
   requestContext: {
-    apiBase: "https://rakazo.test",
+    apiBase: "https://robots.test",
     sessionGeneration: 1,
-    headers: { "x-rakazo-space-id": "space-1" },
+    headers: { "x-robots-space-id": "space-1" },
   },
 };
 let container: HTMLDivElement;
@@ -148,7 +148,7 @@ it.each(["ru", "de", "zh-TW"] as const)(
       await vi.mocked(i18n.setUiLocale).mock.results[0]!.value;
     });
     expect(i18n.getActiveUiLocale()).toBe(locale);
-    expect(resumeLiveNotifications).toHaveBeenCalledWith("https://rakazo.test", "token", "space-1");
+    expect(resumeLiveNotifications).toHaveBeenCalledWith("https://robots.test", "token", "space-1");
     expect(rpc).toHaveBeenCalledExactlyOnceWith("preferences/update", { locale }, pinned);
     expectSelected(APP_LOCALE_LABELS[locale]);
     expect(row("English").getAttribute("aria-pressed")).toBe("false");

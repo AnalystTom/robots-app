@@ -1,6 +1,6 @@
 import type { Route } from "@playwright/test";
 import { expect, test } from "@playwright/test";
-import type { BillingStatus, PlanLimits } from "@rakazo/contracts";
+import type { BillingStatus, PlanLimits } from "@robots/contracts";
 import { captureScreenshot, completeOnboarding, openUserSettings, signup } from "./helpers";
 
 const hours = (count: number) => new Date(Date.now() + count * 3_600_000).toISOString();
@@ -78,7 +78,7 @@ test("account menu shows the usage hint and Usage shows allowances and credits o
   await page.route("**/rpc/usage/limits", (route) => route.fulfill({ json: { json: plans } }));
   await page.route("**/rpc/usage/summary", (route) => route.fulfill({ json: { json: summary } }));
   const stamp = Date.now();
-  await signup(page, `usage-limits-${stamp}@rakazo.test`, "password12", "Usage limits");
+  await signup(page, `usage-limits-${stamp}@robots.test`, "password12", "Usage limits");
   await completeOnboarding(page);
 
   await page.getByTestId("user-menu-trigger").click();

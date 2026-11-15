@@ -51,7 +51,7 @@ vi.mock("./api", () => ({
   captureApiRequestContext: async (spaceId: string | null = state.selectedSpace) => ({
     apiBase: "https://app.example.test",
     sessionGeneration: 1,
-    headers: spaceId ? { "x-rakazo-space-id": spaceId } : {},
+    headers: spaceId ? { "x-robots-space-id": spaceId } : {},
   }),
 }));
 vi.mock("./session", () => ({ currentSessionGeneration: () => 1 }));
@@ -203,7 +203,7 @@ const pinnedTo = (spaceId: string) => ({
   requestContext: {
     apiBase: "https://app.example.test",
     sessionGeneration: 1,
-    headers: { "x-rakazo-space-id": spaceId },
+    headers: { "x-robots-space-id": spaceId },
   },
 });
 

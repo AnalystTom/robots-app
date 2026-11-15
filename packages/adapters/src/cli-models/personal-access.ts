@@ -1,6 +1,6 @@
-import { MESSAGING_EMAIL_SUFFIX } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { runAsSystem } from "@rakazo/db";
+import { MESSAGING_EMAIL_SUFFIX } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { runAsSystem } from "@robots/db";
 import { modelCreditBillingEnabled } from "../run-model.js";
 
 export type PersonalCliAccessCheck = () => Promise<string | undefined>;

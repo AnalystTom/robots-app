@@ -2,10 +2,10 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rakazo-default-deny
+  name: robots-default-deny
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   podSelector: {}
   policyTypes:
@@ -15,10 +15,10 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rakazo-computers
+  name: robots-computers
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo-sandboxes
+    robots.example/phase: foundation
+  namespace: robots-sandboxes
 spec:
   podSelector: {}
   policyTypes:
@@ -28,22 +28,22 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: rakazo
+              kubernetes.io/metadata.name: robots
           podSelector:
             matchLabels:
-              app: rakazo-api
+              app: robots-api
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: rakazo
+              kubernetes.io/metadata.name: robots
           podSelector:
             matchLabels:
-              app: rakazo-worker
+              app: robots-worker
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: rakazo
+              kubernetes.io/metadata.name: robots
           podSelector:
             matchLabels:
-              app: rakazo-web
+              app: robots-web
       ports:
         - port: 6080
           protocol: TCP
@@ -89,14 +89,14 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rakazo-postgres
+  name: robots-postgres
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   podSelector:
     matchLabels:
-      app: rakazo-postgres
+      app: robots-postgres
   policyTypes:
     - Ingress
     - Egress
@@ -104,16 +104,16 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app: rakazo-api
+              app: robots-api
         - podSelector:
             matchLabels:
-              app: rakazo-worker
+              app: robots-worker
         - podSelector:
             matchLabels:
-              app: rakazo-migrate
+              app: robots-migrate
         - podSelector:
             matchLabels:
-              app: rakazo-bootstrap
+              app: robots-bootstrap
       ports:
         - port: 5432
   egress: []
@@ -121,14 +121,14 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rakazo-web
+  name: robots-web
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   podSelector:
     matchLabels:
-      app: rakazo-web
+      app: robots-web
   policyTypes:
     - Ingress
     - Egress
@@ -158,13 +158,13 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app: rakazo-api
+              app: robots-api
       ports:
         - port: 3100
     - to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: rakazo-sandboxes
+              kubernetes.io/metadata.name: robots-sandboxes
       ports:
         - port: 6080
           protocol: TCP
@@ -175,14 +175,14 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rakazo-api
+  name: robots-api
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   podSelector:
     matchLabels:
-      app: rakazo-api
+      app: robots-api
   policyTypes:
     - Ingress
     - Egress
@@ -190,10 +190,10 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app: rakazo-web
+              app: robots-web
         - podSelector:
             matchLabels:
-              app: rakazo-worker
+              app: robots-worker
       ports:
         - port: 3100
   egress:
@@ -212,19 +212,19 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app: rakazo-postgres
+              app: robots-postgres
       ports:
         - port: 5432
     - to:
         - podSelector:
             matchLabels:
-              app: rakazo-api
+              app: robots-api
       ports:
         - port: 3100
     - to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: rakazo-sandboxes
+              kubernetes.io/metadata.name: robots-sandboxes
       ports:
         - port: 6080
           protocol: TCP
@@ -260,14 +260,14 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rakazo-worker
+  name: robots-worker
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   podSelector:
     matchLabels:
-      app: rakazo-worker
+      app: robots-worker
   policyTypes:
     - Ingress
     - Egress
@@ -288,19 +288,19 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app: rakazo-postgres
+              app: robots-postgres
       ports:
         - port: 5432
     - to:
         - podSelector:
             matchLabels:
-              app: rakazo-api
+              app: robots-api
       ports:
         - port: 3100
     - to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: rakazo-sandboxes
+              kubernetes.io/metadata.name: robots-sandboxes
       ports:
         - port: 6080
           protocol: TCP
@@ -336,14 +336,14 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rakazo-migrate
+  name: robots-migrate
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   podSelector:
     matchLabels:
-      app: rakazo-migrate
+      app: robots-migrate
   policyTypes:
     - Ingress
     - Egress
@@ -364,21 +364,21 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app: rakazo-postgres
+              app: robots-postgres
       ports:
         - port: 5432
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: rakazo-bootstrap
+  name: robots-bootstrap
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   podSelector:
     matchLabels:
-      app: rakazo-bootstrap
+      app: robots-bootstrap
   policyTypes:
     - Ingress
     - Egress
@@ -399,6 +399,6 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app: rakazo-postgres
+              app: robots-postgres
       ports:
         - port: 5432

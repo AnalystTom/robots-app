@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
-import type { LabFeature } from "@rakazo/contracts";
-import { withLab } from "@rakazo/contracts";
-import { Label, Switch } from "@rakazo/ui-web";
+import type { LabFeature } from "@robots/contracts";
+import { withLab } from "@robots/contracts";
+import { Label, Switch } from "@robots/ui-web";
 import { useId, useState } from "react";
 import { SettingsGroup, SettingsRow } from "../components/SettingsRows";
 

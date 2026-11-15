@@ -4,8 +4,8 @@ import type {
   CommandRequest,
   ComputerRef,
   ProcessEvent,
-} from "@rakazo/adapter-kit";
-import { computerObservation, FakeSandboxProvider } from "@rakazo/adapters";
+} from "@robots/adapter-kit";
+import { computerObservation, FakeSandboxProvider } from "@robots/adapters";
 import type { ComputerScript } from "./scripted-shell.js";
 import { scriptedShell } from "./scripted-shell.js";
 
@@ -26,7 +26,7 @@ export class EvalSandboxProvider extends FakeSandboxProvider {
     request: CommandRequest,
     context: AdapterContext,
   ): AsyncIterable<ProcessEvent> {
-    if (request.argv[3] === "rakazo-background-launch") {
+    if (request.argv[3] === "robots-background-launch") {
       const command = request.argv.at(-1) ?? "";
       const result = this.script && scriptedShell(this.script, command);
       if (result) {

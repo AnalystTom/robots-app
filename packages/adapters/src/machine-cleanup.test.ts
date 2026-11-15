@@ -2,10 +2,10 @@ import type {
   BackgroundJobHandlers,
   SandboxProvider,
   UnreferencedMachine,
-} from "@rakazo/adapter-kit";
-import { machineCleanupJobKey } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import { machineCleanupJobKey } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { machineCleanupRecords, retryMachineCleanup } from "./machine-cleanup.js";
 import { deleteUnreferencedMachine, recordUnreferencedMachine } from "./sandbox-cleanup.js";

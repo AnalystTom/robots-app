@@ -1,14 +1,14 @@
-import type { TestSink } from "@rakazo/logging";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import type { TestSink } from "@robots/logging";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { authLibraryLogger, withAuthLibraryFailures } from "./app.js";
 
 let sink: TestSink;
 beforeEach(() => {
   sink = createTestSink();
-  installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+  installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
 });
-afterEach(() => installLogger(createLogger({ service: "rakazo-api", level: "off", sinks: [] })));
+afterEach(() => installLogger(createLogger({ service: "robots-api", level: "off", sinks: [] })));
 
 const logger = authLibraryLogger("auth.request.failed");
 const answer = (status: number) => async () => {

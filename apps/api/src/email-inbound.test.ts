@@ -1,7 +1,7 @@
-import type { InboundEmail } from "@rakazo/adapters";
-import { INBOUND_EMAIL_MAX_BYTES } from "@rakazo/adapters";
-import { AttachmentValidationError } from "@rakazo/core";
-import { SpaceDeletionInProgressError } from "@rakazo/db";
+import type { InboundEmail } from "@robots/adapters";
+import { INBOUND_EMAIL_MAX_BYTES } from "@robots/adapters";
+import { AttachmentValidationError } from "@robots/core";
+import { SpaceDeletionInProgressError } from "@robots/db";
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
 import type { EmailInboundDeps } from "./email-inbound.js";

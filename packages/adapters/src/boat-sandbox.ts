@@ -32,7 +32,7 @@ import type {
   UnreferencedMachine,
   UnreferencedMachineRecords,
   WorkspaceExportLimits,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   SandboxDamagedError,
   SandboxRateLimitError,
@@ -40,10 +40,10 @@ import {
   SandboxUnavailableError,
   SandboxUnresponsiveError,
   WorkspaceTooLargeError,
-} from "@rakazo/adapter-kit";
-import type { ComputerSize } from "@rakazo/contracts";
-import { boundedSandboxCommandTimeoutMs, deadlineSignal } from "@rakazo/core";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { ComputerSize } from "@robots/contracts";
+import { boundedSandboxCommandTimeoutMs, deadlineSignal } from "@robots/core";
+import { getLogger } from "@robots/logging";
 import {
   BoatApiError,
   BoatRequestGate,
@@ -86,12 +86,12 @@ import {
 const DISPLAY_START = 20;
 const BOAT_API_BASE = "https://boat.dev/api/v1";
 const BOAT_HOME = "/home/user";
-const BOAT_WORKSPACE = `${BOAT_HOME}/rakazo-home`;
+const BOAT_WORKSPACE = `${BOAT_HOME}/robots-home`;
 const BOAT_BROWSER_PROFILES = `${BOAT_WORKSPACE}/.browser-profiles`;
 /** Outside the workspace so checkpoints never carry it. Boat runs every command as `user`. */
-const BOAT_COMMAND_ENV = "/home/user/.rakazo-command-env";
+const BOAT_COMMAND_ENV = "/home/user/.robots-command-env";
 /** Where an export archives the workspace; outside it for the same reason. */
-const BOAT_ARCHIVE_PREFIX = "/tmp/rakazo-workspace-archive-";
+const BOAT_ARCHIVE_PREFIX = "/tmp/robots-workspace-archive-";
 const BOAT_READY_TIMEOUT_MS = 5 * 60_000;
 const BOAT_RECOVER_POLL_MAX_MS = 15_000;
 /**
@@ -336,8 +336,8 @@ export class BoatSandboxProvider implements SandboxProvider {
             ttlSeconds: BOAT_TTL_SECONDS,
             noEnv: true,
             env: {
-              RAKAZO_BOT_ID: request.botId,
-              RAKAZO_SANDBOX: "computer",
+              ROBOTS_BOT_ID: request.botId,
+              ROBOTS_SANDBOX: "computer",
             },
             ...(from ? { from } : {}),
             ...(type ? { type } : {}),
@@ -1240,7 +1240,7 @@ export class BoatSandboxProvider implements SandboxProvider {
     signal?: AbortSignal,
     background = false,
   ): Promise<BoatCommandResult> {
-    const marker = `/tmp/rakazo-command-${randomUUID()}.completed-124`;
+    const marker = `/tmp/robots-command-${randomUUID()}.completed-124`;
     const wrapped = timeoutCommand(command, timeoutMs, marker);
     const timeoutSeconds = Math.ceil(timeoutMs / 1_000);
     const detached = background || timeoutSeconds + 5 > BOAT_API_COMMAND_TIMEOUT_SECONDS;
@@ -1401,7 +1401,7 @@ export class BoatSandboxProvider implements SandboxProvider {
   }
 
   private async terminateCommand(id: string, marker: string): Promise<void> {
-    const pattern = marker.replace("rakazo", "[r]akazo");
+    const pattern = marker.replace("robots", "[r]akazo");
     await this.rawCommand(
       id,
       `pkill -TERM -f ${shellQuote(pattern)} 2>/dev/null || true; sleep 0.2; pkill -KILL -f ${shellQuote(pattern)} 2>/dev/null || true`,

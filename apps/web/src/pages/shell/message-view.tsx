@@ -1,6 +1,6 @@
 import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { ChatMarkdown, LinkifiedText, withBlockMentions } from "@rakazo/chat-ui/web";
+import { ChatMarkdown, LinkifiedText, withBlockMentions } from "@robots/chat-ui/web";
 import type {
   BotAvatarSet,
   ComputerReleaseReason,
@@ -8,10 +8,10 @@ import type {
   MessageBlock,
   MessageReaction,
   ThreadMessage,
-} from "@rakazo/contracts";
-import type { ChildBotBlock, PeerExchange } from "@rakazo/core";
-import { isPeerReceiptBlocks, isToolActivityBlock, otherAuthor } from "@rakazo/core";
-import { BotAvatar, Button, cn, resolvePersonaColorDef } from "@rakazo/ui-web";
+} from "@robots/contracts";
+import type { ChildBotBlock, PeerExchange } from "@robots/core";
+import { isPeerReceiptBlocks, isToolActivityBlock, otherAuthor } from "@robots/core";
+import { BotAvatar, Button, cn, resolvePersonaColorDef } from "@robots/ui-web";
 import { UserRound } from "lucide-react";
 import { memo, useCallback, useMemo } from "react";
 import { ArtifactFileCard } from "../../components/ArtifactFileCard";

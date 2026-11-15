@@ -1,4 +1,4 @@
-import { credentialModelSettings, modelSettingsFields, modelSettingsRequest } from "@rakazo/core";
+import { credentialModelSettings, modelSettingsFields, modelSettingsRequest } from "@robots/core";
 import { describe, expect, it, vi } from "vitest";
 import { buildModelConnectPlaintext, modelCredentialDto } from "./model-connect.js";
 import {
@@ -453,7 +453,7 @@ it("keeps legacy image settings aligned between runtime and the credential DTO",
 });
 
 it("preserves operator-enabled image input when saving a model's limits", () => {
-  vi.stubEnv("RAKAZO_OPENAI_COMPATIBLE_VISION_MODELS", "operator-vision-fixture");
+  vi.stubEnv("ROBOTS_OPENAI_COMPATIBLE_VISION_MODELS", "operator-vision-fixture");
   try {
     const modelId = "operator-vision-fixture";
     const row = {

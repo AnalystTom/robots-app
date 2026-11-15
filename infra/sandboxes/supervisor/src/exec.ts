@@ -29,7 +29,7 @@ export async function runContainerCommand(
   options.signal?.throwIfAborted();
   const timeoutMs = options.timeoutMs;
   const completionMarker = timeoutMs
-    ? `/tmp/rakazo-command-${randomUUID()}.completed-124`
+    ? `/tmp/robots-command-${randomUUID()}.completed-124`
     : undefined;
   const command =
     completionMarker && timeoutMs !== undefined
@@ -40,10 +40,10 @@ export async function runContainerCommand(
     AttachStdout: true,
     AttachStderr: true,
     ...(options.signal ? { AttachStdin: true } : {}),
-    WorkingDir: options.workingDir ?? "/home/rakazo",
+    WorkingDir: options.workingDir ?? "/home/robots",
     Env: options.env ?? [
       "DISPLAY=:1",
-      "HOME=/home/rakazo",
+      "HOME=/home/robots",
       "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     ],
   });
@@ -168,8 +168,8 @@ export async function writeContainerFile(
     AttachStdin: true,
     AttachStdout: true,
     AttachStderr: true,
-    WorkingDir: "/home/rakazo",
-    Env: ["HOME=/home/rakazo"],
+    WorkingDir: "/home/robots",
+    Env: ["HOME=/home/robots"],
   });
   const stream = await exec.start({ hijack: true, stdin: true });
   const chunks: Buffer[] = [];

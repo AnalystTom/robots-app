@@ -1,4 +1,4 @@
-# Run Rakazo and its computers on k3s
+# Run RoBots and its computers on k3s
 
 English | [한국어](./ko-KR/self-host-kubernetes.md)
 
@@ -9,7 +9,7 @@ time so you can tell them apart—and fix configuration instead of patching the 
 
 ## First, give the app somewhere to run
 
-On one machine, Rakazo needs a database, an API, a worker, and a web server. Moving
+On one machine, RoBots needs a database, an API, a worker, and a web server. Moving
 those processes into a cluster does not change their jobs. Kubernetes runs each in
 a managed unit called a **Pod**, and a **Service** gives it a stable internal address.
 
@@ -29,7 +29,7 @@ Browser → HTTPS edge / optional login gate → private ingress → web
 
 The [example](./examples/kubernetes/) targets a **fresh, dedicated, single-node
 k3s installation**, with local storage and one replica of each app process. It is
-not an HA chart or an overlay for an existing Rakazo namespace. API and worker
+not an HA chart or an overlay for an existing RoBots namespace. API and worker
 share one data volume on the same node; spreading replicas across nodes requires a
 new storage design. Do not apply it to namespaces containing existing data.
 
@@ -70,7 +70,7 @@ the first account without opening it temporarily.
 Account email is off by default (`EMAIL_PROVIDER=none`). If you enable SMTP using
 [sign-in and accounts](./self-host-accounts.md), credentials alone are not enough:
 the API and worker external egress rules do not allow SMTP. Before enabling it,
-append a separate egress rule to both `rakazo-api` and `rakazo-worker` in `network-policy.yaml` for your mail
+append a separate egress rule to both `robots-api` and `robots-worker` in `network-policy.yaml` for your mail
 server's destination IP/CIDR and the TCP port in `SMTP_URL` (for example, 465).
 Append after all existing rules so the cluster-API replacement at `spec.egress.5`
 keeps its position. Keep the destination and port in the same rule; do not remove the existing private
@@ -116,8 +116,8 @@ owner = secrets.token_hex(24)
 runtime = secrets.token_hex(24)
 values = {
     "POSTGRES_PASSWORD": owner,
-    "DATABASE_MIGRATION_URL": f"postgres://rakazo:{owner}@rakazo-postgres:5432/rakazo",
-    "DATABASE_URL": f"postgres://rakazo_app:{runtime}@rakazo-postgres:5432/rakazo",
+    "DATABASE_MIGRATION_URL": f"postgres://robots:{owner}@robots-postgres:5432/robots",
+    "DATABASE_URL": f"postgres://robots_app:{runtime}@robots-postgres:5432/robots",
     "ENCRYPTION_KEY": secrets.token_hex(32),
     "BETTER_AUTH_SECRET": secrets.token_hex(32),
     "SCREEN_PROXY_SECRET": secrets.token_hex(32),
@@ -142,22 +142,22 @@ without a label selector: migration, account creation and app startup have depen
 
 ```sh
 # Namespaces, storage, credentials, policies, internal Services, and database.
-kubectl apply -k . -l rakazo.example/phase=foundation
-kubectl -n rakazo rollout status deployment/rakazo-postgres --timeout=300s
+kubectl apply -k . -l robots.example/phase=foundation
+kubectl -n robots rollout status deployment/robots-postgres --timeout=300s
 
 # Create schema, queue tables, and the restricted runtime database role.
-kubectl apply -k . -l rakazo.example/phase=migrate
-kubectl -n rakazo wait --for=condition=complete job/rakazo-migrate --timeout=300s
+kubectl apply -k . -l robots.example/phase=migrate
+kubectl -n robots wait --for=condition=complete job/robots-migrate --timeout=300s
 
 # Start the application against the prepared database.
-kubectl apply -k . -l rakazo.example/phase=app
-kubectl -n rakazo rollout status deployment/rakazo-api --timeout=300s
-kubectl -n rakazo rollout status deployment/rakazo-worker --timeout=300s
-kubectl -n rakazo rollout status deployment/rakazo-web --timeout=300s
+kubectl apply -k . -l robots.example/phase=app
+kubectl -n robots rollout status deployment/robots-api --timeout=300s
+kubectl -n robots rollout status deployment/robots-worker --timeout=300s
+kubectl -n robots rollout status deployment/robots-web --timeout=300s
 
 # Create the private owner account and leave public signup closed.
-kubectl apply -k . -l rakazo.example/phase=bootstrap
-kubectl -n rakazo wait --for=condition=complete job/rakazo-bootstrap --timeout=300s
+kubectl apply -k . -l robots.example/phase=bootstrap
+kubectl -n robots wait --for=condition=complete job/robots-bootstrap --timeout=300s
 ```
 
 A completed migration Job means the database is prepared; it does not mean the
@@ -166,7 +166,7 @@ continuing. First image pulls can take minutes. Increasing the rollout timeout
 helps a slow download; it will not fix `ImagePullBackOff` or a denied Pod.
 
 No public Ingress is included deliberately. First arrange a **private** route from
-your edge to the `rakazo-web` Service on port 5173 through Traefik. Enforce that only
+your edge to the `robots-web` Service on port 5173 through Traefik. Enforce that only
 the edge can reach that ingress (private tunnel/firewall or an authenticated origin
 gateway). A hostname check alone is not an access control. Never expose PostgreSQL,
 the API Service, Kubernetes API, or computer Pod ports on the internet.
@@ -184,14 +184,14 @@ its requests can arrive **without that outer cookie**. Sending those requests to
 Google produces a login redirect where the app expected a screen or WebSocket.
 Waiting longer cannot fix that redirect.
 
-How can a screen request prove permission without that cookie? Rakazo already
+How can a screen request prove permission without that cookie? RoBots already
 issues a short-lived, encrypted URL after checking the app session. The URL carries
 permission for a particular screen: a **bearer capability**. Anyone holding it can
 use that permission until it expires or is invalidated. The web proxy and API check
 it, including the current computer/session generation, lifecycle and control lease.
 
 Keep outer login on normal pages and API requests. Route **only**
-`/novnc/session/*` directly to Rakazo's web proxy so Rakazo can validate its own
+`/novnc/session/*` directly to RoBots's web proxy so RoBots can validate its own
 capability. Keep `SCREEN_PROXY_SECRET` identical in API and web, and distinct from
 the app auth secret. Do not relax frame sandboxing or `X-Frame-Options`.
 
@@ -200,15 +200,15 @@ The [Caddy example](./examples/kubernetes/Caddyfile.edge.example) uses three exc
 optional native key (see the native-client section below), and default login.
 Configure:
 
-- `RAKAZO_PRIVATE_UPSTREAM`: your edge-only ingress, including its port.
-- `RAKAZO_AUTH_UPSTREAM`: your local oauth2-proxy, forwarding to that same ingress.
-- `RAKAZO_NATIVE_ACCESS_KEY`: optional dedicated native key, described below.
-- `RAKAZO_PUBLIC_HOST`: the public domain, for example `app.example.com`.
+- `ROBOTS_PRIVATE_UPSTREAM`: your edge-only ingress, including its port.
+- `ROBOTS_AUTH_UPSTREAM`: your local oauth2-proxy, forwarding to that same ingress.
+- `ROBOTS_NATIVE_ACCESS_KEY`: optional dedicated native key, described below.
+- `ROBOTS_PUBLIC_HOST`: the public domain, for example `app.example.com`.
 
 Set these in the Caddy process environment. The matcher preserves the full path;
 Caddy's [reverse proxy supports WebSockets](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy).
 Do not broaden the exception to `/novnc/*`, `/api/*`, or a whole hostname. It bypasses
-only the **outer cookie check**, not Rakazo's screen authorization. Keep all screen
+only the **outer cookie check**, not RoBots's screen authorization. Keep all screen
 URLs out of access logs, analytics, error reports and shared screenshots, at every
 proxy layer. The example sets `no-store` and `no-referrer` and enables no access log;
 adapt any existing global logging/CDN rules too. Stop the computer to invalidate a
@@ -220,7 +220,7 @@ For an optional Google gate, follow the
 1. Create a Google OAuth **Web application** client. Register the exact callback
    `https://app.example.com/oauth2/callback` after substituting your domain. Configure
    the consent screen and, while testing, add your own account as a test user.
-2. Give the client ID and secret to **oauth2-proxy**, not Rakazo's app OIDC settings.
+2. Give the client ID and secret to **oauth2-proxy**, not RoBots's app OIDC settings.
    Use its Google provider, HTTPS redirect URL, secure cookies, reverse-proxy mode,
    and a separately generated cookie secret. Bind it privately and set its upstream
    to your edge-only ingress.
@@ -228,8 +228,8 @@ For an optional Google gate, follow the
    address. Do not also configure wildcard/domain-wide allowances: they can widen
    admission. A Google test-user list is not a replacement for the proxy allowlist.
 4. Test your allowed account, a different account, and a signed-out browser. The
-   allowed account should reach Rakazo's own login; use `OWNER_EMAIL` and the saved
-   `OWNER_PASSWORD` there. Outer Google login does not create a Rakazo session.
+   allowed account should reach RoBots's own login; use `OWNER_EMAIL` and the saved
+   `OWNER_PASSWORD` there. Outer Google login does not create a RoBots session.
 
 ### Connect the mobile app through the same gate
 
@@ -238,7 +238,7 @@ probe to `/rpc/health` and expects JSON. A redirect to Google is not that respon
 even if Safari on the same phone is already signed in.
 
 The app already has **Server → Headers** for an access proxy's credentials. Give
-that device a separate entry key; keep Rakazo's account login behind it. In the
+that device a separate entry key; keep RoBots's account login behind it. In the
 Caddy example, the optional `@native` route requires **both** a matching
 `X-Access-Key` and an `/api/*` or `/rpc/*` path. Missing/wrong keys still go through
 the Google gate. An unset or malformed configured key leaves this route disabled.
@@ -255,7 +255,7 @@ features requires server association setup and public access to those exact file
 
 Generate 32 random bytes as 64 lowercase hex characters using your secret manager
 (or `python3 -c 'import secrets; print(secrets.token_hex(32))'` in a private terminal).
-Store it securely as `RAKAZO_NATIVE_ACCESS_KEY` in the **Caddy process environment**,
+Store it securely as `ROBOTS_NATIVE_ACCESS_KEY` in the **Caddy process environment**,
 then validate and reload Caddy. With containers, changing an env-file normally
 requires recreating the Caddy container to update its process environment; an
 in-process config reload alone does not import a changed external env-file. Plan
@@ -264,10 +264,10 @@ secret, or a private-origin credential.
 
 On the phone, enter the HTTPS server origin, add **Header name** `X-Access-Key` and
 put the generated value in **Header value**, then save. Sign in with the existing
-Rakazo account. The app stores configured headers securely, scopes them to that
+RoBots account. The app stores configured headers securely, scopes them to that
 server, and refuses redirects on requests carrying them. The edge strips this key
-before forwarding; Rakazo still checks the separate app session and permissions.
-Do not use an `X-Rakazo-*` name: the client reserves those headers for the app.
+before forwarding; RoBots still checks the separate app session and permissions.
+Do not use an `X-RoBots-*` name: the client reserves those headers for the app.
 
 Verify four different results: no key → Google gate; wrong key → Google gate;
 correct key → JSON health response; correct key without an app session → protected
@@ -278,7 +278,7 @@ Treat the entry key like a password. Keep it out of logs and screenshots; delive
 it through a private password manager. This example has one native key; for
 multiple devices use separate revocable credentials in your access proxy. To
 revoke it, remove/rotate the key in Caddy's actual process environment and apply
-the configuration, then revoke the device's Rakazo session too. Browser Google
+the configuration, then revoke the device's RoBots session too. Browser Google
 logout does not revoke this independent device credential.
 
 External webhooks and other integrations require their own authentication design;
@@ -289,7 +289,7 @@ option in [sign-in and accounts](./self-host-accounts.md).
 
 | What you observe                                         | What to inspect                                             | What to do next                                                                                         |
 | -------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Computer Pod is Pending                                  | `kubectl -n rakazo-sandboxes get pods` and Pod events       | Check image pulls, quota, scheduling and disk. Wait while progress continues.                           |
+| Computer Pod is Pending                                  | `kubectl -n robots-sandboxes get pods` and Pod events       | Check image pulls, quota, scheduling and disk. Wait while progress continues.                           |
 | No computer Pod appears                                  | API/worker logs and admission events                        | Check scoped RBAC, API endpoint policy and image admission rule. Do not grant cluster-admin to the app. |
 | Pod runs, but no internal screen                         | Pod logs, ports 6080 and 6100–6199, web egress policy       | Check gateway startup and cross-namespace reachability. Pod Running alone is insufficient.              |
 | Internal screen works, public screen redirects to Google | Browser Network tab, without sharing the capability URL     | Correct only the `/novnc/session/*` edge route.                                                         |
@@ -297,7 +297,7 @@ option in [sign-in and accounts](./self-host-accounts.md).
 | Page loads, screen freezes                               | WebSocket request and edge timeouts                         | Confirm upgrade forwarding and a 101 response for an authorized live session.                           |
 | Files vanish after abrupt Pod loss                       | Saved workspace/checkpoint and backups                      | Restore the last saved home; changes since it may be lost.                                              |
 
-Before calling the deployment ready, use a real browser signed into Rakazo at its
+Before calling the deployment ready, use a real browser signed into RoBots at its
 public origin: open Computer, view the desktop, take control and type, then reconnect.
 A synthetic iframe on an unrelated origin is not an equivalent test of frame policy.
 Signed-out `/`, `/api/...` and `/novnc/` should still hit the outer gate. A cookie-less
@@ -307,10 +307,10 @@ Also verify a stopped/expired session cannot be reused. Avoid recording real tok
 ## Keep the bot's computer inside its boundary
 
 The example gives API and worker permission to create/get/delete Pods and execute
-commands only in `rakazo-sandboxes`. A separate admission policy limits what those
+commands only in `robots-sandboxes`. A separate admission policy limits what those
 credentials can create: the pinned computer image, no host mounts, no extra
 containers, no service-account token, and no Secret-based environment variables.
-Kustomize renders the allowed image from the same `rakazo-config` setting used by the
+Kustomize renders the allowed image from the same `robots-config` setting used by the
 API and worker. Admission does not need a runtime ConfigMap parameter lookup or extra
 ConfigMap permissions for the computer controller. Apply the rendered installation,
 not the standalone policy template.
@@ -347,8 +347,8 @@ seen the new migration, but the old app may still need the column it proposes to
 drop. Therefore the next attempt must know the **last fully deployed release**,
 not just which migrations have run.
 
-The migration Job always reads `RAKAZO_DEPLOYED_MIGRATIONS` from the dedicated
-`rakazo-migration-state` ConfigMap, generated from `migration.env`. The initial empty
+The migration Job always reads `ROBOTS_DEPLOYED_MIGRATIONS` from the dedicated
+`robots-migration-state` ConfigMap, generated from `migration.env`. The initial empty
 value is explicit: on a nonempty database it conservatively keeps deferred drops
 held back. A missing ConfigMap/key stops the Job instead of omitting the safeguard.
 Do not replace this file with the empty example on each upgrade.
@@ -366,11 +366,11 @@ script = ('const fs=require("node:fs");'
           '{withFileTypes:true}).filter(e=>e.isDirectory())'
           '.map(e=>e.name).sort().join(","))')
 inventory = subprocess.check_output([
-    "kubectl", "-n", "rakazo", "exec", "deployment/rakazo-api", "--", "node", "-e", script
+    "kubectl", "-n", "robots", "exec", "deployment/robots-api", "--", "node", "-e", script
 ], text=True).strip()
 if not inventory or "\n" in inventory:
     raise SystemExit("No valid deployed inventory; existing migration.env was preserved")
-Path("migration.env.next").write_text("RAKAZO_DEPLOYED_MIGRATIONS=" + inventory + "\n")
+Path("migration.env.next").write_text("ROBOTS_DEPLOYED_MIGRATIONS=" + inventory + "\n")
 Path("migration.env.next").replace("migration.env")
 PYTHON
 ```
@@ -409,15 +409,15 @@ migration records.
 (
   set -eu
   # Proceed only when the Job is terminal; never delete a running Job.
-  complete=$(kubectl -n rakazo get job rakazo-migrate -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')
+  complete=$(kubectl -n robots get job robots-migrate -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}')
   case "$complete" in
     True) ;;
     *) echo "Stop: inspect and recover the migration before replacing this Job."; exit 1 ;;
   esac
-  kubectl -n rakazo logs job/rakazo-migrate > migration-previous.log
-  kubectl -n rakazo delete job rakazo-migrate
-  kubectl apply -k . -l rakazo.example/phase=migrate
-  kubectl -n rakazo wait --for=condition=complete job/rakazo-migrate --timeout=300s
+  kubectl -n robots logs job/robots-migrate > migration-previous.log
+  kubectl -n robots delete job robots-migrate
+  kubectl apply -k . -l robots.example/phase=migrate
+  kubectl -n robots wait --for=condition=complete job/robots-migrate --timeout=300s
 )
 ```
 
@@ -432,4 +432,4 @@ change. Never use namespace/PVC deletion as a retry procedure. See
 
 When the app opens but the screen does not, you now have three things to check in
 order: whether the computer started, whether web can reach it, and whether the edge
-let its capability reach Rakazo. Each has its own configuration and evidence.
+let its capability reach RoBots. Each has its own configuration and evidence.

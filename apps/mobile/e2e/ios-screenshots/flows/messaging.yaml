@@ -1,11 +1,11 @@
-appId: com.rakazo.app
+appId: com.analysttom.robotsapp
 name: Messaging
 ---
 - runFlow:
     file: ../subflows/sign-in.yaml
     env:
-      RAKAZO_ACTIVE_EMAIL: ${RAKAZO_SCREENSHOT_EMAIL}
-- openLink: "rakazo:///messaging"
+      ROBOTS_ACTIVE_EMAIL: ${ROBOTS_SCREENSHOT_EMAIL}
+- openLink: "robots:///messaging"
 - extendedWaitUntil:
     visible: ".*#launch.*"
     timeout: 15000

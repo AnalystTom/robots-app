@@ -7,14 +7,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { ElectronApplication } from "@playwright/test";
 import { _electron as electron, expect, test } from "@playwright/test";
-import type { RakazoDesktop } from "@rakazo/contracts";
+import type { RobotsDesktop } from "@robots/contracts";
 import { prepareHostComputer } from "../src/host-computer.js";
 import { shownWindow } from "./shown-window.js";
 
-const APP_MARKER = "Local Rakazo stack ready";
+const APP_MARKER = "Local RoBots stack ready";
 const IMAGE_TAG = "v9.9.9";
-const STACK_PROBE_PATH = "/.well-known/rakazo-desktop-stack";
-const STACK_TOKEN_HEADER = "x-rakazo-desktop-stack-token";
+const STACK_PROBE_PATH = "/.well-known/robots-desktop-stack";
+const STACK_TOKEN_HEADER = "x-robots-desktop-stack-token";
 const COMPOSE_DIR = path.resolve(import.meta.dirname, "..", "..", "..", "infra", "compose");
 // Waits that span the fake docker's 2 s pull and the calls around it; a busy runner is slow.
 const AFTER_PULL = { timeout: 15_000 };
@@ -59,7 +59,7 @@ test.beforeAll(async () => {
     }
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     response.end(
-      `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Rakazo</title></head><body><main>${APP_MARKER}</main></body></html>`,
+      `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>RoBots</title></head><body><main>${APP_MARKER}</main></body></html>`,
     );
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -76,7 +76,7 @@ test.afterAll(async () => {
 
 test.beforeEach(async () => {
   // The fake docker logs $PWD, which is the resolved path (macOS /var is a symlink).
-  userData = await realpath(await mkdtemp(path.join(tmpdir(), "rakazo-desktop-stack-")));
+  userData = await realpath(await mkdtemp(path.join(tmpdir(), "robots-desktop-stack-")));
   // Setup otherwise follows the machine's language; these specs read its English text.
   await writeFile(path.join(userData, "ui-locale.txt"), "en\n");
   stackProbes = 0;
@@ -93,7 +93,7 @@ function fakeDockerLog() {
 }
 
 /**
- * Stands in for the docker CLI: records `cwd | RAKAZO_IMAGE_TAG | argv` for every call and
+ * Stands in for the docker CLI: records `cwd | ROBOTS_IMAGE_TAG | argv` for every call and
  * answers the handful of commands the app issues. The log path and mode are baked into the
  * script because the app passes docker an allowlisted environment.
  */
@@ -103,17 +103,17 @@ function fakeDockerPath() {
 
 async function writeFakeDocker(mode: FakeDockerMode) {
   const script = fakeDockerPath();
-  let up = '  up) echo "Container rakazo-web-1 Started"; exit 0 ;;';
+  let up = '  up) echo "Container robots-web-1 Started"; exit 0 ;;';
   if (mode === "pool-exhausted") {
     up = '  up) echo "all predefined address pools have been fully subnetted" >&2; exit 1 ;;';
   } else if (mode === "ports-exhausted") {
     up = '  up) echo "port is already allocated" >&2; exit 1 ;;';
   } else if (mode === "port-conflict") {
-    up = `  up) if [ ! -f '${path.join(userData, "port-conflict")}' ]; then touch '${path.join(userData, "port-conflict")}'; echo "port is already allocated" >&2; exit 1; fi; echo "Container rakazo-web-1 Started"; exit 0 ;;`;
+    up = `  up) if [ ! -f '${path.join(userData, "port-conflict")}' ]; then touch '${path.join(userData, "port-conflict")}'; echo "port is already allocated" >&2; exit 1; fi; echo "Container robots-web-1 Started"; exit 0 ;;`;
   }
   const lines = [
     "#!/bin/sh",
-    `printf '%s | %s | %s\\n' "$PWD" "$RAKAZO_IMAGE_TAG" "$*" >> '${fakeDockerLog()}'`,
+    `printf '%s | %s | %s\\n' "$PWD" "$ROBOTS_IMAGE_TAG" "$*" >> '${fakeDockerLog()}'`,
     'case "$1 $2" in',
     mode === "compose-check-fails"
       ? '  "compose version") echo "Access is denied." >&2; exit 7 ;;'
@@ -123,7 +123,7 @@ async function writeFakeDocker(mode: FakeDockerMode) {
       ? '    echo "Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?" >&2; exit 1 ;;'
       : '    echo "27.1.1"; exit 0 ;;',
     "esac",
-    "# compose --env-file .env -f docker-compose.images.yml --project-name rakazo-desktop <command> ...",
+    "# compose --env-file .env -f docker-compose.images.yml --project-name robots-desktop <command> ...",
     'case "$8" in',
     "  pull)",
     mode === "pull-fails"
@@ -140,20 +140,20 @@ async function writeFakeDocker(mode: FakeDockerMode) {
 }
 
 async function launch(mode: FakeDockerMode | "missing") {
-  const env: NodeJS.ProcessEnv = { ...process.env, RAKAZO_PERFORMANCE_USER_DATA: userData };
-  // A stale RAKAZO_WEB_URL from the developer's shell would bypass setup entirely.
-  delete env.RAKAZO_WEB_URL;
+  const env: NodeJS.ProcessEnv = { ...process.env, ROBOTS_PERFORMANCE_USER_DATA: userData };
+  // A stale ROBOTS_WEB_URL from the developer's shell would bypass setup entirely.
+  delete env.ROBOTS_WEB_URL;
   // A first launch opens Rakazo Cloud; these specs stay offline and start in setup instead.
-  if (!existsSync(path.join(userData, "setup.json"))) env.RAKAZO_FORCE_SETUP = "1";
+  if (!existsSync(path.join(userData, "setup.json"))) env.ROBOTS_FORCE_SETUP = "1";
   return electron.launch({
     args: ["."],
     cwd: path.resolve(import.meta.dirname, ".."),
     env: {
       ...env,
       // "missing" points at where the fake docker will be written, so a spec can install it later.
-      RAKAZO_DOCKER_BINARY: mode === "missing" ? fakeDockerPath() : await writeFakeDocker(mode),
-      RAKAZO_LOCAL_WEB_URL: serverUrl,
-      RAKAZO_IMAGE_TAG: IMAGE_TAG,
+      ROBOTS_DOCKER_BINARY: mode === "missing" ? fakeDockerPath() : await writeFakeDocker(mode),
+      ROBOTS_LOCAL_WEB_URL: serverUrl,
+      ROBOTS_IMAGE_TAG: IMAGE_TAG,
     },
   });
 }
@@ -187,7 +187,7 @@ test("This computer installs and starts the stack, then opens the app", async ()
 
   const appWindowPromise = app.waitForEvent("window");
   await setup.getByRole("button", { name: "Continue" }).click();
-  await expect(setup.locator("#stack-phase")).toHaveText("Downloading Rakazo…");
+  await expect(setup.locator("#stack-phase")).toHaveText("Downloading RoBots…");
   await expect(setup.getByRole("button", { name: "Continue" })).toBeDisabled();
   // Docker output stays behind the details toggle; the phase, the bar, and the size show by default.
   await expect(setup.locator("#stack-detail")).toHaveText("412 MB downloaded");
@@ -214,14 +214,14 @@ test("This computer installs and starts the stack, then opens the app", async ()
   const env = await readFile(envFile, "utf8");
   expect(env).toMatch(/^POSTGRES_PASSWORD=[0-9a-f]{32}$/m);
   expect(env).toMatch(/^BETTER_AUTH_SECRET=[0-9a-f]{64}$/m);
-  expect(env).not.toContain("RAKAZO_IMAGE_TAG=");
-  expect(env).not.toContain("RAKAZO_COMPUTER_IMAGE_TAG=");
+  expect(env).not.toContain("ROBOTS_IMAGE_TAG=");
+  expect(env).not.toContain("ROBOTS_COMPUTER_IMAGE_TAG=");
   await expect(readFile(path.join(stackDir, "docker-compose.images.yml"), "utf8")).resolves.toBe(
     await readFile(path.join(COMPOSE_DIR, "docker-compose.images.yml"), "utf8"),
   );
 
   const compose =
-    "compose --env-file .env -f docker-compose.images.yml --project-name rakazo-desktop";
+    "compose --env-file .env -f docker-compose.images.yml --project-name robots-desktop";
   expect(await readLog()).toEqual([
     `${stackDir} | ${IMAGE_TAG} | compose version --short`,
     `${stackDir} | ${IMAGE_TAG} | info --format {{.ServerVersion}}`,
@@ -243,7 +243,7 @@ test("without Docker the app offers the download and continues once Docker is in
   await setup.getByRole("button", { name: "Continue" }).click();
   const docker = process.platform === "linux" ? "Docker" : "Docker Desktop";
   await expect(setup.locator("#stack-phase")).toHaveText(
-    `Rakazo needs ${docker} to run on this computer.`,
+    `RoBots needs ${docker} to run on this computer.`,
   );
   // Installing Docker is a step, not a failure.
   await expect(setup.locator("#stack-phase")).not.toHaveAttribute("data-tone");
@@ -278,7 +278,7 @@ test("switching to Existing instance while the stack starts keeps that choice", 
   await setup.getByRole("radio", { name: /This computer/ }).check();
 
   await setup.getByRole("button", { name: "Continue" }).click();
-  await expect(setup.locator("#stack-phase")).toHaveText("Downloading Rakazo…");
+  await expect(setup.locator("#stack-phase")).toHaveText("Downloading RoBots…");
 
   // Fake docker sleeps during pull; leave This computer before ready so followStack must not save.
   await setup.getByRole("radio", { name: /Existing instance/ }).check();
@@ -295,9 +295,9 @@ test("switching to Existing instance while the stack starts keeps that choice", 
         setup.evaluate(async () => {
           const { stack } = (
             window as unknown as {
-              rakazoSetup: { stack: { state: () => Promise<{ phase: string } | null> } };
+              robotsSetup: { stack: { state: () => Promise<{ phase: string } | null> } };
             }
-          ).rakazoSetup;
+          ).robotsSetup;
           return (await stack.state())?.phase;
         }),
       AFTER_PULL,
@@ -592,7 +592,7 @@ test("the desktop never exposes server administration or account impersonation",
     await main.evaluate(
       () =>
         "localSettings" in
-        (window as typeof window & { rakazoDesktop: RakazoDesktop }).rakazoDesktop,
+        (window as typeof window & { robotsDesktop: RobotsDesktop }).robotsDesktop,
     ),
   ).toBe(false);
   expect(

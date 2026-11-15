@@ -1,6 +1,6 @@
-import type { AdapterContext } from "@rakazo/adapter-kit";
-import type { TestSink } from "@rakazo/logging";
-import { createLogger, createTestSink, getLogger, installLogger } from "@rakazo/logging";
+import type { AdapterContext } from "@robots/adapter-kit";
+import type { TestSink } from "@robots/logging";
+import { createLogger, createTestSink, getLogger, installLogger } from "@robots/logging";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatSdkMessagingSurface } from "./chat-sdk-surface.js";
 import { messagingPlatformsFromEnv, splitOutboundBody } from "./messaging-platforms.js";

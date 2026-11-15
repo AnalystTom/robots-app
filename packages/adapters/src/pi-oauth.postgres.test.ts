@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Credential, OAuthCredential } from "@earendil-works/pi-ai";
-import type { PrismaClient } from "@rakazo/db";
-import { asSystem, createDb, runAsTenant } from "@rakazo/db";
+import type { PrismaClient } from "@robots/db";
+import { asSystem, createDb, runAsTenant } from "@robots/db";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { PostgresRealtimeFanout } from "./realtime.js";
 import { EncryptedSecretStore } from "./secrets.js";
@@ -310,7 +310,7 @@ describePostgres("model sign-in across API processes (PostgreSQL contract)", () 
   async function apiProcess() {
     vi.resetModules();
     // The client comes from the process's own module graph, so it sees that graph's tenant scope.
-    const dbModule = await import("@rakazo/db");
+    const dbModule = await import("@robots/db");
     const db = dbModule.createDb(databaseUrl!);
     databases.push(db);
     cleanup ??= dbModule.asSystem(db.prisma);

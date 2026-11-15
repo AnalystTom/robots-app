@@ -1,5 +1,5 @@
-import type { ComputerRef } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
+import type { ComputerRef } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import type { ComputerProviderSelection, StoredComputerSettings } from "./configured-sandbox.js";
 import {
@@ -216,7 +216,7 @@ describe("ConfiguredSandbox", () => {
     expect(deleteMachine).toHaveBeenCalledWith(machine, signal);
     // No connection for this kind: the default provider would report a machine it never had as gone.
     await expect(
-      sandbox.deleteMachine({ provider: "incus", machineId: "rakazo-1" }, signal),
+      sandbox.deleteMachine({ provider: "incus", machineId: "robots-1" }, signal),
     ).rejects.toThrow("No configured computer provider");
     expect(primary.deleteMachine).not.toHaveBeenCalled();
   });

@@ -1,7 +1,7 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { ComputerStatus } from "@rakazo/contracts";
-import { displayName } from "@rakazo/core";
+import type { ComputerStatus } from "@robots/contracts";
+import { displayName } from "@robots/core";
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { Alert, Platform, ScrollView, StyleSheet, Text, View } from "react-native";

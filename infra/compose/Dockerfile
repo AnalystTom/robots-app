@@ -40,8 +40,8 @@ COPY --chmod=755 infra/updater/package.json infra/updater/
 FROM manifests AS deps
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --prod \
   --store-dir=/pnpm/store --cpu=current --os=current \
-  --filter="@rakazo/api..." --filter="@rakazo/worker..." \
-  --filter="@rakazo/web..." --filter="@rakazo/sandbox-supervisor..."
+  --filter="@robots/api..." --filter="@robots/worker..." \
+  --filter="@robots/web..." --filter="@robots/sandbox-supervisor..."
 
 FROM manifests AS build
 # Only what the image runs (api, worker, web, supervisor) and the root build tools, with
@@ -49,14 +49,14 @@ FROM manifests AS build
 # never run here.
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile \
   --store-dir=/pnpm/store --cpu=current --os=current \
-  --filter=. --filter="@rakazo/api..." --filter="@rakazo/worker..." \
-  --filter="@rakazo/web..." --filter="@rakazo/sandbox-supervisor..."
+  --filter=. --filter="@robots/api..." --filter="@robots/worker..." \
+  --filter="@robots/web..." --filter="@robots/sandbox-supervisor..."
 # Normalize modes: a restrictive host umask (e.g. 077 on hardened hosts) would otherwise
 # leave the copied tree unreadable to USER node at runtime.
 COPY --chmod=755 . .
-RUN pnpm --filter @rakazo/db generate
-RUN pnpm --filter @rakazo/api --filter @rakazo/worker build
-RUN RAKAZO_ALLOW_DEV_SECRETS=1 pnpm --filter @rakazo/web build
+RUN pnpm --filter @robots/db generate
+RUN pnpm --filter @robots/api --filter @robots/worker build
+RUN ROBOTS_ALLOW_DEV_SECRETS=1 pnpm --filter @robots/web build
 # Build and test tooling stays here; the runtime takes its dependencies from the deps stage.
 RUN find . -name node_modules -type d -prune -exec rm -rf {} + \
   && rm -rf apps/desktop apps/mobile apps/www docs examples
@@ -82,4 +82,4 @@ ENV NODE_ENV=production
 ENV GIT_SHA=$GIT_SHA
 EXPOSE 3100 5173 7091
 USER node
-CMD ["pnpm", "--filter", "@rakazo/api", "start"]
+CMD ["pnpm", "--filter", "@robots/api", "start"]

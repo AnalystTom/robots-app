@@ -17,9 +17,9 @@ import type {
   SecretStore,
   TransactionalEmailProvider,
   WebProvider,
-} from "@rakazo/adapter-kit";
-import type { LabFeature } from "@rakazo/contracts";
-import type { PrismaClient, RunLease, ThreadEvents } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import type { LabFeature } from "@robots/contracts";
+import type { PrismaClient, RunLease, ThreadEvents } from "@robots/db";
 import type { CloudAgentConnection, UserCloudAgents } from "./cloud-agent-factory.js";
 import type { MemoryProviderResolver } from "./memory-provider-factory.js";
 import type { MessagingDelivery } from "./messaging-delivery.js";

@@ -1,12 +1,12 @@
-import type * as Core from "@rakazo/core";
-import type * as Db from "@rakazo/db";
-import { recordAuditEvent } from "@rakazo/db";
+import type * as Core from "@robots/core";
+import type * as Db from "@robots/db";
+import { recordAuditEvent } from "@robots/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { gateToolCall } from "./run-tool-gate.js";
 import type { ToolRequest } from "./run-tool-request.js";
 
 const plans = vi.hoisted(() => [] as string[]);
-vi.mock("@rakazo/core", async (importOriginal) => {
+vi.mock("@robots/core", async (importOriginal) => {
   const core = await importOriginal<typeof Core>();
   return {
     ...core,
@@ -17,7 +17,7 @@ vi.mock("@rakazo/core", async (importOriginal) => {
     },
   };
 });
-vi.mock("@rakazo/db", async (importOriginal) => ({
+vi.mock("@robots/db", async (importOriginal) => ({
   ...(await importOriginal<typeof Db>()),
   recordAuditEvent: vi.fn(async () => {}),
 }));

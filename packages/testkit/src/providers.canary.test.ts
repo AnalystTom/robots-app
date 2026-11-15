@@ -7,10 +7,10 @@ import {
   E2BSandboxProvider,
   NovitaSandboxProvider,
   PiAgentRuntime,
-} from "@rakazo/adapters";
-import type { RunStatus } from "@rakazo/contracts";
-import { isTerminal } from "@rakazo/core";
-import { loadRootEnv } from "@rakazo/core/node/load-root-env";
+} from "@robots/adapters";
+import type { RunStatus } from "@robots/contracts";
+import { isTerminal } from "@robots/core";
+import { loadRootEnv } from "@robots/core/node/load-root-env";
 import { afterAll, describe, expect, it } from "vitest";
 import { sessionCookieHeader } from "./index.js";
 
@@ -43,7 +43,7 @@ describeE2b("live E2B canary", () => {
       signal: new AbortController().signal,
     };
     const computer = await sandbox.provision(
-      { botId: "canary", homePath: "/home/user/rakazo-home" },
+      { botId: "canary", homePath: "/home/user/robots-home" },
       ctx,
     );
     try {
@@ -73,7 +73,7 @@ describeBoat("live Boat canary", () => {
       userId: "boat-canary",
       signal: new AbortController().signal,
     };
-    const request = { botId: "boat-canary", homePath: "/home/user/rakazo-home" };
+    const request = { botId: "boat-canary", homePath: "/home/user/robots-home" };
     let computer = await sandbox.provision(request, ctx);
     try {
       await sandbox.prepare(computer, ctx);
@@ -127,7 +127,7 @@ describeBoxd("live boxd canary", () => {
       }
       return stdout;
     };
-    const request = { botId: "boxd-canary", homePath: "/home/boxd/rakazo-home" };
+    const request = { botId: "boxd-canary", homePath: "/home/boxd/robots-home" };
     let computer = await sandbox.provision(request, ctx);
     try {
       await sandbox.prepare(computer, ctx);
@@ -181,7 +181,7 @@ describeInstabox("live instabox canary", () => {
       }
       return stdout;
     };
-    const request = { botId: "instabox-canary", homePath: "/home/user/rakazo-home" };
+    const request = { botId: "instabox-canary", homePath: "/home/user/robots-home" };
     let computer = await sandbox.provision(request, ctx);
     try {
       await sandbox.prepare(computer, ctx);
@@ -232,7 +232,7 @@ describe.skipIf(!process.env.VERIFY_PROVIDERS || !process.env.NOVITA_API_KEY)(
         userId: "novita-canary",
         signal: new AbortController().signal,
       };
-      const request = { botId: "novita-canary", homePath: "/home/user/rakazo-home" };
+      const request = { botId: "novita-canary", homePath: "/home/user/robots-home" };
       let computer = await sandbox.provision(request, ctx);
       try {
         await sandbox.prepare(computer, ctx);
@@ -281,7 +281,7 @@ describeCreateos("live CreateOS canary", () => {
       userId: "createos-canary",
       signal: new AbortController().signal,
     };
-    const request = { botId: "createos-canary", homePath: "/home/desktop/rakazo-home" };
+    const request = { botId: "createos-canary", homePath: "/home/desktop/robots-home" };
     let computer = await sandbox.provision(request, ctx);
     try {
       await sandbox.prepare(computer, ctx);
@@ -377,8 +377,8 @@ describePiApp("live OpenRouter product journey", () => {
   });
 
   it("completes a bot turn through the API with the live model", async () => {
-    const { createApp } = await import("@rakazo/api/app");
-    dataDir = mkdtempSync(path.join(tmpdir(), "rakazo-pi-"));
+    const { createApp } = await import("@robots/api/app");
+    dataDir = mkdtempSync(path.join(tmpdir(), "robots-pi-"));
     const handles = await createApp({
       databaseUrl: process.env.DATABASE_URL!,
       dataDir,
@@ -387,7 +387,7 @@ describePiApp("live OpenRouter product journey", () => {
     });
     stop = handles.stop;
     const stamp = Date.now();
-    const email = `pi-${stamp}@rakazo.test`;
+    const email = `pi-${stamp}@robots.test`;
     const signup = await handles.app.request("/api/auth/sign-up/email", {
       method: "POST",
       headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },

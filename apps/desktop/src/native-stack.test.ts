@@ -19,9 +19,9 @@ import {
   restartDelay,
 } from "./native-stack.js";
 
-const TEMPLATE = `POSTGRES_USER=rakazo
+const TEMPLATE = `POSTGRES_USER=robots
 POSTGRES_PASSWORD=
-POSTGRES_DB=rakazo
+POSTGRES_DB=robots
 POSTGRES_APP_PASSWORD=
 BETTER_AUTH_SECRET=
 ENCRYPTION_KEY=
@@ -66,7 +66,7 @@ class FakeChild extends EventEmitter {
 let stackDir: string;
 let resourceDir: string;
 beforeEach(async () => {
-  const root = await mkdtemp(path.join(tmpdir(), "rakazo-native-"));
+  const root = await mkdtemp(path.join(tmpdir(), "robots-native-"));
   stackDir = path.join(root, "stack");
   resourceDir = path.join(root, "resources");
   await mkdir(resourceDir, { recursive: true });
@@ -168,7 +168,7 @@ function harness(
     localWebUrl: "http://127.0.0.1:5173",
     imageTag: "v1.0.0",
     serverBundle: { version: "1.0.0", file: "/bundle.tar.xz" },
-    nodeBinary: "/Applications/Rakazo.app/Contents/MacOS/Rakazo",
+    nodeBinary: "/Applications/RoBots.app/Contents/MacOS/RoBots",
     env: { HOME: "/Users/someone", OPENAI_API_KEY: "from-the-shell" },
     uid: 501,
     run,
@@ -182,7 +182,7 @@ function harness(
     allocatePort: async () => nextPort++,
     installers: {
       server: async () => ({
-        dir: "/runtime/server-1.0.0/rakazo-server",
+        dir: "/runtime/server-1.0.0/robots-server",
         manifest: {
           version: "1.0.0",
           entrypoints: {
@@ -265,7 +265,7 @@ describe("NativeStackController", () => {
         DATABASE_CONTAINER,
         `${DATABASE_CONTAINER}:/var/lib/postgresql/data`,
         "PGDATA=/var/lib/postgresql/data/pgdata",
-        "POSTGRES_USER=rakazo",
+        "POSTGRES_USER=robots",
         "127.0.0.1:40000:5432",
       ]),
     );
@@ -277,10 +277,10 @@ describe("NativeStackController", () => {
     // Migrations wait for the real server, not the one that initializes a new volume.
     expect(migrate?.listening).toBe(true);
     expect(migrate?.env.DATABASE_MIGRATION_URL).toBe(
-      `postgres://rakazo:${"cd".repeat(16)}@127.0.0.1:40000/rakazo`,
+      `postgres://robots:${"cd".repeat(16)}@127.0.0.1:40000/robots`,
     );
-    expect(migrate?.env.DATABASE_URL).toMatch(/^postgres:\/\/rakazo_app:/);
-    expect(migrate?.env.RAKAZO_ENV_FILE).toBe("none");
+    expect(migrate?.env.DATABASE_URL).toMatch(/^postgres:\/\/robots_app:/);
+    expect(migrate?.env.ROBOTS_ENV_FILE).toBe("none");
 
     const [api] = byName("apps/api/dist/index.js");
     expect(api?.env).toMatchObject({
@@ -289,7 +289,7 @@ describe("NativeStackController", () => {
       API_PORT: "40001",
       SANDBOX_PROVIDER: "local-vm",
       LOCAL_VM_CLI: CLI,
-      LOCAL_VM_COMPUTER_IMAGE: "ghcr.io/elie222/rakazo/computer:v1.0.0",
+      LOCAL_VM_COMPUTER_IMAGE: "ghcr.io/analysttom/robots-app/computer:v1.0.0",
       OPENROUTER_API_KEY: "sk-or-test",
       WEB_ORIGIN: "http://127.0.0.1:5173",
       SANDBOX_HOST_URL: "http://127.0.0.1:47000",
@@ -310,7 +310,7 @@ describe("NativeStackController", () => {
       "pull",
       "--progress",
       "plain",
-      "ghcr.io/elie222/rakazo/computer:v1.0.0",
+      "ghcr.io/analysttom/robots-app/computer:v1.0.0",
     ]);
 
     // Running services keep the menu's off-switch available after a server switch.
@@ -443,7 +443,7 @@ describe("NativeStackController", () => {
     });
     const state = await controller.start();
     expect(state.message).toBe(
-      "Your Rakazo data is in a different computer runtime. Quit the one running, then retry.",
+      "Your RoBots data is in a different computer runtime. Quit the one running, then retry.",
     );
     expect(other.commands().filter((command) => /create/.test(command))).toEqual([]);
 
@@ -476,7 +476,7 @@ describe("NativeStackController", () => {
     expect(resolved).toEqual([true]);
     expect(state.phase).toBe("failed");
     expect(state.message).toBe(
-      "Your Rakazo data is in a different computer runtime. Quit the one running, then retry.",
+      "Your RoBots data is in a different computer runtime. Quit the one running, then retry.",
     );
     expect(commands()).not.toContain("create --name");
   });
@@ -485,7 +485,7 @@ describe("NativeStackController", () => {
     await mkdir(stackDir, { recursive: true });
     await writeFile(
       path.join(stackDir, ".env"),
-      `${TEMPLATE.replace("POSTGRES_USER=rakazo", "POSTGRES_USER=rakazo_app")}DATABASE_MIGRATION_URL=postgres://owner:secret@db/rakazo\n`,
+      `${TEMPLATE.replace("POSTGRES_USER=robots", "POSTGRES_USER=robots_app")}DATABASE_MIGRATION_URL=postgres://owner:secret@db/robots\n`,
     );
     const targets: string[] = [];
     const { deps, runs, byName } = harness({
@@ -495,10 +495,10 @@ describe("NativeStackController", () => {
     });
     const controller = new NativeStackController(deps);
     expect((await controller.start()).phase).toBe("ready");
-    expect(runs.find((call) => call.args[0] === "create")?.args).toContain("POSTGRES_USER=rakazo");
-    expect(targets).toEqual(["rakazo"]);
+    expect(runs.find((call) => call.args[0] === "create")?.args).toContain("POSTGRES_USER=robots");
+    expect(targets).toEqual(["robots"]);
     const migrate = runs.find((call) => call.args[0]?.endsWith("migrate-database.js"));
-    expect(migrate?.env.DATABASE_MIGRATION_URL).toMatch(/^postgres:\/\/rakazo:/);
+    expect(migrate?.env.DATABASE_MIGRATION_URL).toMatch(/^postgres:\/\/robots:/);
     for (const name of ["apps/api/dist/index.js", "apps/worker/dist/index.js"]) {
       expect(byName(name)[0]?.env.DATABASE_MIGRATION_URL).toBeUndefined();
     }
@@ -529,7 +529,7 @@ describe("NativeStackController", () => {
     const state = await controller.start();
     order.push("start failed");
     expect(state.message).toBe(
-      "Downloading Rakazo failed. Check the internet connection, then retry.",
+      "Downloading RoBots failed. Check the internet connection, then retry.",
     );
     expect(order).toEqual(["runtime stopped", "start failed"]);
   });
@@ -617,7 +617,7 @@ describe("NativeStackController", () => {
     const state = await controller.start();
     expect(state.phase).toBe("failed");
     expect(state.message).toBe(
-      "Rakazo services did not start. Check the output below, then retry.",
+      "RoBots services did not start. Check the output below, then retry.",
     );
     expect(controller.hasProcesses()).toBe(false);
   });
@@ -634,7 +634,7 @@ describe("NativeStackController", () => {
     const state = await controller.start();
     expect(state.phase).toBe("failed");
     expect(state.message).toBe(
-      "Rakazo services did not start. Check the output below, then retry.",
+      "RoBots services did not start. Check the output below, then retry.",
     );
     expect(state.output).toContain("postgres exited");
     expect(controller.hasProcesses()).toBe(false);
@@ -653,7 +653,7 @@ describe("NativeStackController", () => {
     const state = await controller.start();
     expect(state.phase).toBe("failed");
     expect(state.message).toBe(
-      "Downloading Rakazo failed. Check the internet connection, then retry.",
+      "Downloading RoBots failed. Check the internet connection, then retry.",
     );
     expect(state.output).toContain("Pulling the database image exited with code 1");
     expect(children).toEqual([]);
@@ -676,8 +676,8 @@ describe("NativeStackController", () => {
     });
     expect((await controller.start()).phase).toBe("ready");
     expect(order).toEqual([
-      "psql DROP DATABASE IF EXISTS rakazo WITH (FORCE);\nCREATE DATABASE rakazo;",
-      `import ${CLI} ${DATABASE_CONTAINER} rakazo rakazo`,
+      "psql DROP DATABASE IF EXISTS robots WITH (FORCE);\nCREATE DATABASE robots;",
+      `import ${CLI} ${DATABASE_CONTAINER} robots robots`,
       "migrate",
     ]);
     expect(runs.find((call) => call.args.includes("psql"))?.args).not.toContain("-h");

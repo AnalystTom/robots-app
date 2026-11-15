@@ -1,7 +1,7 @@
-import type { MessagingInstallProvider, SecretStore } from "@rakazo/adapter-kit";
-import type { Actor } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
-import { IsolationError } from "@rakazo/db";
+import type { MessagingInstallProvider, SecretStore } from "@robots/adapter-kit";
+import type { Actor } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
+import { IsolationError } from "@robots/db";
 import { expect, it, vi } from "vitest";
 import { MessagingInstallations } from "./messaging-installations.js";
 import { fakeCleanupJobs } from "./secret-cleanup.test-support.js";
@@ -144,7 +144,7 @@ it("rejects expired and forged state before contacting Slack", async () => {
   await expect(f.manager.complete(actor, state, "code")).rejects.toThrow("expired");
   expect(f.provider.exchange).not.toHaveBeenCalled();
 });
-it("does not let another Rakazo space claim an installed Slack workspace", async () => {
+it("does not let another RoBots space claim an installed Slack workspace", async () => {
   const f = fixture();
   const state = await begin(f);
   f.setInstallation({

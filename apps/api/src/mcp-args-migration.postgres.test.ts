@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { EncryptedSecretStore, FakeSandboxProvider, withSecretPersistence } from "@rakazo/adapters";
-import type { PrismaClient } from "@rakazo/db";
-import { createDb, runAsSystem } from "@rakazo/db";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import { EncryptedSecretStore, FakeSandboxProvider, withSecretPersistence } from "@robots/adapters";
+import type { PrismaClient } from "@robots/db";
+import { createDb, runAsSystem } from "@robots/db";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp } from "./app.js";
 import { moveMcpArgsIntoSecrets } from "./mcp-args-migration.js";
@@ -140,7 +140,7 @@ describe.skipIf(!enabled)("moving MCP server arguments into secrets (PostgreSQL)
   it("skips a server it cannot move and keeps going", () =>
     runAsSystem("mcp args migration", async () => {
       const sink = createTestSink();
-      installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+      installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
       await prisma.secret.create({
         data: { id: `unreadable-${suffix}`, userId, spaceId, kind: "mcp", ciphertext: "fake" },
       });
@@ -172,7 +172,7 @@ describe.skipIf(!enabled)("moving MCP server arguments into secrets (PostgreSQL)
         expect(counts.failed).toBeGreaterThanOrEqual(3);
         expect(JSON.stringify(sink.events)).not.toMatch(/leak1|leak2/);
       } finally {
-        installLogger(createLogger({ service: "rakazo-api", level: "off", sinks: [] }));
+        installLogger(createLogger({ service: "robots-api", level: "off", sinks: [] }));
       }
       expect(await prisma.mcpServer.findUniqueOrThrow({ where: { id: broken.id } })).toMatchObject({
         args: ["--broken"],
@@ -187,7 +187,7 @@ describe.skipIf(!enabled)("moving MCP server arguments into secrets (PostgreSQL)
     const row = await runAsSystem("mcp args migration", () =>
       server("startup", { args: ["--startup", "fake-startup"] }),
     );
-    const dataDir = await mkdtemp(join(tmpdir(), "rakazo-mcp-args-"));
+    const dataDir = await mkdtemp(join(tmpdir(), "robots-mcp-args-"));
     const handles = await createApp({
       databaseUrl: process.env.DATABASE_URL!,
       encryptionKey,

@@ -14,9 +14,9 @@ import type {
   PurchaseRequest,
   PurchaseSnapshot,
   PurchaseStatus,
-} from "@rakazo/adapter-kit";
-import { PaymentWalletDisconnected, PaymentWalletRequestRejected } from "@rakazo/adapter-kit";
-import { abortableDelay, readJsonObjectWithin } from "@rakazo/core";
+} from "@robots/adapter-kit";
+import { PaymentWalletDisconnected, PaymentWalletRequestRejected } from "@robots/adapter-kit";
+import { abortableDelay, readJsonObjectWithin } from "@robots/core";
 import Link, { getDuplicateSpendRequest, LinkApiError } from "@stripe/link-sdk";
 import {
   readStripeChargeChallenge,

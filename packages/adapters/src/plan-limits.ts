@@ -1,9 +1,9 @@
 import type { OAuthCredential } from "@earendil-works/pi-ai";
-import type { SecretStore } from "@rakazo/adapter-kit";
-import type { PlanLimits, PlanLimitWindow } from "@rakazo/contracts";
-import { readBoundedJsonResponse } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { bestEffort } from "@rakazo/logging";
+import type { SecretStore } from "@robots/adapter-kit";
+import type { PlanLimits, PlanLimitWindow } from "@robots/contracts";
+import { readBoundedJsonResponse } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { bestEffort } from "@robots/logging";
 import { parseModelSecret } from "./model-secret.js";
 import {
   ANTHROPIC_OAUTH_PROVIDER,
@@ -125,7 +125,7 @@ const READERS: Record<string, Reader> = {
         await getJson(fetchImpl, "https://chatgpt.com/backend-api/wham/usage", {
           authorization: `Bearer ${credential.access}`,
           "chatgpt-account-id": accountId,
-          originator: "rakazo",
+          originator: "robots",
         }),
       );
     },

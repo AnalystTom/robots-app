@@ -1,9 +1,9 @@
-import type { ProductAnalytics } from "@rakazo/adapter-kit";
-import { BillingEmulator } from "@rakazo/adapters";
-import type { Actor, AnalyticsEvent } from "@rakazo/contracts";
-import { BYOK_TIERS } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
-import { asSystem, billingAccountForOrganization, createDb } from "@rakazo/db";
+import type { ProductAnalytics } from "@robots/adapter-kit";
+import { BillingEmulator } from "@robots/adapters";
+import type { Actor, AnalyticsEvent } from "@robots/contracts";
+import { BYOK_TIERS } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
+import { asSystem, billingAccountForOrganization, createDb } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createBillingService, TRIAL_DAYS } from "./billing.js";
 import { createExperiments } from "./experiments.js";
@@ -18,7 +18,7 @@ dbTests("plan choice funnel", () => {
   const actor: Actor = {
     userId,
     spaceId,
-    email: `funnel-${stamp}@rakazo.test`,
+    email: `funnel-${stamp}@robots.test`,
     isDeploymentOwner: false,
   };
   const provider = new BillingEmulator({ modelCredits: true, namespace: `funnel-${stamp}` });

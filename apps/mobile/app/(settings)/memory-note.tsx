@@ -1,7 +1,7 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { MemoryDocument } from "@rakazo/contracts";
-import { isDeletableMemoryDocument } from "@rakazo/contracts";
+import type { MemoryDocument } from "@robots/contracts";
+import { isDeletableMemoryDocument } from "@robots/contracts";
 import type { NativeStackNavigationOptions } from "expo-router";
 import { useLocalSearchParams, useNavigation, usePreventRemove, useRouter } from "expo-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";

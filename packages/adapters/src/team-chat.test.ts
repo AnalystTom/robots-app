@@ -1,15 +1,15 @@
-import type { BackgroundJob, JobTransaction } from "@rakazo/adapter-kit";
+import type { BackgroundJob, JobTransaction } from "@robots/adapter-kit";
 import {
   messagingReplyJob,
   messagingReplyJobKey,
   teamChatAmbientJob,
   teamChatEngageJob,
   teamChatEngageJobKey,
-} from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
-import { teamChatAmbientPrompt, teamChatPrompt } from "@rakazo/core";
-import type { Prisma, PrismaClient, SendUserMessageInput, SendUserMessageResult } from "@rakazo/db";
-import { SendClaimLostError, SpaceDeletionInProgressError } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
+import { teamChatAmbientPrompt, teamChatPrompt } from "@robots/core";
+import type { Prisma, PrismaClient, SendUserMessageInput, SendUserMessageResult } from "@robots/db";
+import { SendClaimLostError, SpaceDeletionInProgressError } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import { inboundDeliveryClientNonce, messagingWakeIdempotencyKey } from "./inbound-delivery.js";
 import {

@@ -1,4 +1,4 @@
-import type { MessageBlock } from "@rakazo/contracts";
+import type { MessageBlock } from "@robots/contracts";
 import { isQuestionAskBlock } from "./ask-replies.js";
 import { TAKEOVER_COMPUTER_PENDING_STATE } from "./thread-message-updates.js";
 

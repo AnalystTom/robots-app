@@ -1,6 +1,6 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { AvailabilityKind, SpaceAvailability } from "@rakazo/contracts";
+import type { AvailabilityKind, SpaceAvailability } from "@robots/contracts";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { rpc } from "../lib/api";

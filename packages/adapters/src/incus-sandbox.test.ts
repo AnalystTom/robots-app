@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { PeerCertificate } from "node:tls";
 import { rootCertificates } from "node:tls";
-import type { AdapterContext, ComputerRef, ProcessEvent } from "@rakazo/adapter-kit";
+import type { AdapterContext, ComputerRef, ProcessEvent } from "@robots/adapter-kit";
 import { describe, expect, it, vi } from "vitest";
 import { encodeTarEntry } from "./exec-computer.js";
 import type {
@@ -69,7 +69,7 @@ function running(botId = "bot-a", address = "10.0.0.8"): Instance {
   return {
     status: "Running",
     ephemeral: true,
-    config: { "user.rakazo-bot-id": botId },
+    config: { "user.robots-bot-id": botId },
     state: {
       network: {
         lo: { addresses: [{ family: "inet", address: "127.0.0.1", scope: "local" }] },
@@ -131,10 +131,10 @@ class FakeIncus implements IncusClient {
     const name = parts[1];
     if (method === "GET" && !name) {
       const [, botId] =
-        /^config\.user\.rakazo-bot-id eq (\S+)$/.exec(url.searchParams.get("filter") ?? "") ?? [];
+        /^config\.user\.robots-bot-id eq (\S+)$/.exec(url.searchParams.get("filter") ?? "") ?? [];
       return {
         metadata: [...this.instances]
-          .filter(([, instance]) => instance.config["user.rakazo-bot-id"] === botId)
+          .filter(([, instance]) => instance.config["user.robots-bot-id"] === botId)
           .map(([instanceName, instance]) => ({
             name: instanceName,
             ...structuredClone(instance),
@@ -200,7 +200,7 @@ class FakeIncus implements IncusClient {
     const config = body.config as Record<string, string>;
     const created = (this.createGate ?? Promise.resolve()).then(() => {
       this.instances.set(name, {
-        ...running(config["user.rakazo-bot-id"]),
+        ...running(config["user.robots-bot-id"]),
         ...(this.failStart ? { status: "Stopped" } : {}),
         config: { ...config },
       });
@@ -306,7 +306,7 @@ describe("IncusSandboxProvider", () => {
     const files = new Map<string, { content: Buffer; executable: boolean }>();
     let exportedNames: string[] = [];
     const fake = new FakeIncus((command, input) => {
-      const write = command.indexOf("rakazo-write");
+      const write = command.indexOf("robots-write");
       if (write >= 0) {
         files.set(command[write + 1]!, {
           content: input,
@@ -314,7 +314,7 @@ describe("IncusSandboxProvider", () => {
         });
         return {};
       }
-      if (command.includes("rakazo-export-list")) {
+      if (command.includes("robots-export-list")) {
         exportedNames = input.toString().split("\0").filter(Boolean);
         return {};
       }
@@ -325,7 +325,7 @@ describe("IncusSandboxProvider", () => {
       if (command.includes("find") || command.some((arg) => arg.includes("find . -regextype"))) {
         const directory = command.includes("find")
           ? command[command.indexOf("find") + 1]!
-          : "/home/rakazo";
+          : "/home/robots";
         let stdout = "";
         for (const [name, file] of files) {
           if (!name.startsWith(`${directory}/`)) continue;
@@ -338,13 +338,13 @@ describe("IncusSandboxProvider", () => {
       }
       if (command.includes("tar")) {
         const chunks = exportedNames.flatMap((name) => {
-          const file = files.get(`/home/rakazo/${name}`)!;
+          const file = files.get(`/home/robots/${name}`)!;
           return [...encodeTarEntry(name, file.content, file.executable)];
         });
         return { stdout: Buffer.concat([...chunks, Buffer.alloc(1024)]) };
       }
-      if (command.some((arg) => arg.includes("RAKAZO_DESKTOP=")))
-        return { stdout: "RAKAZO_DESKTOP=0:offline-view-token\n" };
+      if (command.some((arg) => arg.includes("ROBOTS_DESKTOP=")))
+        return { stdout: "ROBOTS_DESKTOP=0:offline-view-token\n" };
       if (command.some((arg) => arg.includes("getmouselocation")))
         return { stdout: "cG5n\nCURSOR X=1 Y=2\n" };
       return {};
@@ -364,7 +364,7 @@ describe("IncusSandboxProvider", () => {
     const fake = new FakeIncus();
     const provider = providerFor(fake, {
       project: "computers",
-      computerImage: "registry.example.test/rakazo/computer:v1",
+      computerImage: "registry.example.test/robots/computer:v1",
       cpuLimit: "1",
       memoryLimit: "1536MiB",
       processLimit: "512",
@@ -373,7 +373,7 @@ describe("IncusSandboxProvider", () => {
     const created = await provider.provision({ botId: "bot-a", homePath: "/unused" }, context);
 
     expect(created).toMatchObject({ kind: "incus", botId: "bot-a", fresh: true });
-    expect(created.providerRef).toMatch(/^rakazo-[0-9a-f-]{36}$/);
+    expect(created.providerRef).toMatch(/^robots-[0-9a-f-]{36}$/);
     const create = fake.requests.find(
       (entry) => entry.method === "POST" && entry.path.startsWith("/1.0/instances?"),
     );
@@ -387,10 +387,10 @@ describe("IncusSandboxProvider", () => {
         type: "image",
         protocol: "oci",
         server: "https://registry.example.test",
-        alias: "rakazo/computer:v1",
+        alias: "robots/computer:v1",
       },
       config: {
-        "user.rakazo-bot-id": "bot-a",
+        "user.robots-bot-id": "bot-a",
         "limits.cpu": "1",
         "limits.memory": "1536MiB",
         "limits.processes": "512",
@@ -437,7 +437,7 @@ describe("IncusSandboxProvider", () => {
     const fake = new FakeIncus();
     await providerFor(fake).provision({ botId: "bot-a", homePath: "/unused" }, context);
     expect(fake.requests.find((entry) => entry.method === "POST")?.body).toMatchObject({
-      source: { server: "https://ghcr.io", alias: "elie222/rakazo/computer:edge" },
+      source: { server: "https://ghcr.io", alias: "analysttom/robots-app/computer:edge" },
       config: { "limits.cpu": "2", "limits.memory": "2GiB", "limits.processes": "2048" },
     });
   });
@@ -453,7 +453,7 @@ describe("IncusSandboxProvider", () => {
     });
     await providerFor(fake).provision({ botId: "bot-a", homePath: "/unused" }, context);
     expect(probes).toBe(2);
-    expect(fake.execs[0]?.body).toMatchObject({ user: 1000, group: 1000, cwd: "/home/rakazo" });
+    expect(fake.execs[0]?.body).toMatchObject({ user: 1000, group: 1000, cwd: "/home/robots" });
   });
 
   it("reconnects to a running instance of the same bot without creating one", async () => {
@@ -838,7 +838,7 @@ describe("IncusSandboxProvider", () => {
     // Setuid programs in the image cannot raise a bot command's privileges.
     expect(exec.command.slice(0, 3)).toEqual(["setpriv", "--no-new-privs", "--"]);
     expect(exec.command).toEqual(
-      expect.arrayContaining(["/home/rakazo/nested", "TEST_VALUE=value", "printf", "done"]),
+      expect.arrayContaining(["/home/robots/nested", "TEST_VALUE=value", "printf", "done"]),
     );
     // The input stream is closed so commands that read stdin see its end.
     expect(exec.inputClosed).toBe(true);
@@ -1046,8 +1046,8 @@ describe("IncusSandboxProvider", () => {
     ["fd42::8", "http://[fd42::8]:6100/embed.html", ":::6100"],
   ])("serves screens from the instance address %s", async (address, url, bind) => {
     const fake = new FakeIncus((command) =>
-      command.some((arg) => arg.includes("RAKAZO_DESKTOP="))
-        ? { stdout: "RAKAZO_DESKTOP=0:token\n" }
+      command.some((arg) => arg.includes("ROBOTS_DESKTOP="))
+        ? { stdout: "ROBOTS_DESKTOP=0:token\n" }
         : {},
     );
     fake.instances.set("box", running("bot-a", address));
@@ -1069,7 +1069,7 @@ describe("IncusSandboxProvider", () => {
   });
 
   it("attaches the controlled terminal without replacing the bot run screen fence", async () => {
-    const fake = new FakeIncus(() => ({ stdout: "RAKAZO_DESKTOP=0:view-token\n" }));
+    const fake = new FakeIncus(() => ({ stdout: "ROBOTS_DESKTOP=0:view-token\n" }));
     fake.instances.set("box", running());
     await providerFor(fake).connectTerminal(
       computer,
@@ -1124,7 +1124,11 @@ describe("IncusSandboxProvider", () => {
 
 describe("ociImageSource", () => {
   it.each([
-    ["ghcr.io/elie222/rakazo/computer:edge", "https://ghcr.io", "elie222/rakazo/computer:edge"],
+    [
+      "ghcr.io/analysttom/robots-app/computer:edge",
+      "https://ghcr.io",
+      "analysttom/robots-app/computer:edge",
+    ],
     [
       "registry.example.test:5000/computer@sha256:abc",
       "https://registry.example.test:5000",

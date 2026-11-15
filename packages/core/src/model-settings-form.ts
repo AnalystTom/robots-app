@@ -3,7 +3,7 @@ import type {
   ModelCredential,
   ModelSettings,
   ThinkingLevel,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   canonicalPiProviderId,
   DEFAULT_MODEL_CONTEXT_WINDOW,
@@ -13,7 +13,7 @@ import {
   parseModelContextWindow,
   parseModelMaxImagesPerPrompt,
   parseModelMaxTokens,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import { compatibleThinkingLevels } from "./model-providers.js";
 
 type SettingsCredential = Pick<

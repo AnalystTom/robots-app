@@ -3,8 +3,8 @@ import {
   isSignInRetryRequest,
   isTransientModelError,
   SecretStoreUnavailableError,
-} from "@rakazo/adapter-kit";
-import type { PiOAuthPersist } from "@rakazo/adapters";
+} from "@robots/adapter-kit";
+import type { PiOAuthPersist } from "@robots/adapters";
 import {
   compatibleEndpointPreset,
   listPiCatalog,
@@ -21,16 +21,16 @@ import {
   storedOpenAiCompatibleProbeHeaders,
   storedOpenAiCompatibleProbeKey,
   UNAVAILABLE_MODEL_FOR_AUTH_MESSAGE,
-} from "@rakazo/adapters";
-import type { Actor, ModelCredential, ThinkingLevel } from "@rakazo/contracts";
+} from "@robots/adapters";
+import type { Actor, ModelCredential, ThinkingLevel } from "@robots/contracts";
 import {
   backupChoiceKey,
   canonicalPiProviderId,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   usableModelId,
-} from "@rakazo/contracts";
-import { clampCatalogThinkingLevel } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/contracts";
+import { clampCatalogThinkingLevel } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
 import {
   appliedModelRole,
   comparePreferenceOrder,
@@ -47,9 +47,9 @@ import {
   updateModelRole,
   withTransactionRetry,
   writeModelRole,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
-import { markExpectedFailure } from "@rakazo/logging/hono";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
+import { markExpectedFailure } from "@robots/logging/hono";
 import { mayUsePrivateEndpoint } from "../mcp-servers.js";
 import { firstModelConnectAnalytics } from "../model-connect-analytics.js";
 import {

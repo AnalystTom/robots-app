@@ -1,12 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
-import type { Me, SettingsScope, ThinkingLevel } from "@rakazo/contracts";
+import type { Me, SettingsScope, ThinkingLevel } from "@robots/contracts";
 import {
   compatibleEndpointPresets,
   connectionDisplayName,
   matchCompatibleEndpointPreset,
   modelRoutingDirty,
   savedCompatibleEndpointMatches,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   clampCatalogThinkingLevel,
   compatibleConnectionReady,
@@ -16,8 +16,8 @@ import {
   modelConnectRequest,
   popularModelProvidersFirst,
   savedCompatibleModelIds,
-} from "@rakazo/core";
-import { fetchFresh } from "@rakazo/core/query";
+} from "@robots/core";
+import { fetchFresh } from "@robots/core/query";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useCopyText } from "../../lib/copy-text";

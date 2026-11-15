@@ -1,13 +1,13 @@
 import type { MenuAction } from "@expo/ui/community/menu";
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { ModelCatalogEntry, ModelCredential } from "@rakazo/contracts";
+import type { ModelCatalogEntry, ModelCredential } from "@robots/contracts";
 import {
   canonicalPiProviderId,
   connectionDisplayName,
   MAX_MODEL_CONNECTION_LABEL,
-} from "@rakazo/contracts";
-import { connectionModels } from "@rakazo/core";
+} from "@robots/contracts";
+import { connectionModels } from "@robots/core";
 import { Alert, Platform } from "react-native";
 import { RowMenu } from "./model-role-settings";
 import { SettingsGroup, SettingsRow } from "./settings-group";

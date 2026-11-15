@@ -1,20 +1,20 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import type { AgentRuntime, JobPublisher, NotificationProvider } from "@rakazo/adapter-kit";
-import { historyCompactJob, runJobKey } from "@rakazo/adapter-kit";
+import type { AgentRuntime, JobPublisher, NotificationProvider } from "@robots/adapter-kit";
+import { historyCompactJob, runJobKey } from "@robots/adapter-kit";
 import {
   CapturingNotificationProvider,
   MessagingTeamChatEmulator,
   messageBot,
-} from "@rakazo/adapters";
-import type { MessageBlock, ModelConnectInput, ReplyMode, RunStatus } from "@rakazo/contracts";
+} from "@robots/adapters";
+import type { MessageBlock, ModelConnectInput, ReplyMode, RunStatus } from "@robots/contracts";
 import {
   ACTIVE_RUN_STATUSES,
   attachmentComputerPath,
   isTerminal,
   splitToolHistory,
-} from "@rakazo/core";
-import type { createDb } from "@rakazo/db";
-import { createThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { createDb } from "@robots/db";
+import { createThreadEvents } from "@robots/db";
 import type { HostedApp } from "../apps/mcp-host.js";
 import { hostOverMcp } from "../apps/mcp-host.js";
 import { discardBotIntroRun } from "../discard-bot-intro.js";

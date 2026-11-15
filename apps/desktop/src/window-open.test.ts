@@ -6,7 +6,7 @@ import {
   shouldOpenInAppPopup,
 } from "./window-open.js";
 
-const appOrigin = "https://rakazo.example.com";
+const appOrigin = "https://robots.example.com";
 
 describe("desktop child windows", () => {
   it("keeps same-origin app routes in Electron", () => {
@@ -20,12 +20,12 @@ describe("desktop child windows", () => {
   });
 
   it.each([
-    "rakazo-model-oauth",
-    "rakazo-mcp-oauth",
-    "rakazo-mcp-oauth:session",
-    "rakazo-sso-oauth",
-    "rakazo-app-connect",
-    "rakazo-plugin-connect",
+    "robots-model-oauth",
+    "robots-mcp-oauth",
+    "robots-mcp-oauth:session",
+    "robots-sso-oauth",
+    "robots-app-connect",
+    "robots-plugin-connect",
   ])("keeps the intentional %s flow in an Electron popup", (frameName) => {
     expect(
       shouldOpenInAppPopup(appOrigin, "https://provider.example.com/authorize", frameName),
@@ -33,33 +33,33 @@ describe("desktop child windows", () => {
   });
 
   it("rejects malformed URLs and non-HTTPS third-party targets", () => {
-    expect(shouldOpenInAppPopup(appOrigin, "not a url", "rakazo-model-oauth")).toBe(false);
+    expect(shouldOpenInAppPopup(appOrigin, "not a url", "robots-model-oauth")).toBe(false);
     expect(
-      shouldOpenInAppPopup(appOrigin, "http://provider.example.com", "rakazo-model-oauth"),
+      shouldOpenInAppPopup(appOrigin, "http://provider.example.com", "robots-model-oauth"),
     ).toBe(false);
   });
 });
 
 it("keeps a server-named MCP sign-in window in an Electron popup", () => {
   const authorize = "https://provider.example.com/authorize";
-  expect(shouldOpenInAppPopup(appOrigin, authorize, "rakazo-mcp-signin:cabc")).toBe(true);
-  expect(shouldOpenInAppPopup(appOrigin, authorize, "rakazo-mcp-signin:")).toBe(false);
-  expect(shouldOpenInAppPopup(appOrigin, authorize, "rakazo-mcp-signin:../other")).toBe(false);
+  expect(shouldOpenInAppPopup(appOrigin, authorize, "robots-mcp-signin:cabc")).toBe(true);
+  expect(shouldOpenInAppPopup(appOrigin, authorize, "robots-mcp-signin:")).toBe(false);
+  expect(shouldOpenInAppPopup(appOrigin, authorize, "robots-mcp-signin:../other")).toBe(false);
 });
 
 describe("MCP sign-in browsers", () => {
   it("reads the server from the window name", () => {
-    expect(mcpOAuthPopupServerId("rakazo-mcp-signin:clx123abc")).toBe("clx123abc");
-    expect(mcpOAuthPopupServerId("rakazo-mcp-signin:")).toBeNull();
-    expect(mcpOAuthPopupServerId("rakazo-mcp-signin:a/b")).toBeNull();
+    expect(mcpOAuthPopupServerId("robots-mcp-signin:clx123abc")).toBe("clx123abc");
+    expect(mcpOAuthPopupServerId("robots-mcp-signin:")).toBeNull();
+    expect(mcpOAuthPopupServerId("robots-mcp-signin:a/b")).toBeNull();
     // Session-named windows sign in through the app's own session.
-    expect(mcpOAuthPopupServerId("rakazo-mcp-oauth:session-1")).toBeNull();
+    expect(mcpOAuthPopupServerId("robots-mcp-oauth:session-1")).toBeNull();
     expect(mcpOAuthPopupServerId("_blank")).toBeNull();
   });
 
   it("gives every server a persistent, opaque jar of its own", () => {
     const first = mcpOAuthPartition("https://first.example.test", "clx123abc");
-    expect(first).toMatch(/^persist:rakazo-mcp-[0-9a-f]{24}$/);
+    expect(first).toMatch(/^persist:robots-mcp-[0-9a-f]{24}$/);
     expect(mcpOAuthPartition("https://first.example.test", "clx123abc")).toBe(first);
     expect(mcpOAuthPartition("https://first.example.test", "clx999xyz")).not.toBe(first);
     expect(mcpOAuthPartition("https://second.example.test", "clx123abc")).not.toBe(first);
@@ -78,23 +78,23 @@ it("keeps SSO popups sandboxed in the parent session without a privileged preloa
     sandbox: true,
   });
   expect(oauthPopupSessionPreferences(null)).not.toHaveProperty("partition");
-  expect(shouldOpenInAppPopup(appOrigin, "http://provider.example.com", "rakazo-sso-oauth")).toBe(
+  expect(shouldOpenInAppPopup(appOrigin, "http://provider.example.com", "robots-sso-oauth")).toBe(
     false,
   );
 });
 
 it("allows only the named SSO blank popup before provider navigation", () => {
-  expect(shouldOpenInAppPopup(appOrigin, "about:blank", "rakazo-sso-oauth")).toBe(true);
-  for (const name of ["_blank", "rakazo-mcp-oauth", ""])
+  expect(shouldOpenInAppPopup(appOrigin, "about:blank", "robots-sso-oauth")).toBe(true);
+  for (const name of ["_blank", "robots-mcp-oauth", ""])
     expect(shouldOpenInAppPopup(appOrigin, "about:blank", name)).toBe(false);
-  expect(shouldOpenInAppPopup(appOrigin, "about:blank#unsafe", "rakazo-sso-oauth")).toBe(false);
+  expect(shouldOpenInAppPopup(appOrigin, "about:blank#unsafe", "robots-sso-oauth")).toBe(false);
 });
 
 it("keeps session-named MCP popups restricted to HTTPS", () => {
   expect(
-    shouldOpenInAppPopup(appOrigin, "http://provider.example.com", "rakazo-mcp-oauth:session"),
+    shouldOpenInAppPopup(appOrigin, "http://provider.example.com", "robots-mcp-oauth:session"),
   ).toBe(false);
-  expect(shouldOpenInAppPopup(appOrigin, "https://provider.example.com", "rakazo-mcp-oauth:")).toBe(
+  expect(shouldOpenInAppPopup(appOrigin, "https://provider.example.com", "robots-mcp-oauth:")).toBe(
     false,
   );
 });

@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { AgentRuntimeEvent } from "@rakazo/adapter-kit";
+import type { AgentRuntimeEvent } from "@robots/adapter-kit";
 import {
   EncryptedSecretStore,
   forgetBotSecret,
@@ -14,10 +14,10 @@ import {
   revealBotSecret,
   ScriptedAgentRuntime,
   storeBotSecret,
-} from "@rakazo/adapters";
-import type { createApp } from "@rakazo/api/app";
-import { resolveEncryptionKey } from "@rakazo/core";
-import { answerRunInput, runAsSystem, runAsTenant } from "@rakazo/db";
+} from "@robots/adapters";
+import type { createApp } from "@robots/api/app";
+import { resolveEncryptionKey } from "@robots/core";
+import { answerRunInput, runAsSystem, runAsTenant } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { discardBotIntroFromCreate } from "./discard-bot-intro.js";
 import { asSystem } from "./system-db.js";
@@ -38,7 +38,7 @@ const key = "fake-reusable-api-key";
 describeIntegration("reusable credential lifecycle", () => {
   let handles: Awaited<ReturnType<typeof createApp>>;
   let db: Awaited<ReturnType<typeof createApp>>["prisma"];
-  const dataDir = mkdtempSync(path.join(tmpdir(), "rakazo-secret-lifecycle-"));
+  const dataDir = mkdtempSync(path.join(tmpdir(), "robots-secret-lifecycle-"));
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const fetch = vi.fn<typeof globalThis.fetch>(async (_url, init) => {
     const auth = new Headers(init?.headers).get("Authorization");
@@ -49,7 +49,7 @@ describeIntegration("reusable credential lifecycle", () => {
   });
 
   beforeAll(async () => {
-    const { createApp } = await import("@rakazo/api/app");
+    const { createApp } = await import("@robots/api/app");
     handles = await createApp({
       databaseUrl: process.env.DATABASE_URL!,
       dataDir,
@@ -375,7 +375,7 @@ describeIntegration("reusable credential lifecycle", () => {
         );
         expect(uses[0]!.at >= uses[1]!.at).toBe(true);
         const stranger = await signup(
-          `vault-stranger-${requireApproval}-${stamp}@rakazo.test`,
+          `vault-stranger-${requireApproval}-${stamp}@robots.test`,
           "S",
         );
         await expect(rpc(stranger, "vault/activity", { name: destination.name })).rejects.toThrow(
@@ -454,7 +454,7 @@ describeIntegration("reusable credential lifecycle", () => {
     expect(await rpc(seeded.cookie, "vault/list", {})).toEqual([
       expect.objectContaining({ title: "Stripe live", policy: "off" }),
     ]);
-    const stranger = await signup(`vault-access-stranger-${stamp}@rakazo.test`, "S");
+    const stranger = await signup(`vault-access-stranger-${stamp}@robots.test`, "S");
     await expect(
       rpc(stranger, "vault/put", {
         destination: { name: saved.name, origin: destination.origin, auth },
@@ -809,7 +809,7 @@ describeIntegration("reusable credential lifecycle", () => {
     expect(saved).toMatchObject({ allBots: false, botIds: [seeded.bot.id] });
     const item = { name: saved.name, origin: destination.origin, auth };
     // Only bots of the Space they act in.
-    const stranger = await signup(`vault-bots-stranger-${stamp}@rakazo.test`, "S");
+    const stranger = await signup(`vault-bots-stranger-${stamp}@robots.test`, "S");
     const second = await rpc<{ id: string }>(seeded.cookie, "spaces/create", { name: "Second" });
     const there = await newBot(seeded.cookie, second.id);
     for (const botId of [(await newBot(stranger)).id, there.id, "missing-bot"]) {
@@ -1346,7 +1346,7 @@ describeIntegration("reusable credential lifecycle", () => {
       completedAt?: Date;
     } = {},
   ) {
-    const cookie = await signup(`executor-${label}-${stamp}@rakazo.test`, `Executor ${label}`);
+    const cookie = await signup(`executor-${label}-${stamp}@robots.test`, `Executor ${label}`);
     const me = await rpc<{ userId: string; spaceId: string }>(cookie, "me");
     const bot = await rpc<{ id: string }>(cookie, "bots/create", {
       name: `Executor ${label}`,
@@ -1410,7 +1410,7 @@ describeIntegration("reusable credential lifecycle", () => {
         "content-type": "application/json",
         origin: "http://127.0.0.1:5173",
         cookie,
-        ...(space ? { "x-rakazo-space-id": space } : {}),
+        ...(space ? { "x-robots-space-id": space } : {}),
       },
       body: JSON.stringify({ json: body }),
     });

@@ -1,8 +1,8 @@
 import { ORPCError } from "@orpc/server";
-import type { BotEmailAddress, BotEmailAddresses } from "@rakazo/contracts";
-import { BOT_EMAIL_NAME_TAKEN } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
-import { claimBotEmailName } from "@rakazo/db";
+import type { BotEmailAddress, BotEmailAddresses } from "@robots/contracts";
+import { BOT_EMAIL_NAME_TAKEN } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
+import { claimBotEmailName } from "@robots/db";
 
 export const EMAIL_NOT_RECEIVED = "This server doesn't receive email.";
 

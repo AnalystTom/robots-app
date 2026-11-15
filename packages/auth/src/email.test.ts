@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { INVITED_TRIAL_WEEKS } from "@rakazo/contracts";
+import { INVITED_TRIAL_WEEKS } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import {
   accountDeletionEmail,
@@ -213,9 +213,9 @@ describe("email languages", () => {
 
   it("writes a code email in Spanish", async () => {
     const message = await signInCodeEmail("user@example.test", "123456", "es");
-    expect(message.subject).toBe("Tu código para iniciar sesión en Rakazo");
+    expect(message.subject).toBe("Tu código para iniciar sesión en RoBots");
     expect(message.html).toContain('lang="es"');
-    expect(message.text).toContain("Introduce este código para iniciar sesión en Rakazo:");
+    expect(message.text).toContain("Introduce este código para iniciar sesión en RoBots:");
     expect(message.html).toContain('dir="ltr"');
   });
 
@@ -231,9 +231,9 @@ describe("email languages", () => {
       "Hola, Ana:",
     );
     const english = await welcomeEmail(user, "https://example.test/u");
-    expect(english.subject).toBe("Welcome to Rakazo");
+    expect(english.subject).toBe("Welcome to RoBots");
     expect(english.text).toContain("Hi Ana,");
-    expect(english.text).toContain("Rakazo runs on iPhone");
+    expect(english.text).toContain("RoBots runs on iPhone");
   });
 
   it.each(Object.entries(CATALOGS))(

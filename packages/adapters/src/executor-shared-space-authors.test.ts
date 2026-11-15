@@ -1,5 +1,5 @@
-import type { AgentRunRequest } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
+import type { AgentRunRequest } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type * as ComputerLifecycleModule from "./computer-lifecycle.js";
 import { createRunExecutor } from "./executor.js";

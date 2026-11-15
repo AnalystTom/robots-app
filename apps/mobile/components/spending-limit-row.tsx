@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import type { SpendingStatus } from "@rakazo/contracts";
+import type { SpendingStatus } from "@robots/contracts";
 import { router, useFocusEffect } from "expo-router";
 import type { ReactNode } from "react";
 import { useCallback, useState } from "react";

@@ -6,10 +6,10 @@ import {
   isBackgroundRunTrigger,
   isRunWaitingOnUser,
   truncatePlainText,
-} from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { runAsSystem } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { runAsSystem } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { credentialDigest } from "./credential-digest.js";
 import { EncryptedSecretStore } from "./secrets.js";
 

@@ -1,9 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import type { CodexLiveCatalog, parseModelSecret } from "@rakazo/adapters";
-import { findConnectedModelCredential, validateConnectedModelChoice } from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
-import { OPENAI_COMPATIBLE_PROVIDER_ID, usableModelId } from "@rakazo/contracts";
-import { modelRoleTarget, runAsSystem } from "@rakazo/db";
+import type { CodexLiveCatalog, parseModelSecret } from "@robots/adapters";
+import { findConnectedModelCredential, validateConnectedModelChoice } from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
+import { OPENAI_COMPATIBLE_PROVIDER_ID, usableModelId } from "@robots/contracts";
+import { modelRoleTarget, runAsSystem } from "@robots/db";
 import type { RouterDeps } from "./router.js";
 
 /**

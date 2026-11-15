@@ -1,5 +1,5 @@
 import { CommandExitError, InstaboxError, InstaboxQuotaError } from "@insforge/instabox-sdk";
-import type { UnreferencedMachineRecords } from "@rakazo/adapter-kit";
+import type { UnreferencedMachineRecords } from "@robots/adapter-kit";
 import { parse } from "shell-quote";
 import type {
   InstaboxApi,
@@ -241,13 +241,13 @@ export class InstaboxEmulator implements InstaboxApi {
     const ok = (stdout = "") => ({ exitCode: 0, stdout, stderr: "" });
     if (this.fails(command)) return { exitCode: 1, stdout: "", stderr: "permission denied\n" };
     // A page request: stdin from a private file the command removes before the helper starts.
-    const input = command.match(/exec 0< \S*?(\/tmp\/rakazo-page-input-[^'"\s;]+)/)?.[1];
+    const input = command.match(/exec 0< \S*?(\/tmp\/robots-page-input-[^'"\s;]+)/)?.[1];
     if (input) {
       const file = computer.files.get(input);
       computer.files.delete(input);
       if (!file) return { exitCode: 1, stdout: "", stderr: "No such file or directory\n" };
       if (!this.pageBrowser)
-        return { exitCode: 127, stdout: "", stderr: "rakazo-page-browser: not found\n" };
+        return { exitCode: 127, stdout: "", stderr: "robots-page-browser: not found\n" };
       return {
         ...this.pageBrowser(JSON.parse(new TextDecoder().decode(file.content))),
         stderr: "",

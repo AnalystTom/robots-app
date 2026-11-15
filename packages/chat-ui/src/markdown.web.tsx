@@ -19,8 +19,8 @@ import { unified } from "unified";
 import type { HastNode } from "./table-utils";
 import "./markdown.web.css";
 import "./markdown-table.css";
-import { droppedTableHtmlText } from "@rakazo/contracts";
-import { cssVariableName, pageIconBars } from "@rakazo/ui-tokens";
+import { droppedTableHtmlText } from "@robots/contracts";
+import { cssVariableName, pageIconBars } from "@robots/ui-tokens";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
   CopyTextFallback,
   useCopyText,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { CheckIcon, CopyIcon, GlobeIcon, ImageIcon } from "./icons";
 import type { ChatMarkdownProps } from "./markdown";
 import {

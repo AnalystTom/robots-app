@@ -1,7 +1,7 @@
-import { SecretStoreUnavailableError } from "@rakazo/adapter-kit";
-import type { Actor } from "@rakazo/contracts";
-import { credentialForModel } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+import { SecretStoreUnavailableError } from "@robots/adapter-kit";
+import type { Actor } from "@robots/contracts";
+import { credentialForModel } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import { selectConfiguredModel } from "./model-roles.js";
 import { serializeModelSecret } from "./model-secret.js";

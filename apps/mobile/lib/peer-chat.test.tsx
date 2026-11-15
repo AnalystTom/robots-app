@@ -59,7 +59,7 @@ vi.mock("./native", () => ({
   useThemedStyles: (createStyles: () => unknown) => createStyles(),
 }));
 vi.mock("../components/glass-title", () => ({ glassHeaderOptions: () => ({}) }));
-vi.mock("@rakazo/chat-ui/native", () => ({
+vi.mock("@robots/chat-ui/native", () => ({
   ChatMarkdown: ({ children }: { children: ReactNode }) => createElement("p", null, children),
 }));
 vi.mock("expo-router", () => ({

@@ -10,12 +10,12 @@ import type {
   ModelCredentialFailedState,
   ModelCredentialRetireReason,
   SecretStore,
-} from "@rakazo/adapter-kit";
-import type { ModelOAuthBegin, ModelOAuthSignInMode, SettingsScope } from "@rakazo/contracts";
-import { canonicalPiProviderId } from "@rakazo/contracts";
-import type { Prisma, PrismaClient } from "@rakazo/db";
-import { runAsSystem, runAsTenant } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { ModelOAuthBegin, ModelOAuthSignInMode, SettingsScope } from "@robots/contracts";
+import { canonicalPiProviderId } from "@robots/contracts";
+import type { Prisma, PrismaClient } from "@robots/db";
+import { runAsSystem, runAsTenant } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { StoredModelSecret } from "./model-secret.js";
 import { keptModelSettings, parseModelSecret, serializeModelSecret } from "./model-secret.js";
 import { createManualAnthropicOAuthLogin } from "./pi-anthropic-oauth.js";
@@ -39,19 +39,19 @@ export const SUBSCRIPTION_SIGN_IN_PROVIDERS: Record<
     loginLabel: "Sign in with ChatGPT",
     hint: "ChatGPT Plus/Pro",
     billing:
-      "Sign in with ChatGPT Plus or Pro. Uses your OpenAI subscription. Rakazo does not pay.",
+      "Sign in with ChatGPT Plus or Pro. Uses your OpenAI subscription. RoBots does not pay.",
   },
   [COPILOT_OAUTH_PROVIDER]: {
     mode: "device-code",
     loginLabel: "Sign in with GitHub Copilot",
     hint: "Copilot",
-    billing: "Sign in with GitHub Copilot. Uses your Copilot subscription. Rakazo does not pay.",
+    billing: "Sign in with GitHub Copilot. Uses your Copilot subscription. RoBots does not pay.",
   },
   [XAI_OAUTH_PROVIDER]: {
     mode: "device-code",
     loginLabel: "Sign in with SuperGrok or X Premium",
     hint: "SuperGrok / key",
-    billing: "Sign in with SuperGrok or X Premium, or paste an xAI API key. Rakazo does not pay.",
+    billing: "Sign in with SuperGrok or X Premium, or paste an xAI API key. RoBots does not pay.",
   },
   [ANTHROPIC_OAUTH_PROVIDER]: {
     mode: "auth-url",

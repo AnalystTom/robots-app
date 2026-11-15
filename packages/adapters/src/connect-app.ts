@@ -1,12 +1,12 @@
-import type { AdapterContext, ManagedConnectorProvider } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
-import { appConnectCard, matchAppCatalog, matchesAppConnection } from "@rakazo/core";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
+import type { AdapterContext, ManagedConnectorProvider } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
+import { appConnectCard, matchAppCatalog, matchesAppConnection } from "@robots/core";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
 import {
   appendEventInTransaction,
   createThreadMessageInTransaction,
   THREAD_LOCK_TRANSACTION_OPTIONS,
-} from "@rakazo/db";
+} from "@robots/db";
 
 const RECENT_MESSAGES = 50;
 

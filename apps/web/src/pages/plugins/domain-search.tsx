@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { IntegrationCatalogResult, IntegrationCatalogSurface } from "@rakazo/contracts";
-import { Button, Input } from "@rakazo/ui-web";
+import type { IntegrationCatalogResult, IntegrationCatalogSurface } from "@robots/contracts";
+import { Button, Input } from "@robots/ui-web";
 import { useState } from "react";
 import { rpc } from "../../lib/rpc";
 import { errorText } from "../../lib/user-error";

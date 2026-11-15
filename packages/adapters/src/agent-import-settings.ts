@@ -3,13 +3,13 @@ import type {
   AgentImportStatus,
   AgentImportWarning,
   McpServerConfigInput,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   AGENT_IMPORT_MAX_FILE_LENGTH,
   isValidTimeZone,
   McpServerConfigInput as McpServerConfigSchema,
-} from "@rakazo/contracts";
-import type { GrokBot } from "@rakazo/core";
+} from "@robots/contracts";
+import type { GrokBot } from "@robots/core";
 import {
   AGENT_IMPORT_PROVIDER_KEYS,
   grokRoutineCron,
@@ -20,12 +20,12 @@ import {
   normalizeImportProvider,
   parseDotEnv,
   readAgentImportConfig,
-} from "@rakazo/core";
+} from "@robots/core";
 import { isCatalogProviderBaseUrl, listPiCatalog } from "./pi-models.js";
 
 /**
  * Translates OpenClaw and Hermes settings (model, MCP servers, scheduled jobs, API keys)
- * into Rakazo's inputs. Mirrors what `hermes import-agent openclaw` and `openclaw migrate
+ * into RoBots's inputs. Mirrors what `hermes import-agent openclaw` and `openclaw migrate
  * hermes` carry over, plus scheduled jobs, which those tools only archive.
  */
 
@@ -395,10 +395,10 @@ function mcpServer(
     : isObject(entry.tools)
       ? entry.tools
       : {};
-  // Rakazo only lists allowed tools; dropping an exclusion would grant more than the source.
+  // RoBots only lists allowed tools; dropping an exclusion would grant more than the source.
   if (Array.isArray(filter.exclude) && filter.exclude.length > 0) return null;
   const warnings: AgentImportWarning[] = [];
-  // An approved server gets all its tools in Rakazo, so a source tool limit would widen.
+  // An approved server gets all its tools in RoBots, so a source tool limit would widen.
   if (Array.isArray(filter.include) && filter.include.length > 0) warnings.push("dropped_settings");
   // MCP credentials are never imported: headers and env stay blank; only their names show.
   const names = (record: unknown) => (isObject(record) ? Object.keys(record) : []);
@@ -424,7 +424,7 @@ function mcpServer(
     const env: Record<string, string> = {};
     const args = Array.isArray(entry.args) ? entry.args.map(String) : [];
     if (!stdioAllowed(text(entry.command))) warnings.unshift("unsupported_command");
-    // Rakazo runs servers on its computers: a working folder is dropped, local paths are absent.
+    // RoBots runs servers on its computers: a working folder is dropped, local paths are absent.
     if (
       (entry.cwd !== undefined && entry.cwd !== "") ||
       [text(entry.command), ...args].some(isLocalPath)

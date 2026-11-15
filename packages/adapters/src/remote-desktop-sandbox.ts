@@ -14,10 +14,10 @@ import type {
   ScreenRequest,
   ScreenSession,
   TerminalRequest,
-} from "@rakazo/adapter-kit";
-import type { ComputerSize } from "@rakazo/contracts";
-import { boundedSandboxCommandTimeoutMs, retry } from "@rakazo/core";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { ComputerSize } from "@robots/contracts";
+import { boundedSandboxCommandTimeoutMs, retry } from "@robots/core";
+import { getLogger } from "@robots/logging";
 import { sandboxIdleMs } from "./computer-idle.js";
 import {
   normalizeWorkspacePath,
@@ -39,7 +39,7 @@ import { shouldSkipPortableWorkspaceFile } from "./workspace-save-policy.js";
 const DISPLAY_START = 20;
 /** The page tools are optional, so a stalled download gives up as Boat's and Daytona's do. */
 const PAGE_BROWSER_INSTALL_MS = 120_000;
-const REMOTE_WORKSPACE = "/home/user/rakazo-home";
+const REMOTE_WORKSPACE = "/home/user/robots-home";
 const REMOTE_BROWSER_PROFILES = `${REMOTE_WORKSPACE}/.browser-profiles`;
 
 /** Common boundary used by the E2B, Novita and instabox desktop SDKs. */
@@ -115,7 +115,7 @@ export function remoteDesktopCreateOptions(botId: string, apiKey: string) {
   return {
     apiKey,
     timeoutMs: sandboxIdleMs(),
-    metadata: { botId, rakazo: "computer" },
+    metadata: { botId, robots: "computer" },
     resolution: [1280, 800] as [number, number],
     lifecycle: { onTimeout: "pause" as const, autoResume: false },
   };
@@ -376,7 +376,7 @@ export class RemoteDesktopSandboxProvider implements SandboxProvider {
   /** Without the page tools, bots keep the desktop tools, which still work. */
   private async installPageBrowser(computer: ComputerRef, context: AdapterContext): Promise<void> {
     // The installer carries the helper's files, more than one command may hold, so it runs from a file.
-    const script = `/tmp/rakazo-page-browser-${randomUUID()}.sh`;
+    const script = `/tmp/robots-page-browser-${randomUUID()}.sh`;
     let installed = false;
     let unsafeStop = false;
     let stage = "transfer";

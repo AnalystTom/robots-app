@@ -1,5 +1,5 @@
-import { createLogger, createTestSink, installLogger, monitoringUserId } from "@rakazo/logging";
-import { requestLogging } from "@rakazo/logging/hono";
+import { createLogger, createTestSink, installLogger, monitoringUserId } from "@robots/logging";
+import { requestLogging } from "@robots/logging/hono";
 import { Hono } from "hono";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadEnv } from "./env.js";
@@ -23,7 +23,7 @@ function recordingFetch(status = 200, headers: Record<string, string> = {}) {
 
 describe("monitoring routes", () => {
   afterEach(() => {
-    installLogger(createLogger({ service: "rakazo-api", level: "off", sinks: [] }));
+    installLogger(createLogger({ service: "robots-api", level: "off", sinks: [] }));
   });
 
   it("parses DSNs into the envelope endpoint", () => {
@@ -41,7 +41,7 @@ describe("monitoring routes", () => {
 
   it("reads browser config from the environment", () => {
     const base = {
-      DATABASE_URL: "postgres://rakazo:rakazo@127.0.0.1:5433/rakazo",
+      DATABASE_URL: "postgres://robots:robots@127.0.0.1:5433/robots",
       NODE_ENV: "test",
     };
     expect(loadEnv(base).browserMonitoring).toBeUndefined();
@@ -151,7 +151,7 @@ describe("monitoring routes", () => {
 
   it("does not report a collector outage back to that collector", async () => {
     const sink = createTestSink();
-    const logger = createLogger({ service: "rakazo-api", sinks: [sink] });
+    const logger = createLogger({ service: "robots-api", sinks: [sink] });
     installLogger(logger);
     const failing = (async () => {
       throw new Error("connect refused");

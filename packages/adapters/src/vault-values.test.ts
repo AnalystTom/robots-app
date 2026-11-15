@@ -1,13 +1,13 @@
 import { randomBytes } from "node:crypto";
-import type { AdapterContext, SecretStore } from "@rakazo/adapter-kit";
-import type { BotSecretDestination } from "@rakazo/contracts";
-import type { PrismaClient, SpaceKeyRecord, SpaceKeyStore } from "@rakazo/db";
+import type { AdapterContext, SecretStore } from "@robots/adapter-kit";
+import type { BotSecretDestination } from "@robots/contracts";
+import type { PrismaClient, SpaceKeyRecord, SpaceKeyStore } from "@robots/db";
 import {
   ContentKeyRing,
   ciphertextKeyId,
   LocalKeyProvider,
   VaultKeyOwnerGoneError,
-} from "@rakazo/db";
+} from "@robots/db";
 import type { Mock } from "vitest";
 import { describe, expect, it, vi } from "vitest";
 import {

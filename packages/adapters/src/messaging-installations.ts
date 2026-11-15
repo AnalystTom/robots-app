@@ -4,10 +4,10 @@ import type {
   MessagingInstallationStore,
   MessagingInstallProvider,
   SecretStore,
-} from "@rakazo/adapter-kit";
-import type { Actor, MessagingInstallationSummary } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
-import { IsolationError, runAsSystem } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import type { Actor, MessagingInstallationSummary } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
+import { IsolationError, runAsSystem } from "@robots/db";
 import { credentialDigest } from "./credential-digest.js";
 import { installationSenderAddress } from "./installed-messaging-surface.js";
 import type { SecretCleanup, SecretCleanupDeps } from "./secret-cleanup.js";

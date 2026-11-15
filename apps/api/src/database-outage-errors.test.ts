@@ -1,9 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { SandboxUnavailableError } from "@rakazo/adapter-kit";
-import { databaseOutage } from "@rakazo/db";
-import type { TestSink } from "@rakazo/logging";
-import { createLogger, createTestSink, installLogger, runWithLogContext } from "@rakazo/logging";
-import { requestLogging } from "@rakazo/logging/hono";
+import { SandboxUnavailableError } from "@robots/adapter-kit";
+import { databaseOutage } from "@robots/db";
+import type { TestSink } from "@robots/logging";
+import { createLogger, createTestSink, installLogger, runWithLogContext } from "@robots/logging";
+import { requestLogging } from "@robots/logging/hono";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { authLibraryLogger, withAuthLibraryFailures } from "./app.js";
@@ -11,13 +11,13 @@ import { handleHttpError, handleRpcError, requestHitDatabaseOutage } from "./rpc
 
 let sink: TestSink;
 beforeEach(() => {
-  installLogger(createLogger({ service: "rakazo-api", level: "off", sinks: [] }));
+  installLogger(createLogger({ service: "robots-api", level: "off", sinks: [] }));
   databaseOutage.succeeded();
   sink = createTestSink();
-  installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+  installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
 });
 afterEach(() => {
-  installLogger(createLogger({ service: "rakazo-api", level: "off", sinks: [] }));
+  installLogger(createLogger({ service: "robots-api", level: "off", sinks: [] }));
   databaseOutage.succeeded();
 });
 

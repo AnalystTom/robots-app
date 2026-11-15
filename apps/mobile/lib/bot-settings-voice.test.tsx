@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { BOT_COLORS, BOT_SETTINGS_SECTIONS } from "@rakazo/contracts";
+import { BOT_COLORS, BOT_SETTINGS_SECTIONS } from "@robots/contracts";
 import * as Notifications from "expo-notifications";
 import type { ComponentProps, ReactNode } from "react";
 import { act, createElement, useEffect } from "react";
@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   instructions: "",
   description: "",
   crossSpaceCommunication: false,
-  avatarSet: undefined as "organic" | "rakazo" | undefined,
+  avatarSet: undefined as "organic" | "robots" | undefined,
   focus: undefined as string | undefined,
   os: "ios",
   work: [] as unknown[],
@@ -632,8 +632,8 @@ describe("bot settings device voice menu", () => {
       )!;
     expect(option("Original").dataset.state).toBe("on");
     expect(mocks.rpc).not.toHaveBeenCalled();
-    await act(async () => option("Rakazo").click());
-    mocks.rpc.mockResolvedValueOnce({ avatarSet: "rakazo" });
+    await act(async () => option("RoBots").click());
+    mocks.rpc.mockResolvedValueOnce({ avatarSet: "robots" });
     await act(async () =>
       [...container.querySelectorAll<HTMLButtonElement>("button")]
         .find((button) => button.textContent === "Save")!
@@ -641,16 +641,16 @@ describe("bot settings device voice menu", () => {
     );
     expect(mocks.rpc).toHaveBeenCalledWith("bots/update", {
       botId: "bot-fixture",
-      avatarSet: "rakazo",
+      avatarSet: "robots",
     });
     act(() => root.unmount());
     root = createRoot(container);
-    mocks.avatarSet = "rakazo";
+    mocks.avatarSet = "robots";
     await render();
     await act(async () =>
       container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
     );
-    expect(option("Rakazo").dataset.state).toBe("on");
+    expect(option("RoBots").dataset.state).toBe("on");
     await act(async () => option("Original").click());
     mocks.rpc.mockResolvedValueOnce({ avatarSet: "organic" });
     await act(async () =>
@@ -912,13 +912,13 @@ describe("bot settings device voice menu", () => {
       {
         request: {
           identifier: "direct-chat",
-          content: { data: { "rakazo.botId": "bot-fixture", "rakazo.threadId": "thread-fixture" } },
+          content: { data: { "robots.botId": "bot-fixture", "robots.threadId": "thread-fixture" } },
         },
       },
       {
         request: {
           identifier: "group-chat",
-          content: { data: { "rakazo.botId": "bot-fixture", "rakazo.threadId": "group-thread" } },
+          content: { data: { "robots.botId": "bot-fixture", "robots.threadId": "group-thread" } },
         },
       },
     ] as never);

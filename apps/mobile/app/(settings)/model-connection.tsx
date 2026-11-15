@@ -1,6 +1,6 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { ModelApiProtocol, ModelHeaderRow, ThinkingLevel } from "@rakazo/contracts";
+import type { ModelApiProtocol, ModelHeaderRow, ThinkingLevel } from "@robots/contracts";
 import {
   compatibleEndpointPresets,
   connectionDisplayName,
@@ -10,7 +10,7 @@ import {
   modelRoutingForm,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   savedCompatibleEndpointMatches,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   compatibleConnectionReady,
   compatibleModelRows,
@@ -23,7 +23,7 @@ import {
   modelConnectRequest,
   sanitizeModelConnectionError,
   savedCompatibleModelIds,
-} from "@rakazo/core";
+} from "@robots/core";
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -738,7 +738,7 @@ export default function ModelConnection() {
         ) : null}
         {selected.auth === "oauth" && !subscriptionSignIn ? (
           <Text style={styles.secondary}>
-            {t`This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider.`}
+            {t`This subscription sign-in is not available in RoBots yet. Use a deployment credential or choose another provider.`}
           </Text>
         ) : null}
       </>

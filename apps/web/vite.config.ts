@@ -1,11 +1,11 @@
 import path from "node:path";
 import { lingui } from "@lingui/vite-plugin";
-import { buildIdAt } from "@rakazo/contracts/client-build";
+import { buildIdAt } from "@robots/contracts/client-build";
 import {
   COMPUTER_SCREEN_PREFIX,
   COMPUTER_SCREEN_RUNTIME_PATH,
   contentSecurityPolicyFor,
-} from "@rakazo/contracts/content-security-policy";
+} from "@robots/contracts/content-security-policy";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
@@ -22,7 +22,7 @@ import {
   sharedPageHeaders,
   webServerSettings,
 } from "./src/preview-middleware.js";
-import { rakazoPwa } from "./src/pwa/plugin.js";
+import { robotsPwa } from "./src/pwa/plugin.js";
 
 export default defineConfig(({ command, mode }) => {
   // Names this build in every API request; the dev server has none, so the handshake stays off.
@@ -31,7 +31,7 @@ export default defineConfig(({ command, mode }) => {
   const webPort = Number(process.env.WEB_PORT ?? rootEnv.WEB_PORT ?? 5173);
   const settings = webServerSettings(
     (name) => process.env[name] ?? rootEnv[name],
-    createServiceLogger({ service: "rakazo-web" }),
+    createServiceLogger({ service: "robots-web" }),
   );
   const { api, allowedHosts, appPolicy, instanceTheme } = settings;
   // Set by the server built from this config; reusing one config object for two servers would
@@ -53,12 +53,12 @@ export default defineConfig(({ command, mode }) => {
         },
       },
     },
-    define: { "import.meta.env.RAKAZO_BUILD": JSON.stringify(buildId) },
+    define: { "import.meta.env.ROBOTS_BUILD": JSON.stringify(buildId) },
     plugins: [
       {
         // The API reads this to name the deployed build, and a tab fetches it to confirm the
         // server already serves a newer build before it reloads.
-        name: "rakazo-build-id",
+        name: "robots-build-id",
         apply: "build",
         generateBundle() {
           this.emitFile({ type: "asset", fileName: "build-id", source: `${buildId}\n` });
@@ -68,10 +68,10 @@ export default defineConfig(({ command, mode }) => {
       babel({ plugins: ["@lingui/babel-plugin-lingui-macro"] }),
       lingui(),
       tailwindcss(),
-      rakazoPwa(buildId),
+      robotsPwa(buildId),
       {
         // Dev keeps React Refresh unrestricted in app pages; screen documents always use CSP.
-        name: "rakazo-content-security-policy",
+        name: "robots-content-security-policy",
         generateBundle() {
           for (const [pathname, asset] of Object.entries(wuyingScreenAssets)) {
             this.emitFile({ type: "asset", fileName: pathname.slice(1), source: asset.source });
@@ -119,14 +119,14 @@ export default defineConfig(({ command, mode }) => {
         },
       },
       {
-        // Without RAKAZO_THEME the page never links the theme, so the default deploy is unchanged.
-        name: "rakazo-instance-theme",
+        // Without ROBOTS_THEME the page never links the theme, so the default deploy is unchanged.
+        name: "robots-instance-theme",
         transformIndexHtml: (html) =>
           command === "serve" && instanceTheme ? withInstanceThemeLink(html) : html,
       },
     ],
     server: {
-      host: process.env.RAKAZO_DEV_HOST ?? rootEnv.RAKAZO_DEV_HOST ?? "127.0.0.1",
+      host: process.env.ROBOTS_DEV_HOST ?? rootEnv.ROBOTS_DEV_HOST ?? "127.0.0.1",
       port: webPort,
       strictPort: true,
       allowedHosts,

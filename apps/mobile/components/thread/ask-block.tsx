@@ -1,10 +1,10 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { LoginFieldInput } from "@rakazo/contracts";
-import { normalizeOneTimeCode, vaultKind } from "@rakazo/contracts";
-import { isQuestionAskBlock, isSecretAskBlock } from "@rakazo/core";
-import { secretAnswerErrorText } from "@rakazo/i18n/vault";
-import { fontWeight, typeScale } from "@rakazo/ui-tokens";
+import type { LoginFieldInput } from "@robots/contracts";
+import { normalizeOneTimeCode, vaultKind } from "@robots/contracts";
+import { isQuestionAskBlock, isSecretAskBlock } from "@robots/core";
+import { secretAnswerErrorText } from "@robots/i18n/vault";
+import { fontWeight, typeScale } from "@robots/ui-tokens";
 import { useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { plainAskTitle } from "../../lib/ask-title";

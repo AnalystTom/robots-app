@@ -1,13 +1,13 @@
 import { useLingui } from "@lingui/react/macro";
-import type { AgentImportSetupItem, AgentImportSetupState } from "@rakazo/contracts";
+import type { AgentImportSetupItem, AgentImportSetupState } from "@robots/contracts";
 import {
   importSetupStateInput,
   isImportSetupComplete,
   isImportSetupDone,
   isImportSetupVerifiable,
   isRetiredImportSetup,
-} from "@rakazo/core";
-import { typeScale } from "@rakazo/ui-tokens";
+} from "@robots/core";
+import { typeScale } from "@robots/ui-tokens";
 import type { Href } from "expo-router";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";

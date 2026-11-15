@@ -5,14 +5,14 @@ import type {
   VoiceCredential,
   VoiceInfo,
   VoiceStatus,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   DEFAULT_COMPATIBLE_STT_MODEL,
   DEFAULT_COMPATIBLE_TTS_MODEL,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   voiceConnectionForm,
-} from "@rakazo/contracts";
-import { fetchFresh } from "@rakazo/core/query";
+} from "@robots/contracts";
+import { fetchFresh } from "@robots/core/query";
 import {
   Button,
   Dialog,
@@ -25,7 +25,7 @@ import {
   NativeSelect,
   NativeSelectOption,
   Spinner,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { useQueryClient } from "@tanstack/react-query";
 import { XIcon } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";

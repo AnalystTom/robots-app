@@ -1,4 +1,4 @@
-import { bestEffort } from "@rakazo/logging";
+import { bestEffort } from "@robots/logging";
 import type { LocalServiceConnection } from "./local-service-endpoint.js";
 import { fetchLocalService } from "./local-service-endpoint.js";
 import { truncateUtf8 } from "./utf8.js";

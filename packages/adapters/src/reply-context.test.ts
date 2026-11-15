@@ -1,5 +1,5 @@
-import { REPLY_QUOTE_MAX_LENGTH } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+import { REPLY_QUOTE_MAX_LENGTH } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import { toHistory } from "./pi-runtime-history.js";
 import {

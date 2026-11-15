@@ -1,4 +1,4 @@
-import { BillingNoMonthlyCreditsError, BillingPaymentNotCompletedError } from "@rakazo/adapter-kit";
+import { BillingNoMonthlyCreditsError, BillingPaymentNotCompletedError } from "@robots/adapter-kit";
 import { describe, expect, it, vi } from "vitest";
 import { byokTierOf, StripeBillingProvider } from "./stripe-billing.js";
 
@@ -53,7 +53,7 @@ describe("Stripe prepaid model credits", () => {
         .find((r) => r.path === "/v1/prices" && r.params.has("unit_amount"))
         ?.params.get("unit_amount"),
     ).toBe("2000");
-    expect(body.get("subscription_data[metadata][rakazo_credit_cents]")).toBe("2000");
+    expect(body.get("subscription_data[metadata][robots_credit_cents]")).toBe("2000");
     expect(body.has("subscription_data[trial_period_days]")).toBe(false);
   });
   it("creates top-ups as one-time payments without expiring other checkout sessions", async () => {
@@ -69,7 +69,7 @@ describe("Stripe prepaid model credits", () => {
     expect(requests[0]!.params.get("mode")).toBe("payment");
     expect(requests[0]!.params.get("allowed_payment_method_types[0]")).toBe("card");
     expect(requests[0]!.params.has("subscription_data[billing_mode][type]")).toBe(false);
-    expect(requests[0]!.params.get("payment_intent_data[metadata][rakazo_credit_cents]")).toBe(
+    expect(requests[0]!.params.get("payment_intent_data[metadata][robots_credit_cents]")).toBe(
       "2000",
     );
   });
@@ -131,7 +131,7 @@ describe("Stripe prepaid model credits", () => {
     });
     const created = requests.find((r) => r.path === "/v1/prices" && r.params.has("unit_amount"));
     expect(created?.params.get("recurring[interval]")).toBe("year");
-    expect(created?.params.get("lookup_key")).toBe("rakazo_byok_yearly_14400");
+    expect(created?.params.get("lookup_key")).toBe("robots_byok_yearly_14400");
   });
   it("names the tier in the price's lookup key, keeping Standard's keys", async () => {
     const { provider, requests } = fixture();
@@ -143,12 +143,12 @@ describe("Stripe prepaid model credits", () => {
       cancelUrl: "https://example.test/app",
     });
     const created = requests.find((r) => r.path === "/v1/prices" && r.params.has("unit_amount"));
-    expect(created?.params.get("lookup_key")).toBe("rakazo_byok_pro_monthly_4900");
+    expect(created?.params.get("lookup_key")).toBe("robots_byok_pro_monthly_4900");
     expect(created?.params.get("recurring[interval]")).toBe("month");
-    expect(byokTierOf("rakazo_byok_pro_monthly_4900")).toBe("pro");
-    expect(byokTierOf("rakazo_byok_max_yearly_142800")).toBe("max");
-    expect(byokTierOf("rakazo_byok_monthly_1500")).toBe("standard");
-    expect(byokTierOf("rakazo_byok_yearly_14400")).toBe("standard");
+    expect(byokTierOf("robots_byok_pro_monthly_4900")).toBe("pro");
+    expect(byokTierOf("robots_byok_max_yearly_142800")).toBe("max");
+    expect(byokTierOf("robots_byok_monthly_1500")).toBe("standard");
+    expect(byokTierOf("robots_byok_yearly_14400")).toBe("standard");
     expect(byokTierOf(null)).toBe("standard");
   });
   it("leaves a plan alone when it is not the live monthly plan, or credits have started", async () => {
@@ -176,13 +176,13 @@ describe("Stripe prepaid model credits", () => {
     const { provider, requests } = fixture({
       "GET /v1/subscriptions": {
         data: [
-          plan("sub_active", "active", { rakazo_plan: "byok" }),
-          plan("sub_unpaid", "canceled", { rakazo_plan: "byok" }),
-          plan("sub_yearly", "active", { rakazo_plan: "byok" }, "year"),
-          plan("sub_overdue", "past_due", { rakazo_plan: "byok" }),
-          plan("sub_cheap", "active", { rakazo_plan: "byok" }, "month", 1000),
+          plan("sub_active", "active", { robots_plan: "byok" }),
+          plan("sub_unpaid", "canceled", { robots_plan: "byok" }),
+          plan("sub_yearly", "active", { robots_plan: "byok" }, "year"),
+          plan("sub_overdue", "past_due", { robots_plan: "byok" }),
+          plan("sub_cheap", "active", { robots_plan: "byok" }, "month", 1000),
           (() => {
-            const quarterly = plan("sub_quarterly", "active", { rakazo_plan: "byok" });
+            const quarterly = plan("sub_quarterly", "active", { robots_plan: "byok" });
             quarterly.items.data[0]!.price.recurring = {
               interval: "month",
               interval_count: 3,
@@ -190,12 +190,12 @@ describe("Stripe prepaid model credits", () => {
             return quarterly;
           })(),
           (() => {
-            const seats = plan("sub_seats", "active", { rakazo_plan: "byok" });
+            const seats = plan("sub_seats", "active", { robots_plan: "byok" });
             seats.items.data[0]!.quantity = 2;
             return seats;
           })(),
           {
-            ...plan("sub_cancelling", "active", { rakazo_plan: "byok" }),
+            ...plan("sub_cancelling", "active", { robots_plan: "byok" }),
             cancel_at_period_end: true,
           },
         ],
@@ -217,8 +217,8 @@ describe("Stripe prepaid model credits", () => {
     const withCredits = fixture({
       "GET /v1/subscriptions": {
         data: [
-          plan("sub_active", "active", { rakazo_plan: "byok" }),
-          plan("sub_credits", "active", { rakazo_credit_cents: "3000" }),
+          plan("sub_active", "active", { robots_plan: "byok" }),
+          plan("sub_credits", "active", { robots_credit_cents: "3000" }),
         ],
         has_more: false,
       },
@@ -236,7 +236,7 @@ describe("Stripe prepaid model credits", () => {
           {
             id: "sub_byok",
             status: "active",
-            metadata: { rakazo_plan: "byok" },
+            metadata: { robots_plan: "byok" },
             created: 1,
             items: {
               data: [
@@ -269,7 +269,7 @@ describe("Stripe prepaid model credits", () => {
     const subscription = (lookupKey: string, unitAmount: number) => ({
       id: "sub_byok",
       status: "active",
-      metadata: { rakazo_plan: "byok" },
+      metadata: { robots_plan: "byok" },
       created: 1,
       items: {
         data: [
@@ -288,7 +288,7 @@ describe("Stripe prepaid model credits", () => {
     });
     const { provider, requests } = fixture({
       "GET /v1/subscriptions": {
-        data: [subscription("rakazo_byok_pro_monthly_4900", 4900)],
+        data: [subscription("robots_byok_pro_monthly_4900", 4900)],
         has_more: false,
       },
       "POST /v1/subscriptions/sub_byok": { id: "sub_byok" },
@@ -315,7 +315,7 @@ describe("Stripe prepaid model credits", () => {
     expect(update.get("proration_behavior")).toBe("always_invoice");
     expect(update.get("payment_behavior")).toBe("error_if_incomplete");
     const created = requests.find((r) => r.path === "/v1/prices" && r.params.has("unit_amount"));
-    expect(created?.params.get("lookup_key")).toBe("rakazo_byok_max_monthly_14900");
+    expect(created?.params.get("lookup_key")).toBe("robots_byok_max_monthly_14900");
     expect(created?.params.get("recurring[interval]")).toBe("month");
   });
   it("reports the price an own-key subscription was bought at", async () => {
@@ -325,7 +325,7 @@ describe("Stripe prepaid model credits", () => {
           {
             id: "sub_byok",
             status: "active",
-            metadata: { rakazo_plan: "byok" },
+            metadata: { robots_plan: "byok" },
             created: 1,
             items: {
               data: [
@@ -386,7 +386,7 @@ describe("Stripe prepaid model credits", () => {
             currency: "usd",
             amount_total: 50000,
             payment_intent: "pi_retired",
-            metadata: { rakazo_credit_cents: "50000" },
+            metadata: { robots_credit_cents: "50000" },
           },
         ],
         has_more: false,
@@ -432,7 +432,7 @@ describe("Stripe prepaid model credits", () => {
             currency: "usd",
             amount_total: 2000,
             payment_intent: "pi_1",
-            metadata: { rakazo_credit_cents: "2000" },
+            metadata: { robots_credit_cents: "2000" },
           },
           {
             id: "cs_unpaid",
@@ -441,7 +441,7 @@ describe("Stripe prepaid model credits", () => {
             currency: "usd",
             amount_total: 2000,
             payment_intent: "pi_2",
-            metadata: { rakazo_credit_cents: "2000" },
+            metadata: { robots_credit_cents: "2000" },
           },
         ],
         has_more: false,
@@ -458,7 +458,7 @@ describe("Stripe prepaid model credits", () => {
                 {
                   amount: 1000,
                   period: { end: 2_000_000_000 },
-                  metadata: { rakazo_credit_cents: "1000" },
+                  metadata: { robots_credit_cents: "1000" },
                   parent: {
                     type: "subscription_item_details",
                     subscription_item_details: { subscription: "sub_credit_fixture" },
@@ -502,7 +502,7 @@ describe("Stripe prepaid model credits", () => {
             currency: "usd",
             amount_total: 1000,
             payment_intent: null,
-            metadata: { rakazo_credit_cents: "1000" },
+            metadata: { robots_credit_cents: "1000" },
           },
         ],
         has_more: false,
@@ -519,7 +519,7 @@ describe("Stripe prepaid model credits", () => {
                 {
                   amount: 1000,
                   period: { end: 2_000_000_000 },
-                  metadata: { rakazo_credit_cents: "1000" },
+                  metadata: { robots_credit_cents: "1000" },
                   parent: {
                     type: "subscription_item_details",
                     subscription_item_details: { subscription: "sub_credit_fixture" },
@@ -545,7 +545,7 @@ describe("Stripe prepaid model credits", () => {
             parent: {
               subscription_details: {
                 subscription: "sub_credit_fixture",
-                metadata: { rakazo_credit_cents: "1000" },
+                metadata: { robots_credit_cents: "1000" },
               },
             },
           },
@@ -568,7 +568,7 @@ describe("Stripe prepaid model credits", () => {
           id: "sub_fixture",
           status: "active",
           created: 1,
-          metadata: { rakazo_credit_cents: String(amount) },
+          metadata: { robots_credit_cents: String(amount) },
           items: {
             data: [{ id: "si_fixture", price: { id: "price_old", product: "prod_archived" } }],
           },
@@ -585,9 +585,9 @@ describe("Stripe prepaid model credits", () => {
     expect(body.get("items[0][price]")).toBe("price_credits");
     expect(body.get("proration_behavior")).toBe("always_invoice");
     expect(body.get("payment_behavior")).toBe("error_if_incomplete");
-    expect(body.get("metadata[rakazo_credit_cents]")).toBe("2000");
+    expect(body.get("metadata[robots_credit_cents]")).toBe("2000");
     expect(requests.find((r) => r.params.has("product_data[name]"))?.params.get("lookup_key")).toBe(
-      "rakazo_monthly_credits_2000",
+      "robots_monthly_credits_2000",
     );
   });
   it("names a change to an ended monthly plan as having no plan to change", async () => {
@@ -672,7 +672,7 @@ describe("Stripe prepaid model credits", () => {
                 {
                   amount: 2000,
                   period: { end: 2_000_000_000 },
-                  metadata: { rakazo_credit_cents: "1000" },
+                  metadata: { robots_credit_cents: "1000" },
                   parent: {
                     type: "subscription_item_details",
                     subscription_item_details: { subscription: "sub_credit_fixture" },
@@ -683,7 +683,7 @@ describe("Stripe prepaid model credits", () => {
             parent: {
               subscription_details: {
                 subscription: "sub_credit_fixture",
-                metadata: { rakazo_credit_cents: "2000" },
+                metadata: { robots_credit_cents: "2000" },
               },
             },
           },
@@ -733,7 +733,7 @@ describe("Stripe prepaid model credits", () => {
               parent: {
                 subscription_details: {
                   subscription: "sub_credit",
-                  metadata: { rakazo_credit_cents: "1000" },
+                  metadata: { robots_credit_cents: "1000" },
                 },
               },
               lines: {

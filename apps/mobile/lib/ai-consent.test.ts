@@ -29,7 +29,7 @@ vi.mock("react-native", () => ({
 
 import { i18n } from "@lingui/core";
 import { generateMessageId } from "@lingui/message-utils/generateMessageId";
-import type { AiRecipient } from "@rakazo/contracts";
+import type { AiRecipient } from "@robots/contracts";
 import { Alert } from "react-native";
 import { FOREGROUND_FALLBACK_MS, promptAiConsent } from "./ai-consent";
 import { resetI18nForTests } from "./i18n";

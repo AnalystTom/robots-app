@@ -1,5 +1,5 @@
 {
-  "name": "@rakazo/worker",
+  "name": "@robots/worker",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
@@ -11,12 +11,12 @@
     "test": "vitest run --root ../.. apps/worker/src"
   },
   "dependencies": {
-    "@rakazo/adapter-kit": "workspace:*",
-    "@rakazo/adapters": "workspace:*",
-    "@rakazo/core": "workspace:*",
-    "@rakazo/db": "workspace:*",
-    "@rakazo/logging": "workspace:*",
-    "@rakazo/memory": "workspace:*"
+    "@robots/adapter-kit": "workspace:*",
+    "@robots/adapters": "workspace:*",
+    "@robots/core": "workspace:*",
+    "@robots/db": "workspace:*",
+    "@robots/logging": "workspace:*",
+    "@robots/memory": "workspace:*"
   },
   "devDependencies": {
     "typescript": "7.0.2",

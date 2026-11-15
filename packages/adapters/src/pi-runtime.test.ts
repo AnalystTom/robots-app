@@ -1,4 +1,4 @@
-import type { ConnectorTool } from "@rakazo/adapter-kit";
+import type { ConnectorTool } from "@robots/adapter-kit";
 import { describe, expect, it } from "vitest";
 import {
   agentToolDefinitions,
@@ -81,8 +81,8 @@ describe("describeToolActivity", () => {
     expect(describeToolActivity("create_space", { name: "Customer support" })).toBe(
       "Creating space: Customer support",
     );
-    expect(describeToolActivity("web_search", { query: "rakazo agents" })).toBe(
-      "Searching the web: rakazo agents",
+    expect(describeToolActivity("web_search", { query: "robots agents" })).toBe(
+      "Searching the web: robots agents",
     );
     expect(describeToolActivity("web_fetch", { url: "https://example.com" })).toBe(
       "Reading page: https://example.com/",

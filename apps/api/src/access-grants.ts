@@ -1,8 +1,8 @@
 import { ORPCError } from "@orpc/server";
-import type { AccessGrant, AccessGrantInput } from "@rakazo/contracts";
-import { AccessGrantInputSchema } from "@rakazo/contracts";
-import type { Prisma, PrismaClient } from "@rakazo/db";
-import { extendByokFreePeriod, FREE_MONTH_DAYS, reconcileCreditPurchase } from "@rakazo/db";
+import type { AccessGrant, AccessGrantInput } from "@robots/contracts";
+import { AccessGrantInputSchema } from "@robots/contracts";
+import type { Prisma, PrismaClient } from "@robots/db";
+import { extendByokFreePeriod, FREE_MONTH_DAYS, reconcileCreditPurchase } from "@robots/db";
 
 const LIST_LIMIT = 200;
 const WITH_CREATOR = { createdBy: { select: { email: true } } } as const;

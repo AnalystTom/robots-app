@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { TransactionalEmail, TransactionalEmailProvider } from "@rakazo/adapter-kit";
-import { EmailRecipientRejectedError } from "@rakazo/adapter-kit";
-import { cancelResponseBody, parseRetryAfter, readBoundedJsonResponse, retry } from "@rakazo/core";
+import type { TransactionalEmail, TransactionalEmailProvider } from "@robots/adapter-kit";
+import { EmailRecipientRejectedError } from "@robots/adapter-kit";
+import { cancelResponseBody, parseRetryAfter, readBoundedJsonResponse, retry } from "@robots/core";
 
 const MAX_RESPONSE_BYTES = 4_096;
 

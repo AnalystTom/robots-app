@@ -1,12 +1,12 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { SecurityEventMetadata, SecurityEventType } from "@rakazo/contracts";
-import { getLogContext, getLogger, redactBindings } from "@rakazo/logging";
+import type { SecurityEventMetadata, SecurityEventType } from "@robots/contracts";
+import { getLogContext, getLogger, redactBindings } from "@robots/logging";
 import { recordAuditEvent } from "./audit-events.js";
 import type { PrismaClient } from "./client.js";
 import { parsePositiveInteger } from "./client.js";
 import { runAsSystem } from "./row-security.js";
 
-export type { SecurityEventType } from "@rakazo/contracts";
+export type { SecurityEventType } from "@robots/contracts";
 
 type SecurityEventDb = Pick<PrismaClient, "securityEvent">;
 

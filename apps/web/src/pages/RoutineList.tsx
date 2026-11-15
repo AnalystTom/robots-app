@@ -1,9 +1,9 @@
 import { t } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { Routine } from "@rakazo/contracts";
-import type { CronLabels } from "@rakazo/core";
-import { ENGLISH_CRON_LABELS, formatCron } from "@rakazo/core";
-import { Button, Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@rakazo/ui-web";
+import type { Routine } from "@robots/contracts";
+import type { CronLabels } from "@robots/core";
+import { ENGLISH_CRON_LABELS, formatCron } from "@robots/core";
+import { Button, Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@robots/ui-web";
 import type { LucideIcon } from "lucide-react";
 import {
   Clock,

@@ -5,7 +5,7 @@ import type {
   TelemetrySpan,
 } from "@earendil-works/pi-telemetry";
 import type { Attributes, Context, Link, Span, SpanContext, Tracer } from "@opentelemetry/api";
-import { getLogContext } from "@rakazo/logging";
+import { getLogContext } from "@robots/logging";
 
 // The OTel packages load on demand: this module is only reached through a dynamic import, and
 // bundling inlines it, so static imports here would still load with every server bundle.
@@ -13,9 +13,9 @@ const { ROOT_CONTEXT, SpanStatusCode, trace } = await import("@opentelemetry/api
 
 // Allowlist metadata: unknown attributes (including future Pi payload fields) stay private.
 const safeAttributes = new Set([
-  "rakazo.bot.id",
-  "rakazo.run.id",
-  "rakazo.routine.id",
+  "robots.bot.id",
+  "robots.run.id",
+  "robots.routine.id",
   "pi.ai.operation",
   "pi.ai.provider",
   "pi.ai.model",
@@ -74,7 +74,7 @@ export function otelPiContext(
       const correlation = {
         ...ids,
         ...Object.fromEntries(
-          Object.entries(options.attributes ?? {}).filter(([key]) => key.startsWith("rakazo.")),
+          Object.entries(options.attributes ?? {}).filter(([key]) => key.startsWith("robots.")),
         ),
       };
       const parentContext = parent ?? correlatedLogContext();
@@ -135,7 +135,7 @@ export async function createPiTelemetryExporter() {
   ]);
   const provider = new TracerProvider({
     resource: resourceFromAttributes({
-      "service.name": process.env.OTEL_SERVICE_NAME?.trim() || "rakazo-worker",
+      "service.name": process.env.OTEL_SERVICE_NAME?.trim() || "robots-worker",
     }),
     // The exporter honors standard OTLP endpoint and header env vars, including /v1/traces.
     spanProcessors: [
@@ -144,7 +144,7 @@ export async function createPiTelemetryExporter() {
   });
   return {
     context: otelPiContext(
-      provider.getTracer("rakazo.pi", "0.87.1"),
+      provider.getTracer("robots.pi", "0.87.1"),
       process.env.OTEL_CAPTURE_CONTENT === "true",
     ),
     shutdown: () => provider.shutdown(),

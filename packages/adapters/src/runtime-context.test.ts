@@ -1,7 +1,7 @@
 import type { Api, Context, Message, Model } from "@earendil-works/pi-ai";
-import type { AgentRunRequest } from "@rakazo/adapter-kit";
-import { DEFAULT_CONTEXT_STRATEGY } from "@rakazo/adapter-kit";
-import { getLogger } from "@rakazo/logging";
+import type { AgentRunRequest } from "@robots/adapter-kit";
+import { DEFAULT_CONTEXT_STRATEGY } from "@robots/adapter-kit";
+import { getLogger } from "@robots/logging";
 import { describe, expect, it, vi } from "vitest";
 import { ContextBudgetError, ContextCacheTracker } from "./context-selection.js";
 import { toHistory } from "./pi-runtime-history.js";
@@ -37,8 +37,8 @@ function fixture(count = 30) {
     role: "user",
     content: item.content,
     timestamp: 0,
-    rakazoHistory: true,
-    rakazoMessageId: item.id,
+    robotsHistory: true,
+    robotsMessageId: item.id,
   }));
   messages.push({ role: "user", content: request.prompt, timestamp: 100 });
   const context: Context = { systemPrompt: request.instructions, tools: [], messages };
@@ -701,8 +701,8 @@ describe("runtime context policy", () => {
     context.messages[11] = {
       role: "assistant",
       content: [{ type: "text", text: request.history[11]!.content }],
-      rakazoHistory: true,
-      rakazoMessageId: "message-11",
+      robotsHistory: true,
+      robotsMessageId: "message-11",
     } as unknown as Message;
     const prepared = createRuntimeContextPolicy({
       ...request,
@@ -752,7 +752,7 @@ describe("runtime context policy", () => {
     }).prepareContext(context, model);
     const reply = prepared.messages.filter(
       (message) =>
-        (message as Message & { rakazoMessageId?: string }).rakazoMessageId === "message-22",
+        (message as Message & { robotsMessageId?: string }).robotsMessageId === "message-22",
     );
     expect(reply.map((message) => message.role)).toEqual([
       "assistant",
@@ -786,7 +786,7 @@ describe("runtime context policy", () => {
       role: "user",
       content: `Assistant: ${request.history[3]!.content}`,
       timestamp: 0,
-      rakazoHistory: true,
+      robotsHistory: true,
     } as Message;
     const prepared = createRuntimeContextPolicy({
       ...request,
@@ -882,13 +882,13 @@ describe("runtime context policy", () => {
   it("preserves an existing rolling summary when it fits", () => {
     const { request, context } = fixture();
     const summary =
-      "Rakazo-owned compacted context through message sequence 10.\n<compacted_thread_summary>Durable approval constraint</compacted_thread_summary>";
+      "RoBots-owned compacted context through message sequence 10.\n<compacted_thread_summary>Durable approval constraint</compacted_thread_summary>";
     request.history.unshift({ role: "user", content: summary });
     context.messages.unshift({
       role: "user",
       content: summary,
       timestamp: 0,
-      rakazoHistory: true,
+      robotsHistory: true,
     } as Message);
     const prepared = createRuntimeContextPolicy({
       ...request,
@@ -900,13 +900,13 @@ describe("runtime context policy", () => {
     const { request, context } = fixture();
     const system = { role: "system", content: "System guidance", timestamp: 0 } as Message;
     const summary =
-      "Rakazo-owned compacted context through message sequence 10.\n<compacted_thread_summary>Durable approval constraint</compacted_thread_summary>";
+      "RoBots-owned compacted context through message sequence 10.\n<compacted_thread_summary>Durable approval constraint</compacted_thread_summary>";
     request.history.unshift({ role: "user", content: summary });
     context.messages.unshift({
       role: "user",
       content: summary,
       timestamp: 0,
-      rakazoHistory: true,
+      robotsHistory: true,
     } as Message);
     context.messages.unshift(system);
     context.systemPrompt = undefined;

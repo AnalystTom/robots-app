@@ -10,10 +10,10 @@ import type {
   ComputerRef,
   JobPublisher,
   SandboxProvider,
-} from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
-import { WORKING_RUN_STATUSES } from "@rakazo/core";
-import type { createDb } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
+import { WORKING_RUN_STATUSES } from "@robots/core";
+import type { createDb } from "@robots/db";
 import type { EvalJudge, JudgeInput, Judgment } from "../evals/judge.js";
 import { createEvalJudge } from "../evals/judge.js";
 import { sessionCookieHeader } from "../index.js";

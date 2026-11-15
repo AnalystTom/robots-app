@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import { normalizeRunError } from "@rakazo/core";
-import { translateRunError } from "@rakazo/i18n/run-error";
+import { normalizeRunError } from "@robots/core";
+import { translateRunError } from "@robots/i18n/run-error";
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useReducer, useState } from "react";
 import { Platform, ScrollView, Text, useWindowDimensions, View } from "react-native";

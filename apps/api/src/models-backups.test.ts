@@ -1,8 +1,8 @@
 import { RPCHandler } from "@orpc/server/fetch";
-import * as adapters from "@rakazo/adapters";
-import { listPiCatalog, serializeModelSecret } from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+import * as adapters from "@robots/adapters";
+import { listPiCatalog, serializeModelSecret } from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import type { RouterDeps } from "./router.js";
 import { createRouter } from "./router.js";
@@ -10,7 +10,7 @@ import { createRouter } from "./router.js";
 const owner: Actor = {
   userId: "user-one",
   spaceId: "space-one",
-  email: "one@rakazo.test",
+  email: "one@robots.test",
   isDeploymentOwner: true,
 };
 
@@ -173,7 +173,7 @@ function setup(
       screenProxySecret: "fixture-secret",
       sandboxProvider: "fake",
     },
-    dataDir: "C:/scratch/rakazo-model-backups",
+    dataDir: "C:/scratch/robots-model-backups",
   } as unknown as RouterDeps;
   const actor = options.actor ?? owner;
   const handler = new RPCHandler(createRouter(deps));
@@ -427,7 +427,7 @@ describe("model backup settings API", () => {
       ...owner,
       userId: "user-two",
       spaceId: "space-two",
-      email: "two@rakazo.test",
+      email: "two@robots.test",
     };
     const kept = { userId: owner.userId, provider: "openrouter", modelId: "keep", position: 0 };
     const { rows, call, userModelRoleChoice } = setup({ actor, existing: [kept] });
@@ -716,7 +716,7 @@ describe("role-based model settings API", () => {
       .mockImplementation(async ({ secretId }) =>
         secretId === "credential-personal-secret" ? bundled : [...bundled, ...liveOnly],
       );
-    vi.stubEnv("RAKAZO_LIVE_MODEL_CATALOG", "on");
+    vi.stubEnv("ROBOTS_LIVE_MODEL_CATALOG", "on");
     try {
       const catalog = (await (await call("models/forRole", { role: "main" })).response.json())
         .json as Array<{ id: string; credentialIds?: string[] }>;

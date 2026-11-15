@@ -9,7 +9,7 @@ import type {
   SandboxProvider,
   SecretStore,
   TransactionalEmailProvider,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import type {
   CloudAgentConnection,
   CodexLiveCatalog,
@@ -33,10 +33,10 @@ import type {
   UserCloudAgents,
   verifyModelServesAgents,
   WorkActivities,
-} from "@rakazo/adapters";
-import type { Auth } from "@rakazo/auth";
-import type { LabFeature, ModelCredential, NavLink } from "@rakazo/contracts";
-import type { BoardEvents, PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/adapters";
+import type { Auth } from "@robots/auth";
+import type { LabFeature, ModelCredential, NavLink } from "@robots/contracts";
+import type { BoardEvents, PrismaClient, ThreadEvents } from "@robots/db";
 import type { BillingService } from "./billing.js";
 import { accountRoutes } from "./routes/account.js";
 import { availabilityRoutes } from "./routes/availability.js";

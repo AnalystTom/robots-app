@@ -14,9 +14,9 @@ import type {
   TerminalRequest,
   UnreferencedMachine,
   UnreferencedMachineRecords,
-} from "@rakazo/adapter-kit";
-import { anySignal, boundedSandboxCommandTimeoutMs } from "@rakazo/core";
-import { COMPUTER_CACHE_ENV } from "@rakazo/core/node/desktop-runtime";
+} from "@robots/adapter-kit";
+import { anySignal, boundedSandboxCommandTimeoutMs } from "@robots/core";
+import { COMPUTER_CACHE_ENV } from "@robots/core/node/desktop-runtime";
 import type * as Railway from "railway";
 import type { ConnectOptions, Sandbox, SandboxStatus } from "railway";
 import WebSocket from "ws";
@@ -46,7 +46,7 @@ import {
 } from "./workspace-save-policy.js";
 
 const DISPLAY_START = 1;
-const WORKSPACE = "/home/rakazo";
+const WORKSPACE = "/home/robots";
 const SCREEN_PORT = 6080;
 const RAILWAY_API = "https://backboard.railway.com/graphql/v2";
 const MAX_RESPONSE_BYTES = 16 * 1024 * 1024;
@@ -597,7 +597,7 @@ export class RailwaySandboxProvider implements SandboxProvider {
 
 /**
  * Railway destroys an idle sandbox, so it must outlast the checkpointing idle sleep. When no
- * finite timeout can, Railway never idles it out and Rakazo's own idle sleep stops it.
+ * finite timeout can, Railway never idles it out and RoBots's own idle sleep stops it.
  */
 function railwayIdleTimeoutMinutes() {
   if (!computerIdleSleepEnabled()) return 0;
@@ -764,7 +764,7 @@ function railwayErrorCode(error: unknown) {
 
 const PREPARE_RAILWAY_DESKTOP = [
   "set -eu",
-  "exec 9>/tmp/rakazo-prepare.lock; flock -w 300 9",
+  "exec 9>/tmp/robots-prepare.lock; flock -w 300 9",
   PREPARE_LINUX_DESKTOP,
   INSTALL_LINUX_BROWSER,
   PREPARE_COMPUTER_PROXY,

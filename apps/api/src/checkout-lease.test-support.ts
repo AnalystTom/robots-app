@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@rakazo/db";
+import type { PrismaClient } from "@robots/db";
 
 type UpdateManyArgs = Parameters<PrismaClient["billingAccount"]["updateMany"]>[0];
 

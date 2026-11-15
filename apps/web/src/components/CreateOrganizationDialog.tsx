@@ -10,7 +10,7 @@ import {
   FieldError,
   FieldLabel,
   Input,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { useId, useState } from "react";
 import { openOrganizationSpace, organizationsQuery } from "../lib/organizations";
 import { useQueryUserId, useSave } from "../lib/query";

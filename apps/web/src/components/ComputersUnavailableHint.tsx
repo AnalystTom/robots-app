@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { Button, buttonVariants, Spinner } from "@rakazo/ui-web";
+import { Button, buttonVariants, Spinner } from "@robots/ui-web";
 import { useEffect, useRef, useState } from "react";
 import type { SandboxAvailabilityPhase } from "../lib/computer-sandbox";
 import {
@@ -126,7 +126,7 @@ export function ComputersUnavailableHint({
           ) : null}
           <a
             className={buttonVariants({ variant: "ghost", size: "sm" })}
-            href="https://github.com/elie222/rakazo/blob/main/docs/self-host-sandbox-providers.md"
+            href="https://github.com/AnalystTom/robots-app/blob/main/docs/self-host-sandbox-providers.md"
             target="_blank"
             rel="noreferrer"
           >

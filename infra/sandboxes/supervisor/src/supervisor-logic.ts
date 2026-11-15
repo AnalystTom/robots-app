@@ -1,4 +1,4 @@
-import type { DesktopEnvironment } from "@rakazo/core/node/desktop-runtime";
+import type { DesktopEnvironment } from "@robots/core/node/desktop-runtime";
 import {
   ensureScreenCommand as coreEnsureScreenCommand,
   interactiveScreenCommand as coreInteractiveScreenCommand,
@@ -11,7 +11,7 @@ import {
   stopBrowserCommand,
   stopExtraScreenCommand,
   stopScreenTransportsCommand,
-} from "@rakazo/core/node/desktop-runtime";
+} from "@robots/core/node/desktop-runtime";
 
 export {
   browserProfilePathForScreen,
@@ -19,13 +19,13 @@ export {
   quiesceBrowserProfilesCommand,
   stopBrowserCommand,
   stopExtraScreenCommand,
-} from "@rakazo/core/node/desktop-runtime";
+} from "@robots/core/node/desktop-runtime";
 
 import { timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import { pathToFileURL } from "node:url";
-import { canReleaseScreenLease, canTakeScreenLease } from "@rakazo/core";
+import { canReleaseScreenLease, canTakeScreenLease } from "@robots/core";
 import type Docker from "dockerode";
 import { z } from "zod";
 import type { SandboxInput } from "./computer-spec.js";
@@ -90,7 +90,7 @@ export const computerActionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("focus"), application: z.string(), uri: z.string().optional() }),
 ]);
 
-export { BROWSER_APPLICATIONS as DOCKER_BROWSER_ALIASES } from "@rakazo/core/node/desktop-runtime";
+export { BROWSER_APPLICATIONS as DOCKER_BROWSER_ALIASES } from "@robots/core/node/desktop-runtime";
 
 export function assertRequestIdentity(
   botId: string | undefined,
@@ -107,8 +107,8 @@ export function hasComputerIdentity(
   botId: string,
   spaceId: string,
 ) {
-  const labeledSpaceId = labels?.["rakazo.spaceId"] ?? labels?.["rakazo.workspaceId"];
-  return labels?.["rakazo.botId"] === botId && labeledSpaceId === spaceId;
+  const labeledSpaceId = labels?.["robots.spaceId"] ?? labels?.["robots.workspaceId"];
+  return labels?.["robots.botId"] === botId && labeledSpaceId === spaceId;
 }
 
 export function hasValidBearerToken(authorization: string | undefined, expectedToken: string) {
@@ -530,8 +530,8 @@ export function containerActionStep(
     argv = [
       "env",
       `DISPLAY=${display}`,
-      ...(browserProfile ? [`RAKAZO_BROWSER_PROFILE=${browserProfile}`] : []),
-      isHttpUrl ? "xdg-open" : "rakazo-browser",
+      ...(browserProfile ? [`ROBOTS_BROWSER_PROFILE=${browserProfile}`] : []),
+      isHttpUrl ? "xdg-open" : "robots-browser",
       target,
     ];
   } else {
@@ -539,11 +539,11 @@ export function containerActionStep(
     argv = [
       "env",
       `DISPLAY=${display}`,
-      ...(browser && browserProfile ? [`RAKAZO_BROWSER_PROFILE=${browserProfile}`] : []),
+      ...(browser && browserProfile ? [`ROBOTS_BROWSER_PROFILE=${browserProfile}`] : []),
       // focus routes through the image wrapper, which raises a matching window
       // by WM_CLASS or execs the allowlisted launcher to spawn one.
-      ...(action.kind === "focus" ? ["rakazo-focus-or-launch"] : []),
-      browser ? "rakazo-browser" : action.application,
+      ...(action.kind === "focus" ? ["robots-focus-or-launch"] : []),
+      browser ? "robots-browser" : action.application,
       ...(action.uri ? [action.uri] : []),
     ];
   }
@@ -551,7 +551,7 @@ export function containerActionStep(
 }
 
 /** Image label of computers whose control service takes aimed and sideways scrolls. */
-export const AIMED_SCROLL_CONTROL_LABEL = "rakazo.control.aimedScroll";
+export const AIMED_SCROLL_CONTROL_LABEL = "robots.control.aimedScroll";
 
 /**
  * Whether a computer's control service can run these actions. One built before aimed and
@@ -590,7 +590,7 @@ export function normalizeWorkspaceRelative(value: string) {
 }
 
 export function workspaceTarget(relative: string) {
-  return relative ? path.posix.join("/home/rakazo", relative) : "/home/rakazo";
+  return relative ? path.posix.join("/home/robots", relative) : "/home/robots";
 }
 
 export function sandboxTimeoutCommand(argv: string[], timeoutMs: number, completionMarker: string) {
@@ -766,9 +766,9 @@ export function demuxDockerStream(buffer: Buffer): { stdout: string; stderr: str
 export function computerCommandEnv(layout: { display: string }) {
   return [
     `DISPLAY=${layout.display}`,
-    "HOME=/home/rakazo",
-    "PATH=/home/rakazo/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-    "NPM_CONFIG_PREFIX=/home/rakazo/.local",
+    "HOME=/home/robots",
+    "PATH=/home/robots/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "NPM_CONFIG_PREFIX=/home/robots/.local",
     "PIP_USER=1",
   ];
 }
@@ -813,6 +813,6 @@ export function isManagedComputer(
   image: string,
 ) {
   const labels = info.Config.Labels ?? {};
-  const managed = labels["rakazo.managed"] === "true" || info.Config.Image === image;
+  const managed = labels["robots.managed"] === "true" || info.Config.Image === image;
   return managed && hasComputerIdentity(labels, botId, spaceId);
 }

@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import type { BotTemplate } from "@rakazo/contracts";
+import type { BotTemplate } from "@robots/contracts";
 
 export type BotTemplateCopy = Pick<BotTemplate, "name" | "summary" | "sample">;
 

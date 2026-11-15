@@ -1,4 +1,4 @@
-import type { MessageBlock } from "@rakazo/contracts";
+import type { MessageBlock } from "@robots/contracts";
 
 export function isSecretAskBlock(block: {
   kind: string;

@@ -1,5 +1,5 @@
-import type { AgentRunRequest } from "@rakazo/adapter-kit";
-import { createLogger, createTestSink, getLogger, installLogger } from "@rakazo/logging";
+import type { AgentRunRequest } from "@robots/adapter-kit";
+import { createLogger, createTestSink, getLogger, installLogger } from "@robots/logging";
 import { describe, expect, it, vi } from "vitest";
 import { resolveRuntimeModel } from "./pi-runtime-models.js";
 import {

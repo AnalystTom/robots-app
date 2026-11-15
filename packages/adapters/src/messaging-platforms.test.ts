@@ -1,6 +1,6 @@
 import { WhatsAppApiError } from "@chat-adapter/whatsapp";
-import type { AdapterContext } from "@rakazo/adapter-kit";
-import { getLogger } from "@rakazo/logging";
+import type { AdapterContext } from "@robots/adapter-kit";
+import { getLogger } from "@robots/logging";
 import { SendblueAdapter } from "chat-adapter-sendblue";
 import { describe, expect, it, vi } from "vitest";
 import { ChatSdkMessagingSurface } from "./chat-sdk-surface.js";

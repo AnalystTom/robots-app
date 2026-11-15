@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
-import { MCP_SIGNIN_WINDOW_PREFIX } from "@rakazo/contracts";
+import { MCP_SIGNIN_WINDOW_PREFIX } from "@robots/contracts";
 
 const OAUTH_POPUP_NAMES = new Set([
-  "rakazo-app-connect",
-  "rakazo-mcp-oauth",
-  "rakazo-sso-oauth",
-  "rakazo-model-oauth",
-  "rakazo-plugin-connect",
+  "robots-app-connect",
+  "robots-mcp-oauth",
+  "robots-sso-oauth",
+  "robots-model-oauth",
+  "robots-plugin-connect",
 ]);
 
 /** A server id from a per-server MCP sign-in window name; null otherwise. */
@@ -26,7 +26,7 @@ export function mcpOAuthPartition(appUrl: string, serverId: string) {
     .update(JSON.stringify([new URL(appUrl).origin, serverId]))
     .digest("hex")
     .slice(0, 24);
-  return `persist:rakazo-mcp-${digest}`;
+  return `persist:robots-mcp-${digest}`;
 }
 
 export function shouldOpenInAppPopup(
@@ -41,15 +41,15 @@ export function shouldOpenInAppPopup(
     return false;
   }
 
-  if (childUrl === "about:blank" && frameName === "rakazo-sso-oauth") return true;
+  if (childUrl === "about:blank" && frameName === "robots-sso-oauth") return true;
 
   const isHttp = target.protocol === "http:" || target.protocol === "https:";
   if (appOrigin !== null && target.origin === appOrigin) return isHttp;
   return (
     target.protocol === "https:" &&
     (OAUTH_POPUP_NAMES.has(frameName) ||
-      (frameName.startsWith("rakazo-mcp-oauth:") &&
-        frameName.length > "rakazo-mcp-oauth:".length) ||
+      (frameName.startsWith("robots-mcp-oauth:") &&
+        frameName.length > "robots-mcp-oauth:".length) ||
       mcpOAuthPopupServerId(frameName) !== null)
   );
 }

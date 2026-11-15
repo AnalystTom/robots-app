@@ -1,5 +1,5 @@
-import type { SpaceChangeKind } from "@rakazo/contracts";
-import { abortableDelay, isRetryableError, reconnectDelayMs, retryDelayMs } from "@rakazo/core";
+import type { SpaceChangeKind } from "@robots/contracts";
+import { abortableDelay, isRetryableError, reconnectDelayMs, retryDelayMs } from "@robots/core";
 import { useEffect, useRef } from "react";
 import { subscribeSpaceSelection } from "./api";
 import { subscribeRosterSignals } from "./api-live";

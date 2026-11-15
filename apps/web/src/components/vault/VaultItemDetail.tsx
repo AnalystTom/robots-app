@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { BotSecretMetadata, SettingsScope, VaultRevealed } from "@rakazo/contracts";
+import type { BotSecretMetadata, SettingsScope, VaultRevealed } from "@robots/contracts";
 import {
   BotSecretName,
   cardExpiry,
@@ -7,9 +7,9 @@ import {
   hasVaultAccess,
   otherSitesText,
   vaultKind,
-} from "@rakazo/contracts";
-import { vaultBotsLine } from "@rakazo/i18n/vault";
-import { Button } from "@rakazo/ui-web";
+} from "@robots/contracts";
+import { vaultBotsLine } from "@robots/i18n/vault";
+import { Button } from "@robots/ui-web";
 import { Check, Copy, Eye, EyeOff } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";

@@ -9,21 +9,21 @@ import type {
 } from "@earendil-works/pi-ai";
 import { getSupportedThinkingLevels } from "@earendil-works/pi-ai";
 import { AssistantMessageEventStream } from "@earendil-works/pi-ai/utils/event-stream";
-import type { AgentRunRequest, ConnectorTool } from "@rakazo/adapter-kit";
+import type { AgentRunRequest, ConnectorTool } from "@robots/adapter-kit";
 import {
   isModelCredentialRejected,
   isRetryableProviderUnavailable,
   isTransientModelError,
-} from "@rakazo/adapter-kit";
-import type { ModelBackupOutcome } from "@rakazo/core";
+} from "@robots/adapter-kit";
+import type { ModelBackupOutcome } from "@robots/core";
 import {
   abortableDelay,
   MODEL_CONTEXT_TOO_SMALL_ERROR,
   MODEL_OUTPUT_CUT_ERROR,
   MODEL_OUTPUT_LIMIT_ERROR,
   MODEL_REQUEST_LIMIT_ERROR,
-} from "@rakazo/core";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/core";
+import { getLogger } from "@robots/logging";
 import { ModelImageLimitError, pruneForRebuild } from "./context-pruning.js";
 import { ContextBudgetError } from "./context-selection.js";
 import { groqRequestContextWindow } from "./groq-request-budget.js";
@@ -549,7 +549,7 @@ export function fallbackAwareModelStream(
         sentTarget.model.contextWindow,
         operatorMaxTokens(sentTarget.model),
       );
-      // Wait only as long as RAKAZO_LOCAL_TOKENS_PER_MINUTE needs (token-pacer.ts).
+      // Wait only as long as ROBOTS_LOCAL_TOKENS_PER_MINUTE needs (token-pacer.ts).
       let paceSlot: PacerSlot | undefined;
       const paceLimit = pacerTokensPerMinute(target.config.provider);
       if (paceLimit !== undefined) {

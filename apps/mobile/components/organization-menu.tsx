@@ -1,7 +1,7 @@
 import { MenuView } from "@expo/ui/community/menu";
 import { useLingui } from "@lingui/react/macro";
-import type { OrganizationList } from "@rakazo/contracts";
-import { typeScale } from "@rakazo/ui-tokens";
+import type { OrganizationList } from "@robots/contracts";
+import { typeScale } from "@robots/ui-tokens";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { resolveMobileAppearance } from "../lib/appearance";
 import { native, useThemedStyles } from "../lib/native";

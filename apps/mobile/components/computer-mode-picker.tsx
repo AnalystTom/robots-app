@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { ComputerMode } from "@rakazo/contracts";
-import { BOT_COMPUTER_MODES } from "@rakazo/contracts";
+import type { ComputerMode } from "@robots/contracts";
+import { BOT_COMPUTER_MODES } from "@robots/contracts";
 import { Text, View } from "react-native";
 import { native, useMobileTokens } from "../lib/native";
 import { NativeSegmentedControl } from "./native-segmented-control";

@@ -1,7 +1,7 @@
-import type { ConnectorProvider, JobPublisher } from "@rakazo/adapter-kit";
-import { routineJobKey, routineWakeupJob } from "@rakazo/adapter-kit";
-import type { RoutineWatch } from "@rakazo/contracts";
-import { ROUTINE_WATCH_MIN_MINUTES, RoutineWatchSchema, TimeZoneSchema } from "@rakazo/contracts";
+import type { ConnectorProvider, JobPublisher } from "@robots/adapter-kit";
+import { routineJobKey, routineWakeupJob } from "@robots/adapter-kit";
+import type { RoutineWatch } from "@robots/contracts";
+import { ROUTINE_WATCH_MIN_MINUTES, RoutineWatchSchema, TimeZoneSchema } from "@robots/contracts";
 import {
   cronFromPreset,
   formatCron,
@@ -13,10 +13,10 @@ import {
   unevenInterval,
   wallClock,
   zonedDateTime,
-} from "@rakazo/core";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import { Prisma, runAsSystemInTransaction } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/core";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
+import { Prisma, runAsSystemInTransaction } from "@robots/db";
+import { getLogger } from "@robots/logging";
 
 import { localDateTime } from "./current-time.prompt.js";
 import { finishRoutineHandover } from "./routine-handover.js";

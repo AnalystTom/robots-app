@@ -4,8 +4,8 @@ import type {
   RunStatus,
   ThreadMessagePage,
   ThreadSnapshot,
-} from "@rakazo/contracts";
-import { activeThreadRuns, isActive, prependThreadHistoryPage } from "@rakazo/core";
+} from "@robots/contracts";
+import { activeThreadRuns, isActive, prependThreadHistoryPage } from "@robots/core";
 
 const computerStates: ReadonlySet<unknown> = new Set<ComputerStatus["state"]>([
   "stopped",

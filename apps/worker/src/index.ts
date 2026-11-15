@@ -1,8 +1,8 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import type { JobPublisher, JobWorkerHost } from "@rakazo/adapter-kit";
-import { unwrapEnvFromKeyManager } from "@rakazo/adapters";
-import { loadRootEnv } from "@rakazo/core/node/load-root-env";
-import { stopOnShutdownSignals } from "@rakazo/core/node/shutdown-signals";
+import type { JobPublisher, JobWorkerHost } from "@robots/adapter-kit";
+import { unwrapEnvFromKeyManager } from "@robots/adapters";
+import { loadRootEnv } from "@robots/core/node/load-root-env";
+import { stopOnShutdownSignals } from "@robots/core/node/shutdown-signals";
 import { startWorkerHealth } from "./health.js";
 import { createWorkerSecretStore } from "./secret-store.js";
 
@@ -61,8 +61,8 @@ import {
   withHostComputerScreen,
   withRunWorker,
   withSecretPersistence,
-} from "@rakazo/adapters";
-import { abortableDelay, resolveSupervisorToken } from "@rakazo/core";
+} from "@robots/adapters";
+import { abortableDelay, resolveSupervisorToken } from "@robots/core";
 import {
   createBoardEvents,
   createDb,
@@ -78,11 +78,11 @@ import {
   rowSecurityWarning,
   runAsSystem,
   verifyContentKeys,
-} from "@rakazo/db";
-import { bestEffort, SERVICE_NAMES } from "@rakazo/logging";
-import { createRootLogger } from "@rakazo/logging/axiom";
-import { watchEventLoopStalls } from "@rakazo/logging/event-loop";
-import { MarkdownMemoryStore } from "@rakazo/memory";
+} from "@robots/db";
+import { bestEffort, SERVICE_NAMES } from "@robots/logging";
+import { createRootLogger } from "@robots/logging/axiom";
+import { watchEventLoopStalls } from "@robots/logging/event-loop";
+import { MarkdownMemoryStore } from "@robots/memory";
 
 const logger = await createRootLogger(SERVICE_NAMES.worker);
 
@@ -100,7 +100,7 @@ async function main() {
   // A larger max competes for Postgres max_connections (53300).
   const created = createDb(databaseUrl, {
     poolMax,
-    applicationName: "rakazo-worker",
+    applicationName: "robots-worker",
     keyProvider: contentKeyProviderFromEnv(),
   });
   const { pool } = created;

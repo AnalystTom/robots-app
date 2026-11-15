@@ -1,6 +1,6 @@
-import type { Bot, BotSection, Group } from "@rakazo/contracts";
-import { chatSnoozed } from "@rakazo/core";
-import { ContextMenu } from "@rakazo/ui-web";
+import type { Bot, BotSection, Group } from "@robots/contracts";
+import { chatSnoozed } from "@robots/core";
+import { ContextMenu } from "@robots/ui-web";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { Suspense, useEffect } from "react";
 import { lazyOverlay } from "../../components/ErrorBoundary";

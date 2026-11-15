@@ -16,7 +16,7 @@ import {
 
 let dir: string;
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "rakazo-move-"));
+  dir = await mkdtemp(path.join(tmpdir(), "robots-move-"));
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
@@ -75,10 +75,10 @@ describe("chooseStack", () => {
 
 const target = (dataDir: string) => ({
   cli: "/usr/local/bin/container",
-  container: "rakazo-postgres",
+  container: "robots-postgres",
   env: { PATH: "/usr/bin:/bin" },
-  user: "rakazo",
-  database: "rakazo",
+  user: "robots",
+  database: "robots",
   dataDir,
   signal: new AbortController().signal,
   onLine: () => undefined,
@@ -129,16 +129,16 @@ describe("moveDockerStack", () => {
           : `${call.binary} ${call.args.slice(0, 3).join(" ")}`.trim(),
       ),
     ).toEqual([
-      "compose docker-compose.images.yml --project-name rakazo-desktop stop web",
-      "compose docker-compose.images.yml --project-name rakazo-desktop start postgres",
-      "compose docker-compose.images.yml --project-name rakazo-desktop exec -T",
-      "/usr/local/bin/container exec --interactive rakazo-postgres",
+      "compose docker-compose.images.yml --project-name robots-desktop stop web",
+      "compose docker-compose.images.yml --project-name robots-desktop start postgres",
+      "compose docker-compose.images.yml --project-name robots-desktop exec -T",
+      "/usr/local/bin/container exec --interactive robots-postgres",
       "pipe",
-      "compose docker-compose.images.yml --project-name rakazo-desktop ps --all",
+      "compose docker-compose.images.yml --project-name robots-desktop ps --all",
       `cp abc123:/data/. ${dataDir}`,
-      "compose docker-compose.images.yml --project-name rakazo-desktop stop",
+      "compose docker-compose.images.yml --project-name robots-desktop stop",
     ]);
-    expect(calls[3]?.input).toContain("CREATE ROLE rakazo_app NOLOGIN NOSUPERUSER NOBYPASSRLS");
+    expect(calls[3]?.input).toContain("CREATE ROLE robots_app NOLOGIN NOSUPERUSER NOBYPASSRLS");
     const [from, to] = piped[0]!;
     expect(from.command).toBe("/usr/local/bin/docker");
     expect(from.args.slice(-6)).toEqual([
@@ -154,14 +154,14 @@ describe("moveDockerStack", () => {
       args: [
         "exec",
         "--interactive",
-        "rakazo-postgres",
+        "robots-postgres",
         "pg_restore",
         "--no-owner",
         "--exit-on-error",
         "-U",
-        "rakazo",
+        "robots",
         "-d",
-        "rakazo",
+        "robots",
       ],
       env: { PATH: "/usr/bin:/bin" },
     });

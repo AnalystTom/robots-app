@@ -17,9 +17,9 @@ import type {
   ScreenRequest,
   ScreenSession,
   TerminalRequest,
-} from "@rakazo/adapter-kit";
-import { COMPUTER_CACHE_ENV } from "@rakazo/core/node/desktop-runtime";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import { COMPUTER_CACHE_ENV } from "@robots/core/node/desktop-runtime";
+import { getLogger } from "@robots/logging";
 import type { RawExecEvent } from "./exec-computer.js";
 import { ExecComputer, COMPUTER_IMAGE_WORKSPACE as WORKSPACE } from "./exec-computer.js";
 import { LinuxDesktop, onBotScreen } from "./linux-desktop.js";
@@ -28,7 +28,7 @@ import { sandboxNotFoundError } from "./sandbox-errors.js";
 const DISPLAY_START = 20;
 const DESKTOP_PORT_START = 6100;
 const READY_PORT = 6080;
-const DEFAULT_COMPUTER_IMAGE = "ghcr.io/elie222/rakazo/computer:edge";
+const DEFAULT_COMPUTER_IMAGE = "ghcr.io/analysttom/robots-app/computer:edge";
 const DEFAULT_CPUS = "2";
 const DEFAULT_MEMORY = "2g";
 const DEFAULT_READY_TIMEOUT_MS = 120_000;
@@ -36,8 +36,8 @@ const CLI_TIMEOUT_MS = 60_000;
 // The first computer downloads the image (about 600 MB compressed).
 const CREATE_TIMEOUT_MS = 15 * 60_000;
 const IMAGE_USER = "1000";
-const IMAGE_COMMAND = ["/usr/bin/env", "-u", "LD_PRELOAD", "/usr/local/bin/rakazo-computer"];
-const BOT_ID_LABEL = "rakazo.bot-id";
+const IMAGE_COMMAND = ["/usr/bin/env", "-u", "LD_PRELOAD", "/usr/local/bin/robots-computer"];
+const BOT_ID_LABEL = "robots.bot-id";
 const KIND = "local-vm";
 
 export interface AppleContainerSandboxOptions {
@@ -64,9 +64,9 @@ interface ContainerRecord {
  */
 export function localVmFirewall(gateway: string): string {
   if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(gateway)) throw new Error(`invalid VM gateway ${gateway}`);
-  return `add table inet rakazo
-delete table inet rakazo
-table inet rakazo {
+  return `add table inet robots
+delete table inet robots
+table inet robots {
   chain output {
     type filter hook output priority filter; policy accept;
     oif "lo" accept
@@ -169,7 +169,7 @@ export class AppleContainerSandboxProvider implements SandboxProvider {
       if (existing) await this.remove(name).catch(() => {});
     }
     await this.removeOrphans(request.botId, request.providerRef, signal);
-    const name = `rakazo-${randomUUID()}`;
+    const name = `robots-${randomUUID()}`;
     try {
       await this.cliRun(["network", "create", name], signal);
       await this.cliRun(this.runArgs(name, request.botId), signal, {
@@ -385,7 +385,7 @@ export class AppleContainerSandboxProvider implements SandboxProvider {
       }
     };
     await asRoot(["--interactive", name, "nft", "-f", "-"], localVmFirewall(gateway));
-    await asRoot([name, "nft", "list", "table", "inet", "rakazo"]);
+    await asRoot([name, "nft", "list", "table", "inet", "robots"]);
   }
 
   private assertOwner(record: ContainerRecord, name: string, botId: string) {

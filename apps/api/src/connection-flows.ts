@@ -4,8 +4,8 @@ import type {
   AdapterContext,
   BackgroundJobPayloads,
   ManagedConnectorProvider,
-} from "@rakazo/adapter-kit";
-import { ConnectorAuthUnavailableError, connectionCleanupJob } from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
+import { ConnectorAuthUnavailableError, connectionCleanupJob } from "@robots/adapter-kit";
 import {
   authorizationInUse,
   CONNECTION_CLEANUP_BACKUP_MS,
@@ -21,11 +21,11 @@ import {
   providerScopeKey,
   sanitizeIntegrationError,
   tryLockProviderConnectionScope,
-} from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
-import { isIntegrationProviderId } from "@rakazo/contracts";
-import { IsolationError, ProviderTransactionBusyError, recordSecurityEvent } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
+import { isIntegrationProviderId } from "@robots/contracts";
+import { IsolationError, ProviderTransactionBusyError, recordSecurityEvent } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { RouterDeps } from "./router.js";
 import { connectionCreatedEvent } from "./security-audit.js";
 

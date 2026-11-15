@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { ModelConnectInput } from "@rakazo/contracts";
+import type { ModelConnectInput } from "@robots/contracts";
 import type { EvalCase } from "./cases.js";
 
 /**

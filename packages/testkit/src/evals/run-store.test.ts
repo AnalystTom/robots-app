@@ -1,7 +1,7 @@
 import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { ModelConnectInput } from "@rakazo/contracts";
+import type { ModelConnectInput } from "@robots/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EvalCase, Evidence } from "./cases.js";
 import {
@@ -183,7 +183,7 @@ describe("run store", () => {
   let dir: string;
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
   const store = () => {
-    dir = mkdtempSync(path.join(tmpdir(), "rakazo-run-store-"));
+    dir = mkdtempSync(path.join(tmpdir(), "robots-run-store-"));
     return new RunStore(dir);
   };
   const plan = (s: RunStore, fingerprint = "f1", rubric = "meaning-v1") =>

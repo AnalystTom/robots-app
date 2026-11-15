@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
-import { withConnectionName } from "@rakazo/contracts";
-import type { ChatModelChoice } from "@rakazo/core";
-import { groupModelChoices, modelChoiceSearchText } from "@rakazo/core";
+import { withConnectionName } from "@robots/contracts";
+import type { ChatModelChoice } from "@robots/core";
+import { groupModelChoices, modelChoiceSearchText } from "@robots/core";
 import { useNavigation } from "expo-router";
 import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { ListViewToken } from "react-native";

@@ -1,11 +1,11 @@
-import { ModelAccountError, ModelOutputError, TransientModelError } from "@rakazo/adapter-kit";
+import { ModelAccountError, ModelOutputError, TransientModelError } from "@robots/adapter-kit";
 import {
   MODEL_CONTEXT_TOO_SMALL_ERROR,
   MODEL_CREDITS_EXHAUSTED_ERROR,
   MODEL_OUTPUT_LIMIT_ERROR,
   MODEL_UNPRICED_FOR_CREDITS_ERROR,
   modelFallbackFailure,
-} from "@rakazo/core";
+} from "@robots/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const provider = vi.hoisted(() => ({ errorMessage: "", rejectRequest: false }));
@@ -263,7 +263,7 @@ describe("Pi runtime errors", () => {
     },
   );
 
-  it("keeps a named provider's bare 400 a server error, since Rakazo may have built it wrong", async () => {
+  it("keeps a named provider's bare 400 a server error, since RoBots may have built it wrong", async () => {
     provider.errorMessage = '400 "Invalid request parameters"';
     const failure = consume();
     await expect(failure).rejects.not.toBeInstanceOf(ModelAccountError);

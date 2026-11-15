@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { AdapterContext, JobPublisher } from "@rakazo/adapter-kit";
-import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
-import { asSystem, createDb, provisionMessagingIdentity, runAsSystem } from "@rakazo/db";
+import type { AdapterContext, JobPublisher } from "@robots/adapter-kit";
+import type { Prisma, PrismaClient, ThreadEvents } from "@robots/db";
+import { asSystem, createDb, provisionMessagingIdentity, runAsSystem } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { sleepComputerIfIdle } from "./computer-idle.js";
 import {
@@ -75,7 +75,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
   ] as const)(
     "does not save a half-restored replacement over the last good save (next %s)",
     async (next) => {
-      const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-unrestored-"));
+      const dataDir = await mkdtemp(path.join(tmpdir(), "robots-unrestored-"));
       const sandbox = new FakeSandboxProvider();
       const home = new LocalAgentHomeStore(dataDir);
       const deps = {
@@ -277,7 +277,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
   it.each(["before", "during"] as const)(
     "does not save a run's export when a start that replaces and restores the machine began %s it",
     async (when) => {
-      const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-run-save-aba-"));
+      const dataDir = await mkdtemp(path.join(tmpdir(), "robots-run-save-aba-"));
       const sandbox = new FakeSandboxProvider();
       const home = new LocalAgentHomeStore(dataDir);
       const deps = {
@@ -378,7 +378,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
   );
 
   it("does not let a stale-start reclaim activate a machine the start marked meanwhile", async () => {
-    const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-reclaim-marked-"));
+    const dataDir = await mkdtemp(path.join(tmpdir(), "robots-reclaim-marked-"));
     const sandbox = new FakeSandboxProvider();
     const home = new LocalAgentHomeStore(dataDir);
     const deps = {
@@ -450,7 +450,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
 
   it("updates under its maintenance while a later run waits, but not while a run holds a lease", async () => {
     const { spaceId, botId, threadId, userId } = identity;
-    const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-maintenance-"));
+    const dataDir = await mkdtemp(path.join(tmpdir(), "robots-maintenance-"));
     const deps = {
       prisma,
       sandbox: new FakeSandboxProvider(),
@@ -523,7 +523,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
 
   it("lets a stale boot be reclaimed or reset past a background helper, but not past a turn", async () => {
     const { spaceId, botId, userId } = identity;
-    const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-helper-lifecycle-"));
+    const dataDir = await mkdtemp(path.join(tmpdir(), "robots-helper-lifecycle-"));
     const deps = {
       prisma,
       sandbox: new FakeSandboxProvider(),
@@ -615,7 +615,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
 
   it("frees a computer a vanished update left booting, then recovers it", async () => {
     const { botId } = identity;
-    const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-abandoned-update-"));
+    const dataDir = await mkdtemp(path.join(tmpdir(), "robots-abandoned-update-"));
     const jobs = {
       enqueue: vi.fn(async () => {}),
       cancel: vi.fn(),
@@ -788,7 +788,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
 
   it("leaves an update queued when the deletion claim lands before its replacement", async () => {
     const { spaceId, botId, userId } = identity;
-    const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-deleting-pause-"));
+    const dataDir = await mkdtemp(path.join(tmpdir(), "robots-deleting-pause-"));
     const sandbox = new FakeSandboxProvider();
     // The claim commits after the update is claimed, before the replacement claims the computer.
     let claimed = false;
@@ -864,7 +864,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
     "does not %s a computer when the deletion claim commits while it waits for the row",
     async (operation) => {
       const { spaceId, botId, userId } = identity;
-      const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-deleting-race-"));
+      const dataDir = await mkdtemp(path.join(tmpdir(), "robots-deleting-race-"));
       const sandbox = new FakeSandboxProvider();
       const deps = {
         prisma,
@@ -962,7 +962,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
 
   it("neither updates nor replaces a computer in a Space that is being deleted", async () => {
     const { spaceId, botId, userId } = identity;
-    const dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-deleting-"));
+    const dataDir = await mkdtemp(path.join(tmpdir(), "robots-deleting-"));
     const sandbox = new FakeSandboxProvider();
     const deps = {
       prisma,

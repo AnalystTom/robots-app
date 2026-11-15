@@ -1,8 +1,8 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { ComputerMode, ComputerReleaseReason } from "@rakazo/contracts";
-import { isComputerAllowanceUsed } from "@rakazo/contracts";
-import type { ScreenPageState } from "@rakazo/core";
+import type { ComputerMode, ComputerReleaseReason } from "@robots/contracts";
+import { isComputerAllowanceUsed } from "@robots/contracts";
+import type { ScreenPageState } from "@robots/core";
 import {
   COMPUTER_CONTROL_HEARTBEAT_MS,
   COMPUTER_HEARTBEAT_MS,
@@ -11,7 +11,7 @@ import {
   isRetryableError,
   screenProbeUrl,
   waitForScreenPage,
-} from "@rakazo/core";
+} from "@robots/core";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";

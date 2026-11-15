@@ -20,9 +20,9 @@ import type {
   TerminalRequest,
   UnreferencedMachine,
   UnreferencedMachineRecords,
-} from "@rakazo/adapter-kit";
-import { abortableDelay, boundedSandboxCommandTimeoutMs } from "@rakazo/core";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import { abortableDelay, boundedSandboxCommandTimeoutMs } from "@robots/core";
+import { getLogger } from "@robots/logging";
 import { screenSessionKey } from "./computer-screens.js";
 import {
   normalizeWorkspacePath,
@@ -251,14 +251,14 @@ export class DaytonaSandboxProvider implements SandboxProvider {
 
     // The unique name lets a create that fails after Daytona accepted it find and delete the
     // sandbox: it never auto-stops or auto-deletes, so a leaked one bills until removed.
-    const name = `rakazo-${randomUUID()}`;
+    const name = `robots-${randomUUID()}`;
     let sandbox: DaytonaSandbox;
     try {
       sandbox = await this.client.create(
         {
           name,
           ...(this.snapshotName ? { snapshot: this.snapshotName } : {}),
-          labels: { botId: request.botId, rakazo: "computer" },
+          labels: { botId: request.botId, robots: "computer" },
           envVars: { VNC_RESOLUTION: "1280x800" },
           autoStopInterval: 0,
           autoDeleteInterval: -1,
@@ -598,7 +598,7 @@ export class DaytonaSandboxProvider implements SandboxProvider {
     if (cached) return cached;
     const home = (await sandbox.getUserHomeDir()) ?? (await sandbox.getWorkDir());
     if (!home) throw new Error("Daytona did not report a sandbox home directory");
-    const root = path.posix.join(home, "rakazo-home");
+    const root = path.posix.join(home, "robots-home");
     if (this.boxes.get(sandbox.id) === sandbox) this.workspaceRoots.set(sandbox.id, root);
     return root;
   }

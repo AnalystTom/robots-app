@@ -1,4 +1,4 @@
-import { typeScale } from "@rakazo/ui-tokens";
+import { typeScale } from "@robots/ui-tokens";
 import { StyleSheet } from "react-native";
 import { mobileTokens } from "../lib/appearance";
 import { HEADER_CONTROL_SIZE } from "../lib/native-controls";

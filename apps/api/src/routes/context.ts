@@ -25,7 +25,7 @@ import {
   spaceCanRunCatalogModel,
   validateConnectedModelChoice,
   withLiveModelSettings,
-} from "@rakazo/adapters";
+} from "@robots/adapters";
 import type {
   Actor,
   ModelCatalogEntry,
@@ -33,15 +33,15 @@ import type {
   ModelRoleChoice,
   ModelRoleSettings,
   ModelRoleView,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   appContract,
   canonicalPiProviderId,
   hasLab,
   modelSupportsRole,
   OPENAI_COMPATIBLE_PROVIDER_ID,
-} from "@rakazo/contracts";
-import { createGroupRepos, createRepos, recordSecurityEvent, runAsTenant } from "@rakazo/db";
+} from "@robots/contracts";
+import { createGroupRepos, createRepos, recordSecurityEvent, runAsTenant } from "@robots/db";
 import { createAgentImportServices } from "../agent-import-services.js";
 import { createAgentSkillsService } from "../agent-skills.js";
 import { createBotRemoval } from "../bot-removal.js";
@@ -198,7 +198,7 @@ export function createRouterContext(deps: RouterDeps) {
           ? {
               ...entry,
               managed: true,
-              billing: runsOnHostedCredits(auth, entry) ? "Uses Rakazo credits" : entry.billing,
+              billing: runsOnHostedCredits(auth, entry) ? "Uses RoBots credits" : entry.billing,
             }
           : entry,
       );

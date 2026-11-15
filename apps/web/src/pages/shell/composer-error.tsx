@@ -1,9 +1,9 @@
 import { i18n } from "@lingui/core";
 import { useLingui } from "@lingui/react/macro";
-import { computerHoursOut } from "@rakazo/contracts";
-import { isModelRequiredSendError, normalizeRunError } from "@rakazo/core";
-import { translateRunError } from "@rakazo/i18n/run-error";
-import { Button } from "@rakazo/ui-web";
+import { computerHoursOut } from "@robots/contracts";
+import { isModelRequiredSendError, normalizeRunError } from "@robots/core";
+import { translateRunError } from "@robots/i18n/run-error";
+import { Button } from "@robots/ui-web";
 import { FileIcon, X } from "lucide-react";
 import type { RefObject } from "react";
 import { useEffect, useId, useRef } from "react";

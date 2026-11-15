@@ -1,12 +1,12 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { signInProviders } from "@rakazo/contracts";
+import { signInProviders } from "@robots/contracts";
 import {
   credentialIssue,
   MAX_PASSWORD_LENGTH,
   PASSWORD_RULES,
   suggestEmailCorrection,
-} from "@rakazo/core";
+} from "@robots/core";
 import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useContext, useEffect, useState } from "react";
 import {
@@ -347,9 +347,9 @@ export default function SignIn() {
                       : presented && mode === "up"
                         ? t`Create your account`
                         : mode === "in"
-                          ? t`Sign in to Rakazo`
+                          ? t`Sign in to RoBots`
                           : mode === "up"
-                            ? t`Sign up for Rakazo`
+                            ? t`Sign up for RoBots`
                             : t`Reset your password`}
                 </Text>
                 {presented ? (
@@ -362,7 +362,7 @@ export default function SignIn() {
                     }}
                   >
                     {mode === "in"
-                      ? t`Sign in to continue to Rakazo`
+                      ? t`Sign in to continue to RoBots`
                       : t`Persistent AI teammates that do real work`}
                   </Text>
                 ) : null}

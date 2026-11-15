@@ -1,7 +1,7 @@
-import type { AgentRunRequest, ComputerRef, SemanticMemoryProvider } from "@rakazo/adapter-kit";
-import { DEFAULT_CONTEXT_STRATEGY } from "@rakazo/adapter-kit";
-import type { MessageBlock, RunStatus } from "@rakazo/contracts";
-import { disabledBuiltinToolSet, hasLab, resolveLabs } from "@rakazo/contracts";
+import type { AgentRunRequest, ComputerRef, SemanticMemoryProvider } from "@robots/adapter-kit";
+import { DEFAULT_CONTEXT_STRATEGY } from "@robots/adapter-kit";
+import type { MessageBlock, RunStatus } from "@robots/contracts";
+import { disabledBuiltinToolSet, hasLab, resolveLabs } from "@robots/contracts";
 import {
   BACKGROUND_HELPER_TRIGGER,
   botMessageAllowsSilence,
@@ -20,8 +20,8 @@ import {
   redactSecrets,
   renderBotDirectory,
   userTurnMessageForRun,
-} from "@rakazo/core";
-import type { ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { ThreadEvents } from "@robots/db";
 import {
   accountDeactivated,
   appendEventInTransaction,
@@ -42,8 +42,8 @@ import {
   retryWhileDatabaseUnavailable,
   settleReleasedTakeoverCards,
   teamChatRunFromOwner,
-} from "@rakazo/db";
-import { enrichLogContext, getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { enrichLogContext, getLogger } from "@robots/logging";
 import { formatAgentEnvironmentInstruction } from "./agent-environment.prompt.js";
 import { createApprovedEffectReplayQueue } from "./approval-effect.js";
 import { PARTIAL_REPLY_NOTE } from "./automated-messages.prompt.js";

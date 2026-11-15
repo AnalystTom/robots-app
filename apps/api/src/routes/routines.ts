@@ -1,19 +1,19 @@
 import { ORPCError } from "@orpc/server";
-import { routineJobKey, routineWakeupJob } from "@rakazo/adapter-kit";
+import { routineJobKey, routineWakeupJob } from "@robots/adapter-kit";
 import {
   finishRoutineHandover,
   parseRoutineWatch,
   stableStringify,
   validateRoutineWatch,
   wakeRun,
-} from "@rakazo/adapters";
-import { canonicalPiProviderId, ROUTINE_TRIGGER_REQUIRED } from "@rakazo/contracts";
+} from "@robots/adapters";
+import { canonicalPiProviderId, ROUTINE_TRIGGER_REQUIRED } from "@robots/contracts";
 import {
   expandSkillReferencesInPrompt,
   hasMixedOneShotSchedule,
   isOneShotRoutineCrons,
-} from "@rakazo/core";
-import { IsolationError, isRecordNotFound, Prisma } from "@rakazo/db";
+} from "@robots/core";
+import { IsolationError, isRecordNotFound, Prisma } from "@robots/db";
 import { assertEmailTrigger } from "../bot-email-address.js";
 import { assertRoutineModel } from "../model-pins.js";
 import { listRoutineRuns } from "../routine-runs.js";

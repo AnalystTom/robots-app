@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@rakazo/db";
+import type { PrismaClient } from "@robots/db";
 import { describe, expect, it } from "vitest";
 import { fakeSpendingPrisma } from "./fake-spending.js";
 import type { PurchaseApproval } from "./purchase-gate.js";

@@ -1,12 +1,12 @@
 import * as z from "zod";
 
 /** Per-bot set. Missing values belong to the original renderer. */
-export const BotAvatarSetSchema = z.enum(["organic", "rakazo"]);
+export const BotAvatarSetSchema = z.enum(["organic", "robots"]);
 export type BotAvatarSet = z.infer<typeof BotAvatarSetSchema>;
 export const DEFAULT_NEW_BOT_AVATAR_SET: BotAvatarSet = "organic";
 
 export function resolveBotAvatarSet(value?: string | null): BotAvatarSet {
-  return value === "rakazo" ? "rakazo" : "organic";
+  return value === "robots" ? "robots" : "organic";
 }
 
 export interface BotColorDef {
@@ -85,7 +85,7 @@ export const BOT_COLOR_LIST: readonly BotColorDef[] = [
 
 export const BOT_COLORS: readonly string[] = BOT_COLOR_LIST.map((color) => color.hex);
 
-/** Matches the eight shipped mascot shapes in `@rakazo/core`. */
+/** Matches the eight shipped mascot shapes in `@robots/core`. */
 export const BOT_AVATAR_SHAPE_COUNT = 8;
 
 /**

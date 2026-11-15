@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { CronFreq, CronPreset, CronUnit } from "@rakazo/core";
+import type { CronFreq, CronPreset, CronUnit } from "@robots/core";
 import {
   CRON_FREQS,
   clampIntervalAmount,
@@ -7,8 +7,8 @@ import {
   cronIntervalAmounts,
   localizedClock,
   russianIntervalUnit,
-} from "@rakazo/core";
-import { Button, Input, NativeSelect, NativeSelectOption } from "@rakazo/ui-web";
+} from "@robots/core";
+import { Button, Input, NativeSelect, NativeSelectOption } from "@robots/ui-web";
 import { Clock, X } from "lucide-react";
 import { cronFreqLabel, cronUnitLabel } from "../lib/cron";
 

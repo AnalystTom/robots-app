@@ -1,4 +1,4 @@
-import type { SandboxKindCapabilities } from "@rakazo/adapter-kit";
+import type { SandboxKindCapabilities } from "@robots/adapter-kit";
 
 export const boatSandboxCapabilities: SandboxKindCapabilities = {
   terminal: true,

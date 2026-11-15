@@ -1,5 +1,5 @@
-import type { Bot, ChatAlert, ProductEvent } from "@rakazo/contracts";
-import { chatSnoozed } from "@rakazo/core";
+import type { Bot, ChatAlert, ProductEvent } from "@robots/contracts";
+import { chatSnoozed } from "@robots/core";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useRef } from "react";
 import {

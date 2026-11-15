@@ -1,6 +1,6 @@
-import { BACKGROUND_HELPER_TRIGGER, isTerminal } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { expireComputerExecutionLeases } from "@rakazo/db";
+import { BACKGROUND_HELPER_TRIGGER, isTerminal } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { expireComputerExecutionLeases } from "@robots/db";
 import { EXECUTION_LEASE_MS } from "./computer-lifecycle.js";
 
 type RecoveryRun = {

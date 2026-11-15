@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import type { PrismaClient, SpaceKeyRecord, SpaceKeyStore } from "@rakazo/db";
+import type { PrismaClient, SpaceKeyRecord, SpaceKeyStore } from "@robots/db";
 import {
   asSystem,
   ContentKeyRing,
@@ -7,7 +7,7 @@ import {
   LocalKeyProvider,
   provisionMessagingIdentity,
   runAsSystem,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaAgentHomeRecords } from "./home-object-store.js";
 
@@ -18,7 +18,7 @@ describePostgres("agent home storage records (PostgreSQL)", () => {
   let db: ReturnType<typeof createDb>;
   let system: PrismaClient;
   let identity: { userId: string; spaceId: string };
-  const address = `home-records-${randomUUID()}@rakazo.test`;
+  const address = `home-records-${randomUUID()}@robots.test`;
 
   beforeAll(async () => {
     db = createDb(url!);

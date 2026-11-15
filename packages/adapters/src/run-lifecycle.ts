@@ -1,5 +1,5 @@
-import { SandboxUnavailableError, SandboxUnresponsiveError } from "@rakazo/adapter-kit";
-import type { RunStatus } from "@rakazo/contracts";
+import { SandboxUnavailableError, SandboxUnresponsiveError } from "@robots/adapter-kit";
+import type { RunStatus } from "@robots/contracts";
 import {
   assertTransition,
   BACKGROUND_HELPER_TRIGGER,
@@ -8,11 +8,11 @@ import {
   nextFence,
   redactSecrets,
   userRunError,
-} from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { databaseOutage, retryWhileDatabaseUnavailable, spaceTakesWork } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
-import { sanitizedError } from "@rakazo/logging/monitoring";
+} from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { databaseOutage, retryWhileDatabaseUnavailable, spaceTakesWork } from "@robots/db";
+import { getLogger } from "@robots/logging";
+import { sanitizedError } from "@robots/logging/monitoring";
 import { returnHelperOutcome } from "./background-helpers.js";
 import { returnBotMessageOutcome } from "./bot-messages.js";
 import { VaultKeyUnavailableError } from "./bot-secrets.js";
@@ -465,7 +465,7 @@ export async function retryRunSetup(
   const setupMessage = redactSecrets(userRunError(setupError), runSecrets);
   const reportedSetupError = sanitizedError(setupError, (text) => redactSecrets(text, runSecrets));
   // An outage at the computer provider or the key manager, or a paused turn's tool going
-  // offline, is retried like any setup failure, but is not a Rakazo bug to report.
+  // offline, is retried like any setup failure, but is not a RoBots bug to report.
   const providerOutage =
     setupError instanceof SandboxUnavailableError ||
     setupError instanceof SandboxUnresponsiveError ||

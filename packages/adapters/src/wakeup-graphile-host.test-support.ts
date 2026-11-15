@@ -1,4 +1,4 @@
-import type { BackgroundJobHandlers } from "@rakazo/adapter-kit";
+import type { BackgroundJobHandlers } from "@robots/adapter-kit";
 import type { JobHelpers, Runner } from "graphile-worker";
 import { vi } from "vitest";
 

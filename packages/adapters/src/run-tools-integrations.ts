@@ -1,7 +1,7 @@
-import type { ConnectorApp } from "@rakazo/adapter-kit";
-import { isBackgroundRunTrigger, redactSecrets } from "@rakazo/core";
-import { normalizedHttpUrl } from "@rakazo/core/egress";
-import { getLogger } from "@rakazo/logging";
+import type { ConnectorApp } from "@robots/adapter-kit";
+import { isBackgroundRunTrigger, redactSecrets } from "@robots/core";
+import { normalizedHttpUrl } from "@robots/core/egress";
+import { getLogger } from "@robots/logging";
 import { executeCloudAgentTool } from "./cloud-agent-service.js";
 import { collectLogIds } from "./composio-connector.js";
 import { connectApp } from "./connect-app.js";

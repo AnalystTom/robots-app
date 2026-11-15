@@ -3,18 +3,18 @@ import type {
   JobPublisher,
   SemanticMemoryConversationTurn,
   SemanticMemoryProvider,
-} from "@rakazo/adapter-kit";
-import { memoryRetainTurnJob } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import { memoryRetainTurnJob } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
 import {
   effectiveMemoryScope,
   isPartialReplyClientNonce,
   loadMessageAuthor,
   loadMessageAuthors,
   partialReplyClientNonce,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { MemoryProviderResolver } from "./memory-provider-factory.js";
 import { messageBlocksText } from "./run-replies.prompt.js";
 import { isUserProgressClientNonce, USER_PROGRESS_CLIENT_NONCE_PREFIX } from "./user-progress.js";

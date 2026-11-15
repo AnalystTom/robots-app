@@ -1,6 +1,6 @@
-import type { RealtimeFanout } from "@rakazo/adapter-kit";
-import { SpaceChangeKind } from "@rakazo/contracts";
-import { getLogger } from "@rakazo/logging";
+import type { RealtimeFanout } from "@robots/adapter-kit";
+import { SpaceChangeKind } from "@robots/contracts";
+import { getLogger } from "@robots/logging";
 import { retryWhileDatabaseUnavailable } from "./database-outage.js";
 import { ChangeLatch } from "./event-stream.js";
 

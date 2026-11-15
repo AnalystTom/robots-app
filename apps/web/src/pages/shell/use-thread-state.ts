@@ -1,5 +1,5 @@
-import type { Routine, TaughtSkill, ThreadMessage, ThreadSnapshot } from "@rakazo/contracts";
-import { withLiveStreamingProgress } from "@rakazo/core";
+import type { Routine, TaughtSkill, ThreadMessage, ThreadSnapshot } from "@robots/contracts";
+import { withLiveStreamingProgress } from "@robots/core";
 import { useEffect, useRef, useState } from "react";
 import { responseStreamingPreference } from "../../lib/response-streaming";
 

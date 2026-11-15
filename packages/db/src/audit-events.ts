@@ -5,9 +5,9 @@ import type {
   AuditEventMetadata,
   AuditEventPage,
   AuditOutcome,
-} from "@rakazo/contracts";
-import { AuditActorTypeSchema, AuditOutcomeSchema } from "@rakazo/contracts";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/contracts";
+import { AuditActorTypeSchema, AuditOutcomeSchema } from "@robots/contracts";
+import { getLogger } from "@robots/logging";
 import { GUEST_ROLE, ownedOrganizationId } from "./billing.js";
 import type { Prisma, PrismaClient } from "./client.js";
 import { parsePositiveInteger } from "./client.js";

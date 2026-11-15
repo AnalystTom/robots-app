@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
-import type { ComputerAction, ComputerObservation, ComputerRef } from "@rakazo/adapter-kit";
-import type { ComputerMode } from "@rakazo/contracts";
+import type { ComputerAction, ComputerObservation, ComputerRef } from "@robots/adapter-kit";
+import type { ComputerMode } from "@robots/contracts";
 
 export function toComputerRef(computer: {
   homeKey: string;
@@ -77,7 +77,7 @@ export function workspacePath(root: string, relative: string): string {
 }
 
 /** The workspace path bots see on every computer. */
-const VIRTUAL_HOME = "/home/rakazo";
+const VIRTUAL_HOME = "/home/robots";
 
 /**
  * The directory a command runs in. Empty, ".", "/", the workspace root and any home alias
@@ -181,10 +181,10 @@ function isTeamRootPath(value: string): boolean {
   );
 }
 
-// A leading ~ or /home/rakazo means the workspace root, the same as a leading /.
+// A leading ~ or /home/robots means the workspace root, the same as a leading /.
 function expandHomePrefix(value: string): string {
   return value.replace(
-    /^(?:~|[\\/]home[\\/]rakazo)([\\/]|$)/,
+    /^(?:~|[\\/]home[\\/]robots)([\\/]|$)/,
     (_, separator: string) => separator || "/",
   );
 }
@@ -195,4 +195,4 @@ function stripVirtualWorkspaceRoot(value: string): string | null {
   return portable.startsWith("/") ? portable.slice(1) : null;
 }
 
-export { shellQuote } from "@rakazo/core/node/desktop-runtime";
+export { shellQuote } from "@robots/core/node/desktop-runtime";

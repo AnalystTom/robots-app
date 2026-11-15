@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { APP_LOCALE_LABELS, reportUiLocale } from "@rakazo/core";
+import { APP_LOCALE_LABELS, reportUiLocale } from "@robots/core";
 import { ScrollView, StyleSheet, Text } from "react-native";
 import { Checkmark } from "../../components/row-accessories";
 import { SettingsGroup, SettingsRow } from "../../components/settings-group";

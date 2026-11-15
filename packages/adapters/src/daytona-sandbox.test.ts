@@ -15,8 +15,8 @@ import {
   DaytonaTimeoutError,
   DaytonaValidationError,
 } from "@daytona/sdk";
-import type { PageBrowserCommand } from "@rakazo/adapter-kit";
-import { shellQuote } from "@rakazo/core/node/desktop-runtime";
+import type { PageBrowserCommand } from "@robots/adapter-kit";
+import { shellQuote } from "@robots/core/node/desktop-runtime";
 import { parse } from "shell-quote";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ComputerBrowserProvider } from "./computer-browser.js";
@@ -73,29 +73,29 @@ describe("DaytonaSandboxProvider", () => {
     const registry = await mkdtemp(path.join(tmpdir(), "daytona-page-test-"));
     temporaryRoots.push(registry);
     fixture.executeCommand.mockImplementation(async (command, cwd, env, timeout) => {
-      if (!command.includes("/tmp/rakazo-page-input-")) return original(command, cwd, env, timeout);
+      if (!command.includes("/tmp/robots-page-input-")) return original(command, cwd, env, timeout);
       const helper = [
         "const fs = require('node:fs');",
         "const request = JSON.parse(fs.readFileSync(0, 'utf8'));",
         `if (fs.existsSync(${JSON.stringify(inputFile)}) || fs.existsSync(${JSON.stringify(inputFile.slice(0, inputFile.lastIndexOf("/")))})) process.exit(1);`,
-        "console.log(JSON.stringify({ok:true,completed:request.actions.length,display:process.env.DISPLAY,port:process.env.RAKAZO_CDP_PORT}));",
+        "console.log(JSON.stringify({ok:true,completed:request.actions.length,display:process.env.DISPLAY,port:process.env.ROBOTS_CDP_PORT}));",
       ].join("\n");
       const script = parse(command).at(-1);
       let actual =
         typeof script === "string" && command.startsWith("bash -c ")
           ? script.replace(
-              "/usr/local/bin/rakazo-page-browser act",
+              "/usr/local/bin/robots-page-browser act",
               `node -e ${shellQuote(helper)}`,
             )
           : command;
-      if (actual.includes("RAKAZO_BROWSER_ARGS_STDIN")) {
+      if (actual.includes("ROBOTS_BROWSER_ARGS_STDIN")) {
         const slot = actual.match(/slot="\$dir\/([^"/]+)"/)?.[1];
         if (!slot) throw new Error("Expected a fenced desktop command");
         await writeFile(
           path.join(registry, slot),
           `${actual.includes("DISPLAY=:20") ? 0 : 1}\n\nview\n`,
         );
-        actual = actual.replaceAll("/tmp/rakazo/desktop-assignments", registry);
+        actual = actual.replaceAll("/tmp/robots/desktop-assignments", registry);
       }
       const result = await run("bash", ["-c", `flock() { :; }\n${actual}`]);
       return { exitCode: 0, result: result.stdout };
@@ -169,7 +169,7 @@ describe("DaytonaSandboxProvider", () => {
         if (failure === "cancel") controller.abort();
       });
       fixture.executeCommand.mockImplementation(async (command, cwd, env, timeout) => {
-        if (command.includes("/usr/local/bin/rakazo-page-browser snapshot")) {
+        if (command.includes("/usr/local/bin/robots-page-browser snapshot")) {
           dispatched++;
           if (failure === "timeout") throw new DaytonaProcessExecutionTimeoutError("timed out");
           throw new Error("fake-vault-password");
@@ -216,7 +216,7 @@ describe("DaytonaSandboxProvider", () => {
     const controller = new AbortController();
     let calls = 0;
     fixture.executeCommand.mockImplementation(async (command, cwd, env, timeout) => {
-      if (command.includes("/usr/local/bin/rakazo-page-browser snapshot")) {
+      if (command.includes("/usr/local/bin/robots-page-browser snapshot")) {
         calls++;
         dispatch();
         return finished;
@@ -249,10 +249,10 @@ describe("DaytonaSandboxProvider", () => {
 
   it("forwards an optional snapshot name to create()", async () => {
     const fixture = daytonaFixture();
-    const provider = new DaytonaSandboxProvider({ snapshot: "rakazo-computer" }, fixture.client);
+    const provider = new DaytonaSandboxProvider({ snapshot: "robots-computer" }, fixture.client);
     await provider.provision({ botId: "bot-a", homePath: "/unused" }, context);
     expect(fixture.create).toHaveBeenCalledWith(
-      expect.objectContaining({ snapshot: "rakazo-computer" }),
+      expect.objectContaining({ snapshot: "robots-computer" }),
       { timeout: 120 },
     );
   });
@@ -305,10 +305,10 @@ describe("DaytonaSandboxProvider", () => {
       "packages/core/notes.txt",
     ]);
     const visited = listing.mock.calls.map(([directory]) => directory);
-    expect(visited).not.toContain("/home/daytona/rakazo-home/project/node_modules");
-    expect(visited).not.toContain("/home/daytona/rakazo-home/.cache");
-    expect(visited).not.toContain("/home/daytona/rakazo-home/.yarn/cache");
-    expect(visited).not.toContain("/home/daytona/rakazo-home/.browser-profiles/chromium/Cache");
+    expect(visited).not.toContain("/home/daytona/robots-home/project/node_modules");
+    expect(visited).not.toContain("/home/daytona/robots-home/.cache");
+    expect(visited).not.toContain("/home/daytona/robots-home/.yarn/cache");
+    expect(visited).not.toContain("/home/daytona/robots-home/.browser-profiles/chromium/Cache");
   });
 
   it("omits snapshot from create() when unset", async () => {
@@ -344,8 +344,8 @@ describe("DaytonaSandboxProvider", () => {
     expect(computer).not.toHaveProperty("started");
     expect(fixture.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: expect.stringMatching(/^rakazo-/),
-        labels: { botId: "bot-a", rakazo: "computer" },
+        name: expect.stringMatching(/^robots-/),
+        labels: { botId: "bot-a", robots: "computer" },
         envVars: { VNC_RESOLUTION: "1280x800" },
       }),
       { timeout: 120 },
@@ -366,7 +366,7 @@ describe("DaytonaSandboxProvider", () => {
     // Secrets go in the env field, never in command text.
     expect(fixture.executeCommand).toHaveBeenCalledWith(
       "'env' '-u' 'FAILED' '--' 'echo' 'hello'",
-      "/home/daytona/rakazo-home",
+      "/home/daytona/robots-home",
       { FAKE_TOKEN: "fake-secret" },
       300,
     );
@@ -821,7 +821,7 @@ describe("DaytonaSandboxProvider", () => {
       timeout,
     );
     const name = fixture.create.mock.calls[0]?.[0].name;
-    expect(name).toMatch(/^rakazo-/);
+    expect(name).toMatch(/^robots-/);
     expect(fixture.get).toHaveBeenCalledWith(name);
     expect(fixture.deleteSandbox).toHaveBeenCalledOnce();
     expect(fixture.remote.missing).toBe(true);
@@ -911,9 +911,9 @@ describe("DaytonaSandboxProvider", () => {
     expect(fixture.remote.missing).toBe(true);
     await expect(provider.deleteMachine(byId, signal)).resolves.toBeUndefined();
 
-    Object.assign(fixture.remote, { missing: false, name: "rakazo-created-under" });
+    Object.assign(fixture.remote, { missing: false, name: "robots-created-under" });
     await provider.deleteMachine(
-      { provider: "daytona", machineId: "rakazo-created-under" },
+      { provider: "daytona", machineId: "robots-created-under" },
       signal,
     );
 
@@ -964,7 +964,7 @@ describe("DaytonaSandboxProvider", () => {
     const provider = new DaytonaSandboxProvider({}, fixture.client);
     const computer = await provider.provision({ botId: "bot-a", homePath: "/unused" }, context);
     await provider.prepare(computer, context);
-    // Stopped outside Rakazo, for example from the Daytona dashboard.
+    // Stopped outside RoBots, for example from the Daytona dashboard.
     fixture.remote.state = "stopped";
     fixture.remote.desiredState = "stopped";
 

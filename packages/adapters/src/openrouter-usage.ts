@@ -1,5 +1,5 @@
-import type { AgentUsage, ModelUsageLookup } from "@rakazo/adapter-kit";
-import { cancelResponseBody, readBoundedJsonResponse } from "@rakazo/core";
+import type { AgentUsage, ModelUsageLookup } from "@robots/adapter-kit";
+import { cancelResponseBody, readBoundedJsonResponse } from "@robots/core";
 import { z } from "zod";
 import { readBoundedText } from "./connector-http.js";
 
@@ -20,7 +20,7 @@ export function openRouterInferenceFetch(fetcher: typeof fetch, userId?: string)
           : undefined,
     );
     headers.set("HTTP-Referer", "https://rakazo.com");
-    headers.set("X-OpenRouter-Title", "Rakazo");
+    headers.set("X-OpenRouter-Title", "RoBots");
     const body = init?.body ?? (input instanceof Request ? await input.clone().text() : undefined);
     if (typeof body !== "string") throw new Error("OpenRouter inference requires a JSON body");
     const payload = JSON.parse(body);

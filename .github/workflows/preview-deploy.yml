@@ -64,7 +64,7 @@ jobs:
         if: steps.pr.outputs.numbers
         run: |
           loaded=$(zstd -dc "$RUNNER_TEMP/preview/preview-image.tar.zst" | docker load)
-          [[ $loaded == "Loaded image: rakazo-preview:pr" ]] || { echo "Unexpected image: $loaded"; exit 1; }
+          [[ $loaded == "Loaded image: robots-preview:pr" ]] || { echo "Unexpected image: $loaded"; exit 1; }
       - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1.6
         if: steps.pr.outputs.numbers
         with:
@@ -74,7 +74,7 @@ jobs:
         env:
           PRS: ${{ steps.pr.outputs.numbers }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          IMAGE: rakazo-preview:pr
+          IMAGE: robots-preview:pr
           FLY_ORG: ${{ vars.FLY_PREVIEW_ORG }}
           REGION: ${{ vars.FLY_PREVIEW_REGION || 'iad' }}
           APP_PREFIX: ${{ vars.FLY_PREVIEW_APP_PREFIX }}

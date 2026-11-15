@@ -1,8 +1,8 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import type { AdapterContext } from "@rakazo/adapter-kit";
-import type { BotSecretDestination } from "@rakazo/contracts";
-import { decodeLoginSecret } from "@rakazo/contracts";
-import { redactSecrets } from "@rakazo/core";
+import type { AdapterContext } from "@robots/adapter-kit";
+import type { BotSecretDestination } from "@robots/contracts";
+import { decodeLoginSecret } from "@robots/contracts";
+import { redactSecrets } from "@robots/core";
 import {
   asSystem,
   ciphertextKeyId,
@@ -13,7 +13,7 @@ import {
   provisionMessagingIdentity,
   runAsSystem,
   runAsTenant,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   LOGIN_ALREADY_SAVED,
@@ -87,7 +87,7 @@ function pausedAfterRead<T extends object>(prisma: T, during: () => Promise<unkn
 }
 
 describePostgres("vault values under the content keys (PostgreSQL)", () => {
-  const address = `vault-values-${randomUUID()}@rakazo.test`;
+  const address = `vault-values-${randomUUID()}@robots.test`;
   const secretStore = new EncryptedSecretStore("test-only-encryption-key");
   const keyProvider = new LocalKeyProvider([
     { id: "vault-test", key: randomBytes(32) },
@@ -229,7 +229,7 @@ describePostgres("vault values under the content keys (PostgreSQL)", () => {
 
   it("keeps a save and migrate from undoing each other on the same item", async () => {
     // Its own member, so the vault has no key yet and the save prepares the older format.
-    const raceAddress = `vault-race-${randomUUID()}@rakazo.test`;
+    const raceAddress = `vault-race-${randomUUID()}@robots.test`;
     const race = await runAsSystem("vault race fixture", () =>
       provisionMessagingIdentity(
         sealing.prisma,
@@ -305,7 +305,7 @@ describePostgres("vault values under the content keys (PostgreSQL)", () => {
   });
 
   it("gives vault keys a new version and moves items under it", async () => {
-    const rotateAddress = `vault-rotate-${randomUUID()}@rakazo.test`;
+    const rotateAddress = `vault-rotate-${randomUUID()}@robots.test`;
     const member = await runAsSystem("vault rotation fixture", () =>
       provisionMessagingIdentity(
         sealing.prisma,
@@ -367,7 +367,7 @@ describePostgres("vault values under the content keys (PostgreSQL)", () => {
   });
 
   it("moves items to a version another process rotated to while this one had the old one cached", async () => {
-    const raceAddress = `vault-stale-${randomUUID()}@rakazo.test`;
+    const raceAddress = `vault-stale-${randomUUID()}@robots.test`;
     const member = await runAsSystem("vault stale key fixture", () =>
       provisionMessagingIdentity(
         sealing.prisma,
@@ -435,7 +435,7 @@ describePostgres("vault values under the content keys (PostgreSQL)", () => {
   });
 
   it("saves with the newest key after another process rotates a cached vault", async () => {
-    const windowAddress = `vault-window-${randomUUID()}@rakazo.test`;
+    const windowAddress = `vault-window-${randomUUID()}@robots.test`;
     const member = await runAsSystem("vault key window fixture", () =>
       provisionMessagingIdentity(
         sealing.prisma,
@@ -494,7 +494,7 @@ describePostgres("vault values under the content keys (PostgreSQL)", () => {
   });
 
   it("leaves items in the previous format to migrate when re-encrypting, creating no vault key", async () => {
-    const oldAddress = `vault-old-format-${randomUUID()}@rakazo.test`;
+    const oldAddress = `vault-old-format-${randomUUID()}@robots.test`;
     const member = await runAsSystem("vault old format fixture", () =>
       provisionMessagingIdentity(
         sealing.prisma,
@@ -573,7 +573,7 @@ describePostgres("vault values under the content keys (PostgreSQL)", () => {
   ] as const)(
     "counts a member's items deleted with them after %s listed them as changed, not failed (%s, %s)",
     async (_command, mode, state) => {
-      const goneAddress = `vault-gone-${randomUUID()}@rakazo.test`;
+      const goneAddress = `vault-gone-${randomUUID()}@robots.test`;
       const doomed = await runAsSystem("vault deletion fixture", () =>
         provisionMessagingIdentity(
           sealing.prisma,
@@ -665,7 +665,7 @@ describePostgres("vault values under the content keys (PostgreSQL)", () => {
   );
 
   it("keeps rotating vault keys past a member deleted after they were listed", async () => {
-    const addresses = [0, 1].map(() => `vault-rotate-gone-${randomUUID()}@rakazo.test`);
+    const addresses = [0, 1].map(() => `vault-rotate-gone-${randomUUID()}@robots.test`);
     const [doomed, kept] = await runAsSystem("vault rotation fixture", () =>
       Promise.all(
         addresses.map((address) =>
@@ -738,7 +738,7 @@ describePostgres("vault values under the content keys (PostgreSQL)", () => {
   ] as const)(
     "stops at an interruption while %s and the key manager %s, storing no key afterwards",
     async (_site, answer, mode) => {
-      const address = `vault-interrupt-${randomUUID()}@rakazo.test`;
+      const address = `vault-interrupt-${randomUUID()}@robots.test`;
       const member = await runAsSystem("vault interruption fixture", () =>
         provisionMessagingIdentity(
           sealing.prisma,
@@ -849,7 +849,7 @@ describePostgres("vault values under the content keys (PostgreSQL)", () => {
 
   it("shreds vault keys with their Space and their member", async () => {
     // Its own member, with both vault keys, so it does not depend on the tests before it.
-    const shredAddress = `vault-shred-${randomUUID()}@rakazo.test`;
+    const shredAddress = `vault-shred-${randomUUID()}@robots.test`;
     const member = await runAsSystem("vault shred fixture", () =>
       provisionMessagingIdentity(
         sealing.prisma,

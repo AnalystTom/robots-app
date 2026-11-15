@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { botColors, typeScale } from "@rakazo/ui-tokens";
+import { botColors, typeScale } from "@robots/ui-tokens";
 import type { NativeStackNavigationProp } from "expo-router";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import {

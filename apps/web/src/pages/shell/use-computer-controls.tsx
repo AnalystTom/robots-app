@@ -1,12 +1,12 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { Bot, ComputerReleaseReason, Me, Run, ThreadSnapshot } from "@rakazo/contracts";
-import { isComputerAllowanceUsed } from "@rakazo/contracts";
+import type { Bot, ComputerReleaseReason, Me, Run, ThreadSnapshot } from "@robots/contracts";
+import { isComputerAllowanceUsed } from "@robots/contracts";
 import {
   COMPUTER_CONTROL_HEARTBEAT_MS,
   COMPUTER_HEARTBEAT_MS,
   isRetryableError,
-} from "@rakazo/core";
-import { Button, Spinner } from "@rakazo/ui-web";
+} from "@robots/core";
+import { Button, Spinner } from "@robots/ui-web";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ComputerMaintenanceActions } from "../../components/ComputerMaintenanceActions";

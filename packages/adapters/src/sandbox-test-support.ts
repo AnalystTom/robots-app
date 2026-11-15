@@ -4,8 +4,8 @@ import type {
   SandboxProvider,
   UnreferencedMachine,
   UnreferencedMachineRecords,
-} from "@rakazo/adapter-kit";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { expect, vi } from "vitest";
 
 /** Deadline signals run on the runtime's own clock; this puts them on the faked one. */

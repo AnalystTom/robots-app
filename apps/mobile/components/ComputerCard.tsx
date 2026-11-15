@@ -1,12 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
-import { ChatMarkdown } from "@rakazo/chat-ui/native";
-import type { ComputerReleaseReason, MessageBlock } from "@rakazo/contracts";
+import { ChatMarkdown } from "@robots/chat-ui/native";
+import type { ComputerReleaseReason, MessageBlock } from "@robots/contracts";
 import {
   TAKEOVER_COMPUTER_DONE_STATE,
   TAKEOVER_COMPUTER_PENDING_STATE,
   TAKEOVER_COMPUTER_SKIPPED_STATE,
-} from "@rakazo/core";
-import { typeScale } from "@rakazo/ui-tokens";
+} from "@robots/core";
+import { typeScale } from "@robots/ui-tokens";
 import { useEffect, useState } from "react";
 import type { ViewProps } from "react-native";
 import {

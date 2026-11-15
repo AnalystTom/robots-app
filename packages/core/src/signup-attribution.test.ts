@@ -1,4 +1,4 @@
-import { SIGNUP_ATTRIBUTION_COOKIE, SIGNUP_SURFACE_HEADER } from "@rakazo/contracts";
+import { SIGNUP_ATTRIBUTION_COOKIE, SIGNUP_SURFACE_HEADER } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import { rememberSignupAttribution } from "./browser-signup-attribution.js";
 import { signupAttributionFromCookie, signupAttributionFromHeaders } from "./signup-attribution.js";

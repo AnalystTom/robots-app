@@ -1,5 +1,5 @@
-import type { NotificationMessage } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
+import type { NotificationMessage } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
 import {
   BACKGROUND_HELPER_TRIGGER,
   displayName,
@@ -8,10 +8,10 @@ import {
   redactSecrets,
   truncatedPlainText,
   truncatePlainText,
-} from "@rakazo/core";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import { countUnreadInboxChats, membersSnoozing } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/core";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
+import { countUnreadInboxChats, membersSnoozing } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { ExecutorDeps } from "./executor-deps.js";
 import { notificationIdentity } from "./notification-identity.js";
 import { messageBlocksText } from "./run-replies.prompt.js";

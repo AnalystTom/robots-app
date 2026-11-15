@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import type { ArtifactStore, MessagingInboundAttachment } from "@rakazo/adapter-kit";
-import { createAdapterContext } from "@rakazo/adapter-kit";
-import type { Actor } from "@rakazo/contracts";
+import type { ArtifactStore, MessagingInboundAttachment } from "@robots/adapter-kit";
+import { createAdapterContext } from "@robots/adapter-kit";
+import type { Actor } from "@robots/contracts";
 import {
   ARTIFACT_NAME_MAX_LENGTH,
   ATTACHMENT_MAX_BYTES,
@@ -10,7 +10,7 @@ import {
   isAttachmentAudioMimeType,
   isStepScreenshotMimeType,
   STEP_SCREENSHOT_MIME_TYPES,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   AttachmentValidationError,
   decodeAttachmentBase64,
@@ -18,15 +18,15 @@ import {
   messageBlockForArtifact,
   promptTextForAttachments,
   validateAttachmentMimeType,
-} from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/core";
+import type { PrismaClient } from "@robots/db";
 import {
   HIDDEN_ARTIFACT_MIME_TYPES,
   IsolationError,
   isRecordNotFound,
   Prisma,
   withResolvedArtifactVersion,
-} from "@rakazo/db";
+} from "@robots/db";
 
 export async function createOwnedArtifact(
   deps: {

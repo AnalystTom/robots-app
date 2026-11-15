@@ -25,7 +25,7 @@ describe("desktop release workflow", () => {
   });
 
   it("requires signed platform builds before a single publication job", () => {
-    expect(workflow).toContain('RAKAZO_DESKTOP_RELEASE: "1"');
+    expect(workflow).toContain('ROBOTS_DESKTOP_RELEASE: "1"');
     expect(workflow).toContain("-c.forceCodeSigning=true");
     expect(workflow).toContain("codesign --verify --deep --strict");
     expect(workflow).toContain("Get-AuthenticodeSignature");
@@ -99,8 +99,8 @@ describe("desktop release workflow", () => {
 
   it("pins every platform update feed to the official GitHub owner and repo", () => {
     expect(workflow).toContain('grep -Fqx "provider: github"');
-    expect(workflow).toContain('grep -Fqx "owner: elie222"');
-    expect(workflow).toContain('grep -Fqx "repo: rakazo"');
+    expect(workflow).toContain('grep -Fqx "owner: AnalystTom"');
+    expect(workflow).toContain('grep -Fqx "repo: robots-app"');
     expect(workflow).toContain("Verify Linux update feed is pinned to the official GitHub channel");
     expect(workflow).toContain("Windows update config missing");
     expect(workflow).toContain("RELEASE_VERSION:");
@@ -132,9 +132,9 @@ describe("desktop release workflow", () => {
       'cp "$RUNNER_TEMP/server-bundle/server-bundle.json" apps/desktop/build/server-bundle.json',
     );
     expect(workflow).toContain("Contents/Resources/server-bundle.json");
-    expect(workflow).toContain("apps/desktop/out/rakazo-server-*.tar.xz");
+    expect(workflow).toContain("apps/desktop/out/robots-server-*.tar.xz");
     expect(workflow).toContain(
-      'test -s "release-artifacts/rakazo-server-darwin-arm64-$RELEASE_VERSION.tar.xz"',
+      'test -s "release-artifacts/robots-server-darwin-arm64-$RELEASE_VERSION.tar.xz"',
     );
   });
 

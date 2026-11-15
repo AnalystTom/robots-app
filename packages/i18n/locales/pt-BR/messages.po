@@ -6,7 +6,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: @lingui/cli\n"
 "Language: pt-BR\n"
-"Project-Id-Version: rakazo-web\n"
+"Project-Id-Version: robots-web\n"
 "Report-Msgid-Bugs-To: \n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
@@ -1353,8 +1353,8 @@ msgid "Allow once"
 msgstr "Permitir uma vez"
 
 #: apps/web/src/lib/dictation.ts
-msgid "Allow Rakazo to use Speech Recognition and the microphone in System Settings."
-msgstr "Permita que o Rakazo use o Reconhecimento de Fala e o microfone nos Ajustes do Sistema."
+msgid "Allow RoBots to use Speech Recognition and the microphone in System Settings."
+msgstr "Permita que o RoBots use o Reconhecimento de Fala e o microfone nos Ajustes do Sistema."
 
 #: apps/mobile/lib/call-session.ts
 #: apps/mobile/lib/composer-dictation.ts
@@ -2435,8 +2435,8 @@ msgstr "Escolher pasta"
 
 #: apps/web/src/components/ModelCredits.tsx
 #: apps/web/src/components/SubscriptionGate.tsx
-msgid "Choose how to use Rakazo"
-msgstr "Escolha como usar o Rakazo"
+msgid "Choose how to use RoBots"
+msgstr "Escolha como usar o RoBots"
 
 #. js-lingui-explicit-id
 #: packages/i18n/src/vault.ts
@@ -2888,8 +2888,8 @@ msgstr "Conecte sua IA"
 
 #. js-lingui-explicit-id
 #: packages/i18n/src/run-error.ts
-msgid "Connect your own API key in Models or choose Rakazo credits in Billing."
-msgstr "Conecte sua própria chave de API em Modelos ou escolha créditos Rakazo em Faturamento."
+msgid "Connect your own API key in Models or choose RoBots credits in Billing."
+msgstr "Conecte sua própria chave de API em Modelos ou escolha créditos RoBots em Faturamento."
 
 #: apps/mobile/app/(settings)/bot-template.tsx
 #: apps/mobile/app/(settings)/computers.tsx
@@ -5002,8 +5002,8 @@ msgid "Ends {day}"
 msgstr "Termina em {day}"
 
 #: apps/web/src/components/GitHubStarPrompt.tsx
-msgid "Enjoying Rakazo?"
-msgstr "Está gostando do Rakazo?"
+msgid "Enjoying RoBots?"
+msgstr "Está gostando do RoBots?"
 
 #: apps/mobile/lib/user-error.ts
 #: apps/web/src/lib/user-error.ts
@@ -5774,8 +5774,8 @@ msgstr "Como verificar"
 
 #: apps/mobile/app/(settings)/signup-survey.tsx
 #: apps/web/src/components/SignupSurvey.tsx
-msgid "How will you use Rakazo?"
-msgstr "Como você vai usar o Rakazo?"
+msgid "How will you use RoBots?"
+msgstr "Como você vai usar o RoBots?"
 
 #: apps/mobile/components/compatible-endpoint-form.tsx
 msgid "http://127.0.0.1:8000/v1"
@@ -7320,8 +7320,8 @@ msgid "Not imported"
 msgstr "Não importado"
 
 #: apps/web/src/pages/shell/import-status.ts
-msgid "Not in Rakazo's catalog"
-msgstr "Fora do catálogo do Rakazo"
+msgid "Not in RoBots's catalog"
+msgstr "Fora do catálogo do RoBots"
 
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/web/src/pages/plugins/plugin-browse.tsx
@@ -7370,12 +7370,12 @@ msgstr "Não enviada. Toque para tentar de novo"
 
 #: apps/web/src/pages/shell/agent-import-plan.tsx
 #: apps/web/src/pages/shell/import-status.ts
-msgid "Not supported in Rakazo"
-msgstr "Não compatível com o Rakazo"
+msgid "Not supported in RoBots"
+msgstr "Não compatível com o RoBots"
 
 #: apps/web/src/pages/shell/agent-import-plan.tsx
-msgid "Not used by Rakazo"
-msgstr "Não usado pelo Rakazo"
+msgid "Not used by RoBots"
+msgstr "Não usado pelo RoBots"
 
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/web/src/components/McpServerHealthLine.tsx
@@ -7600,8 +7600,8 @@ msgstr "Abrir a navegação"
 #: apps/web/src/components/pages/PublicPageShell.tsx
 #: apps/web/src/pages/Invite.tsx
 #: apps/web/src/pages/SharedPage.tsx
-msgid "Open Rakazo"
-msgstr "Abrir o Rakazo"
+msgid "Open RoBots"
+msgstr "Abrir o RoBots"
 
 #: apps/mobile/lib/composer-dictation.ts
 #: apps/mobile/lib/thread-voice.ts
@@ -7848,8 +7848,8 @@ msgstr "Cole uma chave de substituição"
 
 #: apps/mobile/components/compatible-endpoint-form.tsx
 #: apps/web/src/pages/model-settings/compatible-model-fields.tsx
-msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
-msgstr "Cole o endereço compatível com OpenAI do seu servidor. Rakazo adiciona /v1 se necessário."
+msgid "Paste the OpenAI-compatible address from your server. RoBots adds /v1 if needed."
+msgstr "Cole o endereço compatível com OpenAI do seu servidor. RoBots adiciona /v1 se necessário."
 
 #: apps/web/src/pages/shell/agent-import.tsx
 msgid "Paste the reply"
@@ -8157,17 +8157,17 @@ msgstr "Citar"
 #: apps/mobile/app/bot-settings.tsx
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
 #: apps/web/src/pages/shell/avatar-studio-popover.tsx
-msgid "Rakazo"
-msgstr "Rakazo"
+msgid "RoBots"
+msgstr "RoBots"
 
 #: apps/mobile/app/(settings)/billing.tsx
 #: apps/web/src/pages/onboarding/use-onboarding-model.ts
-msgid "Rakazo credits"
-msgstr "Créditos do Rakazo"
+msgid "RoBots credits"
+msgstr "Créditos do RoBots"
 
 #: apps/web/src/pages/memory-providers/HonchoSettingsForm.tsx
-msgid "rakazo-shared and IDs starting with bot- are reserved for Rakazo."
-msgstr "rakazo-shared e IDs que começam com bot- são reservados para o Rakazo."
+msgid "robots-shared and IDs starting with bot- are reserved for RoBots."
+msgstr "robots-shared e IDs que começam com bot- são reservados para o RoBots."
 
 #: apps/mobile/components/thread/message-row.tsx
 #: apps/web/src/pages/shell/message-hover-actions.tsx
@@ -8213,8 +8213,8 @@ msgid "Recall from banks"
 msgstr "Recuperar dos bancos"
 
 #: apps/web/src/pages/memory-providers/HonchoSettingsForm.tsx
-msgid "Recall from this peer; save to Rakazo’s own peers."
-msgstr "Consultar este peer; salvar nos próprios peers do Rakazo."
+msgid "Recall from this peer; save to RoBots’s own peers."
+msgstr "Consultar este peer; salvar nos próprios peers do RoBots."
 
 #: apps/web/src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Recall only"
@@ -8816,8 +8816,8 @@ msgstr "Voltar à caixa de entrada"
 
 #: apps/web/src/pages/McpOAuthCallback.tsx
 #: apps/web/src/pages/SlackInstallCallback.tsx
-msgid "Return to Rakazo"
-msgstr "Retorno a Rakazo"
+msgid "Return to RoBots"
+msgstr "Retorno a RoBots"
 
 #: apps/web/src/lib/model-connection-preflight.ts
 msgid "Review provider settings and test again."
@@ -9591,13 +9591,13 @@ msgid "Sign in at <0>{0}</0>, then paste the code here."
 msgstr "Entre em <0>{0}</0> e cole o código aqui."
 
 #: apps/mobile/app/sign-in.tsx
-msgid "Sign in to continue to Rakazo"
-msgstr "Entre para continuar no Rakazo"
+msgid "Sign in to continue to RoBots"
+msgstr "Entre para continuar no RoBots"
 
 #: apps/mobile/app/sign-in.tsx
 #: apps/web/src/pages/Auth.tsx
-msgid "Sign in to Rakazo"
-msgstr "Entrar no Rakazo"
+msgid "Sign in to RoBots"
+msgstr "Entrar no RoBots"
 
 #: apps/mobile/lib/user-error.ts
 #: apps/web/src/lib/user-error.ts
@@ -9628,8 +9628,8 @@ msgid "Sign up"
 msgstr "Cadastre-se"
 
 #: apps/mobile/app/sign-in.tsx
-msgid "Sign up for Rakazo"
-msgstr "Cadastre-se no Rakazo"
+msgid "Sign up for RoBots"
+msgstr "Cadastre-se no RoBots"
 
 #: apps/web/src/pages/PluginsOverlay.tsx
 msgid "Sign-in cancelled. Retry in Manage MCP servers."
@@ -9940,8 +9940,8 @@ msgid "Start recording"
 msgstr "Começar a gravar"
 
 #: apps/mobile/app/paywall.tsx
-msgid "Start using Rakazo"
-msgstr "Comece a usar o Rakazo"
+msgid "Start using RoBots"
+msgstr "Comece a usar o RoBots"
 
 #: apps/mobile/app/(settings)/billing.tsx
 #: apps/web/src/components/ModelCredits.tsx
@@ -10258,8 +10258,8 @@ msgid "That isn't a Grok Bot export. Paste the Bot's whole reply."
 msgstr "Isso não é uma exportação do Grok Bot. Cole a resposta completa do Bot."
 
 #: apps/mobile/lib/endpoint.ts
-msgid "That URL did not look like a Rakazo server"
-msgstr "Essa URL não parece ser de um servidor Rakazo"
+msgid "That URL did not look like a RoBots server"
+msgstr "Essa URL não parece ser de um servidor RoBots"
 
 #: apps/mobile/lib/endpoint.ts
 msgid "That URL is missing a host"
@@ -10546,8 +10546,8 @@ msgid "This device"
 msgstr "Este dispositivo"
 
 #: apps/web/src/lib/agent-import-errors.ts
-msgid "This export is newer than Rakazo can read. Update Rakazo and try again."
-msgstr "Esta exportação é mais recente do que o Rakazo consegue ler. Atualize o Rakazo e tente novamente."
+msgid "This export is newer than RoBots can read. Update RoBots and try again."
+msgstr "Esta exportação é mais recente do que o RoBots consegue ler. Atualize o RoBots e tente novamente."
 
 #: apps/web/src/lib/agent-import-errors.ts
 msgid "This export is too large to import."
@@ -10717,8 +10717,8 @@ msgstr "Este Espaço tem o próprio cofre, então os bots dele não podem usar i
 
 #: apps/mobile/app/(settings)/model-connection.tsx
 #: apps/web/src/pages/model-settings/connection-controls.tsx
-msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
-msgstr "Este login de assinatura ainda não está disponível no Rakazo. Use uma credencial de implantação ou escolha outro provedor."
+msgid "This subscription sign-in is not available in RoBots yet. Use a deployment credential or choose another provider."
+msgstr "Este login de assinatura ainda não está disponível no RoBots. Use uma credencial de implantação ou escolha outro provedor."
 
 #: apps/mobile/app/(settings)/bot-template.tsx
 #: apps/web/src/components/bot-templates/bot-templates-dialog.tsx
@@ -11270,8 +11270,8 @@ msgstr "Use a Entrada protegida para senhas."
 
 #: apps/mobile/app/(settings)/billing.tsx
 #: apps/web/src/components/ModelCredits.tsx
-msgid "Use Rakazo credits"
-msgstr "Usar créditos do Rakazo"
+msgid "Use RoBots credits"
+msgstr "Usar créditos do RoBots"
 
 #: apps/mobile/components/space-bots-model.tsx
 msgid "Use space default"
@@ -11503,8 +11503,8 @@ msgstr "Que bom ter você de volta"
 
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/web/src/components/SignupSurvey.tsx
-msgid "Welcome to Rakazo"
-msgstr "Boas-vindas ao Rakazo"
+msgid "Welcome to RoBots"
+msgstr "Boas-vindas ao RoBots"
 
 #: apps/web/src/pages/shell/dialogs.tsx
 msgid "What about its memories?"
@@ -11516,8 +11516,8 @@ msgstr "O que este espaço pode usar?"
 
 #: apps/mobile/app/(settings)/signup-survey.tsx
 #: apps/web/src/components/SignupSurvey.tsx
-msgid "What do you most want Rakazo to help with?"
-msgstr "Com o que você mais quer que o Rakazo ajude?"
+msgid "What do you most want RoBots to help with?"
+msgstr "Com o que você mais quer que o RoBots ajude?"
 
 #: apps/web/src/pages/shell/message-cards.tsx
 msgid "What do you want me on first?"

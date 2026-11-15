@@ -34,7 +34,7 @@ vi.mock("./api", () => ({
   captureApiRequestContext: async (spaceId: string | null = "space-1") => ({
     apiBase: "https://app.example.test",
     sessionGeneration: 1,
-    headers: spaceId ? { "x-rakazo-space-id": spaceId } : {},
+    headers: spaceId ? { "x-robots-space-id": spaceId } : {},
   }),
 }));
 vi.mock("./session", () => ({ currentSessionGeneration: () => 1 }));
@@ -50,7 +50,7 @@ vi.mock("expo-router", () => ({
   useNavigation: () => ({ isFocused: () => mocks.focused }),
   useRouter: () => mocks.router,
 }));
-vi.mock("@rakazo/chat-ui/native", () => ({
+vi.mock("@robots/chat-ui/native", () => ({
   ChatMarkdown: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
 }));
 vi.mock("../components/bot-template-icon", () => ({ BotTemplateIcon: () => null }));

@@ -1,10 +1,10 @@
-import type { ComposerMentionBinding } from "@rakazo/core";
-import { createKeyedListeners, validateComposerMentionBindings } from "@rakazo/core";
+import type { ComposerMentionBinding } from "@robots/core";
+import { createKeyedListeners, validateComposerMentionBindings } from "@robots/core";
 
-export const COMPOSER_DRAFT_STORAGE_PREFIX = "rakazo.composerDraft.";
-const COMPOSER_BINDINGS_STORAGE_PREFIX = "rakazo.composerBindings.";
-const COMPOSER_NONCE_STORAGE_PREFIX = "rakazo.composerNonce.";
-const LEGACY_COMPOSER_SEND_STORAGE_PREFIX = "rakazo.composerSend.";
+export const COMPOSER_DRAFT_STORAGE_PREFIX = "robots.composerDraft.";
+const COMPOSER_BINDINGS_STORAGE_PREFIX = "robots.composerBindings.";
+const COMPOSER_NONCE_STORAGE_PREFIX = "robots.composerNonce.";
+const LEGACY_COMPOSER_SEND_STORAGE_PREFIX = "robots.composerSend.";
 
 // Older releases saved full send payloads. Remove them on upgrade, including chats
 // that are never opened again; only retry nonces are stored by this release.

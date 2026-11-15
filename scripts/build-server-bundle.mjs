@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 // Packs the API, worker, web server and migrations into one archive that runs on plain Node, or
-// on Electron's binary with ELECTRON_RUN_AS_NODE=1, for hosts that run Rakazo without containers.
+// on Electron's binary with ELECTRON_RUN_AS_NODE=1, for hosts that run RoBots without containers.
 // Usage: build-server-bundle.mjs <out-dir> [download-base-url]
-// Needs `pnpm db:generate` and `pnpm --filter @rakazo/web build` first. Writes
-// rakazo-server-<platform>-<arch>-<version>.tar.xz and server-bundle.json { url, sha256, size,
+// Needs `pnpm db:generate` and `pnpm --filter @robots/web build` first. Writes
+// robots-server-<platform>-<arch>-<version>.tar.xz and server-bundle.json { url, sha256, size,
 // version } to <out-dir>; the url is the base joined with the archive's name.
 //
-// The archive holds one folder, rakazo-server/, laid out like the repository so the paths
+// The archive holds one folder, robots-server/, laid out like the repository so the paths
 // build-server.mjs writes into node_modules/.pnpm resolve unchanged: built entrypoints, the web
 // app, the database package's schema and migrations, and production dependencies for this
 // platform only. manifest.json names each entrypoint relative to that folder. Run each with that
 // folder as the working directory, the same environment as the Compose service of the same name:
-//   migrate  DATABASE_URL, DATABASE_MIGRATION_URL, RAKAZO_DB_PACKAGE_DIR=packages/db
+//   migrate  DATABASE_URL, DATABASE_MIGRATION_URL, ROBOTS_DB_PACKAGE_DIR=packages/db
 //   api      DATABASE_URL, API_HOST, API_PORT, BETTER_AUTH_SECRET, BETTER_AUTH_URL, WEB_ORIGIN,
 //            SCREEN_PROXY_SECRET, DATA_DIR, SANDBOX_PROVIDER (and that provider's settings,
-//            such as LOCAL_VM_CLI), RAKAZO_DESKTOP_STACK_TOKEN
+//            such as LOCAL_VM_CLI), ROBOTS_DESKTOP_STACK_TOKEN
 //   worker   DATABASE_URL, DATA_DIR, SANDBOX_PROVIDER (and that provider's settings)
 //   web      API_PROXY_TARGET, SCREEN_PROXY_SECRET, WEB_HOST (127.0.0.1), WEB_PORT (5173),
-//            RAKAZO_HOST, RAKAZO_DESKTOP_STACK_TOKEN, RAKAZO_IMAGE_TAG
+//            ROBOTS_HOST, ROBOTS_DESKTOP_STACK_TOKEN, ROBOTS_IMAGE_TAG
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
@@ -53,9 +53,9 @@ for (const required of ["apps/web/dist/index.html", "packages/db/src/generated"]
 const version = JSON.parse(
   fs.readFileSync(path.join(repo, "apps/desktop/package.json"), "utf8"),
 ).version;
-const name = `rakazo-server-${process.platform}-${process.arch}-${version}`;
-const work = fs.mkdtempSync(path.join(tmpdir(), "rakazo-server-bundle-"));
-const stage = path.join(work, "rakazo-server");
+const name = `robots-server-${process.platform}-${process.arch}-${version}`;
+const work = fs.mkdtempSync(path.join(tmpdir(), "robots-server-bundle-"));
+const stage = path.join(work, "robots-server");
 const staged = (file) => path.join(stage, path.relative(repo, file));
 
 function readJson(file) {
@@ -192,7 +192,7 @@ fs.writeFileSync(
 fs.mkdirSync(outDir, { recursive: true });
 const archive = path.join(outDir, `${name}.tar.xz`);
 fs.rmSync(archive, { force: true });
-execFileSync("tar", ["-C", work, "-cJf", archive, "rakazo-server"], { stdio: "inherit" });
+execFileSync("tar", ["-C", work, "-cJf", archive, "robots-server"], { stdio: "inherit" });
 fs.rmSync(work, { recursive: true, force: true });
 
 const sha256 = createHash("sha256").update(fs.readFileSync(archive)).digest("hex");

@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { MessagingSurface } from "@rakazo/adapter-kit";
-import { messagingReplyJobKey, messagingSendJobKey, RetryJobLaterError } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
+import type { MessagingSurface } from "@robots/adapter-kit";
+import { messagingReplyJobKey, messagingSendJobKey, RetryJobLaterError } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
 import {
   asSystem,
   createDb,
   createPool,
   provisionMessagingIdentity,
   runAsSystem,
-} from "@rakazo/db";
+} from "@robots/db";
 import type { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { MessagingSendError } from "./chat-sdk-surface.js";

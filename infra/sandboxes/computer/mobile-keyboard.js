@@ -424,7 +424,7 @@ function keyNameFromEvent(event) {
 /**
  * Connect a text field to noVNC so touch keyboards can type into the remote
  * desktop, and expose Esc, Tab, Ctrl, and arrows.
- * The native app sets `window.__rakazoNativeKeys` and calls `rakazoComputerKeyboard.run`.
+ * The native app sets `window.__robotsNativeKeys` and calls `robotsComputerKeyboard.run`.
  */
 export function attachMobileKeyboard(
   rfb,
@@ -447,7 +447,7 @@ export function attachMobileKeyboard(
   let controlLatched = false;
   let keyboardTouchAt = 0;
   let keyTouchAt = 0;
-  const pageChrome = !windowTarget?.__rakazoNativeKeys;
+  const pageChrome = !windowTarget?.__robotsNativeKeys;
   const visualViewport = windowTarget?.visualViewport;
   const viewportRoot = documentTarget.documentElement;
   const updateVisibleViewport = () => {
@@ -645,7 +645,7 @@ export function attachMobileKeyboard(
   } else {
     input.setAttribute("aria-hidden", "true");
   }
-  if (windowTarget) windowTarget.rakazoComputerKeyboard = { run };
+  if (windowTarget) windowTarget.robotsComputerKeyboard = { run };
   for (const type of keepOpenEvents) button.addEventListener(type, onButtonPressStart);
   button.addEventListener("touchend", onKeyboardTouchEnd, { passive: false });
   button.addEventListener("click", onKeyboardClick);
@@ -685,6 +685,6 @@ export function attachMobileKeyboard(
     for (const type of keepOpenEvents) {
       documentTarget.documentElement.removeEventListener(type, keepOpen, true);
     }
-    if (windowTarget) delete windowTarget.rakazoComputerKeyboard;
+    if (windowTarget) delete windowTarget.robotsComputerKeyboard;
   };
 }

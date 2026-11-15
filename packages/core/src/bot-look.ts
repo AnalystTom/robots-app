@@ -1,5 +1,5 @@
-import type { BotAvatarSet } from "@rakazo/contracts";
-import { BOT_COLORS, parseBotAvatarValue } from "@rakazo/contracts";
+import type { BotAvatarSet } from "@robots/contracts";
+import { BOT_COLORS, parseBotAvatarValue } from "@robots/contracts";
 import {
   ORGANIC_AVATAR_HEART_FAMILY,
   ORGANIC_AVATAR_LOOKS,
@@ -35,7 +35,7 @@ export function newBotLook(): NewBotLook {
 
 /** The identity the creation preview draws for the account's avatar set. */
 export function newBotPreviewIdentity(avatarSet: BotAvatarSet, look: NewBotLook): string {
-  return avatarSet === "rakazo" ? look.id : look.identity;
+  return avatarSet === "robots" ? look.id : look.identity;
 }
 
 /** What `bots/create` needs so the new bot looks like its preview. */
@@ -44,7 +44,7 @@ export function newBotLookInput(
   look: NewBotLook,
 ): { color: string; id?: string; avatarFamily?: number } {
   // The logo has no studio shapes, so a shape picked before the set was known is dropped.
-  if (avatarSet === "rakazo") return { color: botLookState(look.color).color, id: look.id };
+  if (avatarSet === "robots") return { color: botLookState(look.color).color, id: look.id };
   // A studio shape replaces the organic body, so the family would mean nothing.
   if (botLookState(look.color).shapeIndex !== null) return { color: look.color };
   return { color: look.color, avatarFamily: organicAvatarFamily(look.identity) };

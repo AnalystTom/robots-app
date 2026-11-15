@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
-import type { RpcInput, RpcOutput, RpcPath, ThreadSnapshot } from "@rakazo/contracts";
-import { CLIENT_UPDATE_REQUIRED_STATUS, parseServerHeaders } from "@rakazo/contracts";
+import type { RpcInput, RpcOutput, RpcPath, ThreadSnapshot } from "@robots/contracts";
+import { CLIENT_UPDATE_REQUIRED_STATUS, parseServerHeaders } from "@robots/contracts";
 import {
   aiConsentTargets,
   aiDataUsesForProcedure,
@@ -12,8 +12,8 @@ import {
   parseRetryAfter,
   readBoundedJsonResponse,
   withAbort,
-} from "@rakazo/core";
-import { clientCorrelationHeaders, responseCorrelation } from "@rakazo/logging/monitoring";
+} from "@robots/core";
+import { clientCorrelationHeaders, responseCorrelation } from "@robots/logging/monitoring";
 import * as SecureStore from "expo-secure-store";
 import { promptAiConsent } from "./ai-consent";
 import type { EndpointResult } from "./endpoint";
@@ -40,8 +40,8 @@ import {
 import { clearUnsentSends } from "./thread-feedback";
 import { errorText } from "./user-error";
 
-export const SPACE_KEY = "rakazo.space_id";
-export const SPACE_ROLLBACK_KEY = "rakazo.space_rollback";
+export const SPACE_KEY = "robots.space_id";
+export const SPACE_ROLLBACK_KEY = "robots.space_rollback";
 const RPC_TIMEOUT_MS = 8_000;
 export const MAX_MOBILE_AUTH_RESPONSE_BYTES = 256 * 1024;
 export const MAX_MOBILE_RPC_RESPONSE_BYTES = 16 * 1024 * 1024;
@@ -173,7 +173,7 @@ export async function authHeaders(
   return {
     ...clientBuild.headers(),
     ...(token ? { authorization: `Bearer ${token}` } : {}),
-    ...(spaceId ? { "x-rakazo-space-id": spaceId } : {}),
+    ...(spaceId ? { "x-robots-space-id": spaceId } : {}),
   };
 }
 export type ApiRequestContext = {
@@ -183,7 +183,7 @@ export type ApiRequestContext = {
 };
 /** Keeps consent prompts separate across servers and the selected Space. */
 export function aiConsentCoalesceKey(requestContext: ApiRequestContext): string {
-  return [requestContext.apiBase, requestContext.headers["x-rakazo-space-id"] ?? ""].join("\u0000");
+  return [requestContext.apiBase, requestContext.headers["x-robots-space-id"] ?? ""].join("\u0000");
 }
 const aiConsentListeners = new Set<() => void>();
 /** Runs after a consent prompt's Allow is saved, so whatever shows the permissions reads them again. */
@@ -228,7 +228,7 @@ export async function fetchAuthenticatedAccountJson<T>(
   const context = await captureApiRequestContext(null);
   return withMobileResponse(
     `${context.apiBase}${path}`,
-    { ...init, headers: { origin: "rakazo://", ...context.headers } },
+    { ...init, headers: { origin: "robots://", ...context.headers } },
     context.apiBase,
     async (response, signal) => {
       if (
@@ -297,7 +297,7 @@ async function withMobileResponse<T>(
     clearTimeout(timer);
   }
 }
-const PENDING_SIGN_OUT_KEY = "rakazo.pending_sign_out";
+const PENDING_SIGN_OUT_KEY = "robots.pending_sign_out";
 /**
  * Better-auth expires a session 7 days after its last use, and the signed-out session is not used
  * again; 30 days also covers longer server overrides.
@@ -530,7 +530,7 @@ async function deliverPendingSignOut(record: PendingSignOut): Promise<"delivered
         credentials: "omit",
         headers: {
           "content-type": "application/json",
-          origin: "rakazo://",
+          origin: "robots://",
           authorization: `Bearer ${record.token}`,
           ...clientBuild.headers(),
           ...record.headers,
@@ -721,7 +721,7 @@ async function request(
   // a 401 arriving after the user switched Spaces — including A → B → A —
   // belongs to a stale request and must not touch the current selection.
   const requestHeaders = consentContext?.headers ?? (await authHeaders());
-  const requestSpaceId = requestHeaders["x-rakazo-space-id"];
+  const requestSpaceId = requestHeaders["x-robots-space-id"];
   try {
     if (
       consentContext?.sessionGeneration !== undefined &&
@@ -737,7 +737,7 @@ async function request(
           method: "POST",
           headers: {
             "content-type": "application/json",
-            origin: "rakazo://",
+            origin: "robots://",
             ...requestHeaders,
             ...correlation,
           },

@@ -1,5 +1,5 @@
-import type { AdapterContext, SecretStore } from "@rakazo/adapter-kit";
-import { createLogger, createTestSink, getLogger, installLogger } from "@rakazo/logging";
+import type { AdapterContext, SecretStore } from "@robots/adapter-kit";
+import { createLogger, createTestSink, getLogger, installLogger } from "@robots/logging";
 import { describe, expect, it, vi } from "vitest";
 import { InfisicalSecretStore, SecretStoreUnavailableError } from "./infisical-secret-store.js";
 import { InMemoryRealtimeFanout } from "./realtime.js";
@@ -436,7 +436,7 @@ describe("Infisical lifecycle and REST", () => {
     let first = true;
     const fetcher: typeof fetch = async (input, init) => {
       const response = await fake.fetcher(input, init);
-      if (init?.method === "GET" && !String(input).includes("rakazo_start_check") && first) {
+      if (init?.method === "GET" && !String(input).includes("robots_start_check") && first) {
         first = false;
         started();
         await gate;
@@ -573,7 +573,7 @@ describe("Infisical lifecycle and REST", () => {
     let gets = 0;
     const fetcher: typeof fetch = async (input, init) => {
       const response = await fake.fetcher(input, init);
-      if (init?.method === "GET" && !String(input).includes("rakazo_start_check") && ++gets === 1) {
+      if (init?.method === "GET" && !String(input).includes("robots_start_check") && ++gets === 1) {
         started();
         await gate;
       }

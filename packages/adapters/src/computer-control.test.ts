@@ -3,8 +3,8 @@ import type {
   BackgroundJob,
   JobPublisher,
   SandboxProvider,
-} from "@rakazo/adapter-kit";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import {
   clearInactiveUserComputerControl,

@@ -23,7 +23,7 @@ afterEach(() => {
  * file interleave, and writes enough bytes that the wrapping base64 below splits the output.
  */
 function fakeTools() {
-  const bin = mkdtempSync(path.join(tmpdir(), "rakazo-observe-bin-"));
+  const bin = mkdtempSync(path.join(tmpdir(), "robots-observe-bin-"));
   cleanups.push(bin);
   writeFileSync(
     path.join(bin, "scrot"),
@@ -45,8 +45,8 @@ describe("observing an extra display", () => {
     // A display number no other test uses, so only this test's files are counted.
     const displayNumber = 90_000 + process.pid;
     const owned = () =>
-      readdirSync("/tmp/rakazo").filter((name) => name.startsWith(`observe-${displayNumber}-`));
-    mkdirSync("/tmp/rakazo", { recursive: true });
+      readdirSync("/tmp/robots").filter((name) => name.startsWith(`observe-${displayNumber}-`));
+    mkdirSync("/tmp/robots", { recursive: true });
     const observe = (char: string) =>
       run("sh", ["-c", observeExtraDisplayCommand({ display: ":7", displayNumber })], {
         env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, DISPLAY_CHAR: char },
@@ -111,7 +111,7 @@ describe("extra display text input", () => {
     "$(printf injected); `printf injected`",
     "",
   ])("passes %j as literal text on both input paths", async (text) => {
-    const bin = mkdtempSync(path.join(tmpdir(), "rakazo-input-bin-"));
+    const bin = mkdtempSync(path.join(tmpdir(), "robots-input-bin-"));
     cleanups.push(bin);
     // Record argv after shell parsing, without sending input to a real desktop.
     const tool = path.join(bin, "xdotool");

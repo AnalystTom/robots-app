@@ -1,6 +1,6 @@
-import type { Actor } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
-import { createDb, createThreadMessage, runAsSystem } from "@rakazo/db";
+import type { Actor } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
+import { createDb, createThreadMessage, runAsSystem } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { querySpaceSearch } from "./search.js";
 
@@ -17,7 +17,7 @@ describePostgres("space search with CONTENT_ENCRYPTION on and off (PostgreSQL)",
   const actor: Actor = {
     userId,
     spaceId,
-    email: `${userId}@rakazo.test`,
+    email: `${userId}@robots.test`,
     isDeploymentOwner: false,
   };
   let on: ReturnType<typeof createDb>;
@@ -38,7 +38,7 @@ describePostgres("space search with CONTENT_ENCRYPTION on and off (PostgreSQL)",
       off = createDb(databaseUrl!, { encryptContent: false });
       const prisma = on.prisma;
       await prisma.user.create({
-        data: { id: userId, name: userId, email: `${userId}@rakazo.test`, emailVerified: false },
+        data: { id: userId, name: userId, email: `${userId}@robots.test`, emailVerified: false },
       });
       await prisma.organization.create({
         data: { id: organizationId, name: "Search", slug: organizationId, createdAt: new Date() },

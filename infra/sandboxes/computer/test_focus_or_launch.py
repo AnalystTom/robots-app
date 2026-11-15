@@ -29,7 +29,7 @@ def load_module(name, filename):
     return module
 
 
-helper = load_module("focus_or_launch", "rakazo-focus-or-launch")
+helper = load_module("focus_or_launch", "robots-focus-or-launch")
 control = load_module("control", "control.py")
 
 LISTING = """\
@@ -42,7 +42,7 @@ LISTING = """\
 
 class WmClassTest(unittest.TestCase):
     def test_known_launchers_have_fixed_classes(self):
-        self.assertEqual(helper.wm_class("rakazo-browser"), helper.browser_wm_class())
+        self.assertEqual(helper.wm_class("robots-browser"), helper.browser_wm_class())
         self.assertEqual(helper.wm_class("xterm"), "xterm")
 
     def test_browser_class_follows_the_installed_browser(self):
@@ -120,7 +120,7 @@ class MainTest(unittest.TestCase):
         # The fixtures list Chromium windows; the host's own browsers must not matter.
         with patch.object(helper.subprocess, "run", side_effect=fake_run), patch.object(
             helper.subprocess, "Popen", side_effect=fake_popen
-        ), patch.dict(helper.WM_CLASS, {"rakazo-browser": "chromium"}):
+        ), patch.dict(helper.WM_CLASS, {"robots-browser": "chromium"}):
             try:
                 helper.main(argv)
             except SystemExit as error:
@@ -157,18 +157,18 @@ class MainTest(unittest.TestCase):
         self.assertEqual(calls, [["xterm"]])
 
     def test_arguments_reach_the_launcher_before_the_window_is_raised(self):
-        calls = self.run_wrapper(["rakazo-browser", "https://example.test"], launch_code=0)
+        calls = self.run_wrapper(["robots-browser", "https://example.test"], launch_code=0)
         self.assertEqual(
             calls,
             [
-                ("popen", ["rakazo-browser", "https://example.test"]),
-                ("wait", helper.LAUNCH_WAIT_SEC["rakazo-browser"]),
+                ("popen", ["robots-browser", "https://example.test"]),
+                ("wait", helper.LAUNCH_WAIT_SEC["robots-browser"]),
                 ("run", ["wmctrl", "-ia", "0x01800003"]),
             ],
         )
 
     def test_a_live_launcher_does_not_block_the_raise(self):
-        calls = self.run_wrapper(["rakazo-browser", "https://example.test"])
+        calls = self.run_wrapper(["robots-browser", "https://example.test"])
         self.assertEqual(calls[-1], ("run", ["wmctrl", "-ia", "0x01800003"]))
 
     def test_a_failing_launcher_does_not_raise_or_succeed(self):
@@ -187,20 +187,20 @@ class MainTest(unittest.TestCase):
             helper.main([])
 
     def test_a_different_browser_profile_is_not_raised(self):
-        calls = self.run_wrapper(["rakazo-browser"])
+        calls = self.run_wrapper(["robots-browser"])
         # The fixture PIDs expose no profile, so the only chromium window is raised.
         self.assertEqual(calls, [("run", ["wmctrl", "-ia", "0x01800003"])])
         with patch.object(helper, "window_profile", return_value="/profiles/other"), patch.dict(
-            os.environ, {"RAKAZO_BROWSER_PROFILE": "/profiles/mine"}
+            os.environ, {"ROBOTS_BROWSER_PROFILE": "/profiles/mine"}
         ):
-            calls = self.run_wrapper(["rakazo-browser"])
+            calls = self.run_wrapper(["robots-browser"])
         self.assertEqual(
             calls,
-            [("popen", ["rakazo-browser"]), ("wait", helper.LAUNCH_WAIT_SEC["rakazo-browser"])],
+            [("popen", ["robots-browser"]), ("wait", helper.LAUNCH_WAIT_SEC["robots-browser"])],
         )
 
 
-PROFILE = "/home/rakazo/.browser-profiles/chromium-bot-" + "a" * 32
+PROFILE = "/home/robots/.browser-profiles/chromium-bot-" + "a" * 32
 
 
 XLIB_H = """\
@@ -569,15 +569,15 @@ void png_write_end(png_structp png, png_infop info) {
 class ControlArgvTest(unittest.TestCase):
     def test_accepts_wrapped_known_launchers(self):
         for argv in (
-            ["env", "DISPLAY=:1", "rakazo-focus-or-launch", "xterm"],
-            ["env", "DISPLAY=:1", "rakazo-focus-or-launch", "rakazo-browser"],
-            ["env", "DISPLAY=:1", "rakazo-focus-or-launch", "rakazo-browser", "https://example.test"],
+            ["env", "DISPLAY=:1", "robots-focus-or-launch", "xterm"],
+            ["env", "DISPLAY=:1", "robots-focus-or-launch", "robots-browser"],
+            ["env", "DISPLAY=:1", "robots-focus-or-launch", "robots-browser", "https://example.test"],
             [
                 "env",
                 "DISPLAY=:1",
-                f"RAKAZO_BROWSER_PROFILE={PROFILE}",
-                "rakazo-focus-or-launch",
-                "rakazo-browser",
+                f"ROBOTS_BROWSER_PROFILE={PROFILE}",
+                "robots-focus-or-launch",
+                "robots-browser",
                 "https://example.test",
             ],
         ):
@@ -586,41 +586,41 @@ class ControlArgvTest(unittest.TestCase):
                 self.assertFalse(control.is_long_lived_control(argv))
 
     def test_rejects_launchers_outside_the_allowlist(self):
-        for inner in ("sh", "wmctrl", "rakazo-focus-or-launch", "/usr/bin/xterm"):
-            argv = ["env", "DISPLAY=:1", "rakazo-focus-or-launch", inner]
+        for inner in ("sh", "wmctrl", "robots-focus-or-launch", "/usr/bin/xterm"):
+            argv = ["env", "DISPLAY=:1", "robots-focus-or-launch", inner]
             with self.subTest(inner=inner):
                 self.assertFalse(control.allowed_control_argv(argv, ":1"))
 
     def test_rejects_bad_arity_and_a_browser_profile_on_other_launchers(self):
         for argv in (
-            ["env", "DISPLAY=:1", "rakazo-focus-or-launch"],
-            ["env", "DISPLAY=:1", "rakazo-focus-or-launch", "xterm", "one", "two"],
-            ["env", "DISPLAY=:1", "rakazo-focus-or-launch", "xterm", "-e", "sh"],
+            ["env", "DISPLAY=:1", "robots-focus-or-launch"],
+            ["env", "DISPLAY=:1", "robots-focus-or-launch", "xterm", "one", "two"],
+            ["env", "DISPLAY=:1", "robots-focus-or-launch", "xterm", "-e", "sh"],
             [
                 "env",
                 "DISPLAY=:1",
-                f"RAKAZO_BROWSER_PROFILE={PROFILE}",
-                "rakazo-focus-or-launch",
+                f"ROBOTS_BROWSER_PROFILE={PROFILE}",
+                "robots-focus-or-launch",
                 "xterm",
             ],
-            ["env", "DISPLAY=:8", "rakazo-focus-or-launch", "xterm"],
+            ["env", "DISPLAY=:8", "robots-focus-or-launch", "xterm"],
         ):
             with self.subTest(argv=argv):
                 self.assertFalse(control.allowed_control_argv(argv, ":1"))
 
     def test_wrapped_browser_keeps_the_browser_spawn_poll(self):
-        argv = ["env", "DISPLAY=:1", "rakazo-focus-or-launch", "rakazo-browser"]
+        argv = ["env", "DISPLAY=:1", "robots-focus-or-launch", "robots-browser"]
         self.assertEqual(control.launch_spawn_poll_sec(argv), control.BROWSER_OPEN_POLL_SEC)
-        argv = ["env", "DISPLAY=:1", "rakazo-focus-or-launch", "xterm"]
+        argv = ["env", "DISPLAY=:1", "robots-focus-or-launch", "xterm"]
         self.assertEqual(control.launch_spawn_poll_sec(argv), control.LAUNCH_SPAWN_POLL_SEC)
 
     def test_focus_waits_for_the_wrapper_instead_of_the_spawn_poll(self):
         argv = [
             "env",
             "DISPLAY=:1",
-            f"RAKAZO_BROWSER_PROFILE={PROFILE}",
-            "rakazo-focus-or-launch",
-            "rakazo-browser",
+            f"ROBOTS_BROWSER_PROFILE={PROFILE}",
+            "robots-focus-or-launch",
+            "robots-browser",
         ]
         with patch.object(
             control.subprocess, "run", return_value=subprocess.CompletedProcess(argv, 0)
@@ -632,11 +632,11 @@ class ControlArgvTest(unittest.TestCase):
 
     def test_slow_focus_is_not_reported_before_the_wrapper_exits(self):
         with tempfile.TemporaryDirectory() as tmp:
-            script = Path(tmp) / "rakazo-focus-or-launch"
+            script = Path(tmp) / "robots-focus-or-launch"
             marker = Path(tmp) / "done"
             script.write_text(f"#!/bin/sh\nsleep 0.5\ntouch {marker}\n")
             script.chmod(script.stat().st_mode | stat.S_IEXEC)
-            argv = ["env", "DISPLAY=:1", "rakazo-focus-or-launch", "xterm"]
+            argv = ["env", "DISPLAY=:1", "robots-focus-or-launch", "xterm"]
             with patch.object(control, "CHILD_PATH", f"{tmp}{os.pathsep}{control.CHILD_PATH}"):
                 started = time.monotonic()
                 control.run_control_argv(argv, ":1")
@@ -791,7 +791,7 @@ class ControlArgvTest(unittest.TestCase):
                 path.write_text(contents)
             stub = Path(tmp) / "xstub.c"
             stub.write_text(XSTUB_C)
-            library_path = Path(tmp) / "librakazo-xcapture.so"
+            library_path = Path(tmp) / "librobots-xcapture.so"
             compiled = subprocess.run(
                 [
                     "cc",
@@ -813,20 +813,20 @@ class ControlArgvTest(unittest.TestCase):
             )
             self.assertEqual(compiled.returncode, 0, compiled.stderr)
             lib = ctypes.CDLL(str(library_path))
-            lib.rakazo_xcapture_open.argtypes = [ctypes.c_char_p]
-            lib.rakazo_xcapture_open.restype = ctypes.c_void_p
-            lib.rakazo_xcapture_png.argtypes = [
+            lib.robots_xcapture_open.argtypes = [ctypes.c_char_p]
+            lib.robots_xcapture_open.restype = ctypes.c_void_p
+            lib.robots_xcapture_png.argtypes = [
                 ctypes.c_void_p,
                 ctypes.POINTER(ctypes.POINTER(ctypes.c_ubyte)),
                 ctypes.POINTER(ctypes.c_size_t),
                 ctypes.POINTER(ctypes.c_int),
                 ctypes.POINTER(ctypes.c_int),
             ]
-            lib.rakazo_xcapture_png.restype = ctypes.c_int
-            lib.rakazo_xinput_argv.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_char_p)]
-            lib.rakazo_xinput_argv.restype = ctypes.c_int
-            lib.rakazo_xcapture_close.argtypes = [ctypes.c_void_p]
-            lib.rakazo_xcapture_close.restype = None
+            lib.robots_xcapture_png.restype = ctypes.c_int
+            lib.robots_xinput_argv.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_char_p)]
+            lib.robots_xinput_argv.restype = ctypes.c_int
+            lib.robots_xcapture_close.argtypes = [ctypes.c_void_p]
+            lib.robots_xcapture_close.restype = None
             peer = ctypes.c_int.in_dll(lib, "xstub_peer_fd")
             display_fd = ctypes.c_int.in_dll(lib, "xstub_display_fd")
             closes = ctypes.c_int.in_dll(lib, "xstub_xclose_calls")
@@ -836,7 +836,7 @@ class ControlArgvTest(unittest.TestCase):
                 png = ctypes.POINTER(ctypes.c_ubyte)()
                 size = ctypes.c_size_t()
                 width, height = ctypes.c_int(), ctypes.c_int()
-                code = lib.rakazo_xcapture_png(
+                code = lib.robots_xcapture_png(
                     handle, ctypes.byref(png), ctypes.byref(size), ctypes.byref(width), ctypes.byref(height)
                 )
                 return code, size.value, width.value, height.value
@@ -844,9 +844,9 @@ class ControlArgvTest(unittest.TestCase):
             def send_key(handle):
                 encoded = [part.encode("utf-8") for part in key]
                 array = (ctypes.c_char_p * len(encoded))(*encoded)
-                return lib.rakazo_xinput_argv(handle, len(encoded), array)
+                return lib.robots_xinput_argv(handle, len(encoded), array)
 
-            handle = lib.rakazo_xcapture_open(b":100")
+            handle = lib.robots_xcapture_open(b":100")
             self.assertTrue(handle)
             try:
                 code, size, width, height = read_png(handle)
@@ -860,25 +860,25 @@ class ControlArgvTest(unittest.TestCase):
                 self.assertEqual(read_png(handle)[0], -1)
                 self.assertEqual(send_key(handle), -1)
                 self.assertEqual(closes.value, 0)
-                lib.rakazo_xcapture_close(handle)
+                lib.robots_xcapture_close(handle)
                 handle = None
                 self.assertEqual(closes.value, 0)
                 with self.assertRaises(OSError) as caught:
                     fcntl.fcntl(fd, fcntl.F_GETFD)
                 self.assertEqual(caught.exception.errno, errno.EBADF)
 
-                handle = lib.rakazo_xcapture_open(b":100")
+                handle = lib.robots_xcapture_open(b":100")
                 self.assertTrue(handle)
                 io_target.value = 1  # XGetWindowAttributes calls the IO error handler.
                 self.assertEqual(read_png(handle)[0], -1)
-                lib.rakazo_xcapture_close(handle)
-                handle = lib.rakazo_xcapture_open(b":100")
+                lib.robots_xcapture_close(handle)
+                handle = lib.robots_xcapture_open(b":100")
                 self.assertTrue(handle)
                 io_target.value = 2  # XTestFakeKeyEvent calls the IO error handler.
                 self.assertEqual(send_key(handle), -1)
             finally:
                 if handle:
-                    lib.rakazo_xcapture_close(handle)
+                    lib.robots_xcapture_close(handle)
 
 
 class ScriptTest(unittest.TestCase):
@@ -933,11 +933,11 @@ class ScriptTest(unittest.TestCase):
                 wmctrl = bin_dir / "wmctrl"
                 wmctrl.write_text(
                     "#!/bin/sh\n"
-                    'if [ "$1" = "-lxp" ]; then cat "$RAKAZO_TEST_WINDOWS"; exit 0; fi\n'
-                    'printf "wmctrl %s\\n" "$*" >> "$RAKAZO_TEST_ARGS"\n'
+                    'if [ "$1" = "-lxp" ]; then cat "$ROBOTS_TEST_WINDOWS"; exit 0; fi\n'
+                    'printf "wmctrl %s\\n" "$*" >> "$ROBOTS_TEST_ARGS"\n'
                 )
-                browser = bin_dir / "rakazo-browser"
-                browser.write_text('#!/bin/sh\nprintf "browser %s\\n" "$*" >> "$RAKAZO_TEST_ARGS"\n')
+                browser = bin_dir / "robots-browser"
+                browser.write_text('#!/bin/sh\nprintf "browser %s\\n" "$*" >> "$ROBOTS_TEST_ARGS"\n')
                 # The listed windows are Chromium's, whatever browser the host has.
                 chromium = bin_dir / "chromium"
                 chromium.write_text("#!/bin/sh\n")
@@ -947,13 +947,13 @@ class ScriptTest(unittest.TestCase):
                 env = {
                     **os.environ,
                     "PATH": f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}",
-                    "RAKAZO_BROWSER_PROFILE": "/profiles/mine",
-                    "RAKAZO_TEST_WINDOWS": str(windows),
-                    "RAKAZO_TEST_ARGS": str(args_log),
+                    "ROBOTS_BROWSER_PROFILE": "/profiles/mine",
+                    "ROBOTS_TEST_WINDOWS": str(windows),
+                    "ROBOTS_TEST_ARGS": str(args_log),
                 }
-                script = str(Path(__file__).with_name("rakazo-focus-or-launch"))
+                script = str(Path(__file__).with_name("robots-focus-or-launch"))
                 result = subprocess.run(
-                    ["python3", script, "rakazo-browser"],
+                    ["python3", script, "robots-browser"],
                     env=env,
                     capture_output=True,
                     text=True,
@@ -966,7 +966,7 @@ class ScriptTest(unittest.TestCase):
                 args_log.write_text("")
                 windows.write_text(f"0x111 0 {other.pid} chromium.Chromium host Other\n")
                 result = subprocess.run(
-                    ["python3", script, "rakazo-browser"],
+                    ["python3", script, "robots-browser"],
                     env=env,
                     capture_output=True,
                     text=True,
@@ -989,7 +989,7 @@ class ComputerUserEnvTest(unittest.TestCase):
             line.removeprefix("CMD ") for line in dockerfile.splitlines()
             if line.startswith("CMD ")
         ))
-        self.assertEqual(command[-1], "/usr/local/bin/rakazo-computer")
+        self.assertEqual(command[-1], "/usr/local/bin/robots-computer")
         # Exercise the image's startup environment without starting the desktop.
         script = '''
 set -uo pipefail
@@ -1015,8 +1015,8 @@ id() {
             result = self.run_user_env(root)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stderr, "")
-            self.assertIn("rakazo-runtime:x:42424:42425:", (root / "passwd").read_text())
-            self.assertIn("rakazo-runtime:x:42425:", (root / "group").read_text())
+            self.assertIn("robots-runtime:x:42424:42425:", (root / "passwd").read_text())
+            self.assertIn("robots-runtime:x:42425:", (root / "group").read_text())
             for name in ("passwd", "group"):
                 self.assertEqual(stat.S_IMODE((root / name).stat().st_mode), 0o600)
 
@@ -1047,8 +1047,8 @@ class IsolatedHelperTest(unittest.TestCase):
 
     HELPERS = {
         "control.py": [],
-        "rakazo-focus-or-launch": [],
-        "rakazo-page-browser": [],
+        "robots-focus-or-launch": [],
+        "robots-page-browser": [],
     }
 
     def interpreter(self, line):
@@ -1066,7 +1066,7 @@ class IsolatedHelperTest(unittest.TestCase):
         return self.interpreter(first.removeprefix("#!"))
 
     def browser_heredoc(self):
-        text = Path(__file__).with_name("rakazo-browser").read_text()
+        text = Path(__file__).with_name("robots-browser").read_text()
         match = re.search(r"^\s*timeout \S+ (\S*python3\S*(?: -\w+)*) - \"\$@\" <<'PY'$", text, re.M)
         self.assertIsNotNone(match)
         return self.interpreter(match.group(1))
@@ -1126,7 +1126,7 @@ class IsolatedHelperTest(unittest.TestCase):
                 _, flags = self.browser_heredoc()
                 subprocess.run([sys.executable, *flags, "-", "1", "profile", "about:blank"], input=b"",
                                env=env, cwd=home, capture_output=True, timeout=10, check=False)
-                self.assertFalse(marker.exists(), "planted code ran in rakazo-browser")
+                self.assertFalse(marker.exists(), "planted code ran in robots-browser")
             finally:
                 held.close()
 
@@ -1161,14 +1161,14 @@ class IsolatedHelperTest(unittest.TestCase):
                 fake.chmod(0o755)
             argv = ["env", "DISPLAY=:1", "xdotool", "key", "a"]
             with patch.dict(os.environ, {"PATH": f"{local_bin}{os.pathsep}{control.CHILD_PATH}",
-                                         "RAKAZO_COMPUTER_CONTROL_TOKEN": "secret-token"}):
+                                         "ROBOTS_COMPUTER_CONTROL_TOKEN": "secret-token"}):
                 with patch.object(control.subprocess, "run",
                                   return_value=subprocess.CompletedProcess(argv, 0)) as run:
                     control.run_control_argv(argv, ":1")
                 child = run.call_args.kwargs["env"]
                 self.assertEqual(child["PATH"], control.CHILD_PATH)
                 self.assertEqual(child["DISPLAY"], ":1")
-                self.assertNotIn("RAKAZO_COMPUTER_CONTROL_TOKEN", child)
+                self.assertNotIn("ROBOTS_COMPUTER_CONTROL_TOKEN", child)
                 try:
                     control.run_control_argv(argv, ":1")
                 except RuntimeError:
@@ -1225,7 +1225,7 @@ class XcaptureKeyTest(unittest.TestCase):
                 path.write_text(content)
             stub = root / "x11_stub.c"
             stub.write_text(cls.stub_source())
-            library_path = root / "librakazo-xcapture.so"
+            library_path = root / "librobots-xcapture.so"
             compiled = subprocess.run(
                 [
                     "cc",
@@ -1249,25 +1249,25 @@ class XcaptureKeyTest(unittest.TestCase):
             if compiled.returncode != 0:
                 raise RuntimeError(compiled.stderr or compiled.stdout or f"cc exited {compiled.returncode}")
             library = ctypes.CDLL(str(library_path))
-            library.rakazo_xcapture_open.argtypes = [ctypes.c_char_p]
-            library.rakazo_xcapture_open.restype = ctypes.c_void_p
-            library.rakazo_xcapture_close.argtypes = [ctypes.c_void_p]
-            library.rakazo_xcapture_close.restype = None
-            library.rakazo_xinput_argv.argtypes = [
+            library.robots_xcapture_open.argtypes = [ctypes.c_char_p]
+            library.robots_xcapture_open.restype = ctypes.c_void_p
+            library.robots_xcapture_close.argtypes = [ctypes.c_void_p]
+            library.robots_xcapture_close.restype = None
+            library.robots_xinput_argv.argtypes = [
                 ctypes.c_void_p,
                 ctypes.c_int,
                 ctypes.POINTER(ctypes.c_char_p),
             ]
-            library.rakazo_xinput_argv.restype = ctypes.c_int
-            library.rakazo_test_reset_keys.argtypes = []
-            library.rakazo_test_reset_keys.restype = None
-            library.rakazo_test_key_count.argtypes = []
-            library.rakazo_test_key_count.restype = ctypes.c_int
-            library.rakazo_test_key_code.argtypes = [ctypes.c_int]
-            library.rakazo_test_key_code.restype = ctypes.c_uint
-            library.rakazo_test_key_press.argtypes = [ctypes.c_int]
-            library.rakazo_test_key_press.restype = ctypes.c_int
-            context = library.rakazo_xcapture_open(b":1")
+            library.robots_xinput_argv.restype = ctypes.c_int
+            library.robots_test_reset_keys.argtypes = []
+            library.robots_test_reset_keys.restype = None
+            library.robots_test_key_count.argtypes = []
+            library.robots_test_key_count.restype = ctypes.c_int
+            library.robots_test_key_code.argtypes = [ctypes.c_int]
+            library.robots_test_key_code.restype = ctypes.c_uint
+            library.robots_test_key_press.argtypes = [ctypes.c_int]
+            library.robots_test_key_press.restype = ctypes.c_int
+            context = library.robots_xcapture_open(b":1")
             if not context:
                 raise RuntimeError("native capture did not open")
             cls.library = library
@@ -1280,18 +1280,18 @@ class XcaptureKeyTest(unittest.TestCase):
     def tearDownClass(cls):
         try:
             if getattr(cls, "context", None):
-                cls.library.rakazo_xcapture_close(cls.context)
+                cls.library.robots_xcapture_close(cls.context)
         finally:
             cls.directory.cleanup()
 
     def native_key(self, combo):
-        self.library.rakazo_test_reset_keys()
+        self.library.robots_test_reset_keys()
         argv = ["env", "DISPLAY=:1", "xdotool", "key", "--clearmodifiers", combo]
         encoded = (ctypes.c_char_p * len(argv))(*(value.encode("utf-8") for value in argv))
-        code = self.library.rakazo_xinput_argv(self.context, len(argv), encoded)
-        count = self.library.rakazo_test_key_count()
+        code = self.library.robots_xinput_argv(self.context, len(argv), encoded)
+        count = self.library.robots_test_key_count()
         events = [
-            (self.library.rakazo_test_key_code(index), self.library.rakazo_test_key_press(index))
+            (self.library.robots_test_key_code(index), self.library.robots_test_key_press(index))
             for index in range(count)
         ]
         return code, events
@@ -1319,8 +1319,8 @@ class XcaptureKeyTest(unittest.TestCase):
 
         return {
             "X11/Xlib.h": source("""\
-                #ifndef RAKAZO_STUB_XLIB_H
-                #define RAKAZO_STUB_XLIB_H
+                #ifndef ROBOTS_STUB_XLIB_H
+                #define ROBOTS_STUB_XLIB_H
                 typedef unsigned long XID;
                 typedef XID Window;
                 typedef XID Drawable;
@@ -1374,21 +1374,21 @@ class XcaptureKeyTest(unittest.TestCase):
                 #endif
                 """),
             "X11/XKBlib.h": source("""\
-                #ifndef RAKAZO_STUB_XKBLIB_H
-                #define RAKAZO_STUB_XKBLIB_H
+                #ifndef ROBOTS_STUB_XKBLIB_H
+                #define ROBOTS_STUB_XKBLIB_H
                 #include <X11/Xlib.h>
                 KeySym XkbKeycodeToKeysym(Display *display, KeyCode key, int group, int level);
                 #endif
                 """),
             "X11/Xutil.h": source("""\
-                #ifndef RAKAZO_STUB_XUTIL_H
-                #define RAKAZO_STUB_XUTIL_H
+                #ifndef ROBOTS_STUB_XUTIL_H
+                #define ROBOTS_STUB_XUTIL_H
                 #include <X11/Xlib.h>
                 #endif
                 """),
             "X11/extensions/XShm.h": source("""\
-                #ifndef RAKAZO_STUB_XSHM_H
-                #define RAKAZO_STUB_XSHM_H
+                #ifndef ROBOTS_STUB_XSHM_H
+                #define ROBOTS_STUB_XSHM_H
                 #include <X11/Xlib.h>
                 typedef struct {
                   int shmid;
@@ -1405,8 +1405,8 @@ class XcaptureKeyTest(unittest.TestCase):
                 #endif
                 """),
             "X11/extensions/Xdamage.h": source("""\
-                #ifndef RAKAZO_STUB_XDAMAGE_H
-                #define RAKAZO_STUB_XDAMAGE_H
+                #ifndef ROBOTS_STUB_XDAMAGE_H
+                #define ROBOTS_STUB_XDAMAGE_H
                 #include <X11/Xlib.h>
                 typedef XID Damage;
                 typedef XID XserverRegion;
@@ -1418,8 +1418,8 @@ class XcaptureKeyTest(unittest.TestCase):
                 #endif
                 """),
             "X11/extensions/Xfixes.h": source("""\
-                #ifndef RAKAZO_STUB_XFIXES_H
-                #define RAKAZO_STUB_XFIXES_H
+                #ifndef ROBOTS_STUB_XFIXES_H
+                #define ROBOTS_STUB_XFIXES_H
                 #include <X11/Xlib.h>
                 #include <X11/extensions/Xdamage.h>
                 XserverRegion XFixesCreateRegion(Display *display, XRectangle *rectangles, int count);
@@ -1428,8 +1428,8 @@ class XcaptureKeyTest(unittest.TestCase):
                 #endif
                 """),
             "X11/extensions/XTest.h": source("""\
-                #ifndef RAKAZO_STUB_XTEST_H
-                #define RAKAZO_STUB_XTEST_H
+                #ifndef ROBOTS_STUB_XTEST_H
+                #define ROBOTS_STUB_XTEST_H
                 #include <X11/Xlib.h>
                 Bool XTestQueryExtension(Display *display, int *event_base, int *error_base, int *major, int *minor);
                 int XTestFakeKeyEvent(Display *display, unsigned int keycode, Bool is_press, unsigned long delay);
@@ -1438,8 +1438,8 @@ class XcaptureKeyTest(unittest.TestCase):
                 #endif
                 """),
             "png.h": source("""\
-                #ifndef RAKAZO_STUB_PNG_H
-                #define RAKAZO_STUB_PNG_H
+                #ifndef ROBOTS_STUB_PNG_H
+                #define ROBOTS_STUB_PNG_H
                 #include <setjmp.h>
                 #include <stddef.h>
                 #include <stdint.h>
@@ -1552,13 +1552,13 @@ class XcaptureKeyTest(unittest.TestCase):
             static int key_presses[KEY_EVENT_CAP];
             static int key_event_count;
 
-            void rakazo_test_reset_keys(void) { key_event_count = 0; }
-            int rakazo_test_key_count(void) { return key_event_count; }
-            unsigned int rakazo_test_key_code(int index) {
+            void robots_test_reset_keys(void) { key_event_count = 0; }
+            int robots_test_key_count(void) { return key_event_count; }
+            unsigned int robots_test_key_code(int index) {
               if (index < 0 || index >= key_event_count || index >= KEY_EVENT_CAP) return 0;
               return key_codes[index];
             }
-            int rakazo_test_key_press(int index) {
+            int robots_test_key_press(int index) {
               if (index < 0 || index >= key_event_count || index >= KEY_EVENT_CAP) return 0;
               return key_presses[index];
             }

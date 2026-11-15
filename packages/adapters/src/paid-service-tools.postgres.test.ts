@@ -1,6 +1,6 @@
-import type { AdapterContext } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { asSystem, createDb, creditAccount, reconcileCreditPurchase } from "@rakazo/db";
+import type { AdapterContext } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { asSystem, createDb, creditAccount, reconcileCreditPurchase } from "@robots/db";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { serviceCallFromTool } from "./paid-service-tools.js";
 import { FakePaidServiceProvider } from "./paid-services-factory.js";

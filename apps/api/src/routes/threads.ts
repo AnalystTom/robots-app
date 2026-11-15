@@ -1,7 +1,7 @@
 import { ORPCError } from "@orpc/server";
-import { createAdapterContext, runJobKey } from "@rakazo/adapter-kit";
-import { getActiveTeachingSession, settleCallRequest, wakeRun } from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
+import { createAdapterContext, runJobKey } from "@robots/adapter-kit";
+import { getActiveTeachingSession, settleCallRequest, wakeRun } from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
 import {
   AttachmentValidationError,
   CALL_CLIENT_NONCE_PREFIX,
@@ -9,8 +9,8 @@ import {
   expandSkillReferencesInPrompt,
   MODEL_REQUIRED_SEND_ERROR,
   QUEUE_HOLDING_RUN_STATUSES,
-} from "@rakazo/core";
-import type { Prisma } from "@rakazo/db";
+} from "@robots/core";
+import type { Prisma } from "@robots/db";
 import {
   AnswerTooLongError,
   appendEventInTransaction,
@@ -23,8 +23,8 @@ import {
   THREAD_LOCK_TRANSACTION_OPTIONS,
   touchGroupUpdatedAt,
   withTransactionRetry,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { answerComputerRequest } from "../computer-control.js";
 import type { RouterDeps } from "../router.js";
 import { createRoutineTestRun, routineTestRunNonce, routineTestTarget } from "../routines.js";

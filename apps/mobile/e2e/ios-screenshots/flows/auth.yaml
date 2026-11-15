@@ -1,21 +1,21 @@
-appId: com.rakazo.app
+appId: com.analysttom.robotsapp
 name: Auth
 ---
 - runFlow: ../subflows/launch-app.yaml
 - runFlow:
     when:
-      visible: "Sign in to Rakazo"
+      visible: "Sign in to RoBots"
     commands:
       - tapOn: "Sign up"
 - extendedWaitUntil:
-    visible: "Sign up for Rakazo"
+    visible: "Sign up for RoBots"
     timeout: 15000
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: 01-welcome
 - tapOn: "Sign in"
 - extendedWaitUntil:
-    visible: "Sign in to Rakazo"
+    visible: "Sign in to RoBots"
     timeout: 15000
 - waitForAnimationToEnd:
     timeout: 3000
@@ -34,7 +34,7 @@ name: Auth
           timeout: 3000
 - takeScreenshot: 02-email-sign-in
 - tapOn: "Email"
-- inputText: ${RAKAZO_SCREENSHOT_EMAIL}
+- inputText: ${ROBOTS_SCREENSHOT_EMAIL}
 - tapOn: "Password"
 - inputText: "wrong-password"
 - hideKeyboard
@@ -59,7 +59,7 @@ name: Auth
 - inputText: "::::"
 - tapOn: "Save"
 - extendedWaitUntil:
-    visible: "That doesn.*look like a URL|Could not reach that server|That URL did not look like a Rakazo server|Enter a server URL"
+    visible: "That doesn.*look like a URL|Could not reach that server|That URL did not look like a RoBots server|Enter a server URL"
     timeout: 15000
 - waitForAnimationToEnd:
     timeout: 3000

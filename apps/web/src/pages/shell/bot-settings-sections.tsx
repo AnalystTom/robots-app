@@ -1,11 +1,11 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { ComputerMode, ReplyMode, ThinkingLevel } from "@rakazo/contracts";
+import type { ComputerMode, ReplyMode, ThinkingLevel } from "@robots/contracts";
 import {
   BOT_COMPUTER_MODES,
   BOT_DESCRIPTION_MAX_LENGTH,
   BUILTIN_TOOL_NAMES,
-} from "@rakazo/contracts";
-import type { ChatModelChoice } from "@rakazo/core";
+} from "@robots/contracts";
+import type { ChatModelChoice } from "@robots/core";
 import {
   Button,
   NativeSelect,
@@ -14,7 +14,7 @@ import {
   Switch,
   Textarea,
   Toggle,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { Download, Settings, X } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import { thinkingLevelLabel } from "../../lib/model-catalog";

@@ -1,5 +1,5 @@
-import type { AdapterContext } from "@rakazo/adapter-kit";
-import { CloudAgentRequestRejected, CloudAgentRetryLater } from "@rakazo/adapter-kit";
+import type { AdapterContext } from "@robots/adapter-kit";
+import { CloudAgentRequestRejected, CloudAgentRetryLater } from "@robots/adapter-kit";
 import { describe, expect, it, vi } from "vitest";
 import { cloudAgentsEnabled, createCloudAgentConnection } from "./cloud-agent-factory.js";
 import { resolveCloudAgentProvider } from "./cloud-agent-provider-env.js";

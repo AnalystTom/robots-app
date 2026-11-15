@@ -5,10 +5,10 @@ import type {
   JobTransaction,
   SecretCleanupKind,
   SecretStore,
-} from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { runAsSystem } from "@rakazo/db";
-import { bestEffort, getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { runAsSystem } from "@robots/db";
+import { bestEffort, getLogger } from "@robots/logging";
 import { credentialDigest } from "./credential-digest.js";
 
 export type SecretCleanup = BackgroundJobPayloads["secret.cleanup"];

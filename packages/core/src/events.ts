@@ -4,7 +4,7 @@ import type {
   ThreadMessage,
   ToolHistory,
   ToolStepCall,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import { cloudAgentBlockFromPayload } from "./cloud-agent.js";
 import { preserveIdentitySource } from "./identity-source.js";
 import { payloadAuthor } from "./message-replies.js";
@@ -225,7 +225,7 @@ export function isRunTerminalEvent(event: { type: string }): boolean {
   );
 }
 
-export const RESPONSE_STREAMING_STORAGE_KEY = "rakazo.responseStreaming";
+export const RESPONSE_STREAMING_STORAGE_KEY = "robots.responseStreaming";
 export type ResponseStreamingPreference = "on" | "off";
 
 /** Missing and unknown values stay off; only an explicit "on" enables streaming. */

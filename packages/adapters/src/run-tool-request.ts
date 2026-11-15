@@ -1,7 +1,7 @@
-import type { ConnectorCall, ConnectorTool } from "@rakazo/adapter-kit";
-import { BOT_INSTRUCTIONS_MAX_LENGTH, BotSecretAuth, OneTimeCodeTarget } from "@rakazo/contracts";
-import { redactSecrets } from "@rakazo/core";
-import { runLoginKind } from "@rakazo/db";
+import type { ConnectorCall, ConnectorTool } from "@robots/adapter-kit";
+import { BOT_INSTRUCTIONS_MAX_LENGTH, BotSecretAuth, OneTimeCodeTarget } from "@robots/contracts";
+import { redactSecrets } from "@robots/core";
+import { runLoginKind } from "@robots/db";
 import { prepareAgentConnectionResponse } from "./agent-connections.js";
 import type { FleetCardSummary } from "./approval-ask.js";
 import type { TerminatingToolResult } from "./approval-effect.js";

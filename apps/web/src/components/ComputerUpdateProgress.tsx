@@ -1,8 +1,8 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { ComputerUpdate } from "@rakazo/contracts";
-import { COMPUTER_UPDATE_STAGES } from "@rakazo/contracts";
-import { computerUpdateNeedsAttention, computerUpdateStages } from "@rakazo/core";
-import { Button, cn, Dialog, DialogContent, DialogTitle, Spinner } from "@rakazo/ui-web";
+import type { ComputerUpdate } from "@robots/contracts";
+import { COMPUTER_UPDATE_STAGES } from "@robots/contracts";
+import { computerUpdateNeedsAttention, computerUpdateStages } from "@robots/core";
+import { Button, cn, Dialog, DialogContent, DialogTitle, Spinner } from "@robots/ui-web";
 import { CheckCircle2, Circle, CircleAlert } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { computerUpdates } from "../lib/computer-updates";

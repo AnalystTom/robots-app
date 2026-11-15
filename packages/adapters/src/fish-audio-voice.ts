@@ -8,10 +8,10 @@ import type {
   VoiceSynthesizeRequest,
   VoiceTranscribeRequest,
   VoiceVerifyResult,
-} from "@rakazo/adapter-kit";
-import { VoiceAccountError } from "@rakazo/adapter-kit";
-import { deadlineSignal } from "@rakazo/core";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import { VoiceAccountError } from "@robots/adapter-kit";
+import { deadlineSignal } from "@robots/core";
+import { getLogger } from "@robots/logging";
 import {
   isSpeechModelId,
   readVoiceAudio,
@@ -60,7 +60,7 @@ export class FishAudioVoiceProvider implements VoiceProvider {
     });
   }
 
-  /** Return user-owned then bounded public Fish Audio voices as Rakazo choices. */
+  /** Return user-owned then bounded public Fish Audio voices as RoBots choices. */
   async listVoices(
     apiKey: string,
     context: AdapterContext,

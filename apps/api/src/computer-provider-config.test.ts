@@ -1,6 +1,6 @@
-import type { BackgroundJob, SandboxProvider } from "@rakazo/adapter-kit";
-import { computerProviderDescriptors, retrySecretCleanup } from "@rakazo/adapters";
-import type { PrismaClient } from "@rakazo/db";
+import type { BackgroundJob, SandboxProvider } from "@robots/adapter-kit";
+import { computerProviderDescriptors, retrySecretCleanup } from "@robots/adapters";
+import type { PrismaClient } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import {
   effectiveSandboxProvider,

@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
-import type { UserDeviceRequest } from "@rakazo/core";
-import { listUserDevicesWith, removeUserDeviceWith } from "@rakazo/core";
+import type { UserDeviceRequest } from "@robots/core";
+import { listUserDevicesWith, removeUserDeviceWith } from "@robots/core";
 import { fetchAuthenticatedAccountJson } from "./api";
 
 const request: UserDeviceRequest = async (path, method) => {

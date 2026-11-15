@@ -1,7 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { Space } from "@rakazo/contracts";
-import { snoozeWakeDay } from "@rakazo/core";
-import { BotAvatar, Button, GroupAvatar } from "@rakazo/ui-web";
+import type { Space } from "@robots/contracts";
+import { snoozeWakeDay } from "@robots/core";
+import { BotAvatar, Button, GroupAvatar } from "@robots/ui-web";
 import { SidebarShelf } from "./sidebar-shelf";
 import type { SnoozeChat } from "./use-chat-snooze";
 

@@ -18,7 +18,7 @@ bash install-images.sh
 
 ## 生产 Compose
 
-先把 `.env` 中的 `RAKAZO_IMAGE_TAG` 改为目标发布标签，再拉取并重建应用服务：
+先把 `.env` 中的 `ROBOTS_IMAGE_TAG` 改为目标发布标签，再拉取并重建应用服务：
 
 ```bash
 docker compose --env-file .env -f infra/compose/docker-compose.prod.yml pull api worker web
@@ -43,7 +43,7 @@ GIT_SHA=$(git rev-parse HEAD) docker compose --env-file .env -f infra/compose/do
 然后重启 API 和 worker。
 
 更新器容器（sidecar）使用自己的镜像和标签，因此升级应用时不会重建执行更新的进程。
-需要升级更新器时，明确把 `RAKAZO_UPDATER_IMAGE_TAG` 设为完整的 `sha-<提交号>` 标签，再运行：
+需要升级更新器时，明确把 `ROBOTS_UPDATER_IMAGE_TAG` 设为完整的 `sha-<提交号>` 标签，再运行：
 
 ```bash
 docker compose --env-file .env -f infra/compose/docker-compose.prod.yml pull updater
@@ -58,7 +58,7 @@ docker compose --env-file .env -f infra/compose/docker-compose.prod.yml \
 
 使用独立应用数据库角色的版本需要 `.env` 中的 `POSTGRES_APP_PASSWORD`。
 桌面端、镜像安装器、更新器和 `deploy-main.sh` 会在缺失时补充；其他部署应在更新前自行生成，例如 `openssl rand -hex 16`。
-缺失时 Compose 会在配置验证阶段停止。首次启动会创建 `rakazo_app`，API 和 worker 随后使用它连接。
+缺失时 Compose 会在配置验证阶段停止。首次启动会创建 `robots_app`，API 和 worker 随后使用它连接。
 
 若旧版本无法读取新版本的加密内容，不能只回滚应用镜像；需先按[内容加密迁移（英文）](../content-encryption.md#rollout)执行解密。
 行级安全异常的诊断与临时回退方法见[数据库登录升级说明（英文）](../self-host-upgrading.md#upgrading-to-the-separate-app-database-login)。
@@ -72,7 +72,7 @@ docker compose --env-file .env -f infra/compose/docker-compose.prod.yml \
 先[备份并演练](./self-host-backups.md)，再在生产服务器运行：
 
 ```bash
-cd /srv/rakazo
+cd /srv/robots
 git pull --ff-only
 sudo infra/compose/upgrade-postgres.sh
 ```
@@ -81,10 +81,10 @@ sudo infra/compose/upgrade-postgres.sh
 例如源码版：
 
 ```bash
-sudo RAKAZO_DEPLOY_DIR="$PWD" infra/compose/upgrade-postgres.sh infra/compose/docker-compose.yml
+sudo ROBOTS_DEPLOY_DIR="$PWD" infra/compose/upgrade-postgres.sh infra/compose/docker-compose.yml
 ```
 
-受限网络需设置旧版镜像的 `RAKAZO_POSTGRES_16_IMAGE`，此时 `POSTGRES_IMAGE` 应指向 Postgres 18。
+受限网络需设置旧版镜像的 `ROBOTS_POSTGRES_16_IMAGE`，此时 `POSTGRES_IMAGE` 应指向 Postgres 18。
 脚本会停止服务、复制角色和数据库，并验证权限、策略、序列、行数和应用角色登录后才切换。
 整个复制过程会停机。可用磁盘空间至少为旧数据库数据目录占用量的 125%，再加 1 GiB，
 即一份完整副本、其大小的 25% 余量，以及额外 1 GiB，与升级脚本的容量检查一致。
@@ -128,9 +128,9 @@ WHERE membership."id" IS NULL;
 自动更新器选择最新稳定源码标签，但部署对应的完整 `sha-` 镜像，不使用可移动的 `latest` 或次版本标签。
 注册表标签本身不是内容摘要；需要固定内容的运维人员，可在自动更新器之外使用经过验证的镜像摘要。
 
-从自己的 fork 部署时，必须把 `RAKAZO_IMAGE` 和 `RAKAZO_UPDATER_IMAGE` 指向自己的命名空间；
-fork 的 CI 无法把镜像发布到别人的命名空间。应用和更新器分别用 `RAKAZO_IMAGE_TAG` 与
-`RAKAZO_UPDATER_IMAGE_TAG` 固定，不能靠 `latest` 之类的可移动标签完成可重复升级。
+从自己的 fork 部署时，必须把 `ROBOTS_IMAGE` 和 `ROBOTS_UPDATER_IMAGE` 指向自己的命名空间；
+fork 的 CI 无法把镜像发布到别人的命名空间。应用和更新器分别用 `ROBOTS_IMAGE_TAG` 与
+`ROBOTS_UPDATER_IMAGE_TAG` 固定，不能靠 `latest` 之类的可移动标签完成可重复升级。
 
 首次填充注册表时，可手动运行发布工作流或推送 `v*` 标签。手动运行生成 `sha-<完整提交号>`；
 只有不带预发布后缀的稳定 `vX.Y.Z` 标签会生成 `latest`。自动更新器会忽略预发布版本，
@@ -142,7 +142,7 @@ fork 的 CI 无法把镜像发布到别人的命名空间。应用和更新器�
 ## 可选自动更新器
 
 生产 Compose 的 `updater` 配置默认关闭，手动更新不需要启用。
-启用前设置独立的随机 `RAKAZO_UPDATER_TOKEN`（生产环境至少 32 字符），
+启用前设置独立的随机 `ROBOTS_UPDATER_TOKEN`（生产环境至少 32 字符），
 不得复用认证、监督服务或屏幕代理密钥：
 
 ```bash
@@ -155,13 +155,13 @@ docker compose --env-file .env -f infra/compose/docker-compose.prod.yml \
 拉取失败不影响正在运行的服务；重建失败会尽可能恢复旧环境和缓存镜像，但不会撤销迁移。
 
 更新器在私有 `control` 网络的 `http://updater:7092` 上提供 `/health`、`/state`、`/plan`、`/apply`
-和 `/rollback`。除 `/health` 外，所有接口都要求 `RAKAZO_UPDATER_TOKEN`；仅部署工具应调用它们。
+和 `/rollback`。除 `/health` 外，所有接口都要求 `ROBOTS_UPDATER_TOKEN`；仅部署工具应调用它们。
 普通应用账号没有更新接口，应用 API 也不会拿到更新令牌。
 
 官方路径会用 `git ls-remote --tags` 找到最新稳定发布及其源码提交，把对应的完整
-`sha-<提交号>` 镜像标签写入 `.env`，把旧标签保存在 `RAKAZO_IMAGE_TAG_PREVIOUS`，
+`sha-<提交号>` 镜像标签写入 `.env`，把旧标签保存在 `ROBOTS_IMAGE_TAG_PREVIOUS`，
 显式拉取新镜像后执行 `up -d --wait --pull never`，服务器不构建镜像。
-Fork 模式没有已发布镜像，会快进 `RAKAZO_DEPLOY_DIR` 中的代码并执行 `up -d --build`，
+Fork 模式没有已发布镜像，会快进 `ROBOTS_DEPLOY_DIR` 中的代码并执行 `up -d --build`，
 因此会花几分钟在服务器上构建。只应把 Fork 模式指向自己掌控且审查过的仓库，因为它会通过
 root 权限等价的 Docker 套接字执行该 Compose 文件。
 
@@ -172,40 +172,40 @@ Git 远端只接受 `https://` 和 `ssh://`，且只允许快进合并；工作�
 不要将其端口对外发布。普通应用账号没有更新接口，应用 API 也不持有更新令牌。
 更新器容器没有发布任何宿主机端口，未接入 Caddy，进程环境只包含更新器设置；
 应用密钥留在 Compose 读取的挂载 `.env` 中，不会加载到更新器容器。API、worker 和 web 仍没有 Docker 套接字。
-`RAKAZO_UPDATER_TOKEN` 还必须不同于 `BETTER_AUTH_SECRET`、`SANDBOX_SUPERVISOR_TOKEN` 和
+`ROBOTS_UPDATER_TOKEN` 还必须不同于 `BETTER_AUTH_SECRET`、`SANDBOX_SUPERVISOR_TOKEN` 和
 `SCREEN_PROXY_SECRET`；不需要自动更新时可一直保持该 profile 关闭。
 
-`RAKAZO_DEPLOY_DIR` 必须是 Docker 守护进程看到的实际路径，宿主机与更新器内使用同一路径。
-生产 Compose 默认两侧都是 `/srv/rakazo`；其他目录必须显式设置。Linux 上守护进程共享宿主文件系统，
+`ROBOTS_DEPLOY_DIR` 必须是 Docker 守护进程看到的实际路径，宿主机与更新器内使用同一路径。
+生产 Compose 默认两侧都是 `/srv/robots`；其他目录必须显式设置。Linux 上守护进程共享宿主文件系统，
 通常填写代码检出目录即可。Docker Desktop 的守护进程运行在虚拟机中，路径会不同：
-Windows 的 `C:` 通常对应 `/run/desktop/mnt/host/c`，所以 `C:\Users\you\rakazo` 应设为
-`RAKAZO_DEPLOY_DIR=/run/desktop/mnt/host/c/Users/you/rakazo`。
+Windows 的 `C:` 通常对应 `/run/desktop/mnt/host/c`，所以 `C:\Users\you\robots` 应设为
+`ROBOTS_DEPLOY_DIR=/run/desktop/mnt/host/c/Users/you/robots`。
 不要填写 Windows 原生路径（守护进程会因盘符冒号拒绝），也不要使用 `/mnt/c/...`；
 后者可能静默挂载为空目录。部署前先验证：
 
 ```bash
 docker compose --env-file .env -f infra/compose/docker-compose.prod.yml \
   --profile updater run --rm updater \
-  sh -c 'git -C "$RAKAZO_DEPLOY_DIR" log --oneline -1'
+  sh -c 'git -C "$ROBOTS_DEPLOY_DIR" log --oneline -1'
 ```
 
 命令必须打印代码检出的当前 HEAD。宿主 Git 使用 `core.autocrlf=true` 不影响 `/apply`，
 更新器会忽略仅由 CR 引起的差异。使用自定义 `-p` 项目名时，还要让更新器看到同一个项目名：
-生产 Compose 会传递 `COMPOSE_PROJECT_NAME`；独立运行更新器时可设置 `RAKAZO_COMPOSE_PROJECT_NAME`，
-最后才回退到 `rakazo-prod`。否则更新器可能避开原部署，另起一个带空 Postgres 卷的第二个项目。
+生产 Compose 会传递 `COMPOSE_PROJECT_NAME`；独立运行更新器时可设置 `ROBOTS_COMPOSE_PROJECT_NAME`，
+最后才回退到 `robots-prod`。否则更新器可能避开原部署，另起一个带空 Postgres 卷的第二个项目。
 
-叠加其他 Compose 文件时，用 `RAKAZO_COMPOSE_FILE` 按相同顺序列出全部文件，分隔符与 Compose 的
+叠加其他 Compose 文件时，用 `ROBOTS_COMPOSE_FILE` 按相同顺序列出全部文件，分隔符与 Compose 的
 `COMPOSE_FILE` 一致（默认 `:`，或由 `COMPOSE_PATH_SEPARATOR` 指定）：
 
 ```env
-RAKAZO_COMPOSE_FILE=infra/compose/docker-compose.prod.yml:infra/compose/docker-compose.prod.docker.yml
+ROBOTS_COMPOSE_FILE=infra/compose/docker-compose.prod.yml:infra/compose/docker-compose.prod.docker.yml
 ```
 
-每个文件都会单独校验，且必须位于 `RAKAZO_DEPLOY_DIR` 内。如果叠加文件新增了使用应用镜像的服务，
-把该服务加入逗号分隔的 `RAKAZO_UPDATE_SERVICES`，让它随应用一起拉取、重建和回滚，例如：
+每个文件都会单独校验，且必须位于 `ROBOTS_DEPLOY_DIR` 内。如果叠加文件新增了使用应用镜像的服务，
+把该服务加入逗号分隔的 `ROBOTS_UPDATE_SERVICES`，让它随应用一起拉取、重建和回滚，例如：
 
 ```env
-RAKAZO_UPDATE_SERVICES=supervisor
+ROBOTS_UPDATE_SERVICES=supervisor
 ```
 
 这些名称只会追加到内置的 `api`、`worker`、`web`，不会替换核心服务，因此不会因配置遗漏而跳过更新。

@@ -9,25 +9,25 @@ import type {
   PaymentWalletProvider,
   SandboxProvider,
   SecretStore,
-} from "@rakazo/adapter-kit";
-import { routineJobKey, routineWakeupJob } from "@rakazo/adapter-kit";
-import type { RoutineWatch, RoutineWatchState } from "@rakazo/contracts";
-import { RoutineWatchSchema, RoutineWatchStateSchema } from "@rakazo/contracts";
-import type { ActionApprovalRule } from "@rakazo/core";
+} from "@robots/adapter-kit";
+import { routineJobKey, routineWakeupJob } from "@robots/adapter-kit";
+import type { RoutineWatch, RoutineWatchState } from "@robots/contracts";
+import { RoutineWatchSchema, RoutineWatchStateSchema } from "@robots/contracts";
+import type { ActionApprovalRule } from "@robots/core";
 import {
   connectorKindFromToolName,
   isAbandonedRequest,
   redactSecrets,
   watchToolRefusal,
-} from "@rakazo/core";
-import type { ComputerMode, PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { ComputerMode, PrismaClient, ThreadEvents } from "@robots/db";
 import {
   appendEventInTransaction,
   createThreadMessageInTransaction,
   listApprovalRules,
   parseComputerMode,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import {
   loadLoginPasswordRedactions,
   shellCommandEnvironment,
@@ -52,7 +52,7 @@ import { fetchSafeHttpRequest } from "./web-ssrf.js";
  */
 
 /** Virtual root for validating watch paths; providers resolve the actual workspace. */
-const WORKSPACE = "/home/rakazo";
+const WORKSPACE = "/home/robots";
 const CHECK_TIMEOUT_MS = 60_000;
 /** Starting a stopped computer can take longer than a check; it gets its own budget. */
 const PROVISION_TIMEOUT_MS = 5 * 60_000;

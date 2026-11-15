@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@rakazo/db";
+import type { PrismaClient } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import { parseModelSecret } from "./model-secret.js";
 import { listAvailablePiCatalog } from "./pi-catalog-availability.js";
@@ -133,7 +133,7 @@ describe("fetchCodexCatalog", () => {
     const headers = new Headers(init?.headers);
     expect(headers.get("authorization")).toBe(`Bearer ${ACCESS_TOKEN}`);
     expect(headers.get("chatgpt-account-id")).toBe(ACCOUNT_ID);
-    expect(headers.get("originator")).toBe("rakazo");
+    expect(headers.get("originator")).toBe("robots");
     expect(headers.get("accept")).toBe("application/json");
   });
 

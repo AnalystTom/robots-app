@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import type { AdapterContext, SecretStore } from "@rakazo/adapter-kit";
-import { VoiceAccountError } from "@rakazo/adapter-kit";
+import type { AdapterContext, SecretStore } from "@robots/adapter-kit";
+import { VoiceAccountError } from "@robots/adapter-kit";
 import {
   createVoiceProvider,
   isModelConnectionVoiceSecret,
@@ -16,17 +16,17 @@ import {
   resolveVoiceKey,
   serializeOpenAiCompatibleVoiceSecret,
   voiceCatalogEntry,
-} from "@rakazo/adapters";
+} from "@robots/adapters";
 import type {
   Actor,
   SettingsScope,
   VoiceAccountErrorCode,
   VoiceCredential,
   VoiceStatus,
-} from "@rakazo/contracts";
-import { SettingsScopeSchema } from "@rakazo/contracts";
-import { speakable, toUtterances } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/contracts";
+import { SettingsScopeSchema } from "@robots/contracts";
+import { speakable, toUtterances } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
 import {
   deleteUnreferencedCredentialSecret,
   findDefaultVoiceCredential,
@@ -43,9 +43,9 @@ import {
   selectVoicePreference,
   voicePreferenceTarget,
   withTransactionRetry,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
-import { markExpectedFailure } from "@rakazo/logging/hono";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
+import { markExpectedFailure } from "@robots/logging/hono";
 import type { Context, Hono } from "hono";
 import { readBoundedBody } from "./http-body.js";
 import type { SpeechSummarizer } from "./speech-summary.js";

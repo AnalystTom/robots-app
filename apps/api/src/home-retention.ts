@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
-import type { TransactionalEmailProvider } from "@rakazo/adapter-kit";
-import { sandboxKindsWhere } from "@rakazo/adapters";
-import type { HomeDeletionReason } from "@rakazo/auth";
-import { emailLocale, homeDeletionEmail } from "@rakazo/auth";
-import type { PrismaClient } from "@rakazo/db";
-import { hasModelAccess, needsBillingPortal, Prisma, runAsSystem } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+import type { TransactionalEmailProvider } from "@robots/adapter-kit";
+import { sandboxKindsWhere } from "@robots/adapters";
+import type { HomeDeletionReason } from "@robots/auth";
+import { emailLocale, homeDeletionEmail } from "@robots/auth";
+import type { PrismaClient } from "@robots/db";
+import { hasModelAccess, needsBillingPortal, Prisma, runAsSystem } from "@robots/db";
+import { getLogger } from "@robots/logging";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PLAN_ENDED_DAYS = 30;

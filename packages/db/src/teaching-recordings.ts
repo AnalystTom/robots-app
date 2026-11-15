@@ -1,7 +1,7 @@
-import type { RealtimeFanout } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
-import type { TeachRecordingEvent, TeachSnapshot } from "@rakazo/core";
-import { buildPlaybookFromRecording } from "@rakazo/core";
+import type { RealtimeFanout } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
+import type { TeachRecordingEvent, TeachSnapshot } from "@robots/core";
+import { buildPlaybookFromRecording } from "@robots/core";
 import type { Prisma, PrismaClient } from "./client.js";
 import { notifyRealtime } from "./event-stream.js";
 import { appendEventInTransaction } from "./events.js";

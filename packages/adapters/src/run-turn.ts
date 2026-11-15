@@ -1,4 +1,4 @@
-import type { AgentRuntimeEvent } from "@rakazo/adapter-kit";
+import type { AgentRuntimeEvent } from "@robots/adapter-kit";
 import {
   DEFAULT_CONTEXT_STRATEGY,
   historyCompactJob,
@@ -9,7 +9,7 @@ import {
   SandboxProviderAccountError,
   SandboxRateLimitError,
   TransientModelError,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   BACKGROUND_HELPER_TRIGGER,
   containsSecret,
@@ -23,15 +23,15 @@ import {
   TAKEOVER_COMPUTER_PENDING_STATE,
   userRunError,
   withoutLastToolStepNotes,
-} from "@rakazo/core";
+} from "@robots/core";
 import {
   isDatabaseUnavailable,
   RunHistoryWriteError,
   recordUsage,
   retryWhileDatabaseUnavailable,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
-import { sanitizedError } from "@rakazo/logging/monitoring";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
+import { sanitizedError } from "@robots/logging/monitoring";
 import { MAX_APPROVAL_DETAIL_LENGTH, truncate } from "./approval-ask.js";
 import { isToolPauseResult } from "./approval-effect.js";
 import { returnHelperOutcome } from "./background-helpers.js";

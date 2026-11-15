@@ -20,17 +20,17 @@
     },
     {
       "source": "/x",
-      "destination": "https://x.com/rakazobot",
+      "destination": "https://x.com/robotsbot",
       "permanent": false
     },
     {
       "source": "/twitter",
-      "destination": "https://x.com/rakazobot",
+      "destination": "https://x.com/robotsbot",
       "permanent": false
     },
     {
       "source": "/github",
-      "destination": "https://github.com/elie222/rakazo",
+      "destination": "https://github.com/AnalystTom/robots-app",
       "permanent": false
     },
     {

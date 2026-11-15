@@ -33,7 +33,7 @@ const SIGNED = `Package "container-1.7.1-installer-signed.pkg":
 
 let dir: string;
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "rakazo-runtime-"));
+  dir = await mkdtemp(path.join(tmpdir(), "robots-runtime-"));
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
@@ -191,7 +191,7 @@ describe("installers", () => {
   });
 
   it("reuses a completely unpacked version without downloading again", async () => {
-    const server = path.join(dir, "server-1.0.0", "rakazo-server");
+    const server = path.join(dir, "server-1.0.0", "robots-server");
     await mkdir(server, { recursive: true });
     await writeFile(path.join(dir, "server-1.0.0", ".complete"), "");
     const entrypoints = { api: "a.js", worker: "w.js", web: "web.js", migrate: "m.js" };
@@ -402,7 +402,7 @@ describe("resolveContainerRuntime", () => {
 
 describe("readServerBundle", () => {
   const descriptor = {
-    url: "https://github.com/elie222/rakazo/releases/download/v1.0.0/rakazo-server-darwin-arm64-1.0.0.tar.xz",
+    url: "https://github.com/AnalystTom/robots-app/releases/download/v1.0.0/robots-server-darwin-arm64-1.0.0.tar.xz",
     sha256: "a".repeat(64),
     size: 100,
     version: "1.0.0",

@@ -1,4 +1,4 @@
-import type { DesktopInstanceMode, DesktopLocalStackPhase } from "@rakazo/contracts";
+import type { DesktopInstanceMode, DesktopLocalStackPhase } from "@robots/contracts";
 import type { MenuItemConstructorOptions } from "electron";
 import { t } from "./i18n.js";
 import { reportDesktopError } from "./monitoring.js";

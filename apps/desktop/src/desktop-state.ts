@@ -1,4 +1,4 @@
-import type { DesktopSetup } from "@rakazo/contracts";
+import type { DesktopSetup } from "@robots/contracts";
 import type { BrowserWindow } from "electron";
 import type { DesktopUpdateController } from "./auto-update.js";
 import type { prepareHostComputer } from "./host-computer.js";

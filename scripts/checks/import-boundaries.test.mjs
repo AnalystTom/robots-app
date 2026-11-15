@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const ALLOWLIST_FILE = "scripts/checks/import-boundaries.allowlist.json";
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?|astro)$/;
-const SCOPE = "@rakazo/";
+const SCOPE = "@robots/";
 
 const LEAF_PACKAGES = ["packages/contracts", "packages/logging", "packages/ui-tokens"];
 const CORE = "packages/core";
@@ -74,7 +74,7 @@ const RULES = {
   },
   server: {
     title: "UI packages and client apps never import server packages",
-    fix: "Client code reaches this through the API: add it in apps/api and call it over RPC, with shared types in @rakazo/contracts.",
+    fix: "Client code reaches this through the API: add it in apps/api and call it over RPC, with shared types in @robots/contracts.",
   },
   undeclared: {
     title: "imported workspace packages are declared dependencies",
@@ -359,7 +359,7 @@ test("resolves specifiers to packages and reports each rule", () => {
         scoped("db"),
         scoped("core"),
         "../../../packages/contracts/src/index.ts",
-        "@rakazo-other/unrelated",
+        "@robots-other/unrelated",
       ],
     },
     { file: "apps/web/e2e/seed.spec.ts", specifiers: [scoped("db")] },
@@ -378,19 +378,19 @@ test("resolves specifiers to packages and reports each rule", () => {
       .map((violation) => `${violation.rule}: ${entry(violation)}`)
       .sort(),
     [
-      "app: packages/db/src/index.ts -> @rakazo/api",
-      "app: packages/testkit/src/browser.ts -> @rakazo/web",
+      "app: packages/db/src/index.ts -> @robots/api",
+      "app: packages/testkit/src/browser.ts -> @robots/web",
       "app: packages/testkit/src/index.ts -> ../../../apps/api/src/app.ts",
-      "core: packages/core/src/index.ts -> @rakazo/db",
-      "exports: apps/web/src/app.tsx -> @rakazo/ui-web/src/internal",
-      "leaf: packages/contracts/src/index.ts -> @rakazo/core",
+      "core: packages/core/src/index.ts -> @robots/db",
+      "exports: apps/web/src/app.tsx -> @robots/ui-web/src/internal",
+      "leaf: packages/contracts/src/index.ts -> @robots/core",
       "relative: apps/web/src/app.tsx -> ../../../packages/contracts/src/index.ts",
       "relative: packages/testkit/src/index.ts -> ../../../apps/api/src/app.ts",
       "relative: scripts/build.mjs -> ../packages/core/src/index.ts",
-      "server: apps/web/src/app.tsx -> @rakazo/db",
-      "testkit: apps/api/src/index.ts -> @rakazo/testkit",
-      "undeclared: apps/web/package.json -> @rakazo/core",
-      "unused: packages/ui-web/package.json -> @rakazo/contracts",
+      "server: apps/web/src/app.tsx -> @robots/db",
+      "testkit: apps/api/src/index.ts -> @robots/testkit",
+      "undeclared: apps/web/package.json -> @robots/core",
+      "unused: packages/ui-web/package.json -> @robots/contracts",
     ],
   );
 });

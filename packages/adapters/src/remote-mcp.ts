@@ -8,7 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { RequestOptions } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
-import type { ConnectorTool } from "@rakazo/adapter-kit";
+import type { ConnectorTool } from "@robots/adapter-kit";
 import {
   ipVersion,
   isCloudMetadataAddress,
@@ -20,8 +20,8 @@ import {
   isNonPublicAddress,
   MCP_APP_READ_TIMEOUT_MS,
   normalizeHost,
-} from "@rakazo/contracts";
-import { cancelResponseBody } from "@rakazo/core";
+} from "@robots/contracts";
+import { cancelResponseBody } from "@robots/core";
 import { Agent } from "undici";
 import { composioToolBatch } from "./composio-batch.js";
 import { sensitiveQueryParameter } from "./connector-http.js";
@@ -134,7 +134,7 @@ export async function listRemoteMcpTools(options: RemoteMcpOptions): Promise<Con
 
 function newMcpClient(): Client {
   return createMcpClient(
-    { name: "rakazo", version: "0.1.0" },
+    { name: "robots", version: "0.1.0" },
     { capabilities: MCP_APP_CLIENT_CAPABILITIES },
   );
 }

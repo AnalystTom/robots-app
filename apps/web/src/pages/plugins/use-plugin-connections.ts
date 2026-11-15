@@ -4,14 +4,14 @@ import type {
   Connection,
   ConnectionCatalogItem,
   McpSourcePreset,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   catalogItemAccounts,
   catalogItemKey,
   connectCatalogItem,
   isCatalogItemConnected,
-} from "@rakazo/core";
-import { fetchFresh, writeSaved } from "@rakazo/core/query";
+} from "@robots/core";
+import { fetchFresh, writeSaved } from "@robots/core/query";
 import { queryOptions, skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { connectedAppMarks } from "../../lib/connected-apps";
@@ -200,7 +200,7 @@ export function usePluginConnections({
       const result = await connectCatalogItem(item, connections, {
         begin: (input) => rpc.connections.begin(input),
         complete: (input) => rpc.connections.complete(input),
-        openUrl: (url) => window.open(url, "rakazo-plugin-connect", "noopener,noreferrer"),
+        openUrl: (url) => window.open(url, "robots-plugin-connect", "noopener,noreferrer"),
         signal: controller.signal,
       });
       if (result.status === "aborted") return;

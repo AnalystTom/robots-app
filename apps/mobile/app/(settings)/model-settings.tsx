@@ -1,8 +1,8 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { ModelSettings } from "@rakazo/contracts";
-import { MAX_MODEL_CONTEXT_WINDOW, MAX_MODEL_MAX_TOKENS } from "@rakazo/contracts";
-import type { ModelSettingsFields } from "@rakazo/core";
+import type { ModelSettings } from "@robots/contracts";
+import { MAX_MODEL_CONTEXT_WINDOW, MAX_MODEL_MAX_TOKENS } from "@robots/contracts";
+import type { ModelSettingsFields } from "@robots/core";
 import {
   catalogEntryFor,
   connectionModels,
@@ -12,7 +12,7 @@ import {
   modelSettingsDefaults,
   modelSettingsFields,
   modelSettingsRequest,
-} from "@rakazo/core";
+} from "@robots/core";
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {

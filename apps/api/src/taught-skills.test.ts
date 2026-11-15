@@ -1,5 +1,5 @@
-import { runContinueJob } from "@rakazo/adapter-kit";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import { runContinueJob } from "@robots/adapter-kit";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, expect, it, vi } from "vitest";
 import type { TaughtSkillsDeps } from "./taught-skills.js";
 import { createTaughtSkillsService } from "./taught-skills.js";
@@ -14,7 +14,7 @@ it("starts a skill test run even when waking it fails", async () => {
   const actor = {
     spaceId: "space-1",
     userId: "user-1",
-    email: "user@rakazo.test",
+    email: "user@robots.test",
     isDeploymentOwner: false,
   };
   const runs: Array<Record<string, unknown>> = [];

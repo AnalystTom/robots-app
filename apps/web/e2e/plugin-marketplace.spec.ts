@@ -4,8 +4,8 @@ import type {
   BotMcpServer,
   CapabilityInstall,
   McpServer,
-} from "@rakazo/contracts";
-import { MCP_OAUTH_CLIENT_REQUIRED } from "@rakazo/contracts";
+} from "@robots/contracts";
+import { MCP_OAUTH_CLIENT_REQUIRED } from "@robots/contracts";
 import {
   activeBotId,
   captureScreenshot,
@@ -18,7 +18,7 @@ import {
 test("Integrations installs a plugin, completes real broker OAuth against a fake provider, and removes its children", async ({
   page,
 }, testInfo) => {
-  await signup(page, `marketplace-${Date.now()}@rakazo.test`, "password12", "Marketplace Test");
+  await signup(page, `marketplace-${Date.now()}@robots.test`, "password12", "Marketplace Test");
   await completeOnboarding(page);
   const botId = activeBotId(page);
   let cancel = true;
@@ -132,7 +132,7 @@ test("Integrations installs a plugin, completes real broker OAuth against a fake
 test("shows directly registered MCP servers in Integrations without catalog connections", async ({
   page,
 }, testInfo) => {
-  await signup(page, `direct-mcp-list-${Date.now()}@rakazo.test`, "password12", "Direct MCP List");
+  await signup(page, `direct-mcp-list-${Date.now()}@robots.test`, "password12", "Direct MCP List");
   await completeOnboarding(page);
   await page.goto("/app");
   await page.waitForURL(/\/app\/[^/]+$/);
@@ -328,7 +328,7 @@ test("integration fallback icons preserve non-BMP initials", async ({ page }, te
       },
     }),
   );
-  await signup(page, `unicode-icons-${Date.now()}@rakazo.test`, "password12", "Unicode Icons");
+  await signup(page, `unicode-icons-${Date.now()}@robots.test`, "password12", "Unicode Icons");
   await completeOnboarding(page);
   await page.getByRole("button", { name: "Connect apps", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Integrations", exact: true });

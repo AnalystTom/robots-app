@@ -33,7 +33,7 @@ vi.mock("./api", () => ({
   captureApiRequestContext: async (spaceId: string | null = "space-1") => ({
     apiBase: "https://app.example.test",
     sessionGeneration: 1,
-    headers: spaceId ? { "x-rakazo-space-id": spaceId } : {},
+    headers: spaceId ? { "x-robots-space-id": spaceId } : {},
   }),
 }));
 vi.mock("./session", () => ({ currentSessionGeneration: () => 1 }));
@@ -185,7 +185,7 @@ const pinned = {
   requestContext: {
     apiBase: "https://app.example.test",
     sessionGeneration: 1,
-    headers: { "x-rakazo-space-id": "space-1" },
+    headers: { "x-robots-space-id": "space-1" },
   },
 };
 it("opens a saved skill, saves an edit from the header, and deletes after a native confirm", async () => {

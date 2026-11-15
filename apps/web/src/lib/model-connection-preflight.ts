@@ -1,6 +1,6 @@
 import { plural, t } from "@lingui/core/macro";
-import type { ModelCredential } from "@rakazo/contracts";
-import { sanitizeModelConnectionError } from "@rakazo/core";
+import type { ModelCredential } from "@robots/contracts";
+import { sanitizeModelConnectionError } from "@robots/core";
 
 type ModelPreflightOutcome =
   | "timeout"

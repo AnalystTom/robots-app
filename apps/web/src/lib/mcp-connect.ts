@@ -1,4 +1,4 @@
-import { MCP_SIGNIN_WINDOW_PREFIX } from "@rakazo/contracts";
+import { MCP_SIGNIN_WINDOW_PREFIX } from "@robots/contracts";
 import { desktopBridge } from "./desktop";
 import { MCP_OAUTH_CHANNEL } from "./mcp-oauth-channel";
 import { rpc } from "./rpc";

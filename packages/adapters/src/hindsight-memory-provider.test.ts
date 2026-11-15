@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { AdapterContext, SemanticMemoryConversationRequest } from "@rakazo/adapter-kit";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import type { AdapterContext, SemanticMemoryConversationRequest } from "@robots/adapter-kit";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HINDSIGHT_CLOUD_BASE_URL } from "./hindsight-client.js";
 import {
@@ -21,7 +21,7 @@ const context: AdapterContext = {
   signal: new AbortController().signal,
 };
 
-const TEAM_BANK = `rakazo-${createHash("sha256").update("space-1").digest("hex")}`;
+const TEAM_BANK = `robots-${createHash("sha256").update("space-1").digest("hex")}`;
 const OWN_BANK = `${TEAM_BANK}-${createHash("sha256").update("bot-1").digest("hex")}`;
 
 interface RecordedRequest {
@@ -71,8 +71,8 @@ function hindsightFake(
     const { bank, session, count } = options.turnDocuments;
     const ids = documents.get(bank) ?? new Set<string>();
     for (let index = 0; index < count; index++) {
-      ids.add(`rakazo-turn-run-${index}`);
-      tags.set(`${bank}\nrakazo-turn-run-${index}`, [`session:${session}`]);
+      ids.add(`robots-turn-run-${index}`);
+      tags.set(`${bank}\nrobots-turn-run-${index}`, [`session:${session}`]);
     }
     documents.set(bank, ids);
   }
@@ -255,7 +255,7 @@ describe("Hindsight saves", () => {
         {
           content: "Prefers tea.",
           context:
-            "A fact a Rakazo AI assistant chose to remember about the people it works for and their work",
+            "A fact a RoBots AI assistant chose to remember about the people it works for and their work",
           timestamp: expect.any(String),
         },
       ],
@@ -689,7 +689,7 @@ describe("Hindsight conversations", () => {
       { role: "assistant", content: "Congratulations!", timestamp: "2026-11-11T10:00:03.000Z" },
     ],
   };
-  const SESSION = "rakazo-thread-1-3-bot-1";
+  const SESSION = "robots-thread-1-3-bot-1";
 
   /** Submits the turn, then checks once whether it settled. */
   async function retainAndCheck(
@@ -732,7 +732,7 @@ describe("Hindsight conversations", () => {
               timestamp: "2026-11-11T10:00:03.000Z",
             },
           ]),
-          context: "Conversation in Rakazo with Sam, Ada and Bob",
+          context: "Conversation in RoBots with Sam, Ada and Bob",
           timestamp: "2026-11-11T10:00:03.000Z",
           document_id: SESSION,
           update_mode: "append",
@@ -963,8 +963,8 @@ describe("Hindsight conversations", () => {
       "not json",
       "[]",
       JSON.stringify([{ bank: OWN_BANK, operationId: "x" }]),
-      JSON.stringify([{ bank: "rakazo-space-2-bot-1", operationId }]),
-      JSON.stringify([{ bank: "rakazo-space-2", operationId, team: true }]),
+      JSON.stringify([{ bank: "robots-space-2-bot-1", operationId }]),
+      JSON.stringify([{ bank: "robots-space-2", operationId, team: true }]),
     ]) {
       await expect(memory.retainedConversationSettled(pending, context)).resolves.toEqual({
         ok: false,
@@ -992,22 +992,22 @@ describe("Hindsight conversations", () => {
     expect(writes(fake.requests).map((request) => request.body?.items)).toEqual([
       [
         expect.objectContaining({
-          context: "Chat in Rakazo between Sam and Ada, an AI assistant",
+          context: "Chat in RoBots between Sam and Ada, an AI assistant",
         }),
       ],
       [
         expect.objectContaining({
-          context: "Conversation in Rakazo with Sam, Ada and Bob",
+          context: "Conversation in RoBots with Sam, Ada and Bob",
         }),
       ],
       [
         expect.objectContaining({
-          context: "Conversation in Rakazo with Sam, Ada, Bob and Carol",
+          context: "Conversation in RoBots with Sam, Ada, Bob and Carol",
         }),
       ],
       [
         expect.objectContaining({
-          context: "Group chat in Rakazo with Sam, Ada, Bob and Carol",
+          context: "Group chat in RoBots with Sam, Ada, Bob and Carol",
         }),
       ],
     ]);
@@ -1023,13 +1023,13 @@ describe("Hindsight conversations", () => {
     );
     expect(items.map((item) => [item.document_id, item.update_mode, item.tags])).toEqual([
       [SESSION, "append", [`session:${SESSION}`]],
-      ["rakazo-turn-run-1", undefined, [`session:${SESSION}`]],
+      ["robots-turn-run-1", undefined, [`session:${SESSION}`]],
       // The bank is remembered: the next turn goes straight to its own document.
-      ["rakazo-turn-run-2", undefined, [`session:${SESSION}`]],
+      ["robots-turn-run-2", undefined, [`session:${SESSION}`]],
     ]);
     expect([...(fake.documents.get(OWN_BANK) ?? [])]).toEqual([
-      "rakazo-turn-run-1",
-      "rakazo-turn-run-2",
+      "robots-turn-run-1",
+      "robots-turn-run-2",
     ]);
 
     await expect(
@@ -1051,9 +1051,9 @@ describe("Hindsight conversations", () => {
     );
     expect(items.map((item) => item.document_id)).toEqual([
       SESSION,
-      "rakazo-turn-run-1",
+      "robots-turn-run-1",
       SESSION,
-      "rakazo-turn-run-2",
+      "robots-turn-run-2",
     ]);
   });
 
@@ -1069,8 +1069,8 @@ describe("Hindsight conversations", () => {
   it("purges the cleared conversations from the bot's own and team banks", async () => {
     const fake = hindsightFake({
       documents: {
-        [OWN_BANK]: ["rakazo-thread-1-2-bot-1", "rakazo-thread-1-4-bot-1"],
-        [TEAM_BANK]: ["rakazo-thread-1-3-bot-1", "rakazo-thread-1-2-bot-2"],
+        [OWN_BANK]: ["robots-thread-1-2-bot-1", "robots-thread-1-4-bot-1"],
+        [TEAM_BANK]: ["robots-thread-1-3-bot-1", "robots-thread-1-2-bot-2"],
       },
     });
     await expect(
@@ -1086,15 +1086,15 @@ describe("Hindsight conversations", () => {
         .sort(),
     ).toEqual(
       [
-        `${OWN_BANK}/documents/rakazo-thread-1-2-bot-1`,
-        `${TEAM_BANK}/documents/rakazo-thread-1-2-bot-1`,
-        `${OWN_BANK}/documents/rakazo-thread-1-3-bot-1`,
-        `${TEAM_BANK}/documents/rakazo-thread-1-3-bot-1`,
+        `${OWN_BANK}/documents/robots-thread-1-2-bot-1`,
+        `${TEAM_BANK}/documents/robots-thread-1-2-bot-1`,
+        `${OWN_BANK}/documents/robots-thread-1-3-bot-1`,
+        `${TEAM_BANK}/documents/robots-thread-1-3-bot-1`,
       ].sort(),
     );
     expect(fake.requests.filter((request) => request.method === "GET")).toHaveLength(4);
-    expect([...(fake.documents.get(OWN_BANK) ?? [])]).toEqual(["rakazo-thread-1-4-bot-1"]);
-    expect([...(fake.documents.get(TEAM_BANK) ?? [])]).toEqual(["rakazo-thread-1-2-bot-2"]);
+    expect([...(fake.documents.get(OWN_BANK) ?? [])]).toEqual(["robots-thread-1-4-bot-1"]);
+    expect([...(fake.documents.get(TEAM_BANK) ?? [])]).toEqual(["robots-thread-1-2-bot-2"]);
   });
 
   it("shares one cleanup deadline across deletes and later document listings", async () => {
@@ -1137,7 +1137,7 @@ describe("Hindsight conversations", () => {
     let peak = 0;
     const fetch: typeof globalThis.fetch = async (input, init) => {
       const perTurn =
-        init?.method === "DELETE" && String(input).includes("/documents/rakazo-turn-");
+        init?.method === "DELETE" && String(input).includes("/documents/robots-turn-");
       if (perTurn) {
         active++;
         peak = Math.max(peak, active);
@@ -1471,16 +1471,16 @@ describe("Hindsight connection", () => {
       ).rejects.toThrow("recallBanks may not include . or ..");
     }
     for (const recallBanks of [
-      "rakazo-0123456789abcdef0123456789ABCDEF",
-      "rakazo-clegacyspaceid",
-      "rakazo-private-team-bot-1",
-      "RAKAZO-legacy-organization",
-      "notes,rakazo-notes",
-      "notes,rakazo-01234567-89ab-cdef-0123-456789abcdef-bot-9",
+      "robots-0123456789abcdef0123456789ABCDEF",
+      "robots-clegacyspaceid",
+      "robots-private-team-bot-1",
+      "ROBOTS-legacy-organization",
+      "notes,robots-notes",
+      "notes,robots-01234567-89ab-cdef-0123-456789abcdef-bot-9",
     ]) {
       await expect(
         prepareHindsightConnection({ recallBanks }, { apiKey: "hsk-test-key" }, { fetch }),
-      ).rejects.toThrow("Bank names starting with rakazo- are reserved.");
+      ).rejects.toThrow("Bank names starting with robots- are reserved.");
     }
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -1488,10 +1488,10 @@ describe("Hindsight connection", () => {
   it("rejects the reserved namespace in persisted settings before making requests", () => {
     expect(() =>
       createHindsightProvider(
-        { recallBanks: "rakazo-legacy-organization" },
+        { recallBanks: "robots-legacy-organization" },
         { apiKey: "hsk-test-key" },
       ),
-    ).toThrow("Bank names starting with rakazo- are reserved.");
+    ).toThrow("Bank names starting with robots- are reserved.");
   });
 
   it("validates recall settings and keeps only those that differ from the defaults", async () => {

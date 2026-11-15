@@ -9,20 +9,20 @@ import type {
   SandboxProvider,
   SemanticMemoryProvider,
   WebProvider,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import type {
   AttachmentImageMimeType,
   ComputerMode,
   MessageBlock,
   ReplyMode,
   ToolStepCall,
-} from "@rakazo/contracts";
-import type { ToolStepOutcome } from "@rakazo/core";
-import { createStreamingRedactor } from "@rakazo/core";
-import { toolEffectIdempotencyKey } from "@rakazo/core/node/approval-effect-key";
-import type { Bot, Computer, effectiveMemoryScope, Run, Task, Thread } from "@rakazo/db";
-import { dropRunTurnCheckpoint, saveRunTurnCheckpoint } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/contracts";
+import type { ToolStepOutcome } from "@robots/core";
+import { createStreamingRedactor } from "@robots/core";
+import { toolEffectIdempotencyKey } from "@robots/core/node/approval-effect-key";
+import type { Bot, Computer, effectiveMemoryScope, Run, Task, Thread } from "@robots/db";
+import { dropRunTurnCheckpoint, saveRunTurnCheckpoint } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type {
   ApprovalPausedToolResult,
   ApprovedEffectReplayQueue,

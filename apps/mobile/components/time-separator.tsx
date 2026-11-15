@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import { formatTimeSeparator } from "@rakazo/core";
-import { typeScale } from "@rakazo/ui-tokens";
+import { formatTimeSeparator } from "@robots/core";
+import { typeScale } from "@robots/ui-tokens";
 import { Text } from "react-native";
 import { mobileTokens } from "../lib/appearance";
 import { dateLocaleForUi, useUiLocale } from "../lib/i18n";

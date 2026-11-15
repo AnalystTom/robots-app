@@ -9,7 +9,7 @@ describe("bestEffort", () => {
 
   function captureLogs() {
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
     return sink.events;
   }
 

@@ -1,7 +1,7 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { BotEmailAddress, BotEmailAddresses } from "@rakazo/contracts";
-import { parseBotEmailName, suggestedEmailName } from "@rakazo/contracts";
+import type { BotEmailAddress, BotEmailAddresses } from "@robots/contracts";
+import { parseBotEmailName, suggestedEmailName } from "@robots/contracts";
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
 import type { ReactElement } from "react";

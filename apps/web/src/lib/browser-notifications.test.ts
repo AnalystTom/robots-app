@@ -1,4 +1,4 @@
-import { TAKEOVER_COMPUTER_PENDING_STATE } from "@rakazo/core";
+import { TAKEOVER_COMPUTER_PENDING_STATE } from "@robots/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   BrowserNotificationApi,

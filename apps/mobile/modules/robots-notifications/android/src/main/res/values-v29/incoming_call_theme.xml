@@ -1,0 +1,3 @@
+<resources>
+  <style name="RobotsIncomingCallTheme" parent="android:style/Theme.DeviceDefault.DayNight" />
+</resources>

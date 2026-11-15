@@ -14,10 +14,10 @@ import type {
   TerminalRequest,
   WorkspaceDirectoryRequest,
   WorkspaceExportLimits,
-} from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { draftRecordingsOfLease, runAsSystem } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { draftRecordingsOfLease, runAsSystem } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { cancelComputerRunWork, providerKeepsHome } from "./computer-idle.js";
 import { computerProviderDescriptor } from "./computer-provider-registry.js";
 import { manageComputerWorkspaceDirectories } from "./computer-workspace.js";

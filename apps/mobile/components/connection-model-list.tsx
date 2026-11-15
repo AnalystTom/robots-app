@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import type { ConnectionModel } from "@rakazo/core";
+import type { ConnectionModel } from "@robots/core";
 import { useEffect } from "react";
 import { AccessibilityInfo } from "react-native";
 import { useListSearch } from "../lib/use-list-search";

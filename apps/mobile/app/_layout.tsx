@@ -1,15 +1,15 @@
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { useLingui } from "@lingui/react/macro";
-import type { LinkFavicons } from "@rakazo/chat-ui/native";
+import type { LinkFavicons } from "@robots/chat-ui/native";
 import {
   CodeCopyButtonContext,
   LinkFaviconsContext,
   MarkdownLinkPromptProvider,
   MermaidDiagramContext,
   RemoteImagesContext,
-} from "@rakazo/chat-ui/native";
-import { analyticsScreen } from "@rakazo/core";
+} from "@robots/chat-ui/native";
+import { analyticsScreen } from "@robots/core";
 import {
   DarkTheme,
   Stack,
@@ -428,7 +428,7 @@ function LayoutContent() {
                     >
                       <Stack.Screen
                         name="index"
-                        options={{ headerShown: false, title: "Rakazo" }}
+                        options={{ headerShown: false, title: "RoBots" }}
                       />
                       <Stack.Screen
                         name="search"

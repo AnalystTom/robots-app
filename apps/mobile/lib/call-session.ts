@@ -1,6 +1,6 @@
 import { ph, t } from "@lingui/core/macro";
-import type { BotAvatarSet } from "@rakazo/contracts";
-import type { CallExchange } from "@rakazo/core";
+import type { BotAvatarSet } from "@robots/contracts";
+import type { CallExchange } from "@robots/core";
 import {
   ACTIVE_RUN_STATUSES,
   AiConsentBlocked,
@@ -22,7 +22,7 @@ import {
   reduceThreadSnapshot,
   retryDelayMs,
   spokenMemory,
-} from "@rakazo/core";
+} from "@robots/core";
 import type { AudioRecorder } from "expo-audio";
 import { File } from "expo-file-system";
 import { useSyncExternalStore } from "react";
@@ -1047,7 +1047,7 @@ export async function transcribeClip(
     `${apiBase}/api/voice/transcribe`,
     {
       method: "POST",
-      headers: { "content-type": "application/json", origin: "rakazo://", ...headers },
+      headers: { "content-type": "application/json", origin: "robots://", ...headers },
       body: JSON.stringify({ audioBase64: clip.base64, mimeType: clip.mimeType }),
       signal,
     },

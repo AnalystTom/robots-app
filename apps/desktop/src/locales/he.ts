@@ -3,7 +3,7 @@ export const HE_MESSAGES: Record<string, string> = {
   "Check for Updates…": "בדיקת עדכונים…",
   "Computer Access…": "גישה למחשב…",
   "Revoke Local Computer Access": "ביטול הגישה למחשב המקומי",
-  "Change Rakazo Server…": "החלפת שרת Rakazo…",
+  "Change RoBots Server…": "החלפת שרת RoBots…",
   "Stop Local Stack": "עצירת ה-Stack המקומי",
   "Hide {name}": "הסתרת {name}",
   "Hide Others": "הסתרת אחרים",
@@ -35,22 +35,22 @@ export const HE_MESSAGES: Record<string, string> = {
   Close: "סגירה",
   "Close Window": "סגירת החלון",
   "Bring All to Front": "הבאת הכל לחזית",
-  "Rakazo {version} is ready to install.": "Rakazo {version} מוכן להתקנה.",
+  "RoBots {version} is ready to install.": "RoBots {version} מוכן להתקנה.",
   Restart: "הפעלה מחדש",
   Later: "אחר כך",
   "Could not install the update.": "לא ניתן היה להתקין את העדכון.",
   "Could not check for updates.": "לא ניתן היה לבדוק אם יש עדכונים.",
-  "Rakazo is up to date.": "Rakazo מעודכן.",
+  "RoBots is up to date.": "RoBots מעודכן.",
   "Version {version}": "גרסה {version}",
   "Automatic updates are turned off for this install.": "העדכונים האוטומטיים כבויים בהתקנה הזו.",
   "Automatic updates only run in an installed build.": "עדכונים אוטומטיים פועלים רק בגרסה מותקנת.",
   "No desktop releases are published for this build yet.":
     "עדיין לא פורסמו גרסאות שולחן עבודה עבור ה-build הזה.",
-  "Move Rakazo to Applications to install updates.":
-    "יש להעביר את Rakazo לתיקיית ״יישומים״ כדי להתקין עדכונים.",
+  "Move RoBots to Applications to install updates.":
+    "יש להעביר את RoBots לתיקיית ״יישומים״ כדי להתקין עדכונים.",
   "Free up disk space to install updates.": "יש לפנות מקום בדיסק כדי להתקין עדכונים.",
-  "This update could not be verified. Reinstall Rakazo from a trusted download.":
-    "לא ניתן היה לאמת את העדכון הזה. יש להתקין מחדש את Rakazo מהורדה מהימנה.",
+  "This update could not be verified. Reinstall RoBots from a trusted download.":
+    "לא ניתן היה לאמת את העדכון הזה. יש להתקין מחדש את RoBots מהורדה מהימנה.",
   "The update could not be completed. Try again later.":
     "לא ניתן היה להשלים את העדכון. כדאי לנסות שוב מאוחר יותר.",
   "Could not reach the update server.": "לא ניתן היה להתחבר לשרת העדכונים.",
@@ -69,13 +69,13 @@ export const HE_MESSAGES: Record<string, string> = {
     "כבר מתבצע ניסיון התחברות. יש לבטל אותו ולנסות שוב.",
   "Could not open browser sign-in. Close other sign-in attempts and retry.":
     "לא ניתן היה לפתוח התחברות בדפדפן. יש לסגור ניסיונות התחברות אחרים ולנסות שוב.",
-  "Sign-in callback rejected. Return to Rakazo to retry.":
-    "תגובת ההתחברות נדחתה. יש לחזור ל-Rakazo כדי לנסות שוב.",
-  "You can close this tab and return to Rakazo.": "אפשר לסגור את הכרטיסייה הזו ולחזור ל-Rakazo.",
-  "Set up Rakazo": "הגדרת Rakazo",
-  "Quit Rakazo": "יציאה מ-Rakazo",
-  "Welcome to Rakazo": "ברוכים הבאים ל-Rakazo",
-  "Choose where Rakazo runs.": "בחרו איפה Rakazo יפעל.",
+  "Sign-in callback rejected. Return to RoBots to retry.":
+    "תגובת ההתחברות נדחתה. יש לחזור ל-RoBots כדי לנסות שוב.",
+  "You can close this tab and return to RoBots.": "אפשר לסגור את הכרטיסייה הזו ולחזור ל-RoBots.",
+  "Set up RoBots": "הגדרת RoBots",
+  "Quit RoBots": "יציאה מ-RoBots",
+  "Welcome to RoBots": "ברוכים הבאים ל-RoBots",
+  "Choose where RoBots runs.": "בחרו איפה RoBots יפעל.",
   Instance: "מופע",
   "This computer": "המחשב הזה",
   "Existing instance": "מופע קיים",
@@ -88,14 +88,14 @@ export const HE_MESSAGES: Record<string, string> = {
   Continue: "המשך",
   Retry: "ניסיון חוזר",
   "Getting ready…": "מתכוננים…",
-  "Downloading Rakazo…": "מוריד את Rakazo…",
-  "Starting Rakazo…": "מפעיל את Rakazo…",
+  "Downloading RoBots…": "מוריד את RoBots…",
+  "Starting RoBots…": "מפעיל את RoBots…",
   "Almost ready…": "כמעט מוכן…",
-  "Rakazo is ready.": "Rakazo מוכן.",
+  "RoBots is ready.": "RoBots מוכן.",
   "{size} downloaded": "הורדו {size}",
   "Connecting…": "מתחבר…",
   "Checking…": "בודק…",
-  "Rakazo answered at {url}.": "Rakazo הגיב בכתובת {url}.",
+  "RoBots answered at {url}.": "RoBots הגיב בכתובת {url}.",
   "Enter a server address first.": "יש להזין קודם כתובת שרת.",
   "Could not save that address.": "לא ניתן היה לשמור את הכתובת הזו.",
   "Could not save that address. Try again.": "לא ניתן היה לשמור את הכתובת הזו. כדאי לנסות שוב.",
@@ -105,16 +105,16 @@ export const HE_MESSAGES: Record<string, string> = {
     "לא ניתן היה להפעיל את ה-Stack המקומי. כדאי לנסות שוב.",
   "Could not run the connection check. Try again.": "לא ניתן היה לבדוק את החיבור. כדאי לנסות שוב.",
   "Setup bridge unavailable.": "גשר ההגדרה לא זמין.",
-  "Setup could not start. Quit Rakazo and try again.":
-    "לא ניתן היה להתחיל את ההגדרה. יש לצאת מ-Rakazo ולנסות שוב.",
+  "Setup could not start. Quit RoBots and try again.":
+    "לא ניתן היה להתחיל את ההגדרה. יש לצאת מ-RoBots ולנסות שוב.",
   "Enter a server address.": "יש להזין כתובת שרת.",
   "Enter a valid http:// or https:// address.": "יש להזין כתובת http:// או https:// תקינה.",
   "Enter a valid server address. Public servers require HTTPS; a new local instance must use localhost.":
     "יש להזין כתובת שרת תקינה. שרתים ציבוריים מחייבים HTTPS; מופע מקומי חדש חייב להשתמש ב-localhost.",
   "Invalid custom headers": "כותרות מותאמות אישית לא תקינות",
-  "That address redirects elsewhere. Enter the final Rakazo server address.":
-    "הכתובת הזו מפנה למקום אחר. יש להזין את הכתובת הסופית של שרת Rakazo.",
-  "That address did not respond like a Rakazo server.": "הכתובת הזו לא הגיבה כמו שרת Rakazo.",
+  "That address redirects elsewhere. Enter the final RoBots server address.":
+    "הכתובת הזו מפנה למקום אחר. יש להזין את הכתובת הסופית של שרת RoBots.",
+  "That address did not respond like a RoBots server.": "הכתובת הזו לא הגיבה כמו שרת RoBots.",
   "The server answered with HTTP {status}.": "השרת הגיב עם HTTP {status}.",
   "Timed out reaching that address.": "תם הזמן לחיבור לכתובת הזו.",
   "Nothing is listening at that address yet.": "עדיין אין שום דבר שמאזין בכתובת הזו.",
@@ -139,8 +139,8 @@ export const HE_MESSAGES: Record<string, string> = {
     "לא ניתן היה לשמור את ההגדרה. המופע הקודם שוחזר.",
   "Connected, but could not save setup for the next launch. Try Continue again.":
     "החיבור הצליח, אבל לא ניתן היה לשמור את ההגדרה להפעלה הבאה. יש ללחוץ שוב על ״המשך״.",
-  "The app-managed Rakazo services are not ready. Retry setup.":
-    "שירותי Rakazo שהאפליקציה מנהלת אינם מוכנים. יש לנסות את ההגדרה שוב.",
+  "The app-managed RoBots services are not ready. Retry setup.":
+    "שירותי RoBots שהאפליקציה מנהלת אינם מוכנים. יש לנסות את ההגדרה שוב.",
   "Docker is installed, but Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin.":
     "Docker מותקן, אבל Docker Compose חסר. יש להתקין את Docker Desktop או את docker-compose-plugin.",
   "Could not check Docker Compose. Check the output below, then retry.":
@@ -160,10 +160,10 @@ export const HE_MESSAGES: Record<string, string> = {
     "Docker הפסיק להגיב. יש להפעיל את Docker ולנסות שוב.",
   "Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin, then retry.":
     "Docker Compose חסר. יש להתקין את Docker Desktop או את docker-compose-plugin ולנסות שוב.",
-  "Downloading Rakazo images failed. Check the output below, then retry.":
-    "הורדת האימג׳ים של Rakazo נכשלה. יש לעיין בפלט שלמטה ולנסות שוב.",
-  "Rakazo services did not start. Check the output below, then retry.":
-    "שירותי Rakazo לא הופעלו. יש לעיין בפלט שלמטה ולנסות שוב.",
+  "Downloading RoBots images failed. Check the output below, then retry.":
+    "הורדת האימג׳ים של RoBots נכשלה. יש לעיין בפלט שלמטה ולנסות שוב.",
+  "RoBots services did not start. Check the output below, then retry.":
+    "שירותי RoBots לא הופעלו. יש לעיין בפלט שלמטה ולנסות שוב.",
   "The stack started but the web app did not answer. Retry, and check the output below.":
     "ה-Stack הופעל, אבל אפליקציית האינטרנט לא הגיבה. יש לנסות שוב ולעיין בפלט שלמטה.",
   "Could not prepare the local stack. Retry.":
@@ -187,15 +187,15 @@ export const HE_MESSAGES: Record<string, string> = {
   "Chat Details": "פרטי הצ׳אט",
   Help: "עזרה",
   "Keyboard Shortcuts": "קיצורי מקלדת",
-  "Downloading Rakazo failed. Check the internet connection, then retry.":
-    "ההורדה של Rakazo נכשלה. בדקו את החיבור לאינטרנט ונסו שוב.",
+  "Downloading RoBots failed. Check the internet connection, then retry.":
+    "ההורדה של RoBots נכשלה. בדקו את החיבור לאינטרנט ונסו שוב.",
   "Could not move your data from Docker. Check the output below, then retry.":
     "לא ניתן להעביר את הנתונים מ-Docker. בדקו את הפלט למטה ונסו שוב.",
   "The computer runtime already running is too old. Update or quit it, then retry.":
     "סביבת ההרצה של המחשבים שכבר פועלת ישנה מדי. עדכנו או סגרו אותה ונסו שוב.",
-  "Your Rakazo data is in a different computer runtime. Quit the one running, then retry.":
-    "הנתונים שלכם ב-Rakazo נמצאים בסביבת הרצה אחרת של המחשבים. סגרו את זו שפועלת ונסו שוב.",
-  "Run Rakazo without Docker?": "להפעיל את Rakazo בלי Docker?",
+  "Your RoBots data is in a different computer runtime. Quit the one running, then retry.":
+    "הנתונים שלכם ב-RoBots נמצאים בסביבת הרצה אחרת של המחשבים. סגרו את זו שפועלת ונסו שוב.",
+  "Run RoBots without Docker?": "להפעיל את RoBots בלי Docker?",
   "Your bots and data move over. Docker is stopped, not removed.":
     "הבוטים והנתונים שלכם יועברו. Docker ייעצר, לא יוסר.",
   Move: "העברה",
@@ -204,11 +204,11 @@ export const HE_MESSAGES: Record<string, string> = {
   "Your data stays on this computer.": "הנתונים שלכם נשארים במחשב הזה.",
   "Connect to a server you or your team already run.":
     "התחברות לשרת שאתם או הצוות שלכם כבר מפעילים.",
-  "Rakazo needs Docker Desktop to run on this computer.":
-    "Rakazo צריך את Docker Desktop כדי לפעול במחשב הזה.",
-  "Rakazo needs Docker to run on this computer.": "Rakazo צריך את Docker כדי לפעול במחשב הזה.",
-  "Docker Desktop is a free app that runs Rakazo in the background. Install it and open it once.":
-    "Docker Desktop היא אפליקציה חינמית שמפעילה את Rakazo ברקע. מתקינים ופותחים אותה פעם אחת.",
+  "RoBots needs Docker Desktop to run on this computer.":
+    "RoBots צריך את Docker Desktop כדי לפעול במחשב הזה.",
+  "RoBots needs Docker to run on this computer.": "RoBots צריך את Docker כדי לפעול במחשב הזה.",
+  "Docker Desktop is a free app that runs RoBots in the background. Install it and open it once.":
+    "Docker Desktop היא אפליקציה חינמית שמפעילה את RoBots ברקע. מתקינים ופותחים אותה פעם אחת.",
   "Install Docker Engine and start it.": "מתקינים את Docker Engine ומפעילים אותו.",
   "Download Docker Desktop": "הורדת Docker Desktop",
   "Install Docker": "התקנת Docker",

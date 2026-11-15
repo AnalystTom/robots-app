@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import type { AuthenticatorKey } from "@rakazo/contracts";
+import type { AuthenticatorKey } from "@robots/contracts";
 
 const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 

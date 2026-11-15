@@ -1,15 +1,15 @@
-import type { AdapterContext } from "@rakazo/adapter-kit";
+import type { AdapterContext } from "@robots/adapter-kit";
 import {
   computerControlExpireJobKey,
   isSandboxProviderOutage,
   SandboxAllowanceUsedError,
-} from "@rakazo/adapter-kit";
-import type { ComputerUpdate } from "@rakazo/contracts";
-import { ComputerUpdateSchema } from "@rakazo/contracts";
-import { ACTIVE_RUN_STATUSES, COMPUTER_USING_RUNS } from "@rakazo/core";
-import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
-import { draftRecordingsOfLeaseInTransaction, spaceTakesWork } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { ComputerUpdate } from "@robots/contracts";
+import { ComputerUpdateSchema } from "@robots/contracts";
+import { ACTIVE_RUN_STATUSES, COMPUTER_USING_RUNS } from "@robots/core";
+import type { Prisma, PrismaClient, ThreadEvents } from "@robots/db";
+import { draftRecordingsOfLeaseInTransaction, spaceTakesWork } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { endTeachingWithLease, revokeScreenControl } from "./computer-control.js";
 import { scheduleComputerSleep } from "./computer-idle.js";
 import {

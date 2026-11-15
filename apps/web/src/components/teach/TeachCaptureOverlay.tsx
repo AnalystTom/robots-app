@@ -1,5 +1,5 @@
-import type { TaughtSkill } from "@rakazo/contracts";
-import { DEFAULT_COMPUTER_SCREEN, mapTeachPointer, teachCaptureKey } from "@rakazo/core";
+import type { TaughtSkill } from "@robots/contracts";
+import { DEFAULT_COMPUTER_SCREEN, mapTeachPointer, teachCaptureKey } from "@robots/core";
 import { useEffect, useRef } from "react";
 import { rpc } from "../../lib/rpc";
 import { enqueueTeachComputerInput } from "./teach-computer-input-chain";

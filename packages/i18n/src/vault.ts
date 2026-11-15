@@ -1,6 +1,6 @@
 import { i18n } from "@lingui/core";
-import type { VaultSaveDrop, VaultSaveSent } from "@rakazo/core";
-import { secretAnswerRefusal, vaultImportProblemList, vaultSaveDrops } from "@rakazo/core";
+import type { VaultSaveDrop, VaultSaveSent } from "@robots/core";
+import { secretAnswerRefusal, vaultImportProblemList, vaultSaveDrops } from "@robots/core";
 
 /**
  * Vault text both apps show, kept here so the copy and its choice can't drift between them. Static

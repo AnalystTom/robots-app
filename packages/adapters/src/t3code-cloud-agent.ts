@@ -8,8 +8,8 @@ import type {
   CloudAgentReplyRequest,
   CloudAgentSnapshot,
   CloudAgentStatus,
-} from "@rakazo/adapter-kit";
-import { CloudAgentRequestRejected, CloudAgentRetryLater } from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
+import { CloudAgentRequestRejected, CloudAgentRetryLater } from "@robots/adapter-kit";
 import { z } from "zod";
 import type { RemoteMcpOptions } from "./remote-mcp.js";
 import { callRemoteMcpTool } from "./remote-mcp.js";

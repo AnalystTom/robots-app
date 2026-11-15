@@ -1,4 +1,4 @@
-import type { ModelCredential } from "@rakazo/contracts";
+import type { ModelCredential } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import {
   catalogEntryFor,

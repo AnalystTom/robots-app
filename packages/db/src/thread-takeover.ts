@@ -1,6 +1,6 @@
-import type { RealtimeFanout } from "@rakazo/adapter-kit";
-import { MessageBlock as MessageBlockSchema } from "@rakazo/contracts";
-import { releasedTakeoverComputerBlocks } from "@rakazo/core";
+import type { RealtimeFanout } from "@robots/adapter-kit";
+import { MessageBlock as MessageBlockSchema } from "@robots/contracts";
+import { releasedTakeoverComputerBlocks } from "@robots/core";
 import type { Prisma, PrismaClient } from "./client.js";
 import { notifyRealtime } from "./event-stream.js";
 import { appendEventInTransaction, transientRunEventsWhere } from "./events.js";

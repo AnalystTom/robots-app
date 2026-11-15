@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { signupSurveyAsksTeamSize } from "@rakazo/contracts";
+import { signupSurveyAsksTeamSize } from "@robots/contracts";
 import {
   chooseFocus,
   dismissFocus,

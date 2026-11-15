@@ -1,6 +1,6 @@
-import { getLogger, monitoringUserId } from "@rakazo/logging";
-import { markExpectedFailure } from "@rakazo/logging/hono";
-import type { MonitoringConfig } from "@rakazo/logging/monitoring";
+import { getLogger, monitoringUserId } from "@robots/logging";
+import { markExpectedFailure } from "@robots/logging/hono";
+import type { MonitoringConfig } from "@robots/logging/monitoring";
 import { Hono } from "hono";
 import type { AppEnv } from "./env.js";
 import { sanitizeNativeEnvelope } from "./native-monitoring.js";

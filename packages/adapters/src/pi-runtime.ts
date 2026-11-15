@@ -17,15 +17,15 @@ import type {
   AgentSteeringMessage,
   AgentUsage,
   ModelCallObserver,
-} from "@rakazo/adapter-kit";
-import { ModelAccountError, ModelOutputError, TransientModelError } from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
+import { ModelAccountError, ModelOutputError, TransientModelError } from "@robots/adapter-kit";
 import {
   MISSING_TOOL_FINAL_RESPONSE_ERROR,
   MODEL_IMAGE_INPUT_ERROR,
   MODEL_OUTPUT_CUT_ERROR,
   modelFallbackFailure,
-} from "@rakazo/core";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/core";
+import { getLogger } from "@robots/logging";
 import {
   isTerminatingReplyResult,
   terminatingReplyText,
@@ -127,7 +127,7 @@ const MAX_SILENT_TOOL_CONTINUATIONS = 3;
 // Shown as a failed-run error, not an assistant message. Asking the user to
 // continue stores that sentence as the reply, and the next "continue" runs
 // tools and misses a final answer again.
-export { MISSING_TOOL_FINAL_RESPONSE_ERROR } from "@rakazo/core";
+export { MISSING_TOOL_FINAL_RESPONSE_ERROR } from "@robots/core";
 
 export interface PiAgentRuntimeOptions {
   /** Directory where Pi JSONL sessions are written. Omit to disable recording. */
@@ -329,7 +329,7 @@ export class PiAgentRuntime implements AgentRuntime {
           restored
             ? (restored.historyMessageIds ??
                 history.flatMap((message) => {
-                  const id = (message as Message & { rakazoMessageId?: string }).rakazoMessageId;
+                  const id = (message as Message & { robotsMessageId?: string }).robotsMessageId;
                   return id ? [id] : [];
                 }))
             : [

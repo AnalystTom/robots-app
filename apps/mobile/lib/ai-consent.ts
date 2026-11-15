@@ -1,6 +1,6 @@
 import { ph, t } from "@lingui/core/macro";
-import type { AiDataUse, AiRecipient } from "@rakazo/contracts";
-import { AI_PRIVACY_URL } from "@rakazo/contracts";
+import type { AiDataUse, AiRecipient } from "@robots/contracts";
+import { AI_PRIVACY_URL } from "@robots/contracts";
 import { Alert, AppState, Linking } from "react-native";
 
 export const FOREGROUND_FALLBACK_MS = 400;

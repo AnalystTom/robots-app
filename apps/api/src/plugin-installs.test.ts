@@ -1,8 +1,8 @@
 import { createRouterClient } from "@orpc/server";
-import type { SecretStore } from "@rakazo/adapter-kit";
-import { BUILTIN_AGENT_SKILLS, previewPluginInstall } from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import type { SecretStore } from "@robots/adapter-kit";
+import { BUILTIN_AGENT_SKILLS, previewPluginInstall } from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installPlugin, setPluginParts } from "./plugin-installs.js";
 import type { RouterDeps } from "./router.js";
@@ -119,7 +119,7 @@ async function input() {
 }
 
 afterEach(() => {
-  installLogger(createLogger({ service: "rakazo-api", level: "off", sinks: [] }));
+  installLogger(createLogger({ service: "robots-api", level: "off", sinks: [] }));
 });
 
 describe("confirmed plugin installation", () => {
@@ -220,7 +220,7 @@ describe("confirmed plugin installation", () => {
     async (_case, error) => {
       const { deps, prisma } = setup();
       const sink = createTestSink();
-      installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+      installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
       await expect(
         installPlugin({ ...deps, fetcher: failingFetcher(error) }, actor, await input()),
       ).rejects.toMatchObject({
@@ -235,7 +235,7 @@ describe("confirmed plugin installation", () => {
     const { deps } = setup();
     const args = await input();
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
     const dropped = failingFetcher(new Error("socket closed"));
     await expect(
       installPlugin({ ...deps, fetcher: dropped }, actor, args, AbortSignal.abort()),

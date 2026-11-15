@@ -1,4 +1,4 @@
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { provisionComputer } from "./computer-lifecycle.js";
 import { egressRefused } from "./network-address.js";
@@ -208,7 +208,7 @@ describe("HTTP watch transport diagnostics", () => {
   let sink: ReturnType<typeof createTestSink>;
   beforeEach(() => {
     sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-worker", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-worker", sinks: [sink] }));
   });
 
   it.each([

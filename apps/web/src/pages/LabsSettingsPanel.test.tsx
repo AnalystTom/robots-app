@@ -8,7 +8,7 @@ import { afterEach, expect, it, vi } from "vitest";
 vi.mock("@lingui/react/macro", () => ({
   useLingui: () => ({ t: (parts: TemplateStringsArray) => parts.join("") }),
 }));
-vi.mock("@rakazo/ui-web", () => ({
+vi.mock("@robots/ui-web", () => ({
   Label: ({ children, htmlFor }: { children?: ReactNode; htmlFor?: string }) => (
     <label htmlFor={htmlFor}>{children}</label>
   ),

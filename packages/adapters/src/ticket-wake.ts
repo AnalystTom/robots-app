@@ -1,12 +1,12 @@
-import type { JobPublisher } from "@rakazo/adapter-kit";
-import type { LabFeature } from "@rakazo/contracts";
+import type { JobPublisher } from "@robots/adapter-kit";
+import type { LabFeature } from "@robots/contracts";
 import {
   hasLab,
   isTicketCompletedStatus,
   resolveLabs,
   TicketStatusSchema,
-} from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
 import { wakeRun } from "./wake-run.js";
 
 /** Assignment wakes only its current owner, without posting a chat message. */

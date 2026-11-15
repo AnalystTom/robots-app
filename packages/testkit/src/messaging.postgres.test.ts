@@ -7,9 +7,9 @@ import {
   createEmulatedSendbluePlatform,
   ScriptedAgentRuntime,
   SendBlueEmulator,
-} from "@rakazo/adapters";
-import type { PrismaClient } from "@rakazo/db";
-import { formatMessagingLinkCode, issueMessagingLinkCode } from "@rakazo/db";
+} from "@robots/adapters";
+import type { PrismaClient } from "@robots/db";
+import { formatMessagingLinkCode, issueMessagingLinkCode } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { asSystem } from "./system-db.js";
 
@@ -31,7 +31,7 @@ describeMessaging("messaging surface journeys", () => {
   let prisma: PrismaClient;
   const emulator = new SendBlueEmulator();
   const platform = createEmulatedSendbluePlatform(emulator);
-  const dataDir = mkdtempSync(path.join(tmpdir(), "rakazo-messaging-"));
+  const dataDir = mkdtempSync(path.join(tmpdir(), "robots-messaging-"));
   // Unique per run: identities, threads, and outbox rows persist in the dev
   // database. Random E.164 fixtures — a timestamp suffix repeats within
   // hours and collides with earlier runs.
@@ -95,7 +95,7 @@ describeMessaging("messaging surface journeys", () => {
   };
 
   beforeAll(async () => {
-    const { createApp } = await import("@rakazo/api/app");
+    const { createApp } = await import("@robots/api/app");
     const handles = await createApp({
       databaseUrl: process.env.DATABASE_URL!,
       dataDir,
@@ -638,7 +638,7 @@ describeMessaging("messaging surface journeys", () => {
       content: "legacy path",
       handle: `legacy-dm-${stamp}`,
     });
-    const res = await app.request("https://rakazo.test/api/v1/phone/webhook", {
+    const res = await app.request("https://robots.test/api/v1/phone/webhook", {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -655,7 +655,7 @@ describeMessaging("messaging surface journeys", () => {
     const stranger = uniqueNumber();
     // A mistaken parser that unwraps `data` would treat this as a message and
     // provision. The SendBlue inbound shape is flat; nested envelopes are ignored.
-    const res = await app.request("https://rakazo.test/api/v1/phone/webhook", {
+    const res = await app.request("https://robots.test/api/v1/phone/webhook", {
       method: "POST",
       headers: {
         "content-type": "application/json",

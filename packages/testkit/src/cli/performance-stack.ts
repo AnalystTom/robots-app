@@ -3,8 +3,8 @@ import { execFileSync, spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import path from "node:path";
 import type { CDPSession } from "@playwright/test";
-import { abortableDelay } from "@rakazo/core";
-import { createPool } from "@rakazo/db";
+import { abortableDelay } from "@robots/core";
+import { createPool } from "@robots/db";
 import { disposableDatabaseEnv, startPostgres } from "./postgres.js";
 
 export const repositoryRoot = path.resolve(import.meta.dirname, "../../../..");
@@ -30,7 +30,7 @@ export function benchmarkEnvironment(options: {
     SANDBOX_PROVIDER: "fake",
     AGENT_RUNTIME: "scripted",
     CLOUD_AGENT_PROVIDER: "emulator",
-    RAKAZO_LIVE_MODEL_CATALOG: "off",
+    ROBOTS_LIVE_MODEL_CATALOG: "off",
     ANALYTICS_PROVIDER: "none",
     LOG_LEVEL: "off",
     COMPOSIO_API_KEY: "",
@@ -42,18 +42,18 @@ export function benchmarkEnvironment(options: {
     STRIPE_PRICE_ID: "",
     SENTRY_DSN: "",
     SENTRY_BROWSER_DSN: "",
-    BETTER_AUTH_SECRET: "rakazo-benchmark-auth-secret-over-32-characters",
-    ENCRYPTION_KEY: "rakazo-benchmark-encryption-key-over-32-characters",
-    SANDBOX_SUPERVISOR_TOKEN: "rakazo-benchmark-supervisor-token-over-32-characters",
-    SCREEN_PROXY_SECRET: "rakazo-benchmark-screen-proxy-secret-over-32-characters",
+    BETTER_AUTH_SECRET: "robots-benchmark-auth-secret-over-32-characters",
+    ENCRYPTION_KEY: "robots-benchmark-encryption-key-over-32-characters",
+    SANDBOX_SUPERVISOR_TOKEN: "robots-benchmark-supervisor-token-over-32-characters",
+    SCREEN_PROXY_SECRET: "robots-benchmark-screen-proxy-secret-over-32-characters",
     BETTER_AUTH_URL: webOrigin,
     WEB_ORIGIN: webOrigin,
     API_PORT: String(options.apiPort),
     API_URL: apiOrigin,
     API_PROXY_TARGET: apiOrigin,
     WEB_PORT: String(options.webPort),
-    RAKAZO_HOST: "127.0.0.1",
-    RAKAZO_WEB_URL: webOrigin,
+    ROBOTS_HOST: "127.0.0.1",
+    ROBOTS_WEB_URL: webOrigin,
     DATA_DIR: options.dataDir,
     SIGNUPS_ENABLED: "true",
     SIGNUP_ALLOWLIST: "",
@@ -73,7 +73,7 @@ export async function startBenchmarkDatabase(serverUrl: string | undefined) {
   }
   const admin = new URL(serverUrl);
   const url = new URL(serverUrl);
-  const name = `rakazo_bench_${randomUUID().replaceAll("-", "")}`;
+  const name = `robots_bench_${randomUUID().replaceAll("-", "")}`;
   url.pathname = `/${name}`;
   await adminQuery(admin.href, `CREATE DATABASE "${name}"`);
   return {
@@ -92,8 +92,8 @@ async function adminQuery(url: string, sql: string) {
 }
 
 export function migrateDatabase(env: NodeJS.ProcessEnv) {
-  run("pnpm", ["--filter", "@rakazo/db", "generate"], env);
-  run("pnpm", ["--filter", "@rakazo/db", "exec", "prisma", "migrate", "deploy"], env);
+  run("pnpm", ["--filter", "@robots/db", "generate"], env);
+  run("pnpm", ["--filter", "@robots/db", "exec", "prisma", "migrate", "deploy"], env);
 }
 
 export function run(command: string, args: string[], env: NodeJS.ProcessEnv) {
@@ -110,7 +110,7 @@ export function startPreview(env: NodeJS.ProcessEnv, port: number) {
     "pnpm",
     [
       "--filter",
-      "@rakazo/web",
+      "@robots/web",
       "exec",
       "vite",
       "preview",

@@ -1,4 +1,4 @@
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { beforeEach, describe, expect, it } from "vitest";
 import { egressRefused, isEgressRefused } from "./network-address.js";
 import { assertSafeRemoteUrl, createSafeLookup } from "./remote-mcp.js";
@@ -8,7 +8,7 @@ let sink: ReturnType<typeof createTestSink>;
 
 beforeEach(() => {
   sink = createTestSink();
-  installLogger(createLogger({ service: "rakazo-worker", sinks: [sink] }));
+  installLogger(createLogger({ service: "robots-worker", sinks: [sink] }));
 });
 
 const refusals = () =>

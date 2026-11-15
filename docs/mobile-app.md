@@ -4,8 +4,8 @@ Chat with your bots, answer their questions, watch their computers and take call
 
 ## Install
 
-- iPhone, iPhone Duo and iPad: [App Store](https://apps.apple.com/app/rakazo/id6801531099).
-- Android: [Google Play](https://play.google.com/store/apps/details?id=com.rakazo.app).
+- iPhone, iPhone Duo and iPad: [App Store](https://apps.apple.com/app/robots/id6801531099).
+- Android: [Google Play](https://play.google.com/store/apps/details?id=com.analysttom.robotsapp).
 
 You can also choose **Get the mobile app** from the account menu in the web or desktop app.
 
@@ -52,7 +52,7 @@ working status while a bot runs.
 
 ## Shortcuts and Siri
 
-On iPhone, Rakazo adds actions to Shortcuts, Siri and the Action button:
+On iPhone, RoBots adds actions to Shortcuts, Siri and the Action button:
 
 - **Message Bot** and **Ask Bot**: send a message. Ask Bot also returns the reply.
 - **Record Message**: talk, then pause or press again to send it to the bot whose chat you opened last.
@@ -61,5 +61,5 @@ On iPhone, Rakazo adds actions to Shortcuts, Siri and the Action button:
 
 ## Share to a bot
 
-On Android, share text, images, audio, video, PDFs or files from another app to Rakazo and pick the
+On Android, share text, images, audio, video, PDFs or files from another app to RoBots and pick the
 bot to send them to.

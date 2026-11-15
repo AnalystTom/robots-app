@@ -1,5 +1,5 @@
-import { VoiceAccountError } from "@rakazo/adapter-kit";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import { VoiceAccountError } from "@robots/adapter-kit";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CartesiaVoiceProvider } from "./cartesia-voice.js";
 import { ElevenLabsVoiceProvider } from "./elevenlabs-voice.js";
@@ -43,13 +43,13 @@ afterEach(() => {
   vi.unstubAllEnvs();
   if (previousRuntime === undefined) delete process.env.AGENT_RUNTIME;
   else process.env.AGENT_RUNTIME = previousRuntime;
-  installLogger(createLogger({ service: "rakazo", level: "off", sinks: [] }));
+  installLogger(createLogger({ service: "robots", level: "off", sinks: [] }));
 });
 
 describe("createVoiceProvider", () => {
   it("exposes the hosted catalog behind one factory", () => {
     process.env.AGENT_RUNTIME = "pi";
-    vi.stubEnv("RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC", "0");
+    vi.stubEnv("ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC", "0");
     expect(VOICE_CATALOG.map((entry) => entry.id)).toEqual([
       "elevenlabs",
       "openai",
@@ -78,14 +78,14 @@ describe("createVoiceProvider", () => {
   });
 
   it("shows self-hosted speech only when the operator allows custom endpoints", () => {
-    vi.stubEnv("RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC", "0");
+    vi.stubEnv("ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC", "0");
     expect(listVoiceCatalog().some((entry) => entry.id === "openai-compatible")).toBe(false);
     expect(
       listVoiceCatalog({ allowPrivateEndpoint: true }).some(
         (entry) => entry.id === "openai-compatible",
       ),
     ).toBe(true);
-    vi.stubEnv("RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC", "");
+    vi.stubEnv("ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC", "");
     expect(listVoiceCatalog().some((entry) => entry.id === "openai-compatible")).toBe(true);
   });
 
@@ -614,7 +614,7 @@ describe("FishAudioVoiceProvider", () => {
   it("logs the upstream Fish status and message without the API key", async () => {
     const apiKey = "sk-fishaudiokey12345";
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
     vi.stubEnv("FISH_TTS_MODEL", "s1");
     vi.stubGlobal(
       "fetch",
@@ -658,7 +658,7 @@ describe("FishAudioVoiceProvider", () => {
     "raises Fish %i as a voice account error logged as a warning",
     async (status, code, message) => {
       const sink = createTestSink();
-      installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+      installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue(
@@ -697,7 +697,7 @@ describe("FishAudioVoiceProvider", () => {
     ["listing voices", (provider: FishAudioVoiceProvider) => provider.listVoices("sk-test", ctx)],
   ])("logs Fish %s status when the error body cannot be read", async (operation, call) => {
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
     const cancel = vi.fn(() => new Promise<void>(() => undefined));
     vi.stubGlobal(
       "fetch",
@@ -726,7 +726,7 @@ describe("FishAudioVoiceProvider", () => {
   it("logs a non-JSON Fish body when speaking fails", async () => {
     const apiKey = "sk-fishaudiokey12345";
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(new Response(`gateway down ${apiKey}`, { status: 502 })),

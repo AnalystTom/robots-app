@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import type { AdapterContext, ComputerRef, PageBrowserCommand } from "@rakazo/adapter-kit";
-import { authenticatorKey, encodeLoginSecret } from "@rakazo/contracts";
-import { createStreamingRedactor } from "@rakazo/core";
-import { installAuditEventStore, runLoginKind } from "@rakazo/db";
-import * as Logging from "@rakazo/logging";
+import type { AdapterContext, ComputerRef, PageBrowserCommand } from "@robots/adapter-kit";
+import { authenticatorKey, encodeLoginSecret } from "@robots/contracts";
+import { createStreamingRedactor } from "@robots/core";
+import { installAuditEventStore, runLoginKind } from "@robots/db";
+import * as Logging from "@robots/logging";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   encodeRunCode,

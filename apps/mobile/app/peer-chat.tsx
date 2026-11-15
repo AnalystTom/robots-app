@@ -1,8 +1,8 @@
 import { useLingui } from "@lingui/react/macro";
-import { ChatMarkdown } from "@rakazo/chat-ui/native";
-import type { PeerConversation } from "@rakazo/core";
-import { displayName, loadPeerHistory, newestPageCards, peerConversations } from "@rakazo/core";
-import { typeScale } from "@rakazo/ui-tokens";
+import { ChatMarkdown } from "@robots/chat-ui/native";
+import type { PeerConversation } from "@robots/core";
+import { displayName, loadPeerHistory, newestPageCards, peerConversations } from "@robots/core";
+import { typeScale } from "@robots/ui-tokens";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ScrollViewInstance } from "react-native";

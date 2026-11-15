@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
-import type { Actor } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
-import { asSystem, createDb, createGroupRepos, createRepos, runAsTenant } from "@rakazo/db";
-import { MarkdownMemoryStore } from "@rakazo/memory";
+import type { Actor } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
+import { asSystem, createDb, createGroupRepos, createRepos, runAsTenant } from "@robots/db";
+import { MarkdownMemoryStore } from "@robots/memory";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { RouterDeps } from "./router.js";
 import { createRouter } from "./router.js";
@@ -121,7 +121,7 @@ describePostgres("shared space content (PostgreSQL)", () => {
         screenProxySecret: "fake-test-secret",
         sandboxProvider: "fake",
       },
-      dataDir: "/tmp/rakazo-shared-content-test",
+      dataDir: "/tmp/robots-shared-content-test",
     } as unknown as RouterDeps;
     // As the app does, so domain errors answer with their own status.
     handler = new RPCHandler(createRouter(deps), {

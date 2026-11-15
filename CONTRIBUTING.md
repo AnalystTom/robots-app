@@ -1,6 +1,6 @@
-# Contributing to Rakazo
+# Contributing to RoBots
 
-Thanks for helping improve Rakazo. Keep changes focused and testable.
+Thanks for helping improve RoBots. Keep changes focused and testable.
 
 ## Run locally
 
@@ -13,7 +13,7 @@ The main checkout is the original clone, located through `git worktree list` rat
 a fixed directory or branch name.
 Worktrees attached to a bare repository skip copying because there is no original checkout.
 The source must be a Git-ignored regular file; symbolic links are rejected.
-Settings such as `RAKAZO_DEV_TAILNET=1` are inherited only when you enabled them locally;
+Settings such as `ROBOTS_DEV_TAILNET=1` are inherited only when you enabled them locally;
 the setup command does not enable sharing or change any settings. If the main checkout
 has no `.env`, development uses its usual defaults.
 

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { HistorySearchInputSchema } from "@rakazo/contracts";
-import { escapeJsonSearchWildcards } from "@rakazo/core";
+import { HistorySearchInputSchema } from "@robots/contracts";
+import { escapeJsonSearchWildcards } from "@robots/core";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Prisma } from "./client.js";

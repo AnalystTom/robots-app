@@ -5,17 +5,17 @@ import {
   persistPreparedSecret,
   recordMcpServerHealth,
   wakeRun,
-} from "@rakazo/adapters";
-import { MCP_OAUTH_REDIRECT_MISMATCH } from "@rakazo/contracts";
-import type { Prisma } from "@rakazo/db";
+} from "@robots/adapters";
+import { MCP_OAUTH_REDIRECT_MISMATCH } from "@robots/contracts";
+import type { Prisma } from "@robots/db";
 import {
   AVAILABILITY_SELECT,
   availableInSpace,
   IsolationError,
   isUniqueViolation,
   itemSecretIn,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import {
   assertNameFreeWhereAvailable,
   lockOwner,

@@ -1,8 +1,8 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { ComputerUpdate } from "@rakazo/contracts";
-import { COMPUTER_UPDATE_STAGES } from "@rakazo/contracts";
-import { computerUpdateNeedsAttention, computerUpdateStages } from "@rakazo/core";
+import type { ComputerUpdate } from "@robots/contracts";
+import { COMPUTER_UPDATE_STAGES } from "@robots/contracts";
+import { computerUpdateNeedsAttention, computerUpdateStages } from "@robots/core";
 import { usePathname } from "expo-router";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";

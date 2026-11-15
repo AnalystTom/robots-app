@@ -4,7 +4,7 @@ import type {
   VaultImportProblem,
   VaultKind,
   VaultPolicy,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   authenticatorKey,
   BLOCKED_ITEM_ANSWER,
@@ -14,7 +14,7 @@ import {
   LoginSecretValue,
   typedOtherSites,
   UNCHOSEN_ITEM_ANSWER,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 
 /**
  * Which fixed refusal a secret answer's server error is. Its other errors could echo the value,

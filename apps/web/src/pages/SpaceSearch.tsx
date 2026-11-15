@@ -1,8 +1,8 @@
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import type { SearchHit } from "@rakazo/contracts";
-import { searchHitListKey } from "@rakazo/core";
-import { Button, ContextMenuTrigger } from "@rakazo/ui-web";
+import type { SearchHit } from "@robots/contracts";
+import { searchHitListKey } from "@robots/core";
+import { Button, ContextMenuTrigger } from "@robots/ui-web";
 import { Fragment } from "react";
 import type { ChatMenuState, ChatMenuTarget } from "./shell/chat-context-menu";
 import { ChatMenu } from "./shell/chat-context-menu";

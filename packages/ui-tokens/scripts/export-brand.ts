@@ -1,17 +1,18 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
-import { darkTokens } from "../src/index.ts";
 
 const root = new URL("../../../", import.meta.url);
 const path = (name: string) => fileURLToPath(new URL(name, root));
-const source = path("packages/ui-tokens/assets/Rakazo.icon/Assets/orange-bot.png");
+const source = path("packages/ui-tokens/assets/RoBots.icon/Assets/robot-mark.png");
+// The RoBots plate is the teal accent, not the dark background token.
+const plate = "#15788a";
 
-// Match the Icon Composer portrait: the character sits 90 points below center.
+// Match the Icon Composer source: the mark sits centred.
 const portrait = await sharp(source).resize(1024, 1024).png().toBuffer();
 async function framed(background: string) {
   return sharp({ create: { width: 1024, height: 1114, channels: 4, background } })
-    .composite([{ input: portrait, top: 90, left: 0 }])
+    .composite([{ input: portrait, top: 0, left: 0 }])
     .extract({ left: 0, top: 0, width: 1024, height: 1024 })
     .png()
     .toBuffer();
@@ -25,7 +26,7 @@ async function roundedCorners(input: Buffer) {
     .png()
     .toBuffer();
 }
-const square = await framed(darkTokens.background);
+const square = await framed(plate);
 const rounded = await roundedCorners(square);
 
 async function png(input: Buffer, name: string, size: number) {
@@ -63,7 +64,7 @@ for (const app of ["web", "www"]) {
   await ico(rounded, `${publicDir}/favicon.ico`, [16, 32, 48]);
 }
 await mkdir(path("apps/www/public/brand"), { recursive: true });
-await png(rounded, "apps/www/public/brand/rakazo-mark.png", 256);
+await png(rounded, "apps/www/public/brand/robots-mark.png", 256);
 await png(rounded, "apps/mobile/assets/favicon.png", 128);
 await png(square, "apps/desktop/assets/icon.png", 1024);
 await ico(rounded, "apps/desktop/assets/icon.ico", [16, 32, 48, 64, 128, 256]);

@@ -1,12 +1,12 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { Bot, BotAvatarSet, ComputerMode, ReplyMode, ThinkingLevel } from "@rakazo/contracts";
+import type { Bot, BotAvatarSet, ComputerMode, ReplyMode, ThinkingLevel } from "@robots/contracts";
 import {
   BOT_DESCRIPTION_MAX_LENGTH,
   BOT_INSTRUCTIONS_MAX_LENGTH,
   BOT_NAME_MAX_LENGTH,
   resolveBotAvatarSet,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   botLookState,
   credentialForModel,
@@ -16,8 +16,8 @@ import {
   modelThinkingLevels,
   parseModelOptionKey,
   resolveSelectableModelId,
-} from "@rakazo/core";
-import { typeScale } from "@rakazo/ui-tokens";
+} from "@robots/core";
+import { typeScale } from "@robots/ui-tokens";
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import type { Voice } from "expo-speech";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -873,7 +873,7 @@ export default function BotSettingsScreen() {
               label={t`Icon set`}
               choices={[
                 { key: "organic", label: t`Original` },
-                { key: "rakazo", label: t`Rakazo` },
+                { key: "robots", label: t`RoBots` },
               ]}
               value={avatarSet}
               onChange={(next) => {

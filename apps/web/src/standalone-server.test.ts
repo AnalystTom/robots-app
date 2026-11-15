@@ -3,7 +3,7 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { USER_DEVICE_CONNECT_PATH } from "@rakazo/contracts";
+import { USER_DEVICE_CONNECT_PATH } from "@robots/contracts";
 import { afterEach, describe, expect, it } from "vitest";
 import { createWebServer } from "./standalone-server.js";
 
@@ -38,7 +38,7 @@ async function start(handler?: http.RequestListener) {
     );
   });
   const apiPort = await listen(api);
-  const root = await mkdtemp(path.join(tmpdir(), "rakazo-standalone-web-"));
+  const root = await mkdtemp(path.join(tmpdir(), "robots-standalone-web-"));
   cleanup.push(() => rm(root, { recursive: true, force: true }));
   await mkdir(path.join(root, "dist", "assets"), { recursive: true });
   await writeFile(path.join(root, "dist", "index.html"), "<!doctype html><title>app</title>");
@@ -46,7 +46,7 @@ async function start(handler?: http.RequestListener) {
   await writeFile(path.join(root, "dist", "build-id"), "test\n");
   const web = createWebServer(root, {
     API_PROXY_TARGET: `http://127.0.0.1:${apiPort}`,
-    RAKAZO_HOST: "app.example.test",
+    ROBOTS_HOST: "app.example.test",
     SCREEN_PROXY_SECRET: "test-screen-proxy-secret-0123456789abcdef",
   });
   return listen(web);

@@ -5,11 +5,11 @@ import type {
   BackgroundJob,
   JobPublisher,
   SandboxProvider,
-} from "@rakazo/adapter-kit";
-import { memoryRetainTurnJob, SandboxUnresponsiveError } from "@rakazo/adapter-kit";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import { currentDbContext } from "@rakazo/db";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import { memoryRetainTurnJob, SandboxUnresponsiveError } from "@robots/adapter-kit";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
+import { currentDbContext } from "@robots/db";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { describe, expect, it, vi } from "vitest";
 import { createBackgroundJobHandlers } from "./background-job-handlers.js";
 import type * as ComputerControl from "./computer-control.js";
@@ -258,7 +258,7 @@ describe("createBackgroundJobHandlers", () => {
 
   it("tries a control release again later when the computer provider is unreachable", async () => {
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-worker", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-worker", sinks: [sink] }));
     vi.mocked(expireComputerControl).mockRejectedValueOnce(
       new SandboxUnresponsiveError("Boat could not be reached"),
     );

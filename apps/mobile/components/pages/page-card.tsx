@@ -1,8 +1,8 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { PageIcon } from "@rakazo/chat-ui/native";
-import type { MessageBlock, PageDetail } from "@rakazo/contracts";
-import { pageCardSuperseded } from "@rakazo/core";
+import { PageIcon } from "@robots/chat-ui/native";
+import type { MessageBlock, PageDetail } from "@robots/contracts";
+import { pageCardSuperseded } from "@robots/core";
 import { useRouter } from "expo-router";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";

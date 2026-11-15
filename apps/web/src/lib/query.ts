@@ -1,7 +1,7 @@
 import type { RouterUtils } from "@orpc/tanstack-query";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import type { AppBootstrap } from "@rakazo/contracts";
-import { isRetryableError, retryDelayMs } from "@rakazo/core";
+import type { AppBootstrap } from "@robots/contracts";
+import { isRetryableError, retryDelayMs } from "@robots/core";
 import type { DataTag, QueryKey } from "@tanstack/react-query";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useRef, useState } from "react";

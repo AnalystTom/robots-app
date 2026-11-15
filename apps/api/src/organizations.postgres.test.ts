@@ -8,10 +8,10 @@ import type {
   ComputerRef,
   JobPublisher,
   SandboxProvider,
-} from "@rakazo/adapter-kit";
-import { BillingEmulator, ObjectAgentHomeStore, PrismaAgentHomeRecords } from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
-import type { PrismaClient, SpaceKeyRecord, SpaceKeyStore } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import { BillingEmulator, ObjectAgentHomeStore, PrismaAgentHomeRecords } from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
+import type { PrismaClient, SpaceKeyRecord, SpaceKeyStore } from "@robots/db";
 import {
   asSystem,
   billingAccountForOrganization,
@@ -28,7 +28,7 @@ import {
   requireMembership,
   runAsSystem,
   setOrganizationDeletionLease,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryObjectStorage } from "../../../packages/adapters/src/object-storage.test-support.js";
 import {
@@ -74,7 +74,7 @@ describePostgres("organizations (PostgreSQL)", () => {
   async function signup(): Promise<Actor> {
     const userId = `orgs-${++sequence}-${suffix}`;
     users.push(userId);
-    const email = `${userId}@rakazo.test`;
+    const email = `${userId}@robots.test`;
     await system.user.create({ data: { id: userId, name: userId, email, emailVerified: false } });
     const { spaceId } = await bootstrapUserSpace(
       system,
@@ -118,7 +118,7 @@ describePostgres("organizations (PostgreSQL)", () => {
     prisma = db.prisma;
     system = asSystem(prisma);
     installAuditEventStore(prisma);
-    root = await mkdtemp(path.join(tmpdir(), "rakazo-organizations-"));
+    root = await mkdtemp(path.join(tmpdir(), "robots-organizations-"));
     home = new ObjectAgentHomeStore(
       root,
       new MemoryObjectStorage(),

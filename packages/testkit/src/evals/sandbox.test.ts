@@ -1,4 +1,4 @@
-import type { AdapterContext, ProcessEvent } from "@rakazo/adapter-kit";
+import type { AdapterContext, ProcessEvent } from "@robots/adapter-kit";
 import { describe, expect, it } from "vitest";
 import { EvalSandboxProvider } from "./sandbox.js";
 
@@ -22,7 +22,7 @@ describe("honest offline eval shell results", () => {
           "bash",
           "-c",
           "wrapper",
-          "rakazo-background-launch",
+          "robots-background-launch",
           "computer",
           "run",
           "call",
@@ -57,7 +57,7 @@ describe("scripted eval computer", () => {
     "bash",
     "-c",
     "wrapper",
-    "rakazo-background-launch",
+    "robots-background-launch",
     "computer",
     "run",
     "call",

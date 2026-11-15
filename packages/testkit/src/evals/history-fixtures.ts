@@ -1,4 +1,4 @@
-import type { HistoryToolStep } from "@rakazo/contracts";
+import type { HistoryToolStep } from "@robots/contracts";
 import type { Criterion } from "./cases.js";
 
 export const HISTORY_FIXTURE_VERSION = "history-v1-seed-73";

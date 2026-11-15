@@ -1,14 +1,14 @@
-import type { BillingProvider } from "@rakazo/adapter-kit";
-import { BillingPaymentNotCompletedError } from "@rakazo/adapter-kit";
-import type { Actor } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+import type { BillingProvider } from "@robots/adapter-kit";
+import { BillingPaymentNotCompletedError } from "@robots/adapter-kit";
+import type { Actor } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import { createBillingService } from "./billing.js";
 
 const actor: Actor = {
   userId: "user-1",
   spaceId: "space-1",
-  email: "user@rakazo.test",
+  email: "user@robots.test",
   isDeploymentOwner: false,
 };
 const price = { amount: 1000, currency: "usd", interval: "month" as const, intervalCount: 1 };

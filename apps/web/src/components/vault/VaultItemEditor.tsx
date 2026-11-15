@@ -5,7 +5,7 @@ import type {
   LoginFieldInput,
   VaultKind,
   VaultPolicy,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   BotSecretName,
   CardSecretValue as CardSecretValueSchema,
@@ -17,8 +17,8 @@ import {
   encodeContactSecret,
   parseCardExpiry,
   VAULT_ALSO_ON_LIMIT,
-} from "@rakazo/contracts";
-import { vaultLoginSave } from "@rakazo/core";
+} from "@robots/contracts";
+import { vaultLoginSave } from "@robots/core";
 import {
   Button,
   Dialog,
@@ -30,7 +30,7 @@ import {
   NativeSelect,
   NativeSelectOption,
   Switch,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import type { ComponentProps, ReactNode } from "react";
 import { useId, useRef, useState } from "react";
 import type { AgentAccess } from "../integrations/agent-access";

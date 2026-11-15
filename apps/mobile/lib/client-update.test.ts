@@ -31,7 +31,7 @@ vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
 vi.mock("./api", () => ({ configureClientBuild: vi.fn() }));
 
-import { IOS_APP_STORE_URL } from "@rakazo/contracts";
+import { IOS_APP_STORE_URL } from "@robots/contracts";
 import {
   clientBuildHeaders,
   FOREGROUND_UPDATE_CHECK_MS,
@@ -56,7 +56,7 @@ function pressUpdate() {
 describe("mobile client build", () => {
   it("names the running bundle by when its update was created", () => {
     expect(mobileClientBuild()).toBe("20261022093015");
-    expect(clientBuildHeaders()).toEqual({ "x-rakazo-client-build": "mobile/20261022093015" });
+    expect(clientBuildHeaders()).toEqual({ "x-robots-client-build": "mobile/20261022093015" });
   });
 
   it("names no build where expo-updates is off", () => {

@@ -4,7 +4,7 @@ import type {
   AgentRunRequest,
   AgentRuntimeEvent,
   AgentToolExecutionObserver,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import { expect, it } from "vitest";
 import { PiAgentRuntime } from "./pi-runtime.js";
 

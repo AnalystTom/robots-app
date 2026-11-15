@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { AppBootstrap, Bot, Group } from "@rakazo/contracts";
+import type { AppBootstrap, Bot, Group } from "@robots/contracts";
 import { act, useLayoutEffect, useRef, useState } from "react";
 import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";

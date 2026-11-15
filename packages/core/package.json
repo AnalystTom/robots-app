@@ -1,5 +1,5 @@
 {
-  "name": "@rakazo/core",
+  "name": "@robots/core",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "type": "module",
@@ -96,8 +96,8 @@
   },
   "dependencies": {
     "@observablehq/plot": "0.6.19",
-    "@rakazo/contracts": "workspace:*",
-    "@rakazo/ui-tokens": "workspace:*",
+    "@robots/contracts": "workspace:*",
+    "@robots/ui-tokens": "workspace:*",
     "@tanstack/query-core": "5.107.1",
     "croner": "10.0.1",
     "d3-dsv": "3.0.2",

@@ -1,8 +1,8 @@
-import type { ArtifactStore } from "@rakazo/adapter-kit";
-import type { Actor } from "@rakazo/contracts";
-import { attachmentComputerPath } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { IsolationError } from "@rakazo/db";
+import type { ArtifactStore } from "@robots/adapter-kit";
+import type { Actor } from "@robots/contracts";
+import { attachmentComputerPath } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { IsolationError } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import {
   ArtifactListCursorError,

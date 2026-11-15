@@ -1,4 +1,4 @@
-import { MAX_VOICE_AUDIO_BYTES, VOICE_RESPONSE_TIMEOUT_MS } from "@rakazo/core";
+import { MAX_VOICE_AUDIO_BYTES, VOICE_RESPONSE_TIMEOUT_MS } from "@robots/core";
 import { createAudioPlayer, setAudioModeAsync, setIsAudioActiveAsync } from "expo-audio";
 import * as SecureStore from "expo-secure-store";
 import * as Speech from "expo-speech";
@@ -32,7 +32,7 @@ vi.mock("expo-localization", () => ({ getLocales: () => [{ languageTag: "en-US" 
 vi.mock("./ai-consent", () => ({ promptAiConsent: vi.fn() }));
 vi.mock("expo-file-system", () => ({
   File: class {
-    uri = "file:///cache/rakazo-voice.mp3";
+    uri = "file:///cache/robots-voice.mp3";
     create() {}
     writeSync() {}
     delete() {}
@@ -105,7 +105,7 @@ describe("mobile speech", () => {
       apiBase: "https://support.example",
       headers: {
         authorization: "Bearer support-token",
-        "x-rakazo-space-id": "space-support",
+        "x-robots-space-id": "space-support",
       },
     });
     vi.mocked(rpc).mockImplementation(async (proc) => {
@@ -155,7 +155,7 @@ describe("mobile speech", () => {
       apiBase: "https://support.example",
       headers: {
         authorization: "Bearer support-token",
-        "x-rakazo-space-id": "space-support",
+        "x-robots-space-id": "space-support",
       },
     };
     expect(rpc).toHaveBeenCalledWith(
@@ -265,7 +265,7 @@ describe("hosted voice playback controls", () => {
     );
     vi.mocked(captureApiRequestContext).mockResolvedValue({
       apiBase: "https://support.example",
-      headers: { authorization: "Bearer support-token", "x-rakazo-space-id": "space-support" },
+      headers: { authorization: "Bearer support-token", "x-robots-space-id": "space-support" },
     });
     vi.mocked(rpc).mockImplementation(async (proc) => {
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;

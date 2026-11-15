@@ -1,5 +1,5 @@
-import type { ComputerUpdate } from "@rakazo/contracts";
-import { COMPUTER_UPDATE_STAGES } from "@rakazo/contracts";
+import type { ComputerUpdate } from "@robots/contracts";
+import { COMPUTER_UPDATE_STAGES } from "@robots/contracts";
 import { isRetryableError, retryDelayMs } from "./retry-policy.js";
 
 /** Failed reads retry on this backoff (or the server's Retry-After); nothing else re-reads on a timer. */

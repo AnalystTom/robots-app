@@ -1,8 +1,8 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { AiRecipient } from "@rakazo/contracts";
-import { AI_PRIVACY_URL } from "@rakazo/contracts";
-import { writeSaved } from "@rakazo/core/query";
+import type { AiRecipient } from "@robots/contracts";
+import { AI_PRIVACY_URL } from "@robots/contracts";
+import { writeSaved } from "@robots/core/query";
 import { useIsFocused } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet } from "react-native";
@@ -122,7 +122,7 @@ export default function AiDataSharing() {
               />
             ))}
             <SettingsRow
-              title={t`Rakazo`}
+              title={t`RoBots`}
               accessibilityRole="link"
               chevron="right"
               onPress={() => void Linking.openURL(status.privacyUrl ?? AI_PRIVACY_URL)}

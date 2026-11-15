@@ -1,5 +1,5 @@
-import type { SandboxKindCapabilities } from "@rakazo/adapter-kit";
-import { SandboxKind } from "@rakazo/contracts";
+import type { SandboxKindCapabilities } from "@robots/adapter-kit";
+import { SandboxKind } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import {
   sandboxCapabilitiesByKind,

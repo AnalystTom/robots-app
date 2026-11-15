@@ -1,8 +1,8 @@
 import { Plural, Trans } from "@lingui/react/macro";
-import type { CapabilityInstall, ConnectionCatalogItem, McpServer } from "@rakazo/contracts";
-import { mcpServerNeedsSignIn } from "@rakazo/contracts";
-import { catalogItemKey } from "@rakazo/core";
-import { Button } from "@rakazo/ui-web";
+import type { CapabilityInstall, ConnectionCatalogItem, McpServer } from "@robots/contracts";
+import { mcpServerNeedsSignIn } from "@robots/contracts";
+import { catalogItemKey } from "@robots/core";
+import { Button } from "@robots/ui-web";
 import type { PluginSelection } from "../../components/integrations/plugin-marketplace";
 import {
   PluginLogo,

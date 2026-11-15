@@ -1,5 +1,5 @@
-import type { Bot, Group } from "@rakazo/contracts";
-import { chatSnoozed } from "@rakazo/core";
+import type { Bot, Group } from "@robots/contracts";
+import { chatSnoozed } from "@robots/core";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { NavigateFunction, NavigateOptions, To } from "react-router-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";

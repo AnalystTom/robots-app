@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { AccountSecurity } from "@rakazo/contracts";
-import { identityConfirmationProviders } from "@rakazo/contracts";
+import type { AccountSecurity } from "@robots/contracts";
+import { identityConfirmationProviders } from "@robots/contracts";
 import { useState } from "react";
 import {
   Modal,

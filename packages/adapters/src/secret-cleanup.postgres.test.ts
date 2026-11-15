@@ -1,4 +1,4 @@
-import { asSystem, createDb, Prisma, runAsSystem } from "@rakazo/db";
+import { asSystem, createDb, Prisma, runAsSystem } from "@robots/db";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createBackgroundJobHandlers } from "./background-job-handlers.js";
@@ -63,7 +63,7 @@ describePostgres("secret cleanup (PostgreSQL)", () => {
     pool = new Pool({ connectionString: runtimeUrl, max: 2 });
     jobs = new GraphileJobPublisher(pool);
     await asSystem(owner.prisma).user.create({
-      data: { id: userId, name: "Cleanup", email: `${userId}@rakazo.test`, emailVerified: true },
+      data: { id: userId, name: "Cleanup", email: `${userId}@robots.test`, emailVerified: true },
     });
   });
 

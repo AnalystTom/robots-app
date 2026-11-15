@@ -1,21 +1,21 @@
-import type * as Adapters from "@rakazo/adapters";
-import { destroyBot } from "@rakazo/adapters";
-import type * as Db from "@rakazo/db";
+import type * as Adapters from "@robots/adapters";
+import { destroyBot } from "@robots/adapters";
+import type * as Db from "@robots/db";
 import {
   claimOrganizationForDeletion,
   deleteClaimedSpace,
   recordAuditEvent,
   setOrganizationDeletionLease,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteOrganization } from "./account-deletion.js";
 
-vi.mock("@rakazo/adapters", async (importOriginal) => ({
+vi.mock("@robots/adapters", async (importOriginal) => ({
   ...(await importOriginal<typeof Adapters>()),
   destroyBot: vi.fn(),
 }));
 
-vi.mock("@rakazo/db", async (importOriginal) => ({
+vi.mock("@robots/db", async (importOriginal) => ({
   ...(await importOriginal<typeof Db>()),
   claimOrganizationForDeletion: vi.fn(),
   keepOrganizationTrialUse: vi.fn(async () => undefined),

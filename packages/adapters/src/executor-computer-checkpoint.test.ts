@@ -1,6 +1,6 @@
 import type { AssistantMessage, Model, ToolCall } from "@earendil-works/pi-ai";
 import { AssistantMessageEventStream } from "@earendil-works/pi-ai/utils/event-stream";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { beforeEach, expect, it, vi } from "vitest";
 import type * as AutoReviewModule from "./auto-review.js";
 import type * as ComputerLifecycleModule from "./computer-lifecycle.js";

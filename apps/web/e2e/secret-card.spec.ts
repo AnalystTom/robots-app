@@ -1,13 +1,13 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
-import { BLOCKED_ITEM_ANSWER } from "@rakazo/contracts";
+import { BLOCKED_ITEM_ANSWER } from "@robots/contracts";
 import { activeBotId, captureScreenshot, completeOnboarding, rpc, signup } from "./helpers";
 
 test("renders masked secret card and saves without putting the value in chat", async ({
   page,
 }, testInfo) => {
   const stamp = Date.now();
-  await signup(page, `secret-card-${stamp}@rakazo.test`, "password12", "Secret Card");
+  await signup(page, `secret-card-${stamp}@robots.test`, "password12", "Secret Card");
   await completeOnboarding(page);
 
   const botId = activeBotId(page);
@@ -149,7 +149,7 @@ test("renders masked secret card and saves without putting the value in chat", a
 
 async function openSecretCard(page: Page, name: string, prompt: string) {
   const stamp = Date.now();
-  await signup(page, `secret-${name}-${stamp}@rakazo.test`, "password12", "Secret Lines");
+  await signup(page, `secret-${name}-${stamp}@robots.test`, "password12", "Secret Lines");
   await completeOnboarding(page);
   const botId = activeBotId(page);
   await page.getByPlaceholder(/Message/).fill(prompt);
@@ -382,7 +382,7 @@ test("uses a login for this run only when Save to Vault is turned off on its car
   page,
 }, testInfo) => {
   const stamp = Date.now();
-  await signup(page, `login-once-${stamp}@rakazo.test`, "password12", "Login Once");
+  await signup(page, `login-once-${stamp}@robots.test`, "password12", "Login Once");
   await completeOnboarding(page);
 
   const botId = activeBotId(page);

@@ -26,7 +26,7 @@ vi.mock("@tanstack/react-query", () => ({
     },
   }),
 }));
-vi.mock("@rakazo/ui-web", async (importActual) => ({
+vi.mock("@robots/ui-web", async (importActual) => ({
   ...(await importActual<object>()),
   DropdownMenu: ({ children }: { children: ReactNode }) => children,
   DropdownMenuTrigger: () => null,

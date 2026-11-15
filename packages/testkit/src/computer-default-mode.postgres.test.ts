@@ -1,8 +1,8 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { Bot } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+import type { Bot } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { sessionCookieHeader } from "./index.js";
 import { asSystem } from "./system-db.js";
@@ -19,10 +19,10 @@ describe.skipIf(!hasDb)("COMPUTER_DEFAULT_MODE for new bots", () => {
   let app: App;
   let prisma: PrismaClient;
   let stop: () => Promise<void>;
-  const dataDir = mkdtempSync(path.join(tmpdir(), "rakazo-computer-default-"));
+  const dataDir = mkdtempSync(path.join(tmpdir(), "robots-computer-default-"));
 
   beforeAll(async () => {
-    const { createApp } = await import("@rakazo/api/app");
+    const { createApp } = await import("@robots/api/app");
     const handles = await createApp({
       databaseUrl: process.env.DATABASE_URL!,
       dataDir,
@@ -60,14 +60,14 @@ describe.skipIf(!hasDb)("COMPUTER_DEFAULT_MODE for new bots", () => {
     ).computer;
 
   it("gives a bot a Team computer when nothing is configured", async () => {
-    const cookie = await signup(app, `default-team-${Date.now()}@rakazo.test`);
+    const cookie = await signup(app, `default-team-${Date.now()}@robots.test`);
     const bot = await create(cookie, "Shared");
     expect(bot.computerMode).toBe("team");
     expect((await computerOf(bot.id))?.scope).toBe("team");
   });
 
   it("follows the deployment default, and an explicit choice still wins", async () => {
-    const cookie = await signup(app, `default-private-${Date.now()}@rakazo.test`);
+    const cookie = await signup(app, `default-private-${Date.now()}@robots.test`);
     process.env.COMPUTER_DEFAULT_MODE = "dedicated";
 
     const first = await create(cookie, "Private one");
@@ -84,7 +84,7 @@ describe.skipIf(!hasDb)("COMPUTER_DEFAULT_MODE for new bots", () => {
   });
 
   it("leaves an existing bot on its computer when the default changes", async () => {
-    const cookie = await signup(app, `default-existing-${Date.now()}@rakazo.test`);
+    const cookie = await signup(app, `default-existing-${Date.now()}@robots.test`);
     const before = await create(cookie, "Before");
     const beforeComputer = await computerOf(before.id);
     process.env.COMPUTER_DEFAULT_MODE = "dedicated";

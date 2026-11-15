@@ -1,4 +1,4 @@
-import { BotEmailRecipientSchema } from "@rakazo/contracts";
+import { BotEmailRecipientSchema } from "@robots/contracts";
 import type { PrismaClient } from "./client.js";
 import { runAsSystem } from "./row-security.js";
 

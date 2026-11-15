@@ -1,4 +1,4 @@
-import { GROK_BOT_EXPORT_PATH } from "@rakazo/contracts";
+import { GROK_BOT_EXPORT_PATH } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import type { GrokBot } from "./index.js";
 import {

@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
-import type { MessagingInboundMessage, MessagingSurface } from "@rakazo/adapter-kit";
-import { MessagingDelivery } from "@rakazo/adapters";
-import type { PrismaClient } from "@rakazo/db";
+import type { MessagingInboundMessage, MessagingSurface } from "@robots/adapter-kit";
+import { MessagingDelivery } from "@robots/adapters";
+import type { PrismaClient } from "@robots/db";
 import {
   asSystem,
   createDb,
   createThreadEvents,
   provisionMessagingIdentity,
   runAsSystem,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createMessagingInboundHandler } from "./messaging-inbound.js";
 
@@ -103,7 +103,7 @@ describe.skipIf(!enabled)("group roster versioning under concurrency (PostgreSQL
         data: {
           id: ids.userId,
           name: ids.userId,
-          email: `${ids.userId}@rakazo.test`,
+          email: `${ids.userId}@robots.test`,
           emailVerified: false,
         },
       });

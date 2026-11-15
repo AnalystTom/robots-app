@@ -1,5 +1,5 @@
-import type { AgentUsage, ModelUsageLookup } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
+import type { AgentUsage, ModelUsageLookup } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
 import {
   expireModelCredits,
   hasFinalModelCost,
@@ -8,8 +8,8 @@ import {
   RECONCILED_ESTIMATE_COST_SOURCE,
   recordUsage,
   runAsSystem,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { PAID_SERVICE_USAGE_PROVIDER } from "./paid-service-tools.js";
 
 /**

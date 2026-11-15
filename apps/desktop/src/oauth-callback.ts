@@ -1,4 +1,4 @@
-import type { RakazoDesktopOAuthCallback } from "@rakazo/contracts";
+import type { RobotsDesktopOAuthCallback } from "@robots/contracts";
 
 export type OAuthCallbackFromOptions = {
   /** SSO callbacks must reach the API, including a loopback API on a separate port. */
@@ -47,8 +47,8 @@ export function mcpOAuthCallbackFrom(
 export function oauthCallbackFrom(
   url: string,
   options: OAuthCallbackFromOptions = {},
-): RakazoDesktopOAuthCallback | undefined {
-  if (options.frameName === "rakazo-sso-oauth") return undefined;
+): RobotsDesktopOAuthCallback | undefined {
+  if (options.frameName === "robots-sso-oauth") return undefined;
   let target: URL;
   try {
     target = new URL(url);

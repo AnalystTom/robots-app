@@ -3,14 +3,14 @@ import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { HostScreen } from "@rakazo/adapters/host-screen";
-import { startUserDeviceClient } from "@rakazo/adapters/user-device-client";
+import type { HostScreen } from "@robots/adapters/host-screen";
+import { startUserDeviceClient } from "@robots/adapters/user-device-client";
 import type {
   DesktopLocalStackState,
   DesktopReachability,
   DesktopSetup,
-  RakazoDesktopDevice,
-} from "@rakazo/contracts";
+  RobotsDesktopDevice,
+} from "@robots/contracts";
 import type { BrowserWindow, Session } from "electron";
 import {
   app,
@@ -97,7 +97,7 @@ import { installSessionPermissions } from "./session-permissions.js";
 import {
   DEFAULT_LOCAL_WEB_URL,
   desktopStackImageTag,
-  isRakazoHealth,
+  isRobotsHealth,
   managedLocalOpenUrl,
   maySendDesktopStackToken,
   normalizeServerUrl,
@@ -114,11 +114,11 @@ import { isMcpOAuthServerId, mcpOAuthPartition } from "./window-open.js";
 
 process.setSourceMapsEnabled(true);
 installDesktopEarlyErrorReporting();
-const PERFORMANCE_USER_DATA = process.env.RAKAZO_PERFORMANCE_USER_DATA;
+const PERFORMANCE_USER_DATA = process.env.ROBOTS_PERFORMANCE_USER_DATA;
 /** Test hook: where the app-managed stack answers. Mode `new` still requires loopback. */
-const LOCAL_WEB_URL = process.env.RAKAZO_LOCAL_WEB_URL?.trim() || DEFAULT_LOCAL_WEB_URL;
-const DESKTOP_STACK_PROBE_PATH = "/.well-known/rakazo-desktop-stack";
-const DESKTOP_STACK_TOKEN_HEADER = "x-rakazo-desktop-stack-token";
+const LOCAL_WEB_URL = process.env.ROBOTS_LOCAL_WEB_URL?.trim() || DEFAULT_LOCAL_WEB_URL;
+const DESKTOP_STACK_PROBE_PATH = "/.well-known/robots-desktop-stack";
+const DESKTOP_STACK_TOKEN_HEADER = "x-robots-desktop-stack-token";
 let monitoringSession: Session | undefined;
 let monitoringTargetUrl: string | undefined;
 let stopMonitoringSession: (() => void) | undefined;
@@ -130,7 +130,7 @@ const updaterEnvironment = {
   // A `--dir` build has no update feed to read.
   packaged: app.isPackaged && existsSync(path.join(process.resourcesPath, "app-update.yml")),
   version: app.getVersion(),
-  disabled: process.env.RAKAZO_DISABLE_AUTO_UPDATE === "1",
+  disabled: process.env.ROBOTS_DISABLE_AUTO_UPDATE === "1",
 };
 let requestingComputerAccess = false;
 let hostScreen: HostScreen | undefined;
@@ -198,7 +198,7 @@ async function probeServer(
         ok: false,
         status: response.status,
         url,
-        error: t("That address redirects elsewhere. Enter the final Rakazo server address."),
+        error: t("That address redirects elsewhere. Enter the final RoBots server address."),
       };
     }
     if (!response.ok) {
@@ -210,12 +210,12 @@ async function probeServer(
       };
     }
     const health = await readProbeJson(response);
-    if (!isRakazoHealth(health)) {
+    if (!isRobotsHealth(health)) {
       return {
         ok: false,
         status: response.status,
         url,
-        error: t("That address did not respond like a Rakazo server."),
+        error: t("That address did not respond like a RoBots server."),
       };
     }
     return {
@@ -245,7 +245,7 @@ async function offerDockerMove(userStackDir: string): Promise<StackChoice> {
     return "docker";
   const { response } = await dialog.showMessageBox({
     type: "question",
-    message: t("Run Rakazo without Docker?"),
+    message: t("Run RoBots without Docker?"),
     detail: t("Your bots and data move over. Docker is stopped, not removed."),
     buttons: [t("Move"), t("Keep Docker")],
     defaultId: 0,
@@ -634,12 +634,12 @@ app.whenReady().then(async () => {
     appPath: app.getAppPath(),
   });
   const localWebUrl =
-    process.env.RAKAZO_LOCAL_WEB_URL?.trim() ||
+    process.env.ROBOTS_LOCAL_WEB_URL?.trim() ||
     (await readStackWebUrl(userStackDir, LOCAL_WEB_URL));
   const imageTag = resolveImageTag({
     version: app.getVersion(),
     packaged: app.isPackaged,
-    override: process.env.RAKAZO_IMAGE_TAG,
+    override: process.env.ROBOTS_IMAGE_TAG,
   });
   const probe = (url: string, signal: AbortSignal, token: string) =>
     probeManagedStack(url, token, signal);
@@ -662,7 +662,7 @@ app.whenReady().then(async () => {
     ? await readServerBundle({
         resourcesPath: process.resourcesPath,
         packaged: app.isPackaged,
-        override: process.env.RAKAZO_SERVER_BUNDLE,
+        override: process.env.ROBOTS_SERVER_BUNDLE,
       })
     : null;
   const stacks = stackExists(userStackDir, existsSync);
@@ -726,11 +726,11 @@ app.whenReady().then(async () => {
           onReuseConfirmed: () => stopStackMenu.reuseConfirmed(),
         });
   const target = resolveStartupTarget({
-    envUrl: process.env.RAKAZO_WEB_URL,
+    envUrl: process.env.ROBOTS_WEB_URL,
     saved: desktop.currentSetup,
-    forceSetup: process.env.RAKAZO_FORCE_SETUP === "1",
+    forceSetup: process.env.ROBOTS_FORCE_SETUP === "1",
   });
-  if (process.env.RAKAZO_PERFORMANCE_CLEAR_CACHE === "1") {
+  if (process.env.ROBOTS_PERFORMANCE_CLEAR_CACHE === "1") {
     const cacheSessions = new Set<Session>([session.defaultSession]);
     if (target.kind === "app") {
       cacheSessions.add((await resolveSessionForTarget(target.url)).value);
@@ -856,7 +856,7 @@ app.whenReady().then(async () => {
       ? origin
       : null;
   };
-  const deviceState = async (origin: string | null): Promise<RakazoDesktopDevice | null> => {
+  const deviceState = async (origin: string | null): Promise<RobotsDesktopDevice | null> => {
     const state = origin === null ? null : desktop.userDevices?.state(origin);
     return state ? { ...state, name: await deviceName() } : null;
   };
@@ -882,8 +882,8 @@ app.whenReady().then(async () => {
   if (process.platform === "darwin") {
     // Installed builds ship the helper as an extra resource; `pnpm build` compiles it for development.
     const helper = app.isPackaged
-      ? path.join(process.resourcesPath, "speech", "rakazo-speech")
-      : path.join(app.getAppPath(), "build", "speech", "rakazo-speech");
+      ? path.join(process.resourcesPath, "speech", "robots-speech")
+      : path.join(app.getAppPath(), "build", "speech", "robots-speech");
     const speech = createSystemSpeech(permissionTarget, (language) =>
       spawn(helper, [language], { stdio: "pipe" }),
     );

@@ -1,23 +1,23 @@
 import { createHash } from "node:crypto";
-import type { MessagingInboundAttachment } from "@rakazo/adapter-kit";
-import type { InboundEmail } from "@rakazo/adapters";
-import { INBOUND_EMAIL_MAX_BYTES, readInboundEmail } from "@rakazo/adapters";
-import type { RoutineEmailSenders } from "@rakazo/contracts";
-import { ATTACHMENT_MAX_COUNT } from "@rakazo/contracts";
+import type { MessagingInboundAttachment } from "@robots/adapter-kit";
+import type { InboundEmail } from "@robots/adapters";
+import { INBOUND_EMAIL_MAX_BYTES, readInboundEmail } from "@robots/adapters";
+import type { RoutineEmailSenders } from "@robots/contracts";
+import { ATTACHMENT_MAX_COUNT } from "@robots/contracts";
 import {
   AttachmentValidationError,
   escapePromptData,
   hasValidBearerToken,
   sanitizeMessagingLabel,
-} from "@rakazo/core";
-import type { ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { ThreadEvents } from "@robots/db";
 import {
   appendEventInTransaction,
   createThreadMessageInTransaction,
   isUniqueViolation,
   SpaceDeletionInProgressError,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { Hono } from "hono";
 import { cancelBody, readBoundedBytes } from "./http-body.js";
 import type { WebhookDeps } from "./webhook-inbound.js";

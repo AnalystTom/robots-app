@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { Button, Field, FieldError, FieldLabel, Input, Toggle } from "@rakazo/ui-web";
+import { Button, Field, FieldError, FieldLabel, Input, Toggle } from "@robots/ui-web";
 import { useId, useState } from "react";
 import { MemoryProviderAdvanced } from "./MemoryProviderAdvanced";
 import type { MemoryProviderSettingsFormProps } from "./registry";

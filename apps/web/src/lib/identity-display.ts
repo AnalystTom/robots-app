@@ -1,5 +1,5 @@
 import { t } from "@lingui/core/macro";
-import type { IdentityLabels } from "@rakazo/core";
+import type { IdentityLabels } from "@robots/core";
 
 export function identityLabels(): IdentityLabels {
   return {

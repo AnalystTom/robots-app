@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
-import type { Bot, BotSection } from "@rakazo/contracts";
-import type { SnoozePreset } from "@rakazo/core";
-import { SNOOZE_PRESETS, snoozePresetTime } from "@rakazo/core";
+import type { Bot, BotSection } from "@robots/contracts";
+import type { SnoozePreset } from "@robots/core";
+import { SNOOZE_PRESETS, snoozePresetTime } from "@robots/core";
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -9,7 +9,7 @@ import {
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import {
   Archive,
   Bell,

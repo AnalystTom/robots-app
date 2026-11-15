@@ -8,17 +8,17 @@ import type {
   PurchaseCredentialKind,
   PurchaseSnapshot,
   PurchaseStatus,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   PaymentWalletDisconnected,
   PaymentWalletRequestRejected,
   purchasePollJob,
-} from "@rakazo/adapter-kit";
-import type { PurchaseCardField } from "@rakazo/contracts";
-import { PurchaseIdInput, PurchaseRequestInput } from "@rakazo/contracts";
-import type { Purchase } from "@rakazo/db";
-import { recordPayment, releasePayment } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { PurchaseCardField } from "@robots/contracts";
+import { PurchaseIdInput, PurchaseRequestInput } from "@robots/contracts";
+import type { Purchase } from "@robots/db";
+import { recordPayment, releasePayment } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { cardRedactionForms } from "./bot-secrets.js";
 import type { PaymentWalletDeps } from "./payment-wallets.js";
 import { withPaymentWalletCredential } from "./payment-wallets.js";

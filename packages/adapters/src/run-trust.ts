@@ -1,13 +1,13 @@
-import type { MessageBlock } from "@rakazo/contracts";
-import type { ActionApprovalRule } from "@rakazo/core";
+import type { MessageBlock } from "@robots/contracts";
+import type { ActionApprovalRule } from "@robots/core";
 import {
   connectorKindFromToolName,
   inboundRoutinePrompts,
   SITE_SENDING_TOOLS,
   siteAlwaysAllowed,
-} from "@rakazo/core";
-import { sitesInText, urlSite } from "@rakazo/core/egress";
-import { findAutoReviewPreference, listApprovalRules, storedBatchActions } from "@rakazo/db";
+} from "@robots/core";
+import { sitesInText, urlSite } from "@robots/core/egress";
+import { findAutoReviewPreference, listApprovalRules, storedBatchActions } from "@robots/db";
 import { boundDirectApprovalDetails, catalogApprovalDetails } from "./approval-effect.js";
 import type { ExecutorDeps } from "./executor-deps.js";
 import type { EffectiveModelRole } from "./model-roles.js";
@@ -108,7 +108,7 @@ export function createRunTrustLoaders(
     }));
     return autoReviewPreferencePromise;
   };
-  // The owner's own words for this run: the message they sent (in Rakazo or their own chat app),
+  // The owner's own words for this run: the message they sent (in RoBots or their own chat app),
   // or the instructions of the routine that started it. Never a bot, channel or webhook message,
   // or a tool result. These name the sites a run is given, and are all Auto Review sees of a new
   // site's run and of a memory save after outside content.

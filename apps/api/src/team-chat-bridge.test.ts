@@ -4,18 +4,18 @@ import type {
   JobTransaction,
   SandboxProvider,
   TeamChatInboundMessage,
-} from "@rakazo/adapter-kit";
-import { teamChatEngageJobKey } from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
+import { teamChatEngageJobKey } from "@robots/adapter-kit";
 import {
   TEAM_CHAT_ENGAGE_BACKUP_MS,
   TEAM_CHAT_ROUTING_MS,
   TeamChat,
   teamChatAttachmentNonce,
-} from "@rakazo/adapters";
-import type { MessageBlock } from "@rakazo/contracts";
-import { userTurnMessageForRun } from "@rakazo/core";
-import type { Prisma, PrismaClient, SendUserMessageInput, SendUserMessageResult } from "@rakazo/db";
-import { SendClaimLostError } from "@rakazo/db";
+} from "@robots/adapters";
+import type { MessageBlock } from "@robots/contracts";
+import { userTurnMessageForRun } from "@robots/core";
+import type { Prisma, PrismaClient, SendUserMessageInput, SendUserMessageResult } from "@robots/db";
+import { SendClaimLostError } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import { materializeCurrentTurnFiles } from "../../../packages/adapters/src/thread-artifacts.js";
 import type { InboundAttachmentStore } from "./inbound-attachments.js";

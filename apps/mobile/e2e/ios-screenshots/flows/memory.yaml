@@ -1,11 +1,11 @@
-appId: com.rakazo.app
+appId: com.analysttom.robotsapp
 name: Memory
 ---
 - runFlow:
     file: ../subflows/sign-in.yaml
     env:
-      RAKAZO_ACTIVE_EMAIL: ${RAKAZO_SCREENSHOT_EMAIL}
-- openLink: "rakazo:///memory"
+      ROBOTS_ACTIVE_EMAIL: ${ROBOTS_SCREENSHOT_EMAIL}
+- openLink: "robots:///memory"
 - extendedWaitUntil:
     visible: "team.md"
     timeout: 20000
@@ -19,7 +19,7 @@ name: Memory
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: 02-shared-note
-- openLink: "rakazo:///bot-settings?botId=${RAKAZO_SCREENSHOT_BOT_ID}"
+- openLink: "robots:///bot-settings?botId=${ROBOTS_SCREENSHOT_BOT_ID}"
 - scrollUntilVisible:
     element: "preferences.md"
     direction: DOWN

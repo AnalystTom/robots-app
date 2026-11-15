@@ -8,7 +8,7 @@ import {
   normalizeContext,
 } from "@earendil-works/pi-ai";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
-import { ModelConnectInputSchema, OPENAI_COMPATIBLE_PROVIDER_ID } from "@rakazo/contracts";
+import { ModelConnectInputSchema, OPENAI_COMPATIBLE_PROVIDER_ID } from "@robots/contracts";
 import { fetch as undiciFetch } from "undici";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildModelConnectPlaintext } from "./model-connect.js";
@@ -30,11 +30,11 @@ import {
   verifyOpenAiCompatibleApiKey,
 } from "./pi-openai-compatible-provider.js";
 
-const savedPrivateHosts = process.env.RAKAZO_OPENAI_COMPAT_PRIVATE_HOSTS;
+const savedPrivateHosts = process.env.ROBOTS_OPENAI_COMPAT_PRIVATE_HOSTS;
 
 afterEach(() => {
-  if (savedPrivateHosts === undefined) delete process.env.RAKAZO_OPENAI_COMPAT_PRIVATE_HOSTS;
-  else process.env.RAKAZO_OPENAI_COMPAT_PRIVATE_HOSTS = savedPrivateHosts;
+  if (savedPrivateHosts === undefined) delete process.env.ROBOTS_OPENAI_COMPAT_PRIVATE_HOSTS;
+  else process.env.ROBOTS_OPENAI_COMPAT_PRIVATE_HOSTS = savedPrivateHosts;
 });
 
 /** Fixtures connect as the deployment owner, who may use local model servers. */
@@ -168,8 +168,8 @@ describe("model connect", () => {
   });
 
   it("rejects public http openai-compatible connects when an API key is set", () => {
-    const previous = process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-    process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
+    const previous = process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+    process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
     try {
       expect(() =>
         prepareOpenAiCompatibleConnect({
@@ -188,14 +188,14 @@ describe("model connect", () => {
         }),
       ).toThrow(/must use HTTPS/);
     } finally {
-      if (previous === undefined) delete process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-      else process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
+      if (previous === undefined) delete process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+      else process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
     }
   });
 
   it("allows public https openai-compatible connects when an API key is set", () => {
-    const previous = process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-    process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
+    const previous = process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+    process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
     try {
       const prepared = prepareOpenAiCompatibleConnect({
         provider: OPENAI_COMPATIBLE_PROVIDER_ID,
@@ -209,8 +209,8 @@ describe("model connect", () => {
         apiKey: "secret-key",
       });
     } finally {
-      if (previous === undefined) delete process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-      else process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
+      if (previous === undefined) delete process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+      else process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
     }
   });
 });
@@ -297,10 +297,10 @@ describe("private model endpoints", () => {
     const safeFetch = createOpenAiCompatibleFetch(fetchImpl, undefined, OWNER);
     try {
       await safeFetch("http://localhost:11234/v1/models");
-      vi.stubEnv("RAKAZO_LOOPBACK_HOST", "host.docker.internal");
+      vi.stubEnv("ROBOTS_LOOPBACK_HOST", "host.docker.internal");
       await safeFetch("http://127.0.0.1:11234/v1/models");
       await safeFetch("http://10.0.0.5:8000/v1/models");
-      vi.stubEnv("RAKAZO_LOOPBACK_HOST", "169.254.169.254");
+      vi.stubEnv("ROBOTS_LOOPBACK_HOST", "169.254.169.254");
       await expect(safeFetch("http://localhost:11234/v1/models")).rejects.toThrow(
         "blocked metadata",
       );
@@ -419,8 +419,8 @@ describe("openai-compatible provider", () => {
   );
 
   it("does not treat replaced Request Authorization as keyed for public http", async () => {
-    const previous = process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-    process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
+    const previous = process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+    process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
     try {
       const request = new Request("http://api.example.com/v1/models", {
         headers: { Authorization: "Bearer secret" },
@@ -432,8 +432,8 @@ describe("openai-compatible provider", () => {
         safeFetch(request, { headers: { Accept: "application/json" } }),
       ).resolves.toMatchObject({ status: 200 });
     } finally {
-      if (previous === undefined) delete process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-      else process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
+      if (previous === undefined) delete process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+      else process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
     }
   });
 
@@ -444,8 +444,8 @@ describe("openai-compatible provider", () => {
     // all use the package fetch that matches the Agent.
     expect(undiciFetch).not.toBe(globalThis.fetch);
     const captured = globalThis.fetch;
-    const previous = process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-    process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
+    const previous = process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+    process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
     try {
       for (const injected of [undefined, globalThis.fetch, captured] as const) {
         const safeFetch = createOpenAiCompatibleFetch(injected, async () => {
@@ -456,16 +456,16 @@ describe("openai-compatible provider", () => {
         });
       }
     } finally {
-      if (previous === undefined) delete process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-      else process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
+      if (previous === undefined) delete process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+      else process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
     }
   });
 
   it("flattens a global Request so the package fetch can dispatch it", async () => {
     // undici's fetch reads a foreign Request as "[object Request]"; reaching
     // the lookup proves the request was dispatched with its URL instead.
-    const previous = process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-    process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
+    const previous = process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+    process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = "1";
     try {
       const safeFetch = createOpenAiCompatibleFetch(undefined, async () => {
         throw new Error("lookup reached");
@@ -479,8 +479,8 @@ describe("openai-compatible provider", () => {
         cause: { message: "lookup reached" },
       });
     } finally {
-      if (previous === undefined) delete process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-      else process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
+      if (previous === undefined) delete process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+      else process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
     }
   });
 
@@ -580,7 +580,7 @@ describe("openai-compatible provider", () => {
   });
 
   it("rejects allowlisted hostname lookups without private endpoint permission", () => {
-    process.env.RAKAZO_OPENAI_COMPAT_PRIVATE_HOSTS = "models.example.test";
+    process.env.ROBOTS_OPENAI_COMPAT_PRIVATE_HOSTS = "models.example.test";
     const resolveHostname = vi.fn(async () => [{ address: "192.168.1.20", family: 4 }]);
     expect(() =>
       createOpenAiCompatibleLookup(new URL("https://models.example.test/v1"), resolveHostname),
@@ -589,7 +589,7 @@ describe("openai-compatible provider", () => {
   });
 
   it("returns validated private DNS addresses for an explicitly trusted hostname", async () => {
-    process.env.RAKAZO_OPENAI_COMPAT_PRIVATE_HOSTS = "models.example.test";
+    process.env.ROBOTS_OPENAI_COMPAT_PRIVATE_HOSTS = "models.example.test";
     const addresses = [
       { address: "192.168.1.20", family: 4 },
       { address: "fd12::20", family: 6 },
@@ -610,7 +610,7 @@ describe("openai-compatible provider", () => {
   });
 
   it("dispatches trusted private hosts using checked DNS and the original Host header", async () => {
-    process.env.RAKAZO_OPENAI_COMPAT_PRIVATE_HOSTS = "models.example.test";
+    process.env.ROBOTS_OPENAI_COMPAT_PRIVATE_HOSTS = "models.example.test";
     let host: string | undefined;
     const server = createServer((request, response) => {
       // A local tool can probe any listening loopback port; only model-list calls set the host.
@@ -655,7 +655,7 @@ describe("openai-compatible provider", () => {
     ["203.0.113.1", 4],
     ["not-an-address", 4],
   ])("rejects unsafe or non-private DNS answers for trusted hosts: %s", async (address, family) => {
-    process.env.RAKAZO_OPENAI_COMPAT_PRIVATE_HOSTS = "models.example.test";
+    process.env.ROBOTS_OPENAI_COMPAT_PRIVATE_HOSTS = "models.example.test";
     const lookup = createOpenAiCompatibleLookup(
       new URL("https://models.example.test/v1"),
       async () => [
@@ -1029,8 +1029,8 @@ describe("openai-compatible provider", () => {
     ).rejects.toMatchObject({ name: "AbortError" });
   });
 
-  it("lists openai-compatible in the catalog even without RAKAZO_LOCAL_MODELS", () => {
-    delete process.env.RAKAZO_LOCAL_MODELS;
+  it("lists openai-compatible in the catalog even without ROBOTS_LOCAL_MODELS", () => {
+    delete process.env.ROBOTS_LOCAL_MODELS;
     const entries = listPiCatalog().filter(
       (entry) => entry.provider === OPENAI_COMPATIBLE_PROVIDER_ID,
     );

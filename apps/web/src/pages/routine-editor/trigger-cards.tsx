@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { Routine, RoutineEmailSenders } from "@rakazo/contracts";
-import { ROUTINE_WATCH_MIN_MINUTES } from "@rakazo/contracts";
+import type { Routine, RoutineEmailSenders } from "@robots/contracts";
+import { ROUTINE_WATCH_MIN_MINUTES } from "@robots/contracts";
 import {
   Button,
   DropdownMenu,
@@ -12,7 +12,7 @@ import {
   NativeSelectOption,
   Switch,
   Textarea,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import {
   Check,
   Copy,

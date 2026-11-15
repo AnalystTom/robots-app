@@ -1,4 +1,4 @@
-import type { IncomingBotCall } from "@rakazo/contracts";
+import type { IncomingBotCall } from "@robots/contracts";
 import { useEffect, useState } from "react";
 import { followStream } from "../../lib/follow-stream";
 import { rpc } from "../../lib/rpc";

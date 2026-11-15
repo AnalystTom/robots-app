@@ -8,7 +8,7 @@ import type { WriteStream } from "node:fs";
 import { createWriteStream } from "node:fs";
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { DesktopLocalStackPhase, DesktopLocalStackState } from "@rakazo/contracts";
+import type { DesktopLocalStackPhase, DesktopLocalStackState } from "@robots/contracts";
 import type { RunDocker } from "./docker-cli.js";
 import { t } from "./i18n.js";
 import {
@@ -49,18 +49,18 @@ import { readPrivateFile, writePrivateFile } from "./setup-store.js";
 /** Phases between `up-start` and a stop or failure, while the stack runs or restarts. */
 const ACTIVE_PHASES = new Set<DesktopLocalStackPhase>(["starting", "waiting-healthy", "ready"]);
 export const NATIVE_PORTS_FILE = ".native-ports";
-/** The database VM, its network and its volume; computers are `rakazo-<uuid>` with a bot label. */
-export const DATABASE_CONTAINER = "rakazo-postgres";
+/** The database VM, its network and its volume; computers are `robots-<uuid>` with a bot label. */
+export const DATABASE_CONTAINER = "robots-postgres";
 /** The image and digest Compose runs, so both stacks run the same database. */
 export const POSTGRES_IMAGE =
   "postgres:16@sha256:e17e86066e5ef83e0952a9347f5c792b7ece00972e2aa787a6986f471b3dd3d5";
 const POSTGRES_PLATFORM = "linux/arm64";
 /** The owner and database. Fixed, so the owner can never be the runtime login whatever the `.env` names. */
-const NATIVE_OWNER = "rakazo";
-const NATIVE_DATABASE = "rakazo";
+const NATIVE_OWNER = "robots";
+const NATIVE_DATABASE = "robots";
 /** Written once a Docker move has copied everything, so a cut-short move reruns. */
 const DOCKER_IMPORTED = ".docker-imported";
-const COMPUTER_IMAGE = "ghcr.io/elie222/rakazo/computer";
+const COMPUTER_IMAGE = "ghcr.io/analysttom/robots-app/computer";
 const POSTGRES_LISTENING = "listening on IPv4 address";
 const POSTGRES_READY = "database system is ready to accept connections";
 const HEALTH_POLL_INTERVAL_MS = 1_000;
@@ -301,14 +301,14 @@ const INHERITED_ENV = [
 ];
 /** `.env` lines only Compose reads; the database owner login never reaches the API or worker. */
 const COMPOSE_ONLY =
-  /^(?:POSTGRES_\w+|DATABASE_MIGRATION_URL|SANDBOX_SUPERVISOR_TOKEN|RAKAZO_(?:COMPUTER_)?IMAGE(?:_TAG)?|BUSYBOX_IMAGE|RAKAZO_WEB_BIND)$/;
+  /^(?:POSTGRES_\w+|DATABASE_MIGRATION_URL|SANDBOX_SUPERVISOR_TOKEN|ROBOTS_(?:COMPUTER_)?IMAGE(?:_TAG)?|BUSYBOX_IMAGE|ROBOTS_WEB_BIND)$/;
 /** What Compose hands the web service from `.env`. */
 const WEB_ENV = [
-  "RAKAZO_HOST",
-  "RAKAZO_ALLOWED_HOSTS",
-  "RAKAZO_CSP_SCRIPT_SRC",
-  "RAKAZO_CSP_CONNECT_SRC",
-  "RAKAZO_THEME",
+  "ROBOTS_HOST",
+  "ROBOTS_ALLOWED_HOSTS",
+  "ROBOTS_CSP_SCRIPT_SRC",
+  "ROBOTS_CSP_CONNECT_SRC",
+  "ROBOTS_THEME",
   "CRISP_WEBSITE_ID",
   "LOG_LEVEL",
   "LOG_FORMAT",
@@ -347,9 +347,9 @@ class StartFailure extends Error {
 }
 
 const downloadFailed = () =>
-  t("Downloading Rakazo failed. Check the internet connection, then retry.");
+  t("Downloading RoBots failed. Check the internet connection, then retry.");
 const servicesFailed = () =>
-  t("Rakazo services did not start. Check the output below, then retry.");
+  t("RoBots services did not start. Check the output below, then retry.");
 
 export class NativeStackController extends StackLifecycle {
   private background: AbortController | null = null;
@@ -551,7 +551,7 @@ export class NativeStackController extends StackLifecycle {
       }
     }
 
-    const databaseUrl = at("rakazo_app", appPassword);
+    const databaseUrl = at("robots_app", appPassword);
     const migrated = await this.deps.run(
       this.deps.nodeBinary,
       [path.join(server.dir, server.manifest.entrypoints.migrate)],
@@ -561,7 +561,7 @@ export class NativeStackController extends StackLifecycle {
           ...this.nodeEnv(),
           DATABASE_URL: databaseUrl,
           DATABASE_MIGRATION_URL: at(user, password),
-          RAKAZO_DB_PACKAGE_DIR: path.join(server.dir, "packages", "db"),
+          ROBOTS_DB_PACKAGE_DIR: path.join(server.dir, "packages", "db"),
         },
         timeoutMs: MIGRATE_TIMEOUT_MS,
         signal,
@@ -577,12 +577,12 @@ export class NativeStackController extends StackLifecycle {
     if (chosenWeb !== webPort) this.currentWebUrl = `http://127.0.0.1:${chosenWeb}`;
     await writePrivateFile(this.dir(STACK_WEB_URL_FILE), this.currentWebUrl);
 
-    const computerImage = `${stackEnv.get("RAKAZO_COMPUTER_IMAGE") || COMPUTER_IMAGE}:${this.deps.imageTag}`;
+    const computerImage = `${stackEnv.get("ROBOTS_COMPUTER_IMAGE") || COMPUTER_IMAGE}:${this.deps.imageTag}`;
     const appEnv = this.appEnv(stackEnv, {
       DATABASE_URL: databaseUrl,
       LOCAL_VM_CLI: runtime.cli,
       LOCAL_VM_COMPUTER_IMAGE: computerImage,
-      RAKAZO_DESKTOP_STACK_TOKEN: stackToken,
+      ROBOTS_DESKTOP_STACK_TOKEN: stackToken,
     });
     const entry = (name: keyof ServerManifest["entrypoints"]) =>
       path.join(server.dir, server.manifest.entrypoints[name]);
@@ -617,8 +617,8 @@ export class NativeStackController extends StackLifecycle {
       SCREEN_PROXY_SECRET: stackEnv.get("SCREEN_PROXY_SECRET") ?? "",
       WEB_HOST: "127.0.0.1",
       WEB_PORT: String(chosenWeb),
-      RAKAZO_DESKTOP_STACK_TOKEN: stackToken,
-      RAKAZO_IMAGE_TAG: this.deps.imageTag,
+      ROBOTS_DESKTOP_STACK_TOKEN: stackToken,
+      ROBOTS_IMAGE_TAG: this.deps.imageTag,
     });
     for (const service of [api, worker, web]) service.start();
 
@@ -688,7 +688,7 @@ export class NativeStackController extends StackLifecycle {
     let existing = await this.inspectDatabase(cli, signal);
     if (existing === null && ports.database !== undefined && ports.database !== holder) {
       throw new StartFailure(
-        t("Your Rakazo data is in a different computer runtime. Quit the one running, then retry."),
+        t("Your RoBots data is in a different computer runtime. Quit the one running, then retry."),
       );
     }
     if (ports.database === undefined) {
@@ -965,7 +965,7 @@ export class NativeStackController extends StackLifecycle {
     return {
       ...this.baseEnv(),
       ELECTRON_RUN_AS_NODE: "1",
-      RAKAZO_ENV_FILE: "none",
+      ROBOTS_ENV_FILE: "none",
       NODE_ENV: "production",
     };
   }

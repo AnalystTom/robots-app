@@ -2,18 +2,18 @@ import type {
   JobPublisher,
   MessagingInboundAttachment,
   TeamChatInboundMessage,
-} from "@rakazo/adapter-kit";
-import { teamChatEngageJob } from "@rakazo/adapter-kit";
-import type { TeamChat } from "@rakazo/adapters";
+} from "@robots/adapter-kit";
+import { teamChatEngageJob } from "@robots/adapter-kit";
+import type { TeamChat } from "@robots/adapters";
 import {
   TEAM_CHAT_ENGAGE_BACKUP_MS,
   TEAM_CHAT_ROUTING_MS,
   teamChatAttachmentNonce,
-} from "@rakazo/adapters";
-import { ATTACHMENT_MAX_COUNT } from "@rakazo/contracts";
-import type { Prisma, PrismaClient } from "@rakazo/db";
-import { isUniqueViolation } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapters";
+import { ATTACHMENT_MAX_COUNT } from "@robots/contracts";
+import type { Prisma, PrismaClient } from "@robots/db";
+import { isUniqueViolation } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { InboundAttachmentStore } from "./inbound-attachments.js";
 import { storeInboundAttachments } from "./inbound-attachments.js";
 import type { MessagingReceipts } from "./messaging-receipts.js";
@@ -45,7 +45,7 @@ export type TeamChatInboundTarget = {
 
 /**
  * One workspace's team chat for one bot, as seen by the API process its webhooks reach. Each
- * message is recorded with the job that backs it up, mirrored into the bot's Rakazo thread, and
+ * message is recorded with the job that backs it up, mirrored into the bot's RoBots thread, and
  * answered at once: a direct message or mention starts its agent run here, an ambient one waits
  * for its conversation's scheduled decision, and a deferred one goes to routine routing first.
  */
@@ -356,7 +356,7 @@ export class TeamChatBridge {
       conversation.spaceId !== target.spaceId ||
       !conversation.thread
     ) {
-      throw new Error("Team chat conversation belongs to a different Rakazo target");
+      throw new Error("Team chat conversation belongs to a different RoBots target");
     }
     return { ...conversation, thread: conversation.thread };
   }

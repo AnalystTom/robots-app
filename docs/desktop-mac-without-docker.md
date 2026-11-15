@@ -31,22 +31,22 @@ uninstalled: everything ran from the expanded release package in a private direc
 sudo and without the system installer. The first rows were measured before the in-VM firewall
 existed; the egress row shows the result with it.
 
-| Step                                                        | Result                                                                                                                                                               |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `container` 1.7.1 release package (Apple-signed, notarized) | Expanded with `pkgutil`; `container system start --install-root … --app-root … --log-root …` registered user launchd agents in 45 s, including kernel download       |
-| Pull `ghcr.io/elie222/rakazo/computer:edge` (linux/arm64)   | 50 s, 1.58 GB unpacked                                                                                                                                               |
-| First computer VM, noVNC gateway ready                      | 11 s (includes the one-time 66 MB init image); later VMs 2–3 s                                                                                                       |
-| Host reaches VM screen gateway                              | `http://<vm-ip>:6080/embed.html` and per-bot `:6100` answered 200                                                                                                    |
-| Two computers on separate networks                          | Cannot reach each other; each reaches the internet                                                                                                                   |
-| VM reaching the host                                        | With the firewall: host listeners on `127.0.0.1` and `0.0.0.0` and the LAN router refused; internet, DNS and SSH to github.com work; uid 1000 cannot flush the rules |
-| `local-vm` provider, opt-in live test                       | Provisioned in 2.8 s; shared workspace contract, Chromium screenshot on the bot's display, screen URL, workspace export, stop and network cleanup all passed         |
-| Official `postgres:16` image as a VM (Compose's digest)     | Pull of the linux/arm64 variant only: 25 s, 151.5 MB, 452 MB unpacked. First start with init about 3 s, restarts about 2 s; published on `127.0.0.1` only            |
-| Desktop controller end to end (Node, scratch runtime)       | First start 64 s; sign-up and bot creation; restart 4.6 s with data intact; DB VM killed while ready recovered in 3.4 s; taken DB port recreated the VM, data intact |
-| API, worker, web as Node processes                          | `/internal/health` reports `sandbox: local-vm`; Graphile worker connected; web preview served and proxied the API                                                    |
-| Sign up, create bot, `computer.boot` through the web origin | Computer running 4 s after boot; `computer.screenUrl` issued a capability URL                                                                                        |
-| Proxied screen                                              | Capability URL page served through the web proxy; its websocket returned the VNC `RFB 003.008` banner from the VM                                                    |
-| Persistence                                                 | File written in VM 1 survived `computer.stop` (checkpoint into `DATA_DIR/homes`) and was present in a brand-new VM 2 after `computer.boot`                           |
-| Memory                                                      | One computer with Chromium: about 970 MB host RSS (2 GB cap). Database VM: about 540 MB (1 GB cap). API + worker + web: under 245 MB (measured with native Postgres) |
+| Step                                                             | Result                                                                                                                                                               |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `container` 1.7.1 release package (Apple-signed, notarized)      | Expanded with `pkgutil`; `container system start --install-root … --app-root … --log-root …` registered user launchd agents in 45 s, including kernel download       |
+| Pull `ghcr.io/analysttom/robots-app/computer:edge` (linux/arm64) | 50 s, 1.58 GB unpacked                                                                                                                                               |
+| First computer VM, noVNC gateway ready                           | 11 s (includes the one-time 66 MB init image); later VMs 2–3 s                                                                                                       |
+| Host reaches VM screen gateway                                   | `http://<vm-ip>:6080/embed.html` and per-bot `:6100` answered 200                                                                                                    |
+| Two computers on separate networks                               | Cannot reach each other; each reaches the internet                                                                                                                   |
+| VM reaching the host                                             | With the firewall: host listeners on `127.0.0.1` and `0.0.0.0` and the LAN router refused; internet, DNS and SSH to github.com work; uid 1000 cannot flush the rules |
+| `local-vm` provider, opt-in live test                            | Provisioned in 2.8 s; shared workspace contract, Chromium screenshot on the bot's display, screen URL, workspace export, stop and network cleanup all passed         |
+| Official `postgres:16` image as a VM (Compose's digest)          | Pull of the linux/arm64 variant only: 25 s, 151.5 MB, 452 MB unpacked. First start with init about 3 s, restarts about 2 s; published on `127.0.0.1` only            |
+| Desktop controller end to end (Node, scratch runtime)            | First start 64 s; sign-up and bot creation; restart 4.6 s with data intact; DB VM killed while ready recovered in 3.4 s; taken DB port recreated the VM, data intact |
+| API, worker, web as Node processes                               | `/internal/health` reports `sandbox: local-vm`; Graphile worker connected; web preview served and proxied the API                                                    |
+| Sign up, create bot, `computer.boot` through the web origin      | Computer running 4 s after boot; `computer.screenUrl` issued a capability URL                                                                                        |
+| Proxied screen                                                   | Capability URL page served through the web proxy; its websocket returned the VNC `RFB 003.008` banner from the VM                                                    |
+| Persistence                                                      | File written in VM 1 survived `computer.stop` (checkpoint into `DATA_DIR/homes`) and was present in a brand-new VM 2 after `computer.boot`                           |
+| Memory                                                           | One computer with Chromium: about 970 MB host RSS (2 GB cap). Database VM: about 540 MB (1 GB cap). API + worker + web: under 245 MB (measured with native Postgres) |
 
 The live provider test is `VERIFY_LOCAL_VM=1 LOCAL_VM_CLI=<path to container> pnpm exec vitest run
 packages/adapters/src/apple-container-sandbox.test.ts`. It is skipped by default and in CI.
@@ -59,7 +59,7 @@ behavior, and anything packaged or signed as part of the app.
 
 | Today (Docker Compose)                 | Mac without Docker                                                                                                                      |
 | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `postgres:16` container, named volume  | The same image and digest as a VM through the computer runtime: `rakazo-postgres` VM, network and volume, 1 GB, `127.0.0.1:<port>` only |
+| `postgres:16` container, named volume  | The same image and digest as a VM through the computer runtime: `robots-postgres` VM, network and volume, 1 GB, `127.0.0.1:<port>` only |
 | `migrate` container (`pnpm db:deploy`) | Same migration code run by Electron-as-Node before the API starts                                                                       |
 | `api`, `worker` containers             | `dist/index.js` of each, run with `ELECTRON_RUN_AS_NODE=1` from the app binary (no separate Node)                                       |
 | `web` container (`vite preview`)       | The built web assets plus the existing screen/API proxy, served by a small Node process on loopback                                     |
@@ -78,25 +78,25 @@ A start, in order:
    web URL file in `<userData>/stack`, and stops processes a crashed launch left behind (recorded in
    `run/*.pid` and checked against their command line; the database last).
 2. In parallel: the server bundle (`server-bundle.json` in the app's resources;
-   `RAKAZO_SERVER_BUNDLE=<local .tar.xz>` in unpackaged builds) and the computer runtime (below),
+   `ROBOTS_SERVER_BUNDLE=<local .tar.xz>` in unpackaged builds) and the computer runtime (below),
    then the database image through that runtime (by digest, `--platform linux/arm64`, only when it
    is missing). Each download streams to a temporary file, is checked for size and SHA-256, and only
    then unpacked into a scratch folder that is renamed to `runtime/<name>-<version>`.
-3. Creates the database VM once: `rakazo-postgres` on a network of its own, a volume of the same
+3. Creates the database VM once: `robots-postgres` on a network of its own, a volume of the same
    name with `PGDATA` in a subdirectory (the volume's root holds `lost+found`), owner and database
-   `rakazo`, and `POSTGRES_PASSWORD` passed through the CLI's environment rather than its arguments.
+   `robots`, and `POSTGRES_PASSWORD` passed through the CLI's environment rather than its arguments.
    The saved port is kept while free; a taken one recreates the VM on a new port, keeping the
    volume. A VM a crashed launch left running is stopped first, since the runtime only attaches to
    VMs it starts. The VM then runs under `container start --attach`, so its output goes to
    `logs/postgres.log` and the app sees it stop. The start waits for the server that listens on the
    network: on a new volume the image's setup server also reports ready.
-4. Runs the bundle's migrate entrypoint (owner login `rakazo` with `POSTGRES_PASSWORD`, runtime
-   login `rakazo_app` with `POSTGRES_APP_PASSWORD`). The owner's name is fixed rather than read
+4. Runs the bundle's migrate entrypoint (owner login `robots` with `POSTGRES_PASSWORD`, runtime
+   login `robots_app` with `POSTGRES_APP_PASSWORD`). The owner's name is fixed rather than read
    from `POSTGRES_USER`, so it can never be the runtime login.
 5. Spawns API, worker and web with `ELECTRON_RUN_AS_NODE=1` on loopback ports. The API and worker get
    the `.env` minus Compose-only and owner-login lines (including `DATABASE_MIGRATION_URL`), plus
    `SANDBOX_PROVIDER=local-vm`, `LOCAL_VM_CLI`, `LOCAL_VM_COMPUTER_IMAGE` (the app's image tag), the stack token and the host
-   computer bridge on `127.0.0.1`. The web gets only what Compose gives it. `RAKAZO_ENV_FILE=none`
+   computer bridge on `127.0.0.1`. The web gets only what Compose gives it. `ROBOTS_ENV_FILE=none`
    stops the server from reading any `.env` from a parent folder such as the home directory.
 6. Waits for the API's `/health` and the web's authenticated stack probe, then removes unused
    runtime versions and pulls the computer image in the background.
@@ -223,11 +223,11 @@ plus the kernel download on its first start (about 45 s measured). The computer 
   the app pins the image tag of its own version.
 - Docker users: when a Docker stack exists (its compose file is in the stack folder), no native
   stack exists yet (`.native-ports`), the saved setup is **This computer** and Docker answers, the
-  app asks once ("Run Rakazo without Docker?" with **Move** and **Keep Docker**) and remembers the
+  app asks once ("Run RoBots without Docker?" with **Move** and **Keep Docker**) and remembers the
   answer in `.desktop-stack-choice`. **Keep Docker** keeps today's path. **Move** keeps the same
   `.env` (so `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY` and the other secrets carry over) and, on the
-  next start, after the database VM is up and before migrations: empties the `rakazo` database,
-  stops the Docker API, worker, web and supervisor, creates the `rakazo_app` role if it is missing,
+  next start, after the database VM is up and before migrations: empties the `robots` database,
+  stops the Docker API, worker, web and supervisor, creates the `robots_app` role if it is missing,
   then streams `pg_dump --format=custom` from the Docker database container through the app into
   `pg_restore --no-owner --exit-on-error` in the database VM. Both run each database's own tools
   over its local socket, so no password is used and no shell runs on the Mac. It then copies `/data`
@@ -271,8 +271,8 @@ unless the user turns on the existing local computer access, which is unchanged.
 - Requested CPUs are a soft hint: one VM reported 3 CPUs when 2 were asked.
 - `container`'s services use fixed `com.apple.container.*` launchd labels, so the app shares a
   running system instead of starting a second one (see runtime resolution). Our resources are
-  namespaced (`rakazo-` names, the `rakazo.bot-id` label), so we never touch the person's own. The
-  database VM, network and volume are `rakazo-postgres` with no bot label; the `local-vm` provider
+  namespaced (`robots-` names, the `robots.bot-id` label), so we never touch the person's own. The
+  database VM, network and volume are `robots-postgres` with no bot label; the `local-vm` provider
   only removes VMs labelled for a bot, so its cleanup never touches them. One runtime holds one
   native stack's database.
 - Worker jobs running at quit get a short grace (not Compose's 50 minutes) before the process is

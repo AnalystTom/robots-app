@@ -1,7 +1,7 @@
-import type { SecretStore } from "@rakazo/adapter-kit";
-import { VoiceAccountError } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { findModelCredential } from "@rakazo/db";
+import type { SecretStore } from "@robots/adapter-kit";
+import { VoiceAccountError } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { findModelCredential } from "@robots/db";
 import { resolveStoredModelAuth, withModelCredentialLock } from "./model-credential-refresh.js";
 import { isRetiredModelCredentialError } from "./pi-oauth.js";
 import { voiceCatalogEntry } from "./voice-factory.js";

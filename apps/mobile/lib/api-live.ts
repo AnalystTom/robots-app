@@ -1,11 +1,11 @@
-import type { IncomingBotCall } from "@rakazo/contracts";
-import { IncomingBotCallSchema, SpaceChangeKind } from "@rakazo/contracts";
+import type { IncomingBotCall } from "@robots/contracts";
+import { IncomingBotCallSchema, SpaceChangeKind } from "@robots/contracts";
 import {
   cancelResponseBody,
   displayIdentityEvent,
   isServerUnreachable,
   isUnreachableStatus,
-} from "@rakazo/core";
+} from "@robots/core";
 import type { ApiRequestContext } from "./api";
 import {
   captureApiRequestContext,
@@ -127,7 +127,7 @@ async function subscribeRpcEvents(
       headers: {
         "content-type": "application/json",
         accept: "text/event-stream",
-        origin: "rakazo://",
+        origin: "robots://",
         ...context.headers,
       },
       body: JSON.stringify({ json: input }),

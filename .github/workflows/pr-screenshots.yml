@@ -79,7 +79,7 @@ jobs:
           fi
           gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/issues/$pr/comments?per_page=100" > "$dir/comments.json"
           python3 .github/scripts/pr-screenshots.py evidence "$dir/comments.json" "$HEAD_SHA" > "$dir/evidence.txt"
-          preview_url="https://${APP_PREFIX:-rakazo-pr}-$pr.fly.dev"
+          preview_url="https://${APP_PREFIX:-robots-pr}-$pr.fly.dev"
           gh api "repos/$GITHUB_REPOSITORY/pulls/$pr" |
             jq --arg url "$preview_url" --rawfile evidence "$dir/evidence.txt" --rawfile files "$dir/files.txt" \
               '{title, head_sha: .head.sha, body: (.body // ""), changed_files: ($files | split("\n") | map(select(. != ""))), preview_url: $url, existing_e2e_screenshots: $evidence}' \

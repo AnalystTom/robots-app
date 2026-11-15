@@ -3,7 +3,7 @@ import type {
   PaidServiceCallResult,
   PaidServiceInput,
   PaidServiceProvider,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import { TregPaidServiceProvider } from "./treg-paid-services.js";
 
 const FAKE_SERVICES: PaidService[] = [

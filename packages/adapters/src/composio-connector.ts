@@ -11,10 +11,10 @@ import type {
   ConnectorEvent,
   ConnectorTool,
   ManagedConnectorProvider,
-} from "@rakazo/adapter-kit";
-import { ConnectorAuthUnavailableError } from "@rakazo/adapter-kit";
-import { humanizeToolName } from "@rakazo/core";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import { ConnectorAuthUnavailableError } from "@robots/adapter-kit";
+import { humanizeToolName } from "@robots/core";
+import { getLogger } from "@robots/logging";
 import { COMPOSIO_MULTI_EXECUTE_TOOL, composioToolBatch } from "./composio-batch.js";
 import type { ToolkitDirectoryEntry } from "./composio-catalog-cache.js";
 import {
@@ -540,7 +540,7 @@ export class ComposioConnector implements ComposioProvider {
   }
 
   private async loadDirectory(): Promise<ToolkitDirectoryEntry[]> {
-    const session = await this.sessionFor("__rakazo_catalog__");
+    const session = await this.sessionFor("__robots_catalog__");
     const [toolkits, needsSetup] = await Promise.all([
       collectPages((cursor) => session.toolkits({ limit: 50, cursor })),
       // Without this lookup every app stays listed, as before.

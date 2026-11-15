@@ -1,5 +1,5 @@
 import { ph, t } from "@lingui/core/macro";
-import type { AgentImportNeed, AgentImportSetupItem, MessageBlock } from "@rakazo/contracts";
+import type { AgentImportNeed, AgentImportSetupItem, MessageBlock } from "@robots/contracts";
 
 export type ImportSetupBlock = Extract<MessageBlock, { kind: "import_setup" }>;
 

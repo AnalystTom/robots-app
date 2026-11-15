@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { ORPCError } from "@orpc/server";
-import type { AdapterContext } from "@rakazo/adapter-kit";
-import type { ComputerExecutionLease } from "@rakazo/adapters";
+import type { AdapterContext } from "@robots/adapter-kit";
+import type { ComputerExecutionLease } from "@robots/adapters";
 import {
   acquireComputerExecutionLease,
   anotherPersonHoldsControl,
@@ -20,12 +20,12 @@ import {
   scheduleComputerControlExpiry,
   scheduleComputerSleep,
   screenLeaseIdForRun,
-} from "@rakazo/adapters";
-import type { Actor, ComputerStatus } from "@rakazo/contracts";
-import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { createRepos, IsolationError, recordComputerRunEnd, spaceIsShared } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapters";
+import type { Actor, ComputerStatus } from "@robots/contracts";
+import { ACTIVE_RUN_STATUSES } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { createRepos, IsolationError, recordComputerRunEnd, spaceIsShared } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { resolveComputerWork, toComputerStatus } from "./computer-status.js";
 import type { RouterDeps } from "./router.js";
 import { computerContext } from "./routes/shared.js";

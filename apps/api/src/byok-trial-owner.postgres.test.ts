@@ -1,10 +1,10 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { ArtifactStore, JobPublisher } from "@rakazo/adapter-kit";
-import { BillingEmulator } from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+import type { ArtifactStore, JobPublisher } from "@robots/adapter-kit";
+import { BillingEmulator } from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
 import {
   asSystem,
   billingAccountForOrganization,
@@ -13,7 +13,7 @@ import {
   FREE_MONTH_DAYS,
   keepOrganizationTrialUse,
   ownerHadTrial,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { deleteOrganization } from "./account-deletion.js";
 import { createBillingService, TRIAL_DAYS } from "./billing.js";
@@ -25,7 +25,7 @@ const dbTests = process.env.VERIFY_DATABASE && process.env.DATABASE_URL ? descri
 /** One owner and their first two organizations, each addressed through its own space. */
 async function ownerWithOrganizations(prisma: PrismaClient, stamp: string, name: string) {
   const userId = `trial-owner-${name}-${stamp}`;
-  const email = `trial-owner-${name}-${stamp}@rakazo.test`;
+  const email = `trial-owner-${name}-${stamp}@robots.test`;
   await prisma.user.create({
     data: { id: userId, name: `Trial owner ${name}`, email, emailVerified: false },
   });
@@ -355,7 +355,7 @@ dbTests("own-key trial hold lifecycle", () => {
   beforeAll(async () => {
     db = createDb(process.env.DATABASE_URL!);
     prisma = asSystem(db.prisma);
-    root = await mkdtemp(path.join(tmpdir(), "rakazo-trial-hold-"));
+    root = await mkdtemp(path.join(tmpdir(), "robots-trial-hold-"));
   });
 
   afterAll(async () => {

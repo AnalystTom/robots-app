@@ -1,9 +1,9 @@
-import type { ConnectorCatalogItem } from "@rakazo/adapter-kit";
-import { planLiveConnectionSync } from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
-import type { Prisma, PrismaClient } from "@rakazo/db";
-import { IsolationError, recordSecurityEvent } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+import type { ConnectorCatalogItem } from "@robots/adapter-kit";
+import { planLiveConnectionSync } from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
+import type { Prisma, PrismaClient } from "@robots/db";
+import { IsolationError, recordSecurityEvent } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import {
   beginConnection,
   completeConnection,

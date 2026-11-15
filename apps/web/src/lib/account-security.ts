@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
-import { accountSecuritySchema, legacyAccountSecurity } from "@rakazo/contracts";
-import { readBoundedJsonResponse } from "@rakazo/core";
+import { accountSecuritySchema, legacyAccountSecurity } from "@robots/contracts";
+import { readBoundedJsonResponse } from "@robots/core";
 import { authErrorText } from "./user-error";
 
 export async function fetchAccountSecurity() {

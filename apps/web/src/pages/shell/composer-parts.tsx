@@ -1,8 +1,8 @@
 import { useLingui } from "@lingui/react/macro";
-import type { AgentSkillCatalogEntry } from "@rakazo/contracts";
-import type { ComposerMention, SLASH_ACTIONS, SlashActionId } from "@rakazo/core";
-import { mentionChipKey, truncateSlashDescription } from "@rakazo/core";
-import { Button } from "@rakazo/ui-web";
+import type { AgentSkillCatalogEntry } from "@robots/contracts";
+import type { ComposerMention, SLASH_ACTIONS, SlashActionId } from "@robots/core";
+import { mentionChipKey, truncateSlashDescription } from "@robots/core";
+import { Button } from "@robots/ui-web";
 import { ArrowUp, Box, Paperclip, Settings, Square, X } from "lucide-react";
 import type { CSSProperties, RefObject } from "react";
 import type { useHoldToTalk } from "../../components/composer/HoldToTalk";

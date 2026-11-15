@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import { BOT_INSTRUCTIONS_MAX_LENGTH } from "@rakazo/contracts";
-import { resolveAskChoice } from "@rakazo/core";
+import { BOT_INSTRUCTIONS_MAX_LENGTH } from "@robots/contracts";
+import { resolveAskChoice } from "@robots/core";
 import { useState } from "react";
 import type { ViewProps } from "react-native";
 import { Alert, TextInput, View } from "react-native";

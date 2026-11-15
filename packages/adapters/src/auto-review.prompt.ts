@@ -1,5 +1,5 @@
-import type { AutoReviewRequest } from "@rakazo/adapter-kit";
-import { escapePromptData } from "@rakazo/core";
+import type { AutoReviewRequest } from "@robots/adapter-kit";
+import { escapePromptData } from "@robots/core";
 import { formatCurrentTimeInstruction } from "./current-time.prompt.js";
 
 const MAX_TASK_CHARS = 400;

@@ -1,6 +1,6 @@
-import type { Routine, RpcInput } from "@rakazo/contracts";
-import type { RoutineDraft } from "@rakazo/core";
-import { cronFromPreset, draftFromRoutine, isOneShotRoutineCrons } from "@rakazo/core";
+import type { Routine, RpcInput } from "@robots/contracts";
+import type { RoutineDraft } from "@robots/core";
+import { cronFromPreset, draftFromRoutine, isOneShotRoutineCrons } from "@robots/core";
 import type { RoutineWebTrigger } from "./routine";
 import { routineTriggerNames } from "./routine";
 

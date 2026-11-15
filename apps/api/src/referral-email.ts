@@ -1,8 +1,8 @@
-import type { TransactionalEmailProvider } from "@rakazo/adapter-kit";
-import { emailLocale, referralEmail } from "@rakazo/auth";
-import { ActorSchema } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
-import { isForeignKeyViolation } from "@rakazo/db";
+import type { TransactionalEmailProvider } from "@robots/adapter-kit";
+import { emailLocale, referralEmail } from "@robots/auth";
+import { ActorSchema } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
+import { isForeignKeyViolation } from "@robots/db";
 import { unsubscribeUrl } from "./marketing-email.js";
 
 const HOUR_MS = 60 * 60 * 1000;

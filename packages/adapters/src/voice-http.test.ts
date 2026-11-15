@@ -1,6 +1,6 @@
 import { once } from "node:events";
 import { createServer } from "node:http";
-import { VoiceAccountError } from "@rakazo/adapter-kit";
+import { VoiceAccountError } from "@robots/adapter-kit";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   MAX_VOICE_JSON_BYTES,

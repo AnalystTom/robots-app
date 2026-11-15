@@ -1,7 +1,7 @@
 import { t } from "@lingui/core/macro";
-import { agentImportErrorReason } from "@rakazo/contracts";
-import type { GrokBotExportErrorCode } from "@rakazo/core";
-import { translateRunError } from "@rakazo/i18n/run-error";
+import { agentImportErrorReason } from "@robots/contracts";
+import type { GrokBotExportErrorCode } from "@robots/core";
+import { translateRunError } from "@robots/i18n/run-error";
 
 function errorProvider(error: unknown): string {
   const data = error && typeof error === "object" && "data" in error ? error.data : undefined;
@@ -50,6 +50,6 @@ export function grokBotErrorText(code: GrokBotExportErrorCode): string {
     case "too_large":
       return t`This export is too large to import.`;
     case "newer_version":
-      return t`This export is newer than Rakazo can read. Update Rakazo and try again.`;
+      return t`This export is newer than RoBots can read. Update RoBots and try again.`;
   }
 }

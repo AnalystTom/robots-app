@@ -1,0 +1,9 @@
+# Optional drop-in: /etc/systemd/system/robots-backup.service.d/alerts.conf
+[Unit]
+OnFailure=robots-backup-alert.service
+
+[Service]
+ExecStartPost=-/usr/local/sbin/robots-host-alert backup-failure ""
+ReadWritePaths=/var/lib/robots/alerts
+StateDirectory=robots/alerts
+StateDirectoryMode=0700

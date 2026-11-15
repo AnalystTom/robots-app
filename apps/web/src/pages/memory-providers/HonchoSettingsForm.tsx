@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { Button, Field, FieldError, FieldLabel, Input } from "@rakazo/ui-web";
+import { Button, Field, FieldError, FieldLabel, Input } from "@robots/ui-web";
 import { useId, useState } from "react";
 import type { ConnectionMode } from "./ConnectionModeFields";
 import { ConnectionModeFields } from "./ConnectionModeFields";
@@ -7,9 +7,9 @@ import { MemoryProviderAdvanced } from "./MemoryProviderAdvanced";
 import type { MemoryProviderConnectionDraft, MemoryProviderSettingsFormProps } from "./registry";
 
 const RESOURCE_ID_PATTERN = /^[A-Za-z0-9_-]{0,512}$/;
-// Rakazo writes to these peers, so they cannot be read as the user's own peer.
+// RoBots writes to these peers, so they cannot be read as the user's own peer.
 function isReservedPeerId(value: string): boolean {
-  return value === "rakazo-shared" || value.startsWith("bot-");
+  return value === "robots-shared" || value.startsWith("bot-");
 }
 
 export function HonchoSettingsForm({
@@ -103,7 +103,7 @@ export function HonchoSettingsForm({
             aria-invalid={workspaceValid ? undefined : true}
             aria-describedby={workspaceValid ? undefined : workspaceErrorId}
             onChange={(event) => setWorkspace(event.target.value)}
-            placeholder="rakazo-<space>"
+            placeholder="robots-<space>"
             maxLength={512}
             autoComplete="off"
           />
@@ -134,12 +134,12 @@ export function HonchoSettingsForm({
               autoComplete="off"
             />
             <p id={userPeerDescriptionId} className="mt-2 text-body-sm text-muted-foreground">
-              <Trans>Recall from this peer; save to Rakazo’s own peers.</Trans>
+              <Trans>Recall from this peer; save to RoBots’s own peers.</Trans>
             </p>
             {!userPeerValid ? (
               <FieldError id={userPeerErrorId}>
                 {userPeerFormatValid ? (
-                  <Trans>rakazo-shared and IDs starting with bot- are reserved for Rakazo.</Trans>
+                  <Trans>robots-shared and IDs starting with bot- are reserved for RoBots.</Trans>
                 ) : (
                   <Trans>Use up to 512 letters, digits, _ or -.</Trans>
                 )}

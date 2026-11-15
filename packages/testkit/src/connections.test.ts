@@ -1,8 +1,8 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { connectionCleanupJob, connectionCleanupJobKey } from "@rakazo/adapter-kit";
-import type { InMemoryJobQueue } from "@rakazo/adapters";
+import { connectionCleanupJob, connectionCleanupJobKey } from "@robots/adapter-kit";
+import type { InMemoryJobQueue } from "@robots/adapters";
 import {
   ComposioConnector,
   EncryptedSecretStore,
@@ -11,9 +11,9 @@ import {
   lockProviderConnectionScope,
   PipedreamConnector,
   ThirdPartyConnectorEmulator,
-} from "@rakazo/adapters";
-import type { createApp } from "@rakazo/api/app";
-import { appliedModelRole, runAsSystem, runAsTenant, updateModelRole } from "@rakazo/db";
+} from "@robots/adapters";
+import type { createApp } from "@robots/api/app";
+import { appliedModelRole, runAsSystem, runAsTenant, updateModelRole } from "@robots/db";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { sessionCookieHeader } from "./index.js";
 import { asSystem } from "./system-db.js";
@@ -39,10 +39,10 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   let thirdParties: ThirdPartyConnectorEmulator;
   let connectionOrdinal = 0;
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const dataDir = mkdtempSync(path.join(tmpdir(), "rakazo-connections-"));
+  const dataDir = mkdtempSync(path.join(tmpdir(), "robots-connections-"));
 
   beforeAll(async () => {
-    const { createApp } = await import("@rakazo/api/app");
+    const { createApp } = await import("@robots/api/app");
     fake = new FakeComposioClient();
     composio = new ComposioConnector({ client: fake });
     thirdParties = new ThirdPartyConnectorEmulator();
@@ -83,8 +83,8 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("serializes overlapping backup replacements without mixing users or orders", async () => {
-    const ownerCookie = await signup(app, `backup-owner-${stamp}@rakazo.test`, "Owner");
-    const otherCookie = await signup(app, `backup-other-${stamp}@rakazo.test`, "Other");
+    const ownerCookie = await signup(app, `backup-owner-${stamp}@robots.test`, "Owner");
+    const otherCookie = await signup(app, `backup-other-${stamp}@robots.test`, "Other");
     const owner = await rpc<Actor>(app, ownerCookie, "me");
     const other = await rpc<Actor>(app, otherCookie, "me");
     const first = [{ provider: "provider-a", modelId: "first" }];
@@ -103,8 +103,8 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("reconciles one scoped row per provider under concurrent catalog fetches", async () => {
-    const ownerCookie = await signup(app, `owner-connections-${stamp}@rakazo.test`, "Owner");
-    const otherCookie = await signup(app, `other-connections-${stamp}@rakazo.test`, "Other");
+    const ownerCookie = await signup(app, `owner-connections-${stamp}@robots.test`, "Owner");
+    const otherCookie = await signup(app, `other-connections-${stamp}@robots.test`, "Other");
     const owner = await rpc<Actor>(app, ownerCookie, "me");
     const other = await rpc<Actor>(app, otherCookie, "me");
     await connectRemote(composio, owner, "GMAIL");
@@ -148,7 +148,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("keeps a second connected account for the same provider and renames it", async () => {
-    const cookie = await signup(app, `multi-account-${stamp}@rakazo.test`, "Multi Account");
+    const cookie = await signup(app, `multi-account-${stamp}@robots.test`, "Multi Account");
     const first = await rpc<{ connectionId: string }>(app, cookie, "connections/begin", {
       connectorId: "composio",
       provider: "GMAIL",
@@ -213,7 +213,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("removes the authorization of a begin that lost its row once the provider answers again", async () => {
-    const cookie = await signup(app, `lost-begin-${stamp}@rakazo.test`, "Lost Begin");
+    const cookie = await signup(app, `lost-begin-${stamp}@robots.test`, "Lost Begin");
     const actor = await rpc<Actor>(app, cookie, "me");
     const begin = composio.begin.bind(composio);
     vi.spyOn(composio, "begin").mockImplementation(async (request, context) => {
@@ -260,7 +260,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   }
 
   it("removes the authorization when saving a begin's result fails, once the provider answers again", async () => {
-    const cookie = await signup(app, `unsaved-begin-${stamp}@rakazo.test`, "Unsaved Begin");
+    const cookie = await signup(app, `unsaved-begin-${stamp}@robots.test`, "Unsaved Begin");
     const actor = await rpc<Actor>(app, cookie, "me");
     const begin = composio.begin.bind(composio);
     vi.spyOn(composio, "begin").mockImplementation(async (request, context) => {
@@ -295,7 +295,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("leaves a busy scope alone, removes the authorization once it is free, and can run again", async () => {
-    const cookie = await signup(app, `busy-cleanup-${stamp}@rakazo.test`, "Busy Cleanup");
+    const cookie = await signup(app, `busy-cleanup-${stamp}@robots.test`, "Busy Cleanup");
     const actor = await rpc<Actor>(app, cookie, "me");
     await connectRemote(composio, actor, "GMAIL");
     const [ref] = await composio.listConnectedAccountIds(actor.userId, "GMAIL");
@@ -351,7 +351,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("keeps the cleanup of a lost begin until a sibling has saved its account", async () => {
-    const cookie = await signup(app, `sibling-cleanup-${stamp}@rakazo.test`, "Sibling Cleanup");
+    const cookie = await signup(app, `sibling-cleanup-${stamp}@robots.test`, "Sibling Cleanup");
     const actor = await rpc<Actor>(app, cookie, "me");
     const cleanup = {
       spaceId: actor.spaceId,
@@ -415,7 +415,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
 
   /** One connected Gmail account, with what its row and the provider hold for it. */
   async function connectedGmail(label: string) {
-    const cookie = await signup(app, `${label}-${stamp}@rakazo.test`, label);
+    const cookie = await signup(app, `${label}-${stamp}@robots.test`, label);
     const actor = await rpc<Actor>(app, cookie, "me");
     const { connectionId } = await rpc<{ connectionId: string }>(app, cookie, "connections/begin", {
       connectorId: "composio",
@@ -439,7 +439,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   }
 
   it("leaves the authorization to its row when a begin's save turns out to have landed", async () => {
-    const cookie = await signup(app, `landed-save-${stamp}@rakazo.test`, "Landed Save");
+    const cookie = await signup(app, `landed-save-${stamp}@robots.test`, "Landed Save");
     const actor = await rpc<Actor>(app, cookie, "me");
     const own = { spaceId: actor.spaceId, userId: actor.userId, provider: "GMAIL" };
     const cancelled = vi.spyOn(composio, "cancelAuthorizationRequest");
@@ -564,7 +564,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   }
 
   it("keeps a saved authorization on its row when the save reports a failure, so a later begin cannot drop it", async () => {
-    const cookie = await signup(app, `saved-row-${stamp}@rakazo.test`, "Saved Row");
+    const cookie = await signup(app, `saved-row-${stamp}@robots.test`, "Saved Row");
     const actor = await rpc<Actor>(app, cookie, "me");
     const own = { spaceId: actor.spaceId, userId: actor.userId, provider: "GMAIL" };
     const cancelled = vi.spyOn(composio, "cancelAuthorizationRequest");
@@ -603,7 +603,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("removes what a failed begin left under the app's name although its own row is still there", async () => {
-    const cookie = await signup(app, `own-row-${stamp}@rakazo.test`, "Own Row");
+    const cookie = await signup(app, `own-row-${stamp}@robots.test`, "Own Row");
     const actor = await rpc<Actor>(app, cookie, "me");
     const own = { spaceId: actor.spaceId, userId: actor.userId, provider: "linear" };
     const cleanup = { ...own, connectorId: "pipedream" };
@@ -638,7 +638,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("keeps the cleanup another begin recorded for the same app when its own removal finishes", async () => {
-    const cookie = await signup(app, `shared-key-${stamp}@rakazo.test`, "Shared Key");
+    const cookie = await signup(app, `shared-key-${stamp}@robots.test`, "Shared Key");
     const actor = await rpc<Actor>(app, cookie, "me");
     const cleanup = {
       spaceId: actor.spaceId,
@@ -764,7 +764,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("marks a connected account Composio reports dead as needing reconnect", async () => {
-    const cookie = await signup(app, `reconnect-${stamp}@rakazo.test`, "Reconnect");
+    const cookie = await signup(app, `reconnect-${stamp}@robots.test`, "Reconnect");
     const work = await rpc<{ connectionId: string }>(app, cookie, "connections/begin", {
       connectorId: "composio",
       provider: "GMAIL",
@@ -789,7 +789,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("returns the remote catalog when local reconciliation fails", async () => {
-    const cookie = await signup(app, `db-failure-connections-${stamp}@rakazo.test`, "DB Failure");
+    const cookie = await signup(app, `db-failure-connections-${stamp}@robots.test`, "DB Failure");
     const actor = await rpc<Actor>(app, cookie, "me");
     await connectRemote(composio, actor, "SLACK");
     const pending = await createConnection(actor, "SLACK");
@@ -815,7 +815,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   it("does not mutate local state when the provider catalog fails", async () => {
     const cookie = await signup(
       app,
-      `provider-failure-connections-${stamp}@rakazo.test`,
+      `provider-failure-connections-${stamp}@robots.test`,
       "Provider Failure",
     );
     const actor = await rpc<Actor>(app, cookie, "me");
@@ -832,7 +832,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("routes an emulated Composio app tool with user-scoped connection context", async () => {
-    const cookie = await signup(app, `composio-tool-${stamp}@rakazo.test`, "Composio Tool");
+    const cookie = await signup(app, `composio-tool-${stamp}@robots.test`, "Composio Tool");
     const actor = await rpc<Actor>(app, cookie, "me");
     const started = await rpc<{ connectionId: string; authorizationUrl: null }>(
       app,
@@ -907,7 +907,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("runs Pipedream connection and MCP tool execution through the product registry", async () => {
-    const cookie = await signup(app, `pipedream-${stamp}@rakazo.test`, "Pipedream Connector");
+    const cookie = await signup(app, `pipedream-${stamp}@robots.test`, "Pipedream Connector");
     const actor = await rpc<Actor>(app, cookie, "me");
     const catalog = await rpc<Array<{ connectorId: string; slug: string; connected: boolean }>>(
       app,
@@ -986,7 +986,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("installs Treg, Executor, and custom MCP sources and routes their calls", async () => {
-    const cookie = await signup(app, `mcp-connectors-${stamp}@rakazo.test`, "MCP Connectors");
+    const cookie = await signup(app, `mcp-connectors-${stamp}@robots.test`, "MCP Connectors");
     const actor = await rpc<Actor>(app, cookie, "me");
     const tregCredential = "fake-treg-credential-value";
     const treg = await rpc<{ id: string; secretConfigured: boolean }>(
@@ -1089,7 +1089,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("imports an OpenAPI connector, keeps its credential encrypted, and routes calls", async () => {
-    const cookie = await signup(app, `api-connector-${stamp}@rakazo.test`, "API Connector");
+    const cookie = await signup(app, `api-connector-${stamp}@robots.test`, "API Connector");
     const actor = await rpc<Actor>(app, cookie, "me");
     const credential = "test-connector-secret-value";
     const install = await rpc<{
@@ -1164,7 +1164,7 @@ describeWithDatabase("Composio catalog reconciliation", () => {
   });
 
   it("imports a GraphQL connector, introspects operations, and routes calls", async () => {
-    const cookie = await signup(app, `graphql-connector-${stamp}@rakazo.test`, "GraphQL Connector");
+    const cookie = await signup(app, `graphql-connector-${stamp}@robots.test`, "GraphQL Connector");
     const actor = await rpc<Actor>(app, cookie, "me");
     const install = await rpc<{
       id: string;

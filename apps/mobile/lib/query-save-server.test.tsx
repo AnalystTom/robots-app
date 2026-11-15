@@ -28,7 +28,7 @@ vi.mock("./network-cache", () => ({ clearNetworkCache: vi.fn() }));
 
 const OLD = "https://old.example.test";
 const NEW = "https://new.example.test";
-const SESSION_KEY = "rakazo.session_token";
+const SESSION_KEY = "robots.session_token";
 const WRITE = "spaceSettings/setOverride";
 
 const onSaved = vi.fn();
@@ -69,7 +69,7 @@ beforeEach(async () => {
       requests.push({
         url: String(input),
         authorization: headers.get("authorization"),
-        space: headers.get("x-rakazo-space-id"),
+        space: headers.get("x-robots-space-id"),
       });
       return jsonResponse({ json: [] });
     }),

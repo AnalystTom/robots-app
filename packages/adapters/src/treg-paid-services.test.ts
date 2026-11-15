@@ -1,4 +1,4 @@
-import type { AdapterContext, PaidService } from "@rakazo/adapter-kit";
+import type { AdapterContext, PaidService } from "@robots/adapter-kit";
 import { describe, expect, it, vi } from "vitest";
 import { createPaidServiceProvider, FakePaidServiceProvider } from "./paid-services-factory.js";
 import { TregPaidServiceProvider } from "./treg-paid-services.js";

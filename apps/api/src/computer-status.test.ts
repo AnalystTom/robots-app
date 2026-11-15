@@ -1,4 +1,4 @@
-import { ComputerStatusSchema } from "@rakazo/contracts";
+import { ComputerStatusSchema } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import { toComputerStatus } from "./computer-status.js";
 

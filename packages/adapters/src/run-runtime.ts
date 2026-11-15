@@ -5,11 +5,11 @@ import type {
   ManagedConnectorProvider,
   MessagingSurface,
   SecretStore,
-} from "@rakazo/adapter-kit";
-import type { LabFeature } from "@rakazo/contracts";
-import { phoneCallSettings, resolveEncryptionKey, uploadSizeFromEnv } from "@rakazo/core";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import { createSecurityEventPruner, securityEventRetentionDays } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import type { LabFeature } from "@robots/contracts";
+import { phoneCallSettings, resolveEncryptionKey, uploadSizeFromEnv } from "@robots/core";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
+import { createSecurityEventPruner, securityEventRetentionDays } from "@robots/db";
 import { auditLogConfig, createAuditLogReconciler } from "./audit-forwarding.js";
 import { createBackgroundJobHandlers } from "./background-job-handlers.js";
 import { cliModelRuntime } from "./cli-models/runtime.js";

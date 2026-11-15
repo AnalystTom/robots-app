@@ -6,17 +6,17 @@ import {
   SandboxUnavailableError,
   SandboxUnresponsiveError,
   VoiceAccountError,
-} from "@rakazo/adapter-kit";
-import { ComputerRecoveryRequiredError } from "@rakazo/adapters";
+} from "@robots/adapter-kit";
+import { ComputerRecoveryRequiredError } from "@robots/adapters";
 import {
   databaseOutage,
   IsolationError,
   ProviderTransactionBusyError,
   SpaceDeletionInProgressError,
   SpaceOwnerRequiredError,
-} from "@rakazo/db";
-import { enrichLogContext, getLogContext, getLogger } from "@rakazo/logging";
-import { markExpectedFailure } from "@rakazo/logging/hono";
+} from "@robots/db";
+import { enrichLogContext, getLogContext, getLogger } from "@robots/logging";
+import { markExpectedFailure } from "@robots/logging/hono";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { voiceAccountErrorStatus } from "./voice.js";

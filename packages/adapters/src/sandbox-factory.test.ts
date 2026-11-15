@@ -1,4 +1,4 @@
-import { SandboxKind } from "@rakazo/contracts";
+import { SandboxKind } from "@robots/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { NO_SANDBOX_MESSAGE } from "./none-sandbox.js";
 import { createSandboxProvider } from "./sandbox-factory.js";
@@ -72,7 +72,7 @@ describe("createSandboxProvider", () => {
 
   it("returns the Kubernetes provider without contacting the cluster", async () => {
     const sandbox = await createSandboxProvider("kubernetes", {
-      kubernetesNamespace: "rakazo-computers",
+      kubernetesNamespace: "robots-computers",
       kubernetesRuntimeClassName: "kata",
     });
     expect(sandbox.describe()).toMatchObject({

@@ -1,19 +1,19 @@
-import type { MessageBlock } from "@rakazo/contracts";
+import type { MessageBlock } from "@robots/contracts";
 import {
   ACTIVE_RUN_STATUSES,
   BACKGROUND_HELPER_TRIGGER,
   HELPER_RESULT_TRIGGER,
   isConversationalRun,
   STOPPED_HELPER_RESULT,
-} from "@rakazo/core";
-import type { Prisma } from "@rakazo/db";
+} from "@robots/core";
+import type { Prisma } from "@robots/db";
 import {
   appendEventInTransaction,
   assertRunCanWriteHistory,
   createThreadMessageInTransaction,
   THREAD_LOCK_TRANSACTION_OPTIONS,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import {
   BACKGROUND_HELPER_CHAT_REQUIRED,
   backgroundHelperLimitNote,

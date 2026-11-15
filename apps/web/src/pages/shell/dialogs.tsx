@@ -1,6 +1,6 @@
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
-import type { AccountItem, Bot, BotSection } from "@rakazo/contracts";
-import { botRemovalWarning } from "@rakazo/i18n/bot-removal";
+import type { AccountItem, Bot, BotSection } from "@robots/contracts";
+import { botRemovalWarning } from "@robots/i18n/bot-removal";
 import {
   Button,
   Checkbox,
@@ -13,7 +13,7 @@ import {
   Input,
   RadioGroup,
   RadioGroupItem,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { useQuery } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
 import { useId, useState } from "react";

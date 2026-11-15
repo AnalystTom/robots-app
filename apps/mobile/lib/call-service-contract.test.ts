@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { UI_LOCALES } from "./ui-locale";
 
 const mobileRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const nativeRoot = resolve(mobileRoot, "modules/rakazo-notifications/android/src/main");
+const nativeRoot = resolve(mobileRoot, "modules/robots-notifications/android/src/main");
 
 function source(path: string) {
   return readFileSync(resolve(nativeRoot, path), "utf8");
@@ -16,12 +16,12 @@ describe("Android call foreground service", () => {
     const manifest = source("AndroidManifest.xml");
     expect(manifest).toContain("android.permission.FOREGROUND_SERVICE_MICROPHONE");
     expect(manifest).toContain("android.permission.WAKE_LOCK");
-    expect(manifest).toContain('android:name=".RakazoCallService"');
+    expect(manifest).toContain('android:name=".RobotsCallService"');
     expect(manifest).toContain('android:foregroundServiceType="microphone"');
   });
 
   it("starts immediately as a foreground service and holds a partial wake lock", () => {
-    const service = source("java/com/rakazo/notifications/RakazoCallService.kt");
+    const service = source("java/com/robots/notifications/RobotsCallService.kt");
     expect(service).toContain("startForeground");
     expect(service).toContain("FOREGROUND_SERVICE_TYPE_MICROPHONE");
     expect(service).toContain("PowerManager.PARTIAL_WAKE_LOCK");
@@ -33,11 +33,11 @@ describe("Android call foreground service", () => {
   });
 
   it("uses the saved app locale for the incoming-call notification and call screen", () => {
-    const calls = source("java/com/rakazo/notifications/IncomingCalls.kt");
+    const calls = source("java/com/robots/notifications/IncomingCalls.kt");
     expect(calls).toContain(
       "val copy = localizedContext(context, NotificationStorage(context).locale)",
     );
-    for (const key of ["rakazo_call_title", "rakazo_call_decline", "rakazo_call_answer"]) {
+    for (const key of ["robots_call_title", "robots_call_decline", "robots_call_answer"]) {
       expect(calls).not.toMatch(new RegExp(`context\\.getString\\(R\\.string\\.${key}`));
     }
     expect(calls).toContain(
@@ -46,7 +46,7 @@ describe("Android call foreground service", () => {
   });
 
   it("uses the saved app locale for call notification strings and keeps a supplied title", () => {
-    const service = source("java/com/rakazo/notifications/RakazoCallService.kt");
+    const service = source("java/com/robots/notifications/RobotsCallService.kt");
     expect(service).toContain(
       "val copyContext = localizedContext(this, NotificationStorage(this).locale)",
     );
@@ -59,7 +59,7 @@ describe("Android call foreground service", () => {
     expect(service).toContain(
       "private fun startForegroundCompat(copyContext: Context, title: String)",
     );
-    for (const key of ["rakazo_call_title", "rakazo_call_text", "rakazo_call_channel"]) {
+    for (const key of ["robots_call_title", "robots_call_text", "robots_call_channel"]) {
       expect(service).toMatch(new RegExp(`copyContext\\.getString\\(\\s*R\\.string\\.${key}`));
     }
   });
@@ -83,11 +83,11 @@ describe("Android call foreground service", () => {
       tr: "values-tr",
     } as const satisfies Record<(typeof UI_LOCALES)[number], string>;
     const keys = [
-      "rakazo_call_channel",
-      "rakazo_call_title",
-      "rakazo_call_text",
-      "rakazo_call_answer",
-      "rakazo_call_decline",
+      "robots_call_channel",
+      "robots_call_title",
+      "robots_call_text",
+      "robots_call_answer",
+      "robots_call_decline",
     ];
     for (const locale of UI_LOCALES) {
       const xml = source(`res/${directories[locale]}/call_strings.xml`);
@@ -97,7 +97,7 @@ describe("Android call foreground service", () => {
 
   // call-card-keep-awake.test.tsx covers the call card starting the service instead of keep-awake.
   it("is exposed to the JS bridge", () => {
-    const module = source("java/com/rakazo/notifications/RakazoNotificationsModule.kt");
+    const module = source("java/com/robots/notifications/RobotsNotificationsModule.kt");
     expect(module).toContain('AsyncFunction("startCall")');
     expect(module).toContain('AsyncFunction("stopCall")');
   });

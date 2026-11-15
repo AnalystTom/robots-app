@@ -1,12 +1,12 @@
-import type { AiConsentStatus } from "@rakazo/contracts";
-import { AI_CONSENT_REQUIRED } from "@rakazo/contracts";
+import type { AiConsentStatus } from "@robots/contracts";
+import { AI_CONSENT_REQUIRED } from "@robots/contracts";
 import {
   AiConsentBlocked,
   CALL_FAREWELL_TIMEOUT_MS,
   callIdFromClientNonce,
   ensureAiDataConsent,
   INTERIM_BARGE_IN_MS,
-} from "@rakazo/core";
+} from "@robots/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hapticImpact, hapticSuccess } from "./haptics";
 
@@ -2657,7 +2657,7 @@ describe("mobile call on a session change", () => {
     // organization's Space, which changes no session generation.
     vi.mocked(captureApiRequestContext).mockImplementation(async () => ({
       apiBase: "https://api.example.test",
-      headers: { "x-rakazo-space-id": "space-b" },
+      headers: { "x-robots-space-id": "space-b" },
       sessionGeneration: currentSessionGeneration(),
     }));
     const fake = fakes();
@@ -2668,7 +2668,7 @@ describe("mobile call on a session change", () => {
         botName: "Ada",
         requestContext: {
           apiBase: "https://api.example.test",
-          headers: { "x-rakazo-space-id": "space-a" },
+          headers: { "x-robots-space-id": "space-a" },
           sessionGeneration: currentSessionGeneration(),
         },
       },
@@ -2684,7 +2684,7 @@ describe("mobile call on a session change", () => {
       .mocked(rpc)
       .mock.calls.map(([path, , options]) => [
         path,
-        options?.requestContext?.headers["x-rakazo-space-id"],
+        options?.requestContext?.headers["x-robots-space-id"],
       ]);
     expect(sent).toEqual([
       ["threads/send", "space-a"],

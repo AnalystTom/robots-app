@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { BLOCKED_ITEM_ANSWER, UNCHOSEN_ITEM_ANSWER } from "@rakazo/contracts";
+import { BLOCKED_ITEM_ANSWER, UNCHOSEN_ITEM_ANSWER } from "@robots/contracts";
 import type { ReactNode, Ref } from "react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -130,7 +130,7 @@ vi.mock("../components/native-switch", () => ({
   ),
 }));
 
-import type { LoginFieldInput } from "@rakazo/contracts";
+import type { LoginFieldInput } from "@robots/contracts";
 import { SecretAskSheet } from "../components/secret-ask-sheet";
 import { resetI18nForTests } from "./i18n";
 

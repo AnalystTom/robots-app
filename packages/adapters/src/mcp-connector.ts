@@ -17,19 +17,19 @@ import type {
   ConnectorProvider,
   ConnectorTool,
   SecretStore,
-} from "@rakazo/adapter-kit";
-import { SecretStoreUnavailableError } from "@rakazo/adapter-kit";
-import type { McpOAuthEnvField } from "@rakazo/contracts";
+} from "@robots/adapter-kit";
+import { SecretStoreUnavailableError } from "@robots/adapter-kit";
+import type { McpOAuthEnvField } from "@robots/contracts";
 import {
   isLocalhostOrLoopbackIp,
   mcpOAuthEnvReferences,
   resolveMcpOAuthEnv,
   resolveMcpOAuthFileTemplate,
-} from "@rakazo/contracts";
-import type { McpServer, PrismaClient, ThreadEvents } from "@rakazo/db";
-import { availableInSpace, itemSecretIn } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
-import { sanitizedError } from "@rakazo/logging/monitoring";
+} from "@robots/contracts";
+import type { McpServer, PrismaClient, ThreadEvents } from "@robots/db";
+import { availableInSpace, itemSecretIn } from "@robots/db";
+import { getLogger } from "@robots/logging";
+import { sanitizedError } from "@robots/logging/monitoring";
 import { catalogToolPrefix } from "./approval-effect.js";
 import {
   combineSignals,
@@ -236,7 +236,7 @@ function recoveredSince(
 }
 
 /** Route name of the stand-in tool for an assigned server whose discovery failed. */
-const UNAVAILABLE_TOOL = "__rakazo_unavailable";
+const UNAVAILABLE_TOOL = "__robots_unavailable";
 /** Skip rewriting an unchanged health observation more often than this. */
 const HEALTH_REWRITE_MS = 60_000;
 
@@ -1086,7 +1086,7 @@ export class McpConnector implements ConnectorProvider {
     credentialDir?: string;
     launchSecrets?: string[];
   }> {
-    let session = new McpSession({ name: `rakazo-${server.slug}` });
+    let session = new McpSession({ name: `robots-${server.slug}` });
     let credentialDir: string | undefined;
     const launchSecrets: string[] = [];
     // Hoisted so a throw after the secret is decoded can still hand the material out.
@@ -1230,7 +1230,7 @@ export class McpConnector implements ConnectorProvider {
           // One private directory per launched process. A file path replaces an env value of
           // the same name; the API rejects such overlaps, so this is only a safe fallback.
           credentialDir = await mkdtemp(
-            join(this.options.credentialTempRoot ?? tmpdir(), "rakazo-mcp-"),
+            join(this.options.credentialTempRoot ?? tmpdir(), "robots-mcp-"),
           );
           const dir = credentialDir;
           const previousOnClose = session.client.onclose;
@@ -1299,7 +1299,7 @@ export class McpConnector implements ConnectorProvider {
           if (!authProvider || !isRejectedTokenError(error)) throw error;
           await authProvider.replaceRejectedToken();
           await closeMcpResource(() => session.close());
-          session = new McpSession({ name: `rakazo-${server.slug}` });
+          session = new McpSession({ name: `robots-${server.slug}` });
           await connect();
         }
       }

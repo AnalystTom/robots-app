@@ -1,5 +1,5 @@
 import { t } from "@lingui/core/macro";
-import { botDisplayName } from "@rakazo/core";
+import { botDisplayName } from "@robots/core";
 
 type NamedBot = {
   id: string;

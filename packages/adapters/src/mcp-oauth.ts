@@ -18,18 +18,18 @@ import type {
   OAuthClientMetadata,
   OAuthTokens,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
-import type { SecretStore } from "@rakazo/adapter-kit";
-import { SecretStoreUnavailableError } from "@rakazo/adapter-kit";
+import type { SecretStore } from "@robots/adapter-kit";
+import { SecretStoreUnavailableError } from "@robots/adapter-kit";
 import {
   isLocalhostOrLoopbackIp,
   MCP_OAUTH_CLIENT_REQUIRED,
   mcpOAuthEnvReferences,
   parseMcpOAuthAuthorizationParams,
-} from "@rakazo/contracts";
-import { readBoundedResponseBytes } from "@rakazo/core";
-import type { Prisma, PrismaClient } from "@rakazo/db";
-import { availableInSpace, itemSecretIn, runAsSystem } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/contracts";
+import { readBoundedResponseBytes } from "@robots/core";
+import type { Prisma, PrismaClient } from "@robots/db";
+import { availableInSpace, itemSecretIn, runAsSystem } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { advisoryLock } from "./advisory-lock.js";
 import { sanitizeConnectorError } from "./connector-safety.js";
 import { MCP_DYNAMIC_REGISTRATION_UNSUPPORTED, needsMcpOAuthClient } from "./mcp-server-health.js";
@@ -602,7 +602,7 @@ export class StoredMcpOAuthProvider implements OAuthClientProvider {
       : registrationAuthMethod(this.material.oauth?.discoveryState);
     return {
       redirect_uris: [redirectUri],
-      client_name: "Rakazo",
+      client_name: "RoBots",
       grant_types: ["authorization_code", "refresh_token"],
       response_types: ["code"],
       ...(authMethod ? { token_endpoint_auth_method: authMethod } : {}),
@@ -987,7 +987,7 @@ async function startRemoteAuthorization(
     authProvider: provider,
     fetch: provider.wrapFetch(network.fetch),
   });
-  const client = new Client({ name: "rakazo-oauth", version: "0.1.0" });
+  const client = new Client({ name: "robots-oauth", version: "0.1.0" });
   const signal = AbortSignal.timeout(15_000);
   try {
     await client.connect(transport, { signal, timeout: 15_000 });

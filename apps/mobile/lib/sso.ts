@@ -1,5 +1,5 @@
 import { t } from "@lingui/core/macro";
-import { SIGNUP_SURFACE_HEADER } from "@rakazo/contracts";
+import { SIGNUP_SURFACE_HEADER } from "@robots/contracts";
 import { Platform } from "react-native";
 import { authHeaders, currentApiBase, fetchMobileJson } from "./api";
 import { clearSpace } from "./api-server";
@@ -27,7 +27,7 @@ export async function continueWithSso(
       if (apiBase !== currentApiBase() || generation !== currentSessionGeneration())
         throw new Error(t`Could not continue`);
     };
-    const callbackURL = action === "sign-in" ? "rakazo://sign-in" : "rakazo://account";
+    const callbackURL = action === "sign-in" ? "robots://sign-in" : "robots://account";
     const headers = action === "sign-in" ? {} : await authHeaders();
     requireCurrentSession();
     const previous = action === "reauthenticate" ? await sessionUser(apiBase, headers) : undefined;
@@ -41,7 +41,7 @@ export async function continueWithSso(
         method: "POST",
         headers: {
           "content-type": "application/json",
-          origin: "rakazo://",
+          origin: "robots://",
           "x-skip-oauth-proxy": "true",
           [SIGNUP_SURFACE_HEADER]: Platform.OS,
           ...headers,
@@ -77,7 +77,7 @@ export async function continueWithSso(
     if (result.type !== "success") return false;
     const callback = new URL(result.url);
     if (
-      callback.protocol !== "rakazo:" ||
+      callback.protocol !== "robots:" ||
       callback.host !== new URL(callbackURL).host ||
       (callback.pathname && callback.pathname !== "/")
     )
@@ -115,7 +115,7 @@ export async function continueWithSso(
 async function sessionUser(apiBase: string, headers: Record<string, string>): Promise<string> {
   const { response, body, invalidJson } = await fetchMobileJson<{ user?: { id?: string } }>(
     `${apiBase}/api/auth/get-session`,
-    { headers: { origin: "rakazo://", ...headers } },
+    { headers: { origin: "robots://", ...headers } },
     {},
   );
   if (!response.ok || typeof body?.user?.id !== "string" || invalidJson)

@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { ORPCError } from "@orpc/server";
-import type { SandboxProvider } from "@rakazo/adapter-kit";
-import { computerControlExpireJobKey } from "@rakazo/adapter-kit";
-import type { ComputerExecutionLease } from "@rakazo/adapters";
+import type { SandboxProvider } from "@robots/adapter-kit";
+import { computerControlExpireJobKey } from "@robots/adapter-kit";
+import type { ComputerExecutionLease } from "@robots/adapters";
 import {
   applyTeachingDesktopInput,
   ComputerBusyError,
@@ -29,24 +29,24 @@ import {
   sleepDeferReason,
   toComputerRef,
   touchRunningComputer,
-} from "@rakazo/adapters";
+} from "@robots/adapters";
 import {
   attachmentMaxBytes,
   attachmentSizeLabel,
   ComputerCommandSchema,
   foldComputerCommands,
-} from "@rakazo/contracts";
-import { ACTIVE_RUN_STATUSES, COMPUTER_USING_RUNS, scrollDirection } from "@rakazo/core";
-import { addScreenProxyCapability } from "@rakazo/core/node/screen-capability";
-import type { ComputerRunEnd } from "@rakazo/db";
+} from "@robots/contracts";
+import { ACTIVE_RUN_STATUSES, COMPUTER_USING_RUNS, scrollDirection } from "@robots/core";
+import { addScreenProxyCapability } from "@robots/core/node/screen-capability";
+import type { ComputerRunEnd } from "@robots/db";
 import {
   expireComputerExecutionLeases,
   IsolationError,
   isRecordNotFound,
   parseComputerMode,
   recordComputerRunEnd,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import {
   acquireBootLease,
   answerComputerRequest,

@@ -1,4 +1,4 @@
-import type { ProductEvent } from "@rakazo/contracts";
+import type { ProductEvent } from "@robots/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RECONNECT_SPREAD_MS } from "./retry-policy.js";
 import type { LiveThreadSnapshot } from "./thread-snapshot-events.js";

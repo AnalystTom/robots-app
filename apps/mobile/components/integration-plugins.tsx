@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { ConnectionCatalogItem, PluginMarketplaceEntry } from "@rakazo/contracts";
-import { OTHER_PLUGINS } from "@rakazo/core";
+import type { ConnectionCatalogItem, PluginMarketplaceEntry } from "@robots/contracts";
+import { OTHER_PLUGINS } from "@robots/core";
 import type { ReactNode } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { native, useThemedStyles } from "../lib/native";

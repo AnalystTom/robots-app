@@ -1,5 +1,5 @@
 import { getEnvApiKey } from "@earendil-works/pi-ai/compat";
-import type { ModelUsageLookup } from "@rakazo/adapter-kit";
+import type { ModelUsageLookup } from "@robots/adapter-kit";
 import {
   CLAUDE_CODE_CREDENTIAL_SOURCE,
   CLAUDE_CODE_PROVIDER_ID,

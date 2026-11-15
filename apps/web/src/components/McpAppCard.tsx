@@ -1,9 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
-import { useExternalLinkOpener } from "@rakazo/chat-ui/web";
-import type { MessageBlock } from "@rakazo/contracts";
-import { MCP_APP_VIEWER_PATH } from "@rakazo/contracts/content-security-policy";
-import { createMcpAppHost, mcpAppCsp, mcpAppDocument } from "@rakazo/core";
-import { cn } from "@rakazo/ui-web";
+import { useExternalLinkOpener } from "@robots/chat-ui/web";
+import type { MessageBlock } from "@robots/contracts";
+import { MCP_APP_VIEWER_PATH } from "@robots/contracts/content-security-policy";
+import { createMcpAppHost, mcpAppCsp, mcpAppDocument } from "@robots/core";
+import { cn } from "@robots/ui-web";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ArtifactTarget } from "../lib/artifact-open";
@@ -106,7 +106,7 @@ export function McpAppCard({ block, target }: { block: AppBlock; target: Artifac
       hostContext: contextRef.current,
       csp,
       send: (message) =>
-        frame.current?.contentWindow?.postMessage({ type: "rakazo-app:host", message }, "*"),
+        frame.current?.contentWindow?.postMessage({ type: "robots-app:host", message }, "*"),
       // One action per click or key, and only while this frame still holds the focus.
       allowAction: () => {
         const gesture = usedGesture.latest;
@@ -128,7 +128,7 @@ export function McpAppCard({ block, target }: { block: AppBlock; target: Artifac
     function receive(event: MessageEvent) {
       if (!host || event.source !== frame.current?.contentWindow) return;
       const data = event.data as { type?: unknown; message?: unknown; gesture?: unknown };
-      if (data?.type !== "rakazo-app:view") return;
+      if (data?.type !== "robots-app:view") return;
       host.usedGesture.latest = typeof data.gesture === "string" ? data.gesture : null;
       const message = data.message as { method?: unknown };
       if (message?.method === "ui/initialize") setStarted(true);
@@ -177,7 +177,7 @@ export function McpAppCard({ block, target }: { block: AppBlock; target: Artifac
             referrerPolicy="no-referrer"
             onLoad={() =>
               frame.current?.contentWindow?.postMessage(
-                { type: "rakazo-app:load", ...appDocument },
+                { type: "robots-app:load", ...appDocument },
                 "*",
               )
             }

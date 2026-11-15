@@ -1,4 +1,4 @@
-import type { DesktopMenuCommand } from "@rakazo/contracts";
+import type { DesktopMenuCommand } from "@robots/contracts";
 import { app, dialog, Menu } from "electron";
 import { remoteServerOrigin } from "./app-window.js";
 import { updaterSupport } from "./auto-update.js";
@@ -29,7 +29,7 @@ async function runMenuUpdateCheck() {
       : dialog.showMessageBox(options);
   if (state.phase === "ready") {
     const { response } = await alert({
-      message: t("Rakazo {version} is ready to install.", {
+      message: t("RoBots {version} is ready to install.", {
         version: state.availableVersion ?? "",
       }),
       buttons: [t("Restart"), t("Later")],
@@ -55,7 +55,7 @@ async function runMenuUpdateCheck() {
     });
   } else if (state.phase === "idle") {
     await alert({
-      message: t("Rakazo is up to date."),
+      message: t("RoBots is up to date."),
       detail: t("Version {version}", { version: state.currentVersion }),
     });
   }
@@ -103,8 +103,8 @@ export function applicationMenuInstaller({
       click: () => void checkForUpdatesFromMenu(),
     };
     const changeServer: Electron.MenuItemConstructorOptions = {
-      id: "change-rakazo-server",
-      label: t("Change Rakazo Server…"),
+      id: "change-robots-server",
+      label: t("Change RoBots Server…"),
       accelerator: "CmdOrCtrl+Shift+K",
       click: () => showSetupWindow(),
     };

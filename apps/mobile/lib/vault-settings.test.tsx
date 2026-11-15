@@ -100,7 +100,7 @@ vi.mock("./vault-import", () => ({ pickVaultCsv: state.pickCsv }));
 vi.mock("./message-action-sheet", () => ({ presentMessageActionSheet: state.actionSheet }));
 // The real retry rule from contracts, with the device prompt replaced by `confirmIdentity`.
 vi.mock("../components/confirm-identity", async () => {
-  const { runWithIdentityConfirmation } = await import("@rakazo/contracts");
+  const { runWithIdentityConfirmation } = await import("@robots/contracts");
   return {
     useIdentityConfirmation: () => ({
       withIdentityConfirmation: <T,>(action: () => Promise<T>) =>

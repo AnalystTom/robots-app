@@ -4,8 +4,8 @@ import type {
   PaymentWalletCredential,
   PaymentWalletProvider,
   SecretStore,
-} from "@rakazo/adapter-kit";
-import { asSystem, createDb, runAsSystem, runAsTenant } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import { asSystem, createDb, runAsSystem, runAsTenant } from "@robots/db";
 import { Pool } from "pg";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { createBackgroundJobHandlers } from "./background-job-handlers.js";

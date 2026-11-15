@@ -1,7 +1,7 @@
-import type { JobPublisher } from "@rakazo/adapter-kit";
-import type { Actor, MessageBlock, MessageReaction } from "@rakazo/contracts";
-import { ACTIVE_RUN_STATUSES, messageReaction, QUEUE_HOLDING_RUN_STATUSES } from "@rakazo/core";
-import type { Prisma, PrismaClient } from "@rakazo/db";
+import type { JobPublisher } from "@robots/adapter-kit";
+import type { Actor, MessageBlock, MessageReaction } from "@robots/contracts";
+import { ACTIVE_RUN_STATUSES, messageReaction, QUEUE_HOLDING_RUN_STATUSES } from "@robots/core";
+import type { Prisma, PrismaClient } from "@robots/db";
 import {
   answerWaitingRunWithTextInTransaction,
   appendEventInTransaction,
@@ -10,7 +10,7 @@ import {
   loadMessageAuthor,
   THREAD_LOCK_TRANSACTION_OPTIONS,
   touchGroupUpdatedAt,
-} from "@rakazo/db";
+} from "@robots/db";
 import type { ThreadTarget } from "./thread-target.js";
 import {
   cancelSupersededQueuedRuns,

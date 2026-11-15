@@ -5,10 +5,10 @@ import type {
   MediaGenerationInput,
   MediaGenerationProvider,
   MediaVideoJob,
-} from "@rakazo/adapter-kit";
-import { MediaGenerationError } from "@rakazo/adapter-kit";
-import { ATTACHMENT_MAX_BYTES } from "@rakazo/contracts";
-import { deadlineSignal } from "@rakazo/core";
+} from "@robots/adapter-kit";
+import { MediaGenerationError } from "@robots/adapter-kit";
+import { ATTACHMENT_MAX_BYTES } from "@robots/contracts";
+import { deadlineSignal } from "@robots/core";
 import { z } from "zod";
 import { FAKE_VIDEO_BASE64 } from "./fake-media-assets.js";
 import type { ResolveHostname } from "./web-ssrf.js";

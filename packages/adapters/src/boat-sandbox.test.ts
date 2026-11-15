@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type * as TimersPromises from "node:timers/promises";
 import type { FileUrlResponse, SandboxStateEnum } from "@boatdev/sdk";
 import { FetchError, ResponseError } from "@boatdev/sdk";
-import type { ComputerRef, PortableFile, StreamedPortableFile } from "@rakazo/adapter-kit";
+import type { ComputerRef, PortableFile, StreamedPortableFile } from "@robots/adapter-kit";
 import {
   SandboxDamagedError,
   SandboxRateLimitError,
@@ -10,13 +10,13 @@ import {
   SandboxUnavailableError,
   SandboxUnresponsiveError,
   WorkspaceTooLargeError,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   desktopWorkCommand,
   screenDisplayArgv,
   shellQuote,
-} from "@rakazo/core/node/desktop-runtime";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+} from "@robots/core/node/desktop-runtime";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { parse } from "shell-quote";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BOAT_COMPUTER_SNAPSHOT, BoatSandboxProvider } from "./boat-sandbox.js";
@@ -107,7 +107,7 @@ function exportAll(provider: BoatSandboxProvider, computer: ComputerRef, signal?
 
 function archivesLeft(api: FakeBoatApi, computer: ComputerRef): string[] {
   return [...api.files(computer.id).keys()].filter((path) =>
-    path.startsWith("/tmp/rakazo-workspace-archive-"),
+    path.startsWith("/tmp/robots-workspace-archive-"),
   );
 }
 
@@ -281,7 +281,7 @@ describe("BoatSandboxProvider", () => {
         createSandboxRequest: {
           ttlSeconds: 7200,
           noEnv: true,
-          env: { RAKAZO_BOT_ID: "bot-a", RAKAZO_SANDBOX: "computer" },
+          env: { ROBOTS_BOT_ID: "bot-a", ROBOTS_SANDBOX: "computer" },
           from: BOAT_COMPUTER_SNAPSHOT,
         },
       },
@@ -292,7 +292,7 @@ describe("BoatSandboxProvider", () => {
     expect(
       command.mock.calls.some(([request]) =>
         "commandRequest" in request
-          ? request.commandRequest.command.includes("rakazo-home/.browser-profiles")
+          ? request.commandRequest.command.includes("robots-home/.browser-profiles")
           : false,
       ),
     ).toBe(true);
@@ -316,7 +316,7 @@ describe("BoatSandboxProvider", () => {
     expect(parse(executeRequest?.command ?? "").at(-1)).toMatch(
       /; 'env' '-u' 'FAILED' '--' 'sh' '-c' '.*' 'sh' 'echo' 'hello'$/s,
     );
-    expect(executeRequest?.cwd).toBe("rakazo-home/notes");
+    expect(executeRequest?.cwd).toBe("robots-home/notes");
 
     await provider.writeFile(
       computer,
@@ -349,7 +349,7 @@ describe("BoatSandboxProvider", () => {
     await readExport(provider.exportWorkspace(computer, context));
     const archive = command.mock.calls
       .map(([request]) => request.commandRequest)
-      .find((request) => request.command.includes("rakazo-workspace-archive-"));
+      .find((request) => request.command.includes("robots-workspace-archive-"));
     expect(archive).toMatchObject({ detached: true });
     expect(archive).not.toHaveProperty("timeoutSeconds");
   });
@@ -378,7 +378,7 @@ describe("BoatSandboxProvider", () => {
     expect(commands.some((text) => text.includes("mkdir -p -m 700"))).toBe(true);
     const [written] = writeFile.mock.calls.map(([request]) => request.fileWriteRequest);
     const envFile = written?.path ?? "";
-    expect(envFile).toMatch(/^\/home\/user\/\.rakazo-command-env\/[0-9a-f-]{36}$/);
+    expect(envFile).toMatch(/^\/home\/user\/\.robots-command-env\/[0-9a-f-]{36}$/);
     expect(Buffer.from(written?.content ?? "", "base64").toString("utf8")).toContain("fake-secret");
     // The same command opens, deletes, and loads the file before running argv.
     const run = parse(commands.find((text) => text.includes(envFile)) ?? "").at(-1);
@@ -475,10 +475,10 @@ describe("BoatSandboxProvider", () => {
     await expect(run()).rejects.toThrow("connection reset");
     const commands = command.mock.calls.map(([request]) => request.commandRequest.command);
     expect(commands.at(-1)).toMatch(
-      /^rm -f -- '\/home\/user\/\.rakazo-command-env\/[0-9a-f-]{36}'$/,
+      /^rm -f -- '\/home\/user\/\.robots-command-env\/[0-9a-f-]{36}'$/,
     );
     expect(
-      [...api.files(computer.id).keys()].some((file) => file.includes(".rakazo-command-env")),
+      [...api.files(computer.id).keys()].some((file) => file.includes(".robots-command-env")),
     ).toBe(false);
   });
 
@@ -1503,7 +1503,7 @@ describe("BoatSandboxProvider", () => {
     const [request, init] = fetchMock.mock.calls[0]!;
     const url = new URL(String(request));
     expect(url.pathname).toBe("/api/v1/sandboxes/bx_testbox2/artifacts");
-    expect(url.searchParams.get("path")).toBe(`/home/user/rakazo-home/${filePath}`);
+    expect(url.searchParams.get("path")).toBe(`/home/user/robots-home/${filePath}`);
     expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer test-key");
     expect(init?.signal).toBe(context.signal);
   });
@@ -1540,7 +1540,7 @@ describe("BoatSandboxProvider", () => {
       [".browser-profiles/chrome/Default/History", large, false],
       ["bin/a tool", large, true],
     ] as const) {
-      const restored = api.files(computer.id).get(`/home/user/rakazo-home/${path}`);
+      const restored = api.files(computer.id).get(`/home/user/robots-home/${path}`);
       expect(restored?.executable).toBe(executable);
       expect(Buffer.from(restored!.content).equals(expected)).toBe(true);
     }
@@ -1617,7 +1617,7 @@ describe("BoatSandboxProvider", () => {
       expect((error as Error).cause).toBeUndefined();
       expect((error as Error).stack).not.toContain(secret);
       expect(command).not.toHaveBeenCalled();
-      expect(api.files(computer.id).has("/home/user/rakazo-home/large.bin")).toBe(false);
+      expect(api.files(computer.id).has("/home/user/robots-home/large.bin")).toBe(false);
     },
   );
 
@@ -1650,7 +1650,7 @@ describe("BoatSandboxProvider", () => {
     const files = api.files(computer.id);
     const expected: [string, Buffer, boolean][] = [];
     const put = (path: string, content: Buffer, executable = false) => {
-      files.set(`/home/user/rakazo-home/${path}`, { content, executable });
+      files.set(`/home/user/robots-home/${path}`, { content, executable });
       expected.push([path, content, executable]);
     };
     for (let index = 0; index < 500; index++) {
@@ -1664,7 +1664,7 @@ describe("BoatSandboxProvider", () => {
     put("notes/tab\there/new\nline.txt", Buffer.from("odd"));
     put("unicode/café 日本語 🙂.txt", Buffer.from("unicode"));
     put(".browser-profiles/chrome/Default/History", Buffer.from("history"));
-    files.set("/home/user/rakazo-home/.browser-profiles/chrome/Default/Cache/data_0", {
+    files.set("/home/user/robots-home/.browser-profiles/chrome/Default/Cache/data_0", {
       content: Buffer.from("cache"),
       executable: false,
     });
@@ -1696,7 +1696,7 @@ describe("BoatSandboxProvider", () => {
     expect(artifactRaw).not.toHaveBeenCalled();
     expect(createDownloadUrl).toHaveBeenCalledOnce();
     expect(createDownloadUrl.mock.calls[0]?.[0].fileUrlRequest.path).toMatch(
-      /^\/tmp\/rakazo-workspace-archive-[0-9a-f-]+\.tar\.gz$/,
+      /^\/tmp\/robots-workspace-archive-[0-9a-f-]+\.tar\.gz$/,
     );
     expect(fetchMock).toHaveBeenCalledOnce();
     const [, init] = fetchMock.mock.calls[0]!;
@@ -1705,7 +1705,7 @@ describe("BoatSandboxProvider", () => {
     // Stopping the browsers, archiving, and removing the archive.
     expect(command).toHaveBeenCalledTimes(3);
     expect(command.mock.calls.at(-1)?.[0].commandRequest.command).toMatch(
-      /^rm -f -- '\/tmp\/rakazo-workspace-archive-/,
+      /^rm -f -- '\/tmp\/robots-workspace-archive-/,
     );
     expect(archivesLeft(api, computer)).toEqual([]);
   });
@@ -1733,7 +1733,7 @@ describe("BoatSandboxProvider", () => {
     const read = FakeBoatApi.prototype.artifactRaw;
     const artifactRaw = vi.spyOn(FakeBoatApi.prototype, "artifactRaw");
     const { api, provider, computer } = await boat();
-    api.files(computer.id).set("/home/user/rakazo-home/report.pdf", {
+    api.files(computer.id).set("/home/user/robots-home/report.pdf", {
       content: Buffer.from("slow but small"),
       executable: false,
     });
@@ -1773,7 +1773,7 @@ describe("BoatSandboxProvider", () => {
 
   it("restores over read-only files a kept disk already holds", async () => {
     const { api, provider, computer } = await boat();
-    const pack = "/home/user/rakazo-home/repo/.git/objects/pack/pack-1.idx";
+    const pack = "/home/user/robots-home/repo/.git/objects/pack/pack-1.idx";
     api.files(computer.id).set(pack, {
       content: Uint8Array.from([1]),
       executable: false,
@@ -1798,7 +1798,7 @@ describe("BoatSandboxProvider", () => {
     ["exit 1", { exitCode: 1, timedOut: false }, "could not list Boat workspace (exit 1)"],
     ["timeout", { exitCode: 124, timedOut: true }, "could not list Boat workspace (timed out)"],
   ])("reports a failed directory listing by its %s, not its output", async (_, ending, message) => {
-    const output = `${Buffer.from("/home/user/rakazo-home/private.txt").toString("base64")}\tfile\t1\t0\n`;
+    const output = `${Buffer.from("/home/user/robots-home/private.txt").toString("base64")}\tfile\t1\t0\n`;
     const run = FakeBoatApi.prototype.command;
     vi.spyOn(FakeBoatApi.prototype, "command").mockImplementation(async function (
       this: FakeBoatApi,
@@ -1860,7 +1860,7 @@ describe("BoatSandboxProvider", () => {
     ["timed out", { exitCode: 124, timedOut: true }, "timed out"],
     ["met an unreadable file", { exitCode: 3, timedOut: false }, "an entry could not be read"],
   ])("reports a workspace archive that %s without its output", async (_, ending, status) => {
-    const output = "/home/user/rakazo-home/private.txt\n";
+    const output = "/home/user/robots-home/private.txt\n";
     const run = FakeBoatApi.prototype.command;
     vi.spyOn(FakeBoatApi.prototype, "command").mockImplementation(async function (
       this: FakeBoatApi,
@@ -1887,7 +1887,7 @@ describe("BoatSandboxProvider", () => {
 
   it("fails an export whose archive download was cut short and removes the archive", async () => {
     const { api, provider, computer } = await boat();
-    api.files(computer.id).set("/home/user/rakazo-home/notes.txt", {
+    api.files(computer.id).set("/home/user/robots-home/notes.txt", {
       content: Buffer.alloc(100_000, 7),
       executable: false,
     });
@@ -1902,7 +1902,7 @@ describe("BoatSandboxProvider", () => {
 
   it("stops the archive download with the caller's signal", async () => {
     const { api, provider, computer } = await boat();
-    api.files(computer.id).set("/home/user/rakazo-home/notes.txt", {
+    api.files(computer.id).set("/home/user/robots-home/notes.txt", {
       content: Buffer.from("kept"),
       executable: false,
     });
@@ -1928,7 +1928,7 @@ describe("BoatSandboxProvider", () => {
     const { api, provider, computer } = await boat();
     const files = api.files(computer.id);
     for (const name of ["a", "b", "c"]) {
-      files.set(`/home/user/rakazo-home/${name}.txt`, {
+      files.set(`/home/user/robots-home/${name}.txt`, {
         content: Buffer.alloc(10),
         executable: false,
       });
@@ -1949,7 +1949,7 @@ describe("BoatSandboxProvider", () => {
   it("refuses a capped read of a file over the artifact limit without downloading it", async () => {
     const download = vi.spyOn(FakeBoatApi.prototype, "createDownloadUrl");
     const { api, provider, computer } = await boat();
-    api.files(computer.id).set("/home/user/rakazo-home/large.bin", {
+    api.files(computer.id).set("/home/user/robots-home/large.bin", {
       content: Buffer.alloc(BOAT_ARTIFACT_MAX_BYTES + 1),
       executable: false,
     });
@@ -1975,7 +1975,7 @@ describe("BoatSandboxProvider", () => {
       return { ...(await mint.call(this, request)), ...override } as FileUrlResponse;
     });
     const { api, provider, computer } = await boat();
-    api.files(computer.id).set("/home/user/rakazo-home/large.bin", {
+    api.files(computer.id).set("/home/user/robots-home/large.bin", {
       content: Buffer.alloc(BOAT_ARTIFACT_MAX_BYTES + 1),
       executable: false,
     });
@@ -1993,7 +1993,7 @@ describe("BoatSandboxProvider", () => {
     "fails downloads without exposing signed URLs or response bodies (%s)",
     async (failure) => {
       const { api, provider, computer } = await boat();
-      api.files(computer.id).set("/home/user/rakazo-home/large.bin", {
+      api.files(computer.id).set("/home/user/robots-home/large.bin", {
         content: Buffer.alloc(BOAT_ARTIFACT_MAX_BYTES + 1),
         executable: false,
       });
@@ -2047,8 +2047,8 @@ describe("BoatSandboxProvider", () => {
   it("accepts empty files and files exactly at the download limit", async () => {
     const { api, provider, computer } = await boat();
     const files = api.files(computer.id);
-    files.set("/home/user/rakazo-home/empty.bin", { content: new Uint8Array(), executable: false });
-    files.set("/home/user/rakazo-home/exact.bin", {
+    files.set("/home/user/robots-home/empty.bin", { content: new Uint8Array(), executable: false });
+    files.set("/home/user/robots-home/exact.bin", {
       content: Uint8Array.from([0, 255]),
       executable: false,
     });
@@ -2182,7 +2182,7 @@ describe("BoatSandboxProvider", () => {
           "bot-a",
           undefined,
           0,
-          "DISPLAY=:20 RAKAZO_CDP_PORT=9241 HOME='/home/user/rakazo-home' RAKAZO_BROWSER_ARGS_STDIN=1 /usr/local/bin/rakazo-page-browser act",
+          "DISPLAY=:20 ROBOTS_CDP_PORT=9241 HOME='/home/user/robots-home' ROBOTS_BROWSER_ARGS_STDIN=1 /usr/local/bin/robots-page-browser act",
         ),
         input: `${JSON.stringify({ command: "act", actions: [fill] })}\n`,
       },
@@ -2398,7 +2398,7 @@ describe("Boat computer snapshot", () => {
   }
 
   it("names the snapshot after the setup it captures", () => {
-    expect(BOAT_COMPUTER_SNAPSHOT).toMatch(/^rakazo-computer-[0-9a-f]{12}$/);
+    expect(BOAT_COMPUTER_SNAPSHOT).toMatch(/^robots-computer-[0-9a-f]{12}$/);
     expect(computerSnapshotName(["mkdir -p a", PREPARE_LINUX_DESKTOP])).not.toBe(
       computerSnapshotName(["mkdir -p b", PREPARE_LINUX_DESKTOP]),
     );
@@ -2412,7 +2412,7 @@ describe("Boat computer snapshot", () => {
     await new BoatSandboxProvider({ apiKey: "test-key" }, api).buildComputerSnapshot();
     const setup = scripts(command).join("\n");
     expect(setup).toContain("agent-browser-linux-");
-    expect(setup).not.toContain("rakazo-page-browser");
+    expect(setup).not.toContain("robots-page-browser");
   });
 
   it("starts new computers from the ready snapshot with only their own env", async () => {
@@ -2426,7 +2426,7 @@ describe("Boat computer snapshot", () => {
       {
         ttlSeconds: 7200,
         noEnv: true,
-        env: { RAKAZO_BOT_ID: "bot-a", RAKAZO_SANDBOX: "computer" },
+        env: { ROBOTS_BOT_ID: "bot-a", ROBOTS_SANDBOX: "computer" },
         from: BOAT_COMPUTER_SNAPSHOT,
       },
       expect.objectContaining({ from: BOAT_COMPUTER_SNAPSHOT }),
@@ -2450,13 +2450,13 @@ describe("Boat computer snapshot", () => {
       await vi.waitFor(() => expect(remove).toHaveBeenCalledOnce());
       const third = await provision(provider);
 
-      const computers = api.creates.filter((request) => request.env?.RAKAZO_BOT_ID);
+      const computers = api.creates.filter((request) => request.env?.ROBOTS_BOT_ID);
       expect(computers.map((request) => request.from)).toEqual([
         undefined,
         undefined,
         BOAT_COMPUTER_SNAPSHOT,
       ]);
-      const builds = api.creates.filter((request) => !request.env?.RAKAZO_BOT_ID);
+      const builds = api.creates.filter((request) => !request.env?.ROBOTS_BOT_ID);
       expect(builds).toEqual([{ ttlSeconds: 1800, noEnv: true }]);
       const buildId = api.savedSnapshots.get(BOAT_COMPUTER_SNAPSHOT)?.sourceSandboxId;
       expect([first.id, second.id, third.id]).not.toContain(buildId);
@@ -2489,7 +2489,7 @@ describe("Boat computer snapshot", () => {
       {
         ttlSeconds: 7200,
         noEnv: true,
-        env: { RAKAZO_BOT_ID: "bot-a", RAKAZO_SANDBOX: "computer" },
+        env: { ROBOTS_BOT_ID: "bot-a", ROBOTS_SANDBOX: "computer" },
       },
     ]);
     expect(computer.id).toBe("bx_fake2");
@@ -2513,7 +2513,7 @@ describe("Boat computer snapshot", () => {
     const commands = command.mock.calls.map(([request]) => request.commandRequest.command);
     expect(commands.some((line) => line.includes("apt-get install"))).toBe(true);
     expect(commands.some((line) => line.includes("xdpyinfo -display :99"))).toBe(true);
-    expect(commands.join("\n")).not.toContain("RAKAZO_BOT_ID");
+    expect(commands.join("\n")).not.toContain("ROBOTS_BOT_ID");
 
     await expect(provider.buildComputerSnapshot()).resolves.toEqual({
       name: BOAT_COMPUTER_SNAPSHOT,

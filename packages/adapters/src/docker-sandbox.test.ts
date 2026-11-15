@@ -1,10 +1,10 @@
-import type { ProcessEvent } from "@rakazo/adapter-kit";
+import type { ProcessEvent } from "@robots/adapter-kit";
 import {
   SandboxDamagedError,
   SandboxRequestRejectedError,
   SandboxUnresponsiveError,
-} from "@rakazo/adapter-kit";
-import { COMPUTER_UNRESPONSIVE_ERROR } from "@rakazo/contracts";
+} from "@robots/adapter-kit";
+import { COMPUTER_UNRESPONSIVE_ERROR } from "@robots/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DockerSandboxProvider,
@@ -115,7 +115,7 @@ describe("Docker sandbox", () => {
 
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
       argv: ["env", "-u", "FAILED", "--", "sleep", "10"],
-      cwd: "/home/rakazo",
+      cwd: "/home/robots",
       timeoutMs: 75,
     });
     expect(events).toEqual([
@@ -124,8 +124,8 @@ describe("Docker sandbox", () => {
       { type: "exit", code: 124 },
     ]);
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
-      "x-rakazo-bot-id": "bot",
-      "x-rakazo-screen-id": "bot",
+      "x-robots-bot-id": "bot",
+      "x-robots-screen-id": "bot",
     });
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
       "x-request-id": expect.any(String),
@@ -477,7 +477,7 @@ describe("Docker sandbox", () => {
       expect(fetchMock.mock.calls.at(-1)).toEqual([
         "http://supervisor.test/computers/computer/stop",
         expect.objectContaining({
-          headers: expect.objectContaining({ "x-rakazo-discard-unsaved": "1" }),
+          headers: expect.objectContaining({ "x-robots-discard-unsaved": "1" }),
         }),
       ]);
       await provider.prepare(computer, context);
@@ -711,10 +711,10 @@ describe("Docker sandbox", () => {
         method: "DELETE",
         headers: expect.objectContaining({
           authorization: "Bearer test-token",
-          "x-rakazo-bot-id": "home-bot",
-          "x-rakazo-screen-id": "bot",
-          "x-rakazo-screen-lease-id": "run-1:1",
-          "x-rakazo-space-id": "workspace",
+          "x-robots-bot-id": "home-bot",
+          "x-robots-screen-id": "bot",
+          "x-robots-screen-lease-id": "run-1:1",
+          "x-robots-space-id": "workspace",
         }),
       }),
     );
@@ -893,7 +893,7 @@ describe("Docker sandbox", () => {
       "http://supervisor.test/computers/computer-1/screen",
       expect.objectContaining({
         method: "DELETE",
-        headers: expect.objectContaining({ "x-rakazo-cancel-run-work": "1" }),
+        headers: expect.objectContaining({ "x-robots-cancel-run-work": "1" }),
       }),
     );
   });
@@ -911,7 +911,7 @@ describe("Docker sandbox", () => {
 
     await provider.releaseScreen(computer, { ...context, keepScreenWarm: true });
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({
-      "x-rakazo-preserve-screen": "1",
+      "x-robots-preserve-screen": "1",
     });
 
     await provider.releaseScreen(computer, {
@@ -920,9 +920,9 @@ describe("Docker sandbox", () => {
       cancelRunWork: true,
     });
     expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({
-      "x-rakazo-cancel-run-work": "1",
+      "x-robots-cancel-run-work": "1",
     });
-    expect(fetchMock.mock.calls[1]?.[1]?.headers).not.toHaveProperty("x-rakazo-preserve-screen");
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).not.toHaveProperty("x-robots-preserve-screen");
 
     const abort = new AbortController();
     abort.abort();
@@ -931,7 +931,7 @@ describe("Docker sandbox", () => {
       keepScreenWarm: true,
       signal: abort.signal,
     });
-    expect(fetchMock.mock.calls[2]?.[1]?.headers).not.toHaveProperty("x-rakazo-preserve-screen");
+    expect(fetchMock.mock.calls[2]?.[1]?.headers).not.toHaveProperty("x-robots-preserve-screen");
   });
 });
 
@@ -956,8 +956,8 @@ describe("Docker page browser", () => {
         signal: context.signal,
         body: JSON.stringify({ command: "snapshot" }),
         headers: expect.objectContaining({
-          "x-rakazo-bot-id": "team-home",
-          "x-rakazo-screen-lease-id": "run-1:1",
+          "x-robots-bot-id": "team-home",
+          "x-robots-screen-lease-id": "run-1:1",
         }),
       }),
     );

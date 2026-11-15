@@ -1,4 +1,4 @@
-import type { RunActivityRow } from "@rakazo/contracts";
+import type { RunActivityRow } from "@robots/contracts";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchSpaceActivity } from "./activity";

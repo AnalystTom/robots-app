@@ -6,10 +6,10 @@ import type {
   MessagingInboundMessage,
   MessagingSurface,
   TeamChatInboundMessage,
-} from "@rakazo/adapter-kit";
-import { teamChatEngageJobKey } from "@rakazo/adapter-kit";
-import { GraphileJobPublisher, MessagingDelivery, TeamChat } from "@rakazo/adapters";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import { teamChatEngageJobKey } from "@robots/adapter-kit";
+import { GraphileJobPublisher, MessagingDelivery, TeamChat } from "@robots/adapters";
+import type { PrismaClient } from "@robots/db";
 import {
   asSystem,
   createDb,
@@ -17,7 +17,7 @@ import {
   provisionMessagingIdentity,
   runAsSystem,
   sendUserMessage as sendUserMessageTo,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { wakeMessageRoutines } from "./messaging-inbound.js";
 import { TeamChatBridge } from "./team-chat-bridge.js";

@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { canDeleteOrganization } from "@rakazo/core";
+import { canDeleteOrganization } from "@robots/core";
 import {
   Button,
   Dialog,
@@ -15,7 +15,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { CircleUserRound } from "lucide-react";
 import { useState } from "react";
 import { authClient } from "../lib/auth";

@@ -17,9 +17,9 @@ function compose(args: string[], options?: Parameters<typeof execFileSync>[2]) {
   return execFileSync("docker", [...composeBaseArgs(repoRoot), ...args], options);
 }
 
-const psql = (sqlArgs: string[]) => ["exec", "-T", "postgres", "psql", "-U", "rakazo", ...sqlArgs];
+const psql = (sqlArgs: string[]) => ["exec", "-T", "postgres", "psql", "-U", "robots", ...sqlArgs];
 
-const SIDE_DATABASE = `rakazo_restore_${randomUUID().replaceAll("-", "")}`;
+const SIDE_DATABASE = `robots_restore_${randomUUID().replaceAll("-", "")}`;
 
 function createSideDatabase() {
   compose(psql(["-d", "postgres", "-c", `CREATE DATABASE ${SIDE_DATABASE}`]), {
@@ -65,9 +65,9 @@ describeBackup("compose backup and restore", () => {
       execSync(`${path.join(repoRoot, "scripts/backup.sh")} ${stamp}`, {
         stdio: "pipe",
         timeout: 60_000,
-        env: { ...process.env, RAKAZO_BACKUP_SKIP_HOMES: "1" },
+        env: { ...process.env, ROBOTS_BACKUP_SKIP_HOMES: "1" },
       });
-      const dump = path.join(repoRoot, "backups", stamp, "rakazo.sql");
+      const dump = path.join(repoRoot, "backups", stamp, "robots.sql");
       expect(existsSync(dump)).toBe(true);
       const sql = readFileSync(dump, "utf8");
       expect(sql).toMatch(/CREATE TABLE|CREATE TABLE IF NOT EXISTS/i);
@@ -81,7 +81,7 @@ describeBackup("compose backup and restore", () => {
           "-X",
           "--set=ON_ERROR_STOP=on",
           "-c",
-          "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rakazo_app') THEN CREATE ROLE rakazo_app NOLOGIN; END IF; END $$",
+          "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'robots_app') THEN CREATE ROLE robots_app NOLOGIN; END IF; END $$",
         ]),
         { stdio: "pipe", timeout: 20_000 },
       );

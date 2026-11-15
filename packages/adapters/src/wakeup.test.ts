@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import type { BackgroundJobHandlers } from "@rakazo/adapter-kit";
-import { messagingSendJob, messagingSendJobKey } from "@rakazo/adapter-kit";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import type { BackgroundJobHandlers } from "@robots/adapter-kit";
+import { messagingSendJob, messagingSendJobKey } from "@robots/adapter-kit";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ABANDONED_SUSPEND_CLAIM_MS } from "./computer-idle.js";
 import {
@@ -460,10 +460,10 @@ describe("InMemoryJobQueue", () => {
 
   it("unwraps correlation envelopes and restores request traces", async () => {
     const { createLogger, createTestSink, installLogger, runWithLogContext } = await import(
-      "@rakazo/logging"
+      "@robots/logging"
     );
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-worker", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-worker", sinks: [sink] }));
     const queue = new InMemoryJobQueue();
     const target = handlers();
     await queue.start(target);
@@ -488,8 +488,8 @@ describe("InMemoryJobQueue", () => {
   });
 
   it("keeps wrapped payloads readable by workers that do not unwrap envelopes", async () => {
-    const { wrapJobPayload } = await import("@rakazo/logging");
-    const { parseBackgroundJob } = await import("@rakazo/adapter-kit");
+    const { wrapJobPayload } = await import("@robots/logging");
+    const { parseBackgroundJob } = await import("@robots/adapter-kit");
     const wrapped = wrapJobPayload(
       { runId: "run-rollback" },
       { jobId: "job-1", traceId: "a".repeat(32) },

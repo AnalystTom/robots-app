@@ -13,9 +13,9 @@ import type {
   MutableModels,
 } from "@earendil-works/pi-ai";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
-import type { AgentRunRequest, AgentRuntime, AgentRuntimeEvent } from "@rakazo/adapter-kit";
-import { normalizeRunError } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+import type { AgentRunRequest, AgentRuntime, AgentRuntimeEvent } from "@robots/adapter-kit";
+import { normalizeRunError } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { hostCredentialSource, resolveDeploymentModel } from "../../deployment-model.js";
 import { knownModelImageInput, modelAcceptsImageInput } from "../../model-vision.js";
@@ -52,7 +52,7 @@ const SERVER_SECRETS = {
   CLAUDE_CODE_OAUTH_TOKEN: "fake-oauth-token",
   OPENROUTER_API_KEY: "sk-fake-openrouter-key",
   LC_INTERNAL_TOKEN: "fake-locale-prefixed-secret",
-  DATABASE_URL: "postgres://user:fake-password@db.example.invalid/rakazo",
+  DATABASE_URL: "postgres://user:fake-password@db.example.invalid/robots",
 };
 
 const tools = [
@@ -82,7 +82,7 @@ function configureProvider(accessCheck: (() => Promise<string | undefined>) | un
 
 /** Puts a fake `claude` first on PATH; it records what it was started with. */
 function fakeClaude(scenario: string) {
-  const dir = mkdtempSync(join(tmpdir(), "rakazo-fake-claude-"));
+  const dir = mkdtempSync(join(tmpdir(), "robots-fake-claude-"));
   const record = join(dir, "record.json");
   writeFileSync(
     join(dir, "claude"),
@@ -190,7 +190,7 @@ describe.skipIf(process.platform === "win32")("Claude Code CLI provider", () => 
     expect(record.frames).toEqual([
       { type: "user", message: { role: "user", content: [{ type: "text", text: "Hi" }] } },
     ]);
-    // The inventory server lists Rakazo's tools and never runs one.
+    // The inventory server lists RoBots's tools and never runs one.
     expect(record.tools.init?.protocolVersion).toBe("2025-06-18");
     expect(record.tools.tools).toEqual([
       { name: "lookup", description: tools[0]!.description, inputSchema: tools[0]!.parameters },
@@ -322,7 +322,7 @@ describe.skipIf(process.platform === "win32")("Claude Code CLI provider", () => 
     expect(events.at(-1)?.type).toBe("error");
   });
 
-  it("hands a tool call back to Rakazo and stops the CLI before it goes on", async () => {
+  it("hands a tool call back to RoBots and stops the CLI before it goes on", async () => {
     const cli = fakeClaude("tool");
     const { events, message } = await run(hello);
 
@@ -388,7 +388,7 @@ describe.skipIf(process.platform === "win32")("Claude Code CLI provider", () => 
             {
               type: "tool_use",
               id: "toolu_0",
-              name: "mcp__rakazo__lookup",
+              name: "mcp__robots__lookup",
               input: { city: "Paris" },
             },
           ],
@@ -569,7 +569,7 @@ describe.skipIf(process.platform === "win32")("Claude Code CLI provider", () => 
     ["crash", /exit code 3/],
     ["old-version", /older than \d+\.\d+\.\d+\. Run `claude update`/],
     ["built-in-tools", /its own tools enabled: Bash, Read/],
-    ["no-tool-server", /could not load Rakazo's tools/],
+    ["no-tool-server", /could not load RoBots's tools/],
     ["incomplete-tool", /incomplete content blocks/],
   ])("fails clearly on %s", async (scenario, error) => {
     fakeClaude(scenario);
@@ -630,7 +630,7 @@ describe.skipIf(process.platform === "win32")("Claude Code CLI provider", () => 
   });
 
   it("says when the CLI is not installed", async () => {
-    vi.stubEnv("PATH", mkdtempSync(join(tmpdir(), "rakazo-no-claude-")));
+    vi.stubEnv("PATH", mkdtempSync(join(tmpdir(), "robots-no-claude-")));
     const { message } = await run(hello);
     expect(message.errorMessage).toBe(CLAUDE_CODE_NOT_INSTALLED_ERROR);
   });
@@ -639,7 +639,7 @@ describe.skipIf(process.platform === "win32")("Claude Code CLI provider", () => 
     const cli = fakeClaude("reply");
     configureProvider(undefined);
     expect((await run(hello)).message.errorMessage).toMatch(
-      /only inside the Rakazo API and worker/,
+      /only inside the RoBots API and worker/,
     );
     configureProvider(async () => PERSONAL_CLI_SHARED_REFUSAL);
     expect((await run(hello)).message.errorMessage).toBe(PERSONAL_CLI_SHARED_REFUSAL);

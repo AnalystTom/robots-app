@@ -1,4 +1,4 @@
-import { authenticatorKey } from "@rakazo/contracts";
+import { authenticatorKey } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import { totpCode } from "./totp.js";
 

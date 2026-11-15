@@ -23,8 +23,8 @@ import subprocess
 from pathlib import Path
 from urllib.parse import urlencode
 
-START = "<!-- rakazo-pr-screenshots:start -->"
-END = "<!-- rakazo-pr-screenshots:end -->"
+START = "<!-- robots-pr-screenshots:start -->"
+END = "<!-- robots-pr-screenshots:end -->"
 MAX_SHOTS = 4
 MAX_CAPTION = 200
 MAX_BYTES = 5 * 1024 * 1024
@@ -84,7 +84,7 @@ def evidence(pages: list, sha: str) -> str:
         for page in pages
         for comment in page
         if comment.get("user", {}).get("login") == "github-actions[bot]"
-        and "<!-- rakazo-playwright-screenshots -->" in (comment.get("body") or "")
+        and "<!-- robots-playwright-screenshots -->" in (comment.get("body") or "")
         and commit_marker(sha) in comment["body"]
     )[:24_000]
 
@@ -143,7 +143,7 @@ def sources_ready(repo: str, pr: str, sha: str) -> bool:
     pages = api(f"repos/{repo}/issues/{pr}/comments?per_page=100", paginate=True)
     deployed = any(
         comment.get("user", {}).get("login") == "github-actions[bot]"
-        and (comment.get("body") or "").startswith("<!-- rakazo-preview -->")
+        and (comment.get("body") or "").startswith("<!-- robots-preview -->")
         and marker in comment["body"]
         for page in pages for comment in page
     )

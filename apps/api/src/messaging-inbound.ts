@@ -1,10 +1,10 @@
-import type { JobPublisher, MessagingInboundMessage, SandboxProvider } from "@rakazo/adapter-kit";
-import { teamChatEngageJobKey } from "@rakazo/adapter-kit";
-import type { MessagingDelivery, OutboundLane } from "@rakazo/adapters";
-import { MESSAGING_DM_OUTBOUND_CAP, messagingWakeIdempotencyKey, wakeRun } from "@rakazo/adapters";
-import type { MessageBlock } from "@rakazo/contracts";
-import { ATTACHMENT_MAX_COUNT, isAttachmentAudioMimeType } from "@rakazo/contracts";
-import type { MessagingCommand } from "@rakazo/core";
+import type { JobPublisher, MessagingInboundMessage, SandboxProvider } from "@robots/adapter-kit";
+import { teamChatEngageJobKey } from "@robots/adapter-kit";
+import type { MessagingDelivery, OutboundLane } from "@robots/adapters";
+import { MESSAGING_DM_OUTBOUND_CAP, messagingWakeIdempotencyKey, wakeRun } from "@robots/adapters";
+import type { MessageBlock } from "@robots/contracts";
+import { ATTACHMENT_MAX_COUNT, isAttachmentAudioMimeType } from "@robots/contracts";
+import type { MessagingCommand } from "@robots/core";
 import {
   displayName,
   messageBlockForArtifact,
@@ -12,7 +12,7 @@ import {
   parseMessagingCommand,
   promptTextForAttachments,
   sanitizeMessagingLabel,
-} from "@rakazo/core";
+} from "@robots/core";
 import type {
   MessagingIdentityRequest,
   Prisma,
@@ -20,7 +20,7 @@ import type {
   ProvisionedMessagingIdentity,
   SignupPolicyEnv,
   ThreadEvents,
-} from "@rakazo/db";
+} from "@robots/db";
 import {
   accountDeactivated,
   createThreadMessage,
@@ -30,8 +30,8 @@ import {
   SendClaimLostError,
   SpaceDeletionInProgressError,
   THREAD_LOCK_TRANSACTION_OPTIONS,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { InboundAttachmentStore } from "./inbound-attachments.js";
 import { storeInboundAttachments } from "./inbound-attachments.js";
 import type { MessagingReceipts } from "./messaging-receipts.js";
@@ -925,7 +925,7 @@ async function handleChannelEvent(
           idempotencyKey: `intro:${channel.id}`,
           kind: "intro",
           threadId: channel.threadId,
-          body: "Hi. This line hosts Rakazo personal agents. Some people in this group haven't messaged it yet; send any message to this line first if you want your own agent here.",
+          body: "Hi. This line hosts RoBots personal agents. Some people in this group haven't messaged it yet; send any message to this line first if you want your own agent here.",
         },
       ]);
       await tx.messagingChannel.update({
@@ -1025,7 +1025,7 @@ async function queueInvite(
     idempotencyKey,
     kind: "dm",
     identityId: identity.id,
-    body: `"${name}" was linked to your Rakazo agent. Reply YES to let your agent join the conversation there, or NO to stay out.`,
+    body: `"${name}" was linked to your RoBots agent. Reply YES to let your agent join the conversation there, or NO to stay out.`,
   });
   return true;
 }

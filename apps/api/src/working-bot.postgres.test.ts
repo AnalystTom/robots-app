@@ -1,6 +1,6 @@
-import type { SandboxProvider } from "@rakazo/adapter-kit";
-import type { Actor } from "@rakazo/contracts";
-import type { ThreadEvents } from "@rakazo/db";
+import type { SandboxProvider } from "@robots/adapter-kit";
+import type { Actor } from "@robots/contracts";
+import type { ThreadEvents } from "@robots/db";
 import {
   appendEventInTransaction,
   createDb,
@@ -9,7 +9,7 @@ import {
   provisionMessagingIdentity,
   runAsSystem,
   runAsTenant,
-} from "@rakazo/db";
+} from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import { threadSnapshot } from "./thread-snapshot.js";
 import {

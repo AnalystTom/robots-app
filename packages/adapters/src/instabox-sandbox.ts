@@ -1,9 +1,9 @@
 import { setTimeout as delay } from "node:timers/promises";
-import type { UnreferencedMachine, UnreferencedMachineRecords } from "@rakazo/adapter-kit";
-import { SandboxRateLimitError, SandboxSizeUnavailableError } from "@rakazo/adapter-kit";
-import type { ComputerSize } from "@rakazo/contracts";
-import { COMPUTER_SIZE_SPECS } from "@rakazo/contracts";
-import { withAbort } from "@rakazo/core";
+import type { UnreferencedMachine, UnreferencedMachineRecords } from "@robots/adapter-kit";
+import { SandboxRateLimitError, SandboxSizeUnavailableError } from "@robots/adapter-kit";
+import type { ComputerSize } from "@robots/contracts";
+import { COMPUTER_SIZE_SPECS } from "@robots/contracts";
+import { withAbort } from "@robots/core";
 import { shellQuote } from "./computer-support.js";
 import type {
   CommandResult,

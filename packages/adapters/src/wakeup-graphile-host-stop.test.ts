@@ -1,5 +1,5 @@
 import { getHeapStatistics } from "node:v8";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import type * as GraphileWorker from "graphile-worker";
 import type { Runner } from "graphile-worker";
 import type { Pool } from "pg";
@@ -292,7 +292,7 @@ describe("GraphileJobWorkerHost stop", () => {
     const writeLanded = deferred();
     run.mockResolvedValueOnce(mockRunner(() => writeLanded.promise.then(() => undefined)).runner);
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-worker", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-worker", sinks: [sink] }));
     const host = new GraphileJobWorkerHost({} as Pool, {
       concurrency: 1,
       idleStopTimeoutMs: IDLE_MS,
@@ -310,7 +310,7 @@ describe("GraphileJobWorkerHost stop", () => {
     } finally {
       writeLanded.resolve();
       await host.stop();
-      installLogger(createLogger({ service: "rakazo-worker", level: "off", sinks: [] }));
+      installLogger(createLogger({ service: "robots-worker", level: "off", sinks: [] }));
     }
   });
 

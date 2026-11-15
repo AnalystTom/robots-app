@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { ApprovalRuleChoice } from "@rakazo/core";
-import { approvalRuleChoices, listSearch } from "@rakazo/core";
+import type { ApprovalRuleChoice } from "@robots/core";
+import { approvalRuleChoices, listSearch } from "@robots/core";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useLayoutEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";

@@ -2,22 +2,22 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: rakazo-migrate
+  name: robots-migrate
   labels:
-    rakazo.example/phase: migrate
-  namespace: rakazo
+    robots.example/phase: migrate
+  namespace: robots
 spec:
   backoffLimit: 1
   template:
     metadata:
       labels:
-        app: rakazo-migrate
+        app: robots-migrate
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false
       containers:
         - name: migrate
-          image: ghcr.io/elie222/rakazo/app@sha256:cec37eeb8230131ebf3e8aaf752e09439558d05e3581c6990734e8b4b515adeb
+          image: ghcr.io/analysttom/robots-app/app@sha256:cec37eeb8230131ebf3e8aaf752e09439558d05e3581c6990734e8b4b515adeb
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -41,18 +41,18 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: DATABASE_URL
             - name: DATABASE_MIGRATION_URL
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: DATABASE_MIGRATION_URL
-            - name: RAKAZO_DEPLOYED_MIGRATIONS
+            - name: ROBOTS_DEPLOYED_MIGRATIONS
               valueFrom:
                 configMapKeyRef:
-                  name: rakazo-migration-state
-                  key: RAKAZO_DEPLOYED_MIGRATIONS
+                  name: robots-migration-state
+                  key: ROBOTS_DEPLOYED_MIGRATIONS
           command:
             - node
             - dist/cli/migrate-database.js

@@ -9,7 +9,7 @@ import type {
   VaultPolicy,
   VaultRevealed,
   VaultUse,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   cardExpiry,
   isIdentityConfirmationRequired,
@@ -18,14 +18,14 @@ import {
   vaultImportCounts,
   vaultImportProblems,
   vaultKind,
-} from "@rakazo/contracts";
-import { vaultBotChoices, vaultBotsChoosable } from "@rakazo/core";
+} from "@robots/contracts";
+import { vaultBotChoices, vaultBotsChoosable } from "@robots/core";
 import {
   vaultBotsNote,
   vaultImportProblemLines,
   vaultImportText,
   vaultSaveNotice,
-} from "@rakazo/i18n/vault";
+} from "@robots/i18n/vault";
 import { useQuery } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import type { NativeStackNavigationOptions } from "expo-router";

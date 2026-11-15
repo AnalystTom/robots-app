@@ -1,5 +1,5 @@
 import { Trans } from "@lingui/react/macro";
-import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger } from "@rakazo/ui-web";
+import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger } from "@robots/ui-web";
 import { ChevronDownIcon } from "lucide-react";
 import type { ReactNode } from "react";
 

@@ -2,21 +2,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rakazo-postgres
+  name: robots-postgres
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: rakazo-postgres
+      app: robots-postgres
   template:
     metadata:
       labels:
-        app: rakazo-postgres
+        app: robots-postgres
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -48,12 +48,12 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: POSTGRES_PASSWORD
             - name: POSTGRES_USER
-              value: rakazo
+              value: robots
             - name: POSTGRES_DB
-              value: rakazo
+              value: robots
           ports:
             - containerPort: 5432
           readinessProbe:
@@ -67,18 +67,18 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: rakazo-database
+            claimName: robots-database
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: rakazo-postgres
+  name: robots-postgres
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   selector:
-    app: rakazo-postgres
+    app: robots-postgres
   ports:
     - port: 5432
       targetPort: 5432

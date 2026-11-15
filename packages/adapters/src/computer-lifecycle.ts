@@ -5,7 +5,7 @@ import type {
   ComputerRef,
   JobPublisher,
   SandboxProvider,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   computerControlExpireJobKey,
   machineCleanupJobKey,
@@ -14,8 +14,8 @@ import {
   SandboxSizeUnavailableError,
   SandboxUnavailableError,
   SandboxUnresponsiveError,
-} from "@rakazo/adapter-kit";
-import type { ComputerSize, ComputerUpdate } from "@rakazo/contracts";
+} from "@robots/adapter-kit";
+import type { ComputerSize, ComputerUpdate } from "@robots/contracts";
 import {
   ACTIVE_RUN_STATUSES,
   abortableDelay,
@@ -23,8 +23,8 @@ import {
   isRetryableError,
   parseScreenLeaseId,
   screenLeaseId,
-} from "@rakazo/core";
-import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { Prisma, PrismaClient, ThreadEvents } from "@robots/db";
 import {
   expireComputerExecutionLeases,
   isUniqueViolation,
@@ -34,8 +34,8 @@ import {
   recordComputerRunStart,
   spaceTakesWork,
   withTransactionRetry,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import {
   clearInactiveUserComputerControl,
   endTeachingWithLease,

@@ -2,21 +2,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rakazo-api
+  name: robots-api
   labels:
-    rakazo.example/phase: app
-  namespace: rakazo
+    robots.example/phase: app
+  namespace: robots
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: rakazo-api
+      app: robots-api
   template:
     metadata:
       labels:
-        app: rakazo-api
+        app: robots-api
     spec:
       automountServiceAccountToken: true
       securityContext:
@@ -24,7 +24,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: api
-          image: ghcr.io/elie222/rakazo/app@sha256:cec37eeb8230131ebf3e8aaf752e09439558d05e3581c6990734e8b4b515adeb
+          image: ghcr.io/analysttom/robots-app/app@sha256:cec37eeb8230131ebf3e8aaf752e09439558d05e3581c6990734e8b4b515adeb
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -48,32 +48,32 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: DATABASE_URL
             - name: ENCRYPTION_KEY
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: ENCRYPTION_KEY
             - name: BETTER_AUTH_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: BETTER_AUTH_SECRET
             - name: SCREEN_PROXY_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: SCREEN_PROXY_SECRET
             - name: SMTP_URL
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: SMTP_URL
                   optional: true
           envFrom:
             - configMapRef:
-                name: rakazo-config
+                name: robots-config
           command:
             - node
             - --enable-source-maps
@@ -91,22 +91,22 @@ spec:
             - name: data
               mountPath: /data
       terminationGracePeriodSeconds: 60
-      serviceAccountName: rakazo-controller
+      serviceAccountName: robots-controller
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: rakazo-data
+            claimName: robots-data
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: rakazo-api
+  name: robots-api
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   selector:
-    app: rakazo-api
+    app: robots-api
   ports:
     - port: 3100
       targetPort: 3100
@@ -114,21 +114,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rakazo-worker
+  name: robots-worker
   labels:
-    rakazo.example/phase: app
-  namespace: rakazo
+    robots.example/phase: app
+  namespace: robots
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: rakazo-worker
+      app: robots-worker
   template:
     metadata:
       labels:
-        app: rakazo-worker
+        app: robots-worker
     spec:
       automountServiceAccountToken: true
       securityContext:
@@ -136,7 +136,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: worker
-          image: ghcr.io/elie222/rakazo/app@sha256:cec37eeb8230131ebf3e8aaf752e09439558d05e3581c6990734e8b4b515adeb
+          image: ghcr.io/analysttom/robots-app/app@sha256:cec37eeb8230131ebf3e8aaf752e09439558d05e3581c6990734e8b4b515adeb
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -160,22 +160,22 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: DATABASE_URL
             - name: ENCRYPTION_KEY
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: ENCRYPTION_KEY
             - name: SMTP_URL
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: SMTP_URL
                   optional: true
           envFrom:
             - configMapRef:
-                name: rakazo-config
+                name: robots-config
           command:
             - node
             - --enable-source-maps
@@ -192,30 +192,30 @@ spec:
             periodSeconds: 15
             timeoutSeconds: 5
       terminationGracePeriodSeconds: 3000
-      serviceAccountName: rakazo-controller
+      serviceAccountName: robots-controller
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: rakazo-data
+            claimName: robots-data
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rakazo-web
+  name: robots-web
   labels:
-    rakazo.example/phase: app
-  namespace: rakazo
+    robots.example/phase: app
+  namespace: robots
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: rakazo-web
+      app: robots-web
   template:
     metadata:
       labels:
-        app: rakazo-web
+        app: robots-web
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -223,7 +223,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: web
-          image: ghcr.io/elie222/rakazo/app@sha256:cec37eeb8230131ebf3e8aaf752e09439558d05e3581c6990734e8b4b515adeb
+          image: ghcr.io/analysttom/robots-app/app@sha256:cec37eeb8230131ebf3e8aaf752e09439558d05e3581c6990734e8b4b515adeb
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -247,11 +247,11 @@ spec:
             - name: SCREEN_PROXY_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: rakazo-secrets
+                  name: robots-secrets
                   key: SCREEN_PROXY_SECRET
           envFrom:
             - configMapRef:
-                name: rakazo-config
+                name: robots-config
           command:
             - node_modules/.bin/vite
             - preview
@@ -272,19 +272,19 @@ spec:
       volumes:
         - name: web-assets
           persistentVolumeClaim:
-            claimName: rakazo-web-assets
+            claimName: robots-web-assets
       terminationGracePeriodSeconds: 60
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: rakazo-web
+  name: robots-web
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   selector:
-    app: rakazo-web
+    app: robots-web
   ports:
     - port: 5173
       targetPort: 5173
@@ -292,14 +292,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: rakazo-web-peers
-  namespace: rakazo
+  name: robots-web-peers
+  namespace: robots
   labels:
-    rakazo.example/phase: foundation
+    robots.example/phase: foundation
 spec:
   clusterIP: None
   selector:
-    app: rakazo-web
+    app: robots-web
   ports:
     - port: 5173
       targetPort: 5173
@@ -307,10 +307,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: rakazo-ingress-peers
+  name: robots-ingress-peers
   namespace: kube-system
   labels:
-    rakazo.example/phase: foundation
+    robots.example/phase: foundation
 spec:
   clusterIP: None
   selector:

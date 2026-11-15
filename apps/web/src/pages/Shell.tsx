@@ -5,8 +5,8 @@ import type {
   SpaceMemoryConfig,
   ThreadMessage,
   VoiceStatus,
-} from "@rakazo/contracts";
-import { DEFAULT_NEW_BOT_AVATAR_SET, hasLab } from "@rakazo/contracts";
+} from "@robots/contracts";
+import { DEFAULT_NEW_BOT_AVATAR_SET, hasLab } from "@robots/contracts";
 import {
   activeThreadRuns,
   answerableAskMessageIds,
@@ -22,11 +22,11 @@ import {
   newClientId,
   otherAuthor,
   workingRoutineName,
-} from "@rakazo/core";
-import { writeSaved } from "@rakazo/core/query";
-import type { GroupAvatarMember } from "@rakazo/ui-web";
-import { Button } from "@rakazo/ui-web";
-import { useIsMobile } from "@rakazo/ui-web/hooks/use-mobile";
+} from "@robots/core";
+import { writeSaved } from "@robots/core/query";
+import type { GroupAvatarMember } from "@robots/ui-web";
+import { Button } from "@robots/ui-web";
+import { useIsMobile } from "@robots/ui-web/hooks/use-mobile";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import {

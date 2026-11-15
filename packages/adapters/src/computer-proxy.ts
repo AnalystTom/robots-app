@@ -1,7 +1,7 @@
 /**
  * Optional outbound proxy for the browser on bot computers.
  *
- * RAKAZO_COMPUTER_PROXY names an upstream proxy, with or without credentials:
+ * ROBOTS_COMPUTER_PROXY names an upstream proxy, with or without credentials:
  *   http://user:pass@proxy.example.com:8080
  *   socks5://user:pass@proxy.example.com:1080
  *
@@ -15,9 +15,9 @@
 
 import { shellQuote } from "./computer-support.js";
 
-export const COMPUTER_PROXY_ENV = "RAKAZO_COMPUTER_PROXY";
+export const COMPUTER_PROXY_ENV = "ROBOTS_COMPUTER_PROXY";
 /** Name of the variable that carries the generated tinyproxy config into the prepare command. */
-export const COMPUTER_PROXY_CONFIG_ENV = "RAKAZO_COMPUTER_PROXY_CONFIG";
+export const COMPUTER_PROXY_CONFIG_ENV = "ROBOTS_COMPUTER_PROXY_CONFIG";
 export const COMPUTER_PROXY_PORT = 18_080;
 
 const UPSTREAM_TYPES: Record<string, "http" | "socks5" | "socks4"> = {
@@ -35,7 +35,7 @@ export interface ComputerProxy {
   password?: string;
 }
 
-/** Parses RAKAZO_COMPUTER_PROXY. Unset or blank means no proxy; anything malformed throws. */
+/** Parses ROBOTS_COMPUTER_PROXY. Unset or blank means no proxy; anything malformed throws. */
 export function computerProxyFromEnv(
   env: Record<string, string | undefined> = process.env,
 ): ComputerProxy | undefined {
@@ -93,8 +93,8 @@ export function tinyproxyConfig(proxy: ComputerProxy): string {
     "MaxClients 200",
     "DisableViaHeader Yes",
     "LogLevel Warning",
-    'LogFile "/var/log/rakazo-proxy/tinyproxy.log"',
-    'PidFile "/run/rakazo-proxy/tinyproxy.pid"',
+    'LogFile "/var/log/robots-proxy/tinyproxy.log"',
+    'PidFile "/run/robots-proxy/tinyproxy.pid"',
     `Upstream ${proxy.type} ${credentials}${host}:${proxy.port}`,
     "",
   ].join("\n");
@@ -132,10 +132,10 @@ export const PREPARE_COMPUTER_PROXY = [
   'if [ "$(id -u)" -eq 0 ]; then root=""; else root="sudo -n"; fi',
   // A stale pid file may name a reused pid, so only a process named tinyproxy counts as ours.
   "computer_proxy_pid() {",
-  "  pid=$(cat /run/rakazo-proxy/tinyproxy.pid 2>/dev/null || true)",
+  "  pid=$(cat /run/robots-proxy/tinyproxy.pid 2>/dev/null || true)",
   '  [ -n "$pid" ] && [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = tinyproxy ] && echo "$pid" || true',
   "}",
-  // Stops Rakazo's own instance and waits until its port is free, so a restart can bind it.
+  // Stops RoBots's own instance and waits until its port is free, so a restart can bind it.
   "stop_computer_proxy() {",
   "  pid=$(computer_proxy_pid)",
   '  [ -n "$pid" ] || return 0',
@@ -161,21 +161,21 @@ export const PREPARE_COMPUTER_PROXY = [
   '    if [ "$own_policy" -eq 1 ]; then $root rm -f /usr/sbin/policy-rc.d; fi',
   '    if [ "$installed" -ne 1 ]; then echo "could not install the computer proxy" >&2; exit 1; fi',
   "  fi",
-  "  $root mkdir -p /etc/rakazo-proxy /run/rakazo-proxy /var/log/rakazo-proxy",
-  "  $root chmod 700 /etc/rakazo-proxy",
+  "  $root mkdir -p /etc/robots-proxy /run/robots-proxy /var/log/robots-proxy",
+  "  $root chmod 700 /etc/robots-proxy",
   // tinyproxy drops to its own user, which must write its pid and log.
   "  proxy_user=$(id -u tinyproxy >/dev/null 2>&1 && echo tinyproxy || echo nobody)",
-  '  $root chown "$proxy_user" /run/rakazo-proxy /var/log/rakazo-proxy',
+  '  $root chown "$proxy_user" /run/robots-proxy /var/log/robots-proxy',
   "  new=$(mktemp)",
   `  printf '%s' "$${COMPUTER_PROXY_CONFIG_ENV}" | base64 -d > "$new"`,
   '  printf \'User %s\\nGroup %s\\n\' "$proxy_user" "$(id -gn "$proxy_user")" >> "$new"',
-  '  changed=1; $root cmp -s "$new" /etc/rakazo-proxy/tinyproxy.conf && changed=0',
-  '  if [ "$changed" -eq 1 ]; then $root install -m 600 "$new" /etc/rakazo-proxy/tinyproxy.conf; fi',
+  '  changed=1; $root cmp -s "$new" /etc/robots-proxy/tinyproxy.conf && changed=0',
+  '  if [ "$changed" -eq 1 ]; then $root install -m 600 "$new" /etc/robots-proxy/tinyproxy.conf; fi',
   '  rm -f "$new"',
   '  running=0; [ -n "$(computer_proxy_pid)" ] && running=1',
   '  if [ "$running" -eq 1 ] && [ "$changed" -eq 1 ]; then stop_computer_proxy; running=0; fi',
-  // Only Rakazo's own instance is ever stopped; policy-rc.d kept the package's from starting.
-  '  if [ "$running" -eq 0 ]; then $root tinyproxy -c /etc/rakazo-proxy/tinyproxy.conf; fi',
+  // Only RoBots's own instance is ever stopped; policy-rc.d kept the package's from starting.
+  '  if [ "$running" -eq 0 ]; then $root tinyproxy -c /etc/robots-proxy/tinyproxy.conf; fi',
   "  ready=0",
   "  for _ in $(seq 1 50); do",
   `    if (exec 3<>/dev/tcp/127.0.0.1/${COMPUTER_PROXY_PORT}) 2>/dev/null; then ready=1; break; fi`,
@@ -184,13 +184,13 @@ export const PREPARE_COMPUTER_PROXY = [
   '  if [ "$ready" -ne 1 ]; then echo "the computer proxy did not start" >&2; exit 1; fi',
   `  policy=${shellQuote(PROXY_POLICY)}`,
   `  for dir in ${BROWSER_POLICY_DIRS.join(" ")}; do`,
-  '    [ "$(cat "$dir/rakazo-proxy.json" 2>/dev/null)" = "$policy" ] && continue',
-  '    printf \'%s\\n\' "$policy" | $root sh -c \'mkdir -p "$1" && cat > "$1/rakazo-proxy.json"\' sh "$dir"',
+  '    [ "$(cat "$dir/robots-proxy.json" 2>/dev/null)" = "$policy" ] && continue',
+  '    printf \'%s\\n\' "$policy" | $root sh -c \'mkdir -p "$1" && cat > "$1/robots-proxy.json"\' sh "$dir"',
   "  done",
   "else",
   // The proxy was turned off: the browser goes direct again.
-  `  for dir in ${BROWSER_POLICY_DIRS.join(" ")}; do $root rm -f "$dir/rakazo-proxy.json"; done`,
+  `  for dir in ${BROWSER_POLICY_DIRS.join(" ")}; do $root rm -f "$dir/robots-proxy.json"; done`,
   "  stop_computer_proxy",
-  "  $root rm -f /etc/rakazo-proxy/tinyproxy.conf",
+  "  $root rm -f /etc/robots-proxy/tinyproxy.conf",
   "fi",
 ].join("\n");

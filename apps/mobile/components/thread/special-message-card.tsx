@@ -1,8 +1,8 @@
 import { useLingui } from "@lingui/react/macro";
-import { ChatMarkdown } from "@rakazo/chat-ui/native";
-import type { MessageBlock } from "@rakazo/contracts";
-import { cloudAgentHttpsUrl, helperCardState, displayName as safeDisplayName } from "@rakazo/core";
-import { typeScale } from "@rakazo/ui-tokens";
+import { ChatMarkdown } from "@robots/chat-ui/native";
+import type { MessageBlock } from "@robots/contracts";
+import { cloudAgentHttpsUrl, helperCardState, displayName as safeDisplayName } from "@robots/core";
+import { typeScale } from "@robots/ui-tokens";
 import { useEffect, useRef, useState } from "react";
 import type { ViewInstance } from "react-native";
 import { Linking, Pressable, Text, View } from "react-native";

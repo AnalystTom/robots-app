@@ -27,7 +27,7 @@ beforeEach(() => {
   rpc.mockResolvedValue([]);
   captureApiRequestContext.mockResolvedValue({
     apiBase: "https://example.test",
-    headers: { "x-rakazo-space-id": "space-a" },
+    headers: { "x-robots-space-id": "space-a" },
   });
 });
 describe("archived bot lifecycle", () => {
@@ -109,7 +109,7 @@ describe("group deletion", () => {
 it("keeps deletion bound to the archived bot's space through confirmation", async () => {
   const requestContext = {
     apiBase: "https://example.test",
-    headers: { "x-rakazo-space-id": "space-b" },
+    headers: { "x-robots-space-id": "space-b" },
   };
   const deleted = vi.fn();
   rpc.mockResolvedValueOnce([]).mockResolvedValueOnce({ ok: true });
@@ -246,7 +246,7 @@ it.each(["cancel", "dismiss", "success", "failure", "stale"] as const)(
 );
 
 it("pins default preview and deletion to the initial Space despite selection changes", async () => {
-  const context = { apiBase: "https://example.test", headers: { "x-rakazo-space-id": "space-a" } };
+  const context = { apiBase: "https://example.test", headers: { "x-robots-space-id": "space-a" } };
   captureApiRequestContext.mockResolvedValueOnce(context);
   let finish!: (groups: unknown[]) => void;
   rpc.mockImplementationOnce(
@@ -259,7 +259,7 @@ it("pins default preview and deletion to the initial Space despite selection cha
   await vi.waitFor(() => expect(rpc).toHaveBeenCalledOnce());
   captureApiRequestContext.mockResolvedValue({
     ...context,
-    headers: { "x-rakazo-space-id": "space-b" },
+    headers: { "x-robots-space-id": "space-b" },
   });
   finish([]);
   await pending;

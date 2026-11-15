@@ -1,6 +1,6 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { Routine } from "@rakazo/contracts";
+import type { Routine } from "@robots/contracts";
 import { ScrollView, StyleSheet } from "react-native";
 import { native, useThemedStyles } from "../lib/native";
 import { routineRowDetail, routineRowLabel } from "../lib/routine";

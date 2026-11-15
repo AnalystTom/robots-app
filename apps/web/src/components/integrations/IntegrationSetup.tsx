@@ -1,7 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { IntegrationCatalogResult } from "@rakazo/contracts";
-import { customMcpServerInput } from "@rakazo/core";
-import { Button, Disclosure, Input } from "@rakazo/ui-web";
+import type { IntegrationCatalogResult } from "@robots/contracts";
+import { customMcpServerInput } from "@robots/core";
+import { Button, Disclosure, Input } from "@robots/ui-web";
 import { useEffect, useRef, useState } from "react";
 import { connectMcpOauth } from "../../lib/mcp-connect";
 import { rpc } from "../../lib/rpc";

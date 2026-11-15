@@ -16,7 +16,7 @@ afterEach(async () => {
 });
 
 async function fixture() {
-  const dir = await mkdtemp(path.join(os.tmpdir(), "rakazo-dev-db-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "robots-dev-db-"));
   temporary.push(dir);
   await mkdir(path.join(dir, "scripts"));
   await mkdir(path.join(dir, "packages/db"), { recursive: true });
@@ -51,22 +51,22 @@ describe("development database selection", () => {
   it("rejects catalog names that do not match their repository and branch", () => {
     const branch = "feature/example";
     const owner = JSON.stringify({ repo: "fixture-repo", branch });
-    const name = branchDatabaseName("rakazo", branch);
-    expect(branchDatabaseOwner({ name, owner }, "rakazo", "fixture-repo")).toBe(branch);
+    const name = branchDatabaseName("robots", branch);
+    expect(branchDatabaseOwner({ name, owner }, "robots", "fixture-repo")).toBe(branch);
     for (const forged of [
       'other"; SELECT 1; --',
       "../../unrelated",
       "..\\..\\unrelated",
       branchDatabaseName("another_database", branch),
-      branchDatabaseName("rakazo", "another-branch"),
+      branchDatabaseName("robots", "another-branch"),
     ]) {
       expect(
-        branchDatabaseOwner({ name: forged, owner }, "rakazo", "fixture-repo"),
+        branchDatabaseOwner({ name: forged, owner }, "robots", "fixture-repo"),
       ).toBeUndefined();
     }
     for (const metadata of ["null", "{}", "invalid", JSON.stringify({ repo: "other", branch })]) {
       expect(
-        branchDatabaseOwner({ name, owner: metadata }, "rakazo", "fixture-repo"),
+        branchDatabaseOwner({ name, owner: metadata }, "robots", "fixture-repo"),
       ).toBeUndefined();
     }
   });
@@ -85,7 +85,7 @@ describe("development database selection", () => {
     }
     expect(branchDatabaseName("a/b", "branch")).not.toBe(branchDatabaseName("a_b", "branch"));
     expect(branchDatabaseName("db", "a/b")).not.toBe(branchDatabaseName("db", "a-b"));
-    expect(branchDatabaseName("rakazo", "main")).toBe("rakazo_main_0d6e4079");
+    expect(branchDatabaseName("robots", "main")).toBe("robots_main_0d6e4079");
   });
 
   it("fails without starting another database when the configured one is unreachable", async () => {

@@ -1,0 +1,11 @@
+[Unit]
+Description=Notify operators when a production backup fails
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/robots-host-alert backup-failure "Nightly backup failed. Inspect robots-backup.service on the server."
+StateDirectory=robots/alerts
+StateDirectoryMode=0700
+ProtectSystem=strict
+ReadWritePaths=/var/lib/robots/alerts
+PrivateTmp=true

@@ -38,7 +38,7 @@ vi.mock("./api-live", () => ({}));
 vi.mock("./api", () => ({
   captureApiRequestContext: vi.fn(async (spaceId = session.space) => ({
     apiBase: "",
-    headers: { authorization: "Bearer token", "x-rakazo-space-id": spaceId },
+    headers: { authorization: "Bearer token", "x-robots-space-id": spaceId },
     sessionGeneration: session.generation,
   })),
   currentApiBase: () => "",
@@ -218,7 +218,7 @@ it("sends a queued change in the Space it was swiped in after a Space switch", a
     .mock.calls.map(
       (call) =>
         (call[2] as { requestContext: { headers: Record<string, string> } }).requestContext.headers[
-          "x-rakazo-space-id"
+          "x-robots-space-id"
         ],
     );
   expect(spaces).toEqual(["space-a", "space-a"]);
@@ -295,7 +295,7 @@ it.each([
     // A chat in the selected space is deleted with the session's own space.
     if (kind === "bot")
       expect(vi.mocked(confirm).mock.calls[0]![3]).toMatchObject({
-        headers: { "x-rakazo-space-id": "space-a" },
+        headers: { "x-robots-space-id": "space-a" },
       });
     else expect(vi.mocked(confirm).mock.calls[0]![2]).toBeUndefined();
     vi.mocked(confirm).mock.calls[0]![1]!([]);
@@ -310,7 +310,7 @@ it.each([
   const h = await handlers(async () => ({ ok: true }));
   await h.runRowAction(kind, { id: "x", name: "Ada", spaceId: "space-b" }, "delete");
   expect(vi.mocked(confirm).mock.calls[0]![kind === "bot" ? 3 : 2]).toMatchObject({
-    headers: { "x-rakazo-space-id": "space-b" },
+    headers: { "x-robots-space-id": "space-b" },
   });
 });
 
@@ -341,7 +341,7 @@ it("creates and renames a section from the row menu in the chat's own space", as
       { sectionId: "s-b", name: "Home" },
       expect.objectContaining({
         requestContext: expect.objectContaining({
-          headers: expect.objectContaining({ "x-rakazo-space-id": "space-b" }),
+          headers: expect.objectContaining({ "x-robots-space-id": "space-b" }),
         }),
       }),
     ],
@@ -350,7 +350,7 @@ it("creates and renames a section from the row menu in the chat's own space", as
       { botId: "x", name: "Home" },
       expect.objectContaining({
         requestContext: expect.objectContaining({
-          headers: expect.objectContaining({ "x-rakazo-space-id": "space-b" }),
+          headers: expect.objectContaining({ "x-robots-space-id": "space-b" }),
         }),
       }),
     ],
@@ -434,7 +434,7 @@ it("archives a chat from another space in that space", async () => {
   const h = await handlers(async () => ({ ok: true }));
   await h.runRowAction("group", { id: "x", spaceId: "space-b" }, "archive");
   expect(vi.mocked(rpc).mock.calls[0]?.[2]).toMatchObject({
-    requestContext: { headers: { "x-rakazo-space-id": "space-b" } },
+    requestContext: { headers: { "x-robots-space-id": "space-b" } },
   });
 });
 
@@ -442,7 +442,7 @@ it("marks a chat from another space read in that space", async () => {
   const h = await handlers(async () => ({ ok: true }));
   await h.runRowAction("bot", { id: "x", spaceId: "space-b" }, "read");
   expect(vi.mocked(rpc).mock.calls[0]?.[2]).toMatchObject({
-    requestContext: { headers: { "x-rakazo-space-id": "space-b" } },
+    requestContext: { headers: { "x-robots-space-id": "space-b" } },
   });
 });
 
@@ -456,7 +456,7 @@ it("updates a chat from another space in that space without switching", async ()
       {
         requestContext: {
           apiBase: "",
-          headers: { authorization: "Bearer token", "x-rakazo-space-id": "space-b" },
+          headers: { authorization: "Bearer token", "x-robots-space-id": "space-b" },
           sessionGeneration: 1,
         },
         skipSpaceAuthRecovery: true,
@@ -534,7 +534,7 @@ it.each([true, false])(
     await h.runRowAction("bot", { id: "x", name: "Ada" }, "delete");
     vi.mocked(confirmDeleteBot).mock.calls[0]![1]!([], {
       apiBase: "",
-      headers: { "x-rakazo-space-id": "space-a" },
+      headers: { "x-robots-space-id": "space-a" },
       sessionGeneration: 1,
     });
     await Promise.resolve();
@@ -550,7 +550,7 @@ it("preserves another Space's open group after concurrent deletion", async () =>
   session.space = "space-b";
   vi.mocked(confirmDeleteBot).mock.calls[0]![1]!([], {
     apiBase: "",
-    headers: { "x-rakazo-space-id": "space-a" },
+    headers: { "x-robots-space-id": "space-a" },
     sessionGeneration: 1,
   });
   await Promise.resolve();
@@ -565,7 +565,7 @@ it("preserves an archived group after concurrent deletion", async () => {
   await h.runRowAction("bot", { id: "x", name: "Ada" }, "delete");
   vi.mocked(confirmDeleteBot).mock.calls[0]![1]!([], {
     apiBase: "",
-    headers: { "x-rakazo-space-id": "space-a" },
+    headers: { "x-robots-space-id": "space-a" },
     sessionGeneration: 1,
   });
   await Promise.resolve();

@@ -1,5 +1,5 @@
-import type { JobPublisher, NotificationMessage, NotificationProvider } from "@rakazo/adapter-kit";
-import type { StuckWorkStatus } from "@rakazo/core";
+import type { JobPublisher, NotificationMessage, NotificationProvider } from "@robots/adapter-kit";
+import type { StuckWorkStatus } from "@robots/core";
 import {
   isStuckWorkStatus,
   STUCK_WORK_NOTICE,
@@ -9,15 +9,15 @@ import {
   stuckWorkDueAfterMs,
   stuckWorkReminder,
   stuckWorkStoppedNotification,
-} from "@rakazo/core";
-import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { Prisma, PrismaClient, ThreadEvents } from "@robots/db";
 import {
   appendEventInTransaction,
   expireStuckRun,
   THREAD_LOCK_TRANSACTION_OPTIONS,
   withTransactionRetry,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { ExpoPushProvider } from "./expo-push.js";
 import { notificationIdentity } from "./notification-identity.js";
 import { publishChatAlert } from "./run-notifications.js";

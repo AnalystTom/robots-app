@@ -3,7 +3,7 @@ import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { AdapterContext, ComputerRef, ProcessEvent } from "@rakazo/adapter-kit";
+import type { AdapterContext, ComputerRef, ProcessEvent } from "@robots/adapter-kit";
 import { afterEach, describe, expect, it } from "vitest";
 import { AppleContainerSandboxProvider, localVmFirewall } from "./apple-container-sandbox.js";
 import { assertSandboxWorkspaceContract, provisionPrepared } from "./sandbox-test-support.js";
@@ -37,11 +37,11 @@ if (command === "exec") {
   if (state.vms[name]?.status.state !== "running") { process.stderr.write("not running"); process.exit(1); }
   if (program === "nft") {
     if (state.nftMissing) { process.stderr.write("exec failed: nft: not found"); process.exit(127); }
-    if (rest[0] === "list") process.stdout.write("table inet rakazo {}\\n");
+    if (rest[0] === "list") process.stdout.write("table inet robots {}\\n");
     process.exit(0);
   }
   const script = rest.join(" ");
-  if (script.includes("/dev/tcp/127.0.0.1/6080") || script.includes("rakazo-write")) process.exit(0);
+  if (script.includes("/dev/tcp/127.0.0.1/6080") || script.includes("robots-write")) process.exit(0);
   if (script.includes("sleep")) setInterval(() => {}, 1000);
   else { process.stdout.write("out:" + script.slice(-5)); process.stderr.write("err"); process.exit(7); }
 } else {
@@ -50,12 +50,12 @@ if (command === "exec") {
   if (command === "run") {
     const name = option("--name");
     state.vms[name] = {
-      configuration: { id: name, labels: { "rakazo.bot-id": option("--label").split("=")[1] } },
+      configuration: { id: name, labels: { "robots.bot-id": option("--label").split("=")[1] } },
       status: { state: "running", networks: [{ ipv4Address: "192.168.70.2/24", ipv4Gateway: "192.168.70.1" }] },
     };
     save();
   } else if (command === "inspect") {
-    if (sub === "rakazo-unreadable") { process.stderr.write("Error: XPC connection interrupted"); process.exit(1); }
+    if (sub === "robots-unreadable") { process.stderr.write("Error: XPC connection interrupted"); process.exit(1); }
     if (!state.vms[sub]) { process.stderr.write("Error: container not found: " + sub); process.exit(1); }
     process.stdout.write(JSON.stringify([state.vms[sub]]));
   } else if (command === "ls") {
@@ -73,7 +73,7 @@ afterEach(() => {
 });
 
 function fakeCli(vms: Record<string, { botId: string; state?: string }> = {}, nftMissing = false) {
-  const dir = mkdtempSync(path.join(tmpdir(), "rakazo-fake-container-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "robots-fake-container-"));
   fakes.push(dir);
   const cli = path.join(dir, "container");
   writeFileSync(cli, `#!/usr/bin/env node\n${FAKE_CLI}`);
@@ -82,7 +82,7 @@ function fakeCli(vms: Record<string, { botId: string; state?: string }> = {}, nf
     Object.entries(vms).map(([name, vm]) => [
       name,
       {
-        configuration: { id: name, labels: { "rakazo.bot-id": vm.botId } },
+        configuration: { id: name, labels: { "robots.bot-id": vm.botId } },
         status: {
           state: vm.state ?? "running",
           networks: [{ ipv4Address: "192.168.70.2/24", ipv4Gateway: "192.168.70.1" }],
@@ -132,18 +132,18 @@ async function collect(events: AsyncIterable<ProcessEvent>) {
 describe("AppleContainerSandboxProvider", () => {
   it("starts the image command as the image user without privilege escalation", () => {
     const args = new AppleContainerSandboxProvider({ computerImage: "computer:test" }).runArgs(
-      "rakazo-1",
+      "robots-1",
       "bot-a",
     );
     expect(args.slice(0, 8)).toEqual([
       "run",
       "--detach",
       "--name",
-      "rakazo-1",
+      "robots-1",
       "--network",
-      "rakazo-1",
+      "robots-1",
       "--label",
-      "rakazo.bot-id=bot-a",
+      "robots.bot-id=bot-a",
     ]);
     expect(args.slice(args.indexOf("--cap-drop"), args.indexOf("--cap-drop") + 4)).toEqual([
       "--cap-drop",
@@ -164,7 +164,7 @@ describe("AppleContainerSandboxProvider", () => {
       "/usr/bin/env",
       "-u",
       "LD_PRELOAD",
-      "/usr/local/bin/rakazo-computer",
+      "/usr/local/bin/robots-computer",
     ]);
   });
 
@@ -216,54 +216,54 @@ describe("AppleContainerSandboxProvider", () => {
       "-",
     ]);
     expect(apply!.stdin).toBe(localVmFirewall("192.168.70.1"));
-    expect(verify!.argv.slice(-4)).toEqual(["list", "table", "inet", "rakazo"]);
+    expect(verify!.argv.slice(-4)).toEqual(["list", "table", "inet", "robots"]);
   });
 
   it("re-applies the firewall when reusing a running VM of the same bot", async () => {
-    const fake = fakeCli({ "rakazo-old": { botId: "bot-a" } });
+    const fake = fakeCli({ "robots-old": { botId: "bot-a" } });
     const computer = await fake.provider.provision(
-      { botId: "bot-a", homePath: "/unused", providerKind: "local-vm", providerRef: "rakazo-old" },
+      { botId: "bot-a", homePath: "/unused", providerKind: "local-vm", providerRef: "robots-old" },
       context,
     );
-    expect(computer).toMatchObject({ providerRef: "rakazo-old", fresh: false });
+    expect(computer).toMatchObject({ providerRef: "robots-old", fresh: false });
     expect(firewallCalls(fake.calls())).toHaveLength(2);
     expect(fake.calls().some((call) => call.argv[0] === "run")).toBe(false);
   });
 
   it("removes nothing when it cannot tell who owns a VM", async () => {
     const fake = fakeCli();
-    await expect(fake.provider.stop(ref("rakazo-unreadable"))).rejects.toThrow(/inspect failed/);
+    await expect(fake.provider.stop(ref("robots-unreadable"))).rejects.toThrow(/inspect failed/);
     expect(fake.calls().some((call) => call.argv[0] === "rm")).toBe(false);
   });
 
   it("refuses a VM that belongs to another bot", async () => {
-    const fake = fakeCli({ "rakazo-other": { botId: "bot-b" } });
+    const fake = fakeCli({ "robots-other": { botId: "bot-b" } });
     await expect(
       fake.provider.provision(
         {
           botId: "bot-a",
           homePath: "/unused",
           providerKind: "local-vm",
-          providerRef: "rakazo-other",
+          providerRef: "robots-other",
         },
         context,
       ),
     ).rejects.toThrow(/belongs to another bot/);
-    await expect(fake.provider.stop(ref("rakazo-other"))).rejects.toThrow(/another bot/);
-    expect(Object.keys(fake.vms())).toEqual(["rakazo-other"]);
+    await expect(fake.provider.stop(ref("robots-other"))).rejects.toThrow(/another bot/);
+    expect(Object.keys(fake.vms())).toEqual(["robots-other"]);
   });
 
   it("removes VMs an earlier start left for the same bot only", async () => {
     const fake = fakeCli({
-      "rakazo-orphan": { botId: "bot-a", state: "stopped" },
-      "rakazo-other": { botId: "bot-b" },
+      "robots-orphan": { botId: "bot-a", state: "stopped" },
+      "robots-other": { botId: "bot-b" },
     });
     const computer = await fake.provider.provision(
       { botId: "bot-a", homePath: "/unused" },
       context,
     );
-    expect(Object.keys(fake.vms()).sort()).toEqual([computer.providerRef, "rakazo-other"].sort());
-    expect(fake.calls().map((call) => call.argv.join(" "))).toContain("network rm rakazo-orphan");
+    expect(Object.keys(fake.vms()).sort()).toEqual([computer.providerRef, "robots-other"].sort());
+    expect(fake.calls().map((call) => call.argv.join(" "))).toContain("network rm robots-orphan");
   });
 
   it("fails closed and removes the VM and network when the image has no nft", async () => {
@@ -277,14 +277,14 @@ describe("AppleContainerSandboxProvider", () => {
   });
 
   it("removes a reused VM whose firewall cannot be applied", async () => {
-    const fake = fakeCli({ "rakazo-old": { botId: "bot-a" } }, true);
+    const fake = fakeCli({ "robots-old": { botId: "bot-a" } }, true);
     await expect(
       fake.provider.provision(
         {
           botId: "bot-a",
           homePath: "/unused",
           providerKind: "local-vm",
-          providerRef: "rakazo-old",
+          providerRef: "robots-old",
         },
         context,
       ),
@@ -293,9 +293,9 @@ describe("AppleContainerSandboxProvider", () => {
   });
 
   it("streams output and the exit code, and passes stdin", async () => {
-    const fake = fakeCli({ "rakazo-1": { botId: "bot-a" } });
+    const fake = fakeCli({ "robots-1": { botId: "bot-a" } });
     const events = await collect(
-      fake.provider.execute(ref("rakazo-1"), { argv: ["echo", "hello"] }, context),
+      fake.provider.execute(ref("robots-1"), { argv: ["echo", "hello"] }, context),
     );
     expect(events).toEqual([
       { type: "stdout", data: "out:hello" },
@@ -312,15 +312,15 @@ describe("AppleContainerSandboxProvider", () => {
       "1000",
       "--workdir",
     ]);
-    expect(exec.slice(exec.indexOf("rakazo-1"), exec.indexOf("rakazo-1") + 4)).toEqual([
-      "rakazo-1",
+    expect(exec.slice(exec.indexOf("robots-1"), exec.indexOf("robots-1") + 4)).toEqual([
+      "robots-1",
       "setpriv",
       "--no-new-privs",
       "--",
     ]);
 
     await fake.provider.writeFile(
-      ref("rakazo-1"),
+      ref("robots-1"),
       { path: "notes.txt", content: new TextEncoder().encode("secret notes") },
       context,
     );
@@ -328,11 +328,11 @@ describe("AppleContainerSandboxProvider", () => {
   });
 
   it("ends an aborted command with exit 130", async () => {
-    const fake = fakeCli({ "rakazo-1": { botId: "bot-a" } });
+    const fake = fakeCli({ "robots-1": { botId: "bot-a" } });
     const controller = new AbortController();
     const running = collect(
       fake.provider.execute(
-        ref("rakazo-1"),
+        ref("robots-1"),
         { argv: ["sleep", "30"] },
         { ...context, signal: controller.signal },
       ),
@@ -342,13 +342,13 @@ describe("AppleContainerSandboxProvider", () => {
   });
 
   it("removes the VM and its network when stopped", async () => {
-    const fake = fakeCli({ "rakazo-1": { botId: "bot-a" } });
-    await fake.provider.stop(ref("rakazo-1"));
+    const fake = fakeCli({ "robots-1": { botId: "bot-a" } });
+    await fake.provider.stop(ref("robots-1"));
     expect(fake.vms()).toEqual({});
     expect(fake.calls().map((call) => call.argv.join(" "))).toEqual(
-      expect.arrayContaining(["rm --force rakazo-1", "network rm rakazo-1"]),
+      expect.arrayContaining(["rm --force robots-1", "network rm robots-1"]),
     );
-    expect(await fake.provider.isRunning(ref("rakazo-1"), context)).toBe(false);
+    expect(await fake.provider.isRunning(ref("robots-1"), context)).toBe(false);
   });
 });
 

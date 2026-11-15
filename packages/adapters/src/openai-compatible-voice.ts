@@ -8,13 +8,13 @@ import type {
   VoiceSynthesizeRequest,
   VoiceTranscribeRequest,
   VoiceVerifyResult,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   DEFAULT_COMPATIBLE_STT_MODEL,
   DEFAULT_COMPATIBLE_TTS_MODEL,
   OPENAI_COMPATIBLE_PROVIDER_ID,
-} from "@rakazo/contracts";
-import { deadlineSignal } from "@rakazo/core";
+} from "@robots/contracts";
+import { deadlineSignal } from "@robots/core";
 import {
   assertAllowedOpenAiCompatibleUrl,
   assertHttpsForKeyedOpenAiCompatibleUrl,

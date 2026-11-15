@@ -1,4 +1,4 @@
-import { secureHttpOrigin } from "@rakazo/contracts/network-host";
+import { secureHttpOrigin } from "@robots/contracts/network-host";
 import type { IpcMainInvokeEvent } from "electron";
 import type { AppTarget } from "./app-frame.js";
 import { fromAppFrame } from "./app-frame.js";

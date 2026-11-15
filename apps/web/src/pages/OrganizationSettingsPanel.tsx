@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { canDeleteOrganization } from "@rakazo/core";
-import { Button, Field, FieldLabel, Input } from "@rakazo/ui-web";
+import { canDeleteOrganization } from "@robots/core";
+import { Button, Field, FieldLabel, Input } from "@robots/ui-web";
 import { Plus } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";

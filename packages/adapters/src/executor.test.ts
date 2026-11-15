@@ -1,11 +1,11 @@
 import { normalizeContext } from "@earendil-works/pi-ai";
-import { WorkspaceTooLargeError } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
-import { FLEET_TOOL_NAMES } from "@rakazo/contracts";
-import { BACKGROUND_HELPER_TRIGGER, isOwnerStartedRun, ONCE_ROUTINE_CRON } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { RunHistoryWriteError } from "@rakazo/db";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import { WorkspaceTooLargeError } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
+import { FLEET_TOOL_NAMES } from "@robots/contracts";
+import { BACKGROUND_HELPER_TRIGGER, isOwnerStartedRun, ONCE_ROUTINE_CRON } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { RunHistoryWriteError } from "@robots/db";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { describe, expect, it, vi } from "vitest";
 import { builtinAgentTools } from "./builtin.tool-definition.js";
 import {
@@ -1503,7 +1503,7 @@ describe("userTurnInstructions", () => {
       archiveBot,
       "Connected plugins: none",
       "Agent skills",
-      expect.stringContaining("read the Rakazo skill"),
+      expect.stringContaining("read the RoBots skill"),
       "Taught skills",
       ...stableTail,
       "Group context",

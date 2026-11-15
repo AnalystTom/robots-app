@@ -4,8 +4,8 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import type { AdapterContext, ComputerRef, ProcessEvent } from "@rakazo/adapter-kit";
-import { screenDisplayArgv, shellQuote } from "@rakazo/core/node/desktop-runtime";
+import type { AdapterContext, ComputerRef, ProcessEvent } from "@robots/adapter-kit";
+import { screenDisplayArgv, shellQuote } from "@robots/core/node/desktop-runtime";
 import type { RailwayGraphQLErrorItem, SandboxInfo } from "railway";
 import {
   RailwayGraphQLError,
@@ -751,8 +751,8 @@ describe("Railway computers", () => {
   });
 
   it("satisfies the shared workspace contract through the Railway SDK", async () => {
-    const directory = await mkdtemp(path.join(tmpdir(), "rakazo-railway-contract-"));
-    const localPath = (filePath: string) => filePath.replace("/home/rakazo", directory);
+    const directory = await mkdtemp(path.join(tmpdir(), "robots-railway-contract-"));
+    const localPath = (filePath: string) => filePath.replace("/home/robots", directory);
     sandbox.files.write.mockImplementation(
       async (filePath: string, content: Uint8Array, options?: { mode: number }) => {
         await mkdir(path.dirname(localPath(filePath)), { recursive: true });
@@ -779,7 +779,7 @@ describe("Railway computers", () => {
         const result = await promisify(execFile)("bash", [
           "-c",
           command
-            .replaceAll("/home/rakazo", directory)
+            .replaceAll("/home/robots", directory)
             .replaceAll(
               "find . -regextype posix-extended",
               process.platform === "darwin" ? "find -E ." : "find . -regextype posix-extended",
@@ -789,8 +789,8 @@ describe("Railway computers", () => {
       }
       return {
         exitCode: 0,
-        stdout: command.includes("RAKAZO_DESKTOP=")
-          ? "RAKAZO_DESKTOP=0:test-token"
+        stdout: command.includes("ROBOTS_DESKTOP=")
+          ? "ROBOTS_DESKTOP=0:test-token"
           : command.includes("CURSOR")
             ? "aW1hZ2U=\nCURSOR X=1 Y=2"
             : "",
@@ -989,10 +989,10 @@ describe("Railway computers", () => {
     expect(sandbox.exec).toHaveBeenCalledWith(
       "'echo' 'a; touch /tmp/unwanted'",
       expect.objectContaining({
-        cwd: "/home/rakazo/notes",
+        cwd: "/home/robots/notes",
         env: expect.objectContaining({
           FAKE_TOKEN: "fake-secret",
-          UV_CACHE_DIR: "/tmp/rakazo-cache/uv",
+          UV_CACHE_DIR: "/tmp/robots-cache/uv",
         }),
         timeoutSec: 5,
       }),
@@ -1028,7 +1028,7 @@ describe("Railway computers", () => {
 
   it("protects screen sockets with a per-screen token", async () => {
     sandbox.exec.mockResolvedValue({
-      stdout: "RAKAZO_DESKTOP=0:screen-token",
+      stdout: "ROBOTS_DESKTOP=0:screen-token",
       stderr: "",
       exitCode: 0,
       timedOut: false,
@@ -1051,7 +1051,7 @@ describe("Railway computers", () => {
 
   it("opens a terminal on the screen domain, behind its own token", async () => {
     sandbox.exec.mockResolvedValue({
-      stdout: "RAKAZO_DESKTOP=0:screen-token",
+      stdout: "ROBOTS_DESKTOP=0:screen-token",
       stderr: "",
       exitCode: 0,
       timedOut: false,
@@ -1069,11 +1069,11 @@ describe("Railway computers", () => {
     // The shell server starts in the sandbox and joins the gateway on the port with the domain.
     const started = sandbox.exec.mock.calls
       .map(([command]) => String(command))
-      .findLast((command) => command.includes("rakazo-terminal.py"));
+      .findLast((command) => command.includes("robots-terminal.py"));
     expect(started).toContain(String(token));
-    expect(started).toContain("/tmp/rakazo/sockets/terminal-");
+    expect(started).toContain("/tmp/robots/sockets/terminal-");
     expect(started).toContain("0.0.0.0:6080 8>&-");
-    expect(started).toContain("/home/rakazo");
+    expect(started).toContain("/home/robots");
   });
 
   it.each([
@@ -1089,7 +1089,7 @@ describe("Railway computers", () => {
       ...sandbox,
       domains: [{ port: 6080, domain }],
     } as unknown as Sandbox);
-    sandbox.exec.mockResolvedValue({ stdout: "RAKAZO_DESKTOP=0:screen-token", exitCode: 0 });
+    sandbox.exec.mockResolvedValue({ stdout: "ROBOTS_DESKTOP=0:screen-token", exitCode: 0 });
     await expect(
       provider.connectScreen(computer, { view: "stream", interactive: false }, ctx),
     ).rejects.toThrow("Invalid Railway screen domain");
@@ -1105,7 +1105,7 @@ describe("Railway computers", () => {
   it("keeps binary data and executable permissions on writes", async () => {
     const content = Uint8Array.from([0, 255, 128]);
     await provider.writeFile(computer, { path: "bin/tool", content, executable: true }, ctx);
-    expect(sandbox.files.write).toHaveBeenCalledWith("/home/rakazo/bin/tool", content, {
+    expect(sandbox.files.write).toHaveBeenCalledWith("/home/robots/bin/tool", content, {
       mode: 0o700,
     });
   });
@@ -1116,7 +1116,7 @@ describe("Railway computers", () => {
   });
 
   it("exports regular binary files without following links or reading FIFOs", async () => {
-    const directory = await mkdtemp(path.join(tmpdir(), "rakazo-railway-"));
+    const directory = await mkdtemp(path.join(tmpdir(), "robots-railway-"));
     const stopBrowsers = vi.spyOn(LinuxDesktop.prototype, "stopBrowsers").mockResolvedValue();
     try {
       await mkdir(path.join(directory, "bin"));
@@ -1140,7 +1140,7 @@ describe("Railway computers", () => {
         const result = await promisify(execFile)("bash", [
           "-c",
           command
-            .replaceAll("/home/rakazo", directory)
+            .replaceAll("/home/robots", directory)
             .replaceAll(
               "find . -regextype posix-extended",
               process.platform === "darwin" ? "find -E ." : "find . -regextype posix-extended",
@@ -1150,7 +1150,7 @@ describe("Railway computers", () => {
       });
       sandbox.files.read.mockImplementation(
         async (filePath: string) =>
-          new Uint8Array(await readFile(filePath.replace("/home/rakazo", directory))),
+          new Uint8Array(await readFile(filePath.replace("/home/robots", directory))),
       );
       const exported = [];
       for await (const file of provider.exportWorkspace(computer, ctx)) exported.push(file);
@@ -1180,7 +1180,7 @@ describe("Railway computers", () => {
       expect(Sandbox.connect).toHaveBeenCalledTimes(1);
       expect(sandbox.exec).toHaveBeenNthCalledWith(
         1,
-        "chmod 700 -- '/home/rakazo'",
+        "chmod 700 -- '/home/robots'",
         expect.objectContaining({ signal: ctx.signal }),
       );
       const protectOrder = sandbox.exec.mock.invocationCallOrder[0];
@@ -1188,14 +1188,14 @@ describe("Railway computers", () => {
       if (protectOrder === undefined || writeOrder === undefined)
         throw new Error("Missing restore operations");
       expect(protectOrder).toBeLessThan(writeOrder);
-      expect(sandbox.files.write).toHaveBeenCalledWith("/home/rakazo/bin/tool", content);
-      expect(sandbox.files.write).toHaveBeenCalledWith("/home/rakazo/note", content);
+      expect(sandbox.files.write).toHaveBeenCalledWith("/home/robots/bin/tool", content);
+      expect(sandbox.files.write).toHaveBeenCalledWith("/home/robots/note", content);
       expect(sandbox.exec).toHaveBeenCalledWith(
-        "chmod 700 -- '/home/rakazo/bin/tool'",
+        "chmod 700 -- '/home/robots/bin/tool'",
         expect.objectContaining({ signal: ctx.signal }),
       );
       expect(sandbox.exec).toHaveBeenCalledWith(
-        "chmod 600 -- '/home/rakazo/note'",
+        "chmod 600 -- '/home/robots/note'",
         expect.objectContaining({ signal: ctx.signal }),
       );
     } finally {
@@ -1249,7 +1249,7 @@ describe("Railway computers", () => {
       await expect(bounded.exportWorkspace(computer, ctx).next()).rejects.toThrow(
         "exceeds 4 bytes",
       );
-      expect(sandbox.files.read).toHaveBeenCalledWith("/home/rakazo/growing", {
+      expect(sandbox.files.read).toHaveBeenCalledWith("/home/robots/growing", {
         format: "bytes",
         length: 5,
       });

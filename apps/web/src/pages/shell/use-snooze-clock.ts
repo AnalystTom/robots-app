@@ -1,4 +1,4 @@
-import { nextChatWake } from "@rakazo/core";
+import { nextChatWake } from "@robots/core";
 import { useEffect, useState } from "react";
 
 // Longer waits re-check, since browsers cap timers and a sleeping laptop stalls them.

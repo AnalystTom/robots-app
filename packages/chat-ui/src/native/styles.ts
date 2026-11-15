@@ -1,5 +1,5 @@
-import type { ColorTokens } from "@rakazo/ui-tokens";
-import { fontWeight, typeScale } from "@rakazo/ui-tokens";
+import type { ColorTokens } from "@robots/ui-tokens";
+import { fontWeight, typeScale } from "@robots/ui-tokens";
 import { Platform, StyleSheet } from "react-native";
 
 const BLOCK_GAP = 8;

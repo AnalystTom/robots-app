@@ -2,21 +2,21 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { RPCHandler } from "@orpc/server/fetch";
-import type { AdapterContext } from "@rakazo/adapter-kit";
+import type { AdapterContext } from "@robots/adapter-kit";
 import {
   FakeSandboxProvider,
   InMemoryJobQueue,
   LocalAgentHomeStore,
   provisionComputer,
-} from "@rakazo/adapters";
-import type * as Db from "@rakazo/db";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/adapters";
+import type * as Db from "@robots/db";
+import type { PrismaClient } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import type { RouterDeps } from "./router.js";
 import { createRouter } from "./router.js";
 
 // The plan's size is read from billing, which these Prisma doubles do not model.
-vi.mock("@rakazo/db", async (importOriginal) => ({
+vi.mock("@robots/db", async (importOriginal) => ({
   ...(await importOriginal<typeof Db>()),
   planComputerSize: vi.fn(async () => "standard"),
 }));

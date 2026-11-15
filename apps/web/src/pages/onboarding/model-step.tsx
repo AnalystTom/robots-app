@@ -10,7 +10,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { Check, Copy } from "lucide-react";
 import { FoundModelPicker } from "../../components/FoundModelPicker";
 import {
@@ -21,7 +21,7 @@ import { ModelHeadersEditor } from "../../components/ModelHeadersEditor";
 import { CompatibleKeyField } from "../model-settings/compatible-key-field";
 import type { OnboardingModel } from "./use-onboarding-model";
 
-const CUSTOM_MODEL_OPTION = "__rakazo_custom_model__";
+const CUSTOM_MODEL_OPTION = "__robots_custom_model__";
 
 export function ModelStep({ model, fieldId }: { model: OnboardingModel; fieldId: string }) {
   const { t } = useLingui();

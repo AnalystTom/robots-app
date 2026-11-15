@@ -1,10 +1,10 @@
-import type { AgentRunRequest, AgentRuntime, JobPublisher } from "@rakazo/adapter-kit";
-import { historyCompactJob } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
-import { blocksToAgentHistoryText, botMessageContext } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { recordUsage, runAsTenant } from "@rakazo/db";
-import { getLogger, unwrapJobPayload } from "@rakazo/logging";
+import type { AgentRunRequest, AgentRuntime, JobPublisher } from "@robots/adapter-kit";
+import { historyCompactJob } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
+import { blocksToAgentHistoryText, botMessageContext } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { recordUsage, runAsTenant } from "@robots/db";
+import { getLogger, unwrapJobPayload } from "@robots/logging";
 import { resolveDeploymentModel } from "./deployment-model.js";
 import {
   historyCompactionInstructions,

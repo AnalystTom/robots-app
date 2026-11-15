@@ -1,11 +1,11 @@
 import { ORPCError } from "@orpc/server";
-import type { SandboxProvider, SecretStore } from "@rakazo/adapter-kit";
+import type { SandboxProvider, SecretStore } from "@robots/adapter-kit";
 import type {
   ResolveHostname,
   SecretCleanup,
   SecretCleanupDeps,
   StoredComputerSettings,
-} from "@rakazo/adapters";
+} from "@robots/adapters";
 import {
   assertSafeWebUrl,
   COMPUTER_PROVIDER_SECRET_KIND,
@@ -19,11 +19,11 @@ import {
   loadAccountComputerSettings as loadSavedAccountComputerSettings,
   recordSecretCleanup,
   refreshComputerProvider,
-} from "@rakazo/adapters";
-import type { Actor, ComputerProviderSettings, ComputerProviderUpdate } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
-import { Prisma, runAsSystem, withTransactionRetry } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapters";
+import type { Actor, ComputerProviderSettings, ComputerProviderUpdate } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
+import { Prisma, runAsSystem, withTransactionRetry } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { requireAdmin } from "./admins.js";
 import type { RouterDeps } from "./router.js";
 

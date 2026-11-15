@@ -1,6 +1,6 @@
 import { ph, t } from "@lingui/core/macro";
-import type { Routine } from "@rakazo/contracts";
-import { formatCron } from "@rakazo/core";
+import type { Routine } from "@robots/contracts";
+import { formatCron } from "@robots/core";
 import { cronLabels } from "./cron";
 
 /** Triggers set up on web. Mobile lists them and can remove them, but not add or edit them. */

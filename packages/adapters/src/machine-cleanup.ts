@@ -4,11 +4,11 @@ import type {
   SandboxProvider,
   UnreferencedMachine,
   UnreferencedMachineRecords,
-} from "@rakazo/adapter-kit";
-import { machineCleanupJob, machineCleanupJobKey } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { runAsSystem } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import { machineCleanupJob, machineCleanupJobKey } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { runAsSystem } from "@robots/db";
+import { getLogger } from "@robots/logging";
 
 /** One try's provider budget; the queue's backoff spaces the tries. */
 const ATTEMPT_MS = 30_000;

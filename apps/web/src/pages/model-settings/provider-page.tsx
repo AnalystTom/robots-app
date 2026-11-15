@@ -1,6 +1,6 @@
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
-import type { ConnectionModel } from "@rakazo/core";
-import { ListSearchInput, SectionHeading } from "@rakazo/ui-web";
+import type { ConnectionModel } from "@robots/core";
+import { ListSearchInput, SectionHeading } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { SettingsPageHeader } from "../../components/SettingsPageHeader";
 import { useListSearch } from "../../lib/use-list-search";

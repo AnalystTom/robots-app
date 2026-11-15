@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { ORPCError } from "@orpc/server";
-import type { AgentHomeStore, JobPublisher, SandboxProvider } from "@rakazo/adapter-kit";
+import type { AgentHomeStore, JobPublisher, SandboxProvider } from "@robots/adapter-kit";
 import {
   createAdapterContext,
   skillTeachingExpireJob,
   skillTeachingExpireJobKey,
-} from "@rakazo/adapter-kit";
-import type { ComputerExecutionLease, TaughtSkillRow, TeachComputerInput } from "@rakazo/adapters";
+} from "@robots/adapter-kit";
+import type { ComputerExecutionLease, TaughtSkillRow, TeachComputerInput } from "@robots/adapters";
 import {
   acquireComputerExecutionLease,
   anotherPersonHoldsControl,
@@ -28,24 +28,24 @@ import {
   sandboxKindCapabilities,
   screenLeaseIdForRun,
   wakeRun,
-} from "@rakazo/adapters";
-import type { Actor, MessageBlock, TaughtSkill } from "@rakazo/contracts";
-import type { SkillPlaybook, TeachRecordingEvent } from "@rakazo/core";
+} from "@robots/adapters";
+import type { Actor, MessageBlock, TaughtSkill } from "@robots/contracts";
+import type { SkillPlaybook, TeachRecordingEvent } from "@robots/core";
 import {
   ACTIVE_RUN_STATUSES,
   buildPlaybookFromRecording,
   COMPUTER_USING_RUNS,
   formatSkillRunPrompt,
   teachRecordingTtlMs,
-} from "@rakazo/core";
-import type { createRepos, PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { createRepos, PrismaClient, ThreadEvents } from "@robots/db";
 import {
   clearEndedRunState,
   expireComputerExecutionLeases,
   IsolationError,
   isUniqueViolation,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { takeComputerControl } from "./computer-control.js";
 
 export interface TaughtSkillsDeps {

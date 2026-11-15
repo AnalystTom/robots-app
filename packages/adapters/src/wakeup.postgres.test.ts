@@ -2,7 +2,7 @@ import type {
   BackgroundJob,
   BackgroundJobHandlers,
   ManagedConnectorProvider,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   CONNECTION_CLEANUP_MAX_ATTEMPTS,
   connectionCleanupJob,
@@ -12,10 +12,10 @@ import {
   messagingSendJobKey,
   RetryJobLaterError,
   routineWakeupJob,
-} from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { asSystem, createDb, createPool, currentDbContext, runAsTenant } from "@rakazo/db";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { asSystem, createDb, createPool, currentDbContext, runAsTenant } from "@robots/db";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { Pool } from "pg";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { dropLeftoverAuthorization } from "./connection-cleanup.js";
@@ -971,7 +971,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
     };
     const key = connectionCleanupJobKey(cleanup);
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-worker", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-worker", sinks: [sink] }));
     const target = handlers({
       // Cannot decide yet: asks for a later try, as the cleanup does for undecided accounts.
       "connection.cleanup": async () => {
@@ -1002,7 +1002,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
       await host.stop();
       await publisher.cancel(key).catch(() => undefined);
       await publisher.close();
-      installLogger(createLogger({ service: "rakazo-worker", level: "off", sinks: [] }));
+      installLogger(createLogger({ service: "robots-worker", level: "off", sinks: [] }));
     }
   });
 
@@ -1076,7 +1076,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
     };
     const key = connectionCleanupJobKey(cleanup);
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-worker", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-worker", sinks: [sink] }));
     const budget = async () => {
       const { rows } = await testPool().query<{ attempts: number; max_attempts: number }>(
         "select attempts, max_attempts from graphile_worker._private_jobs where key = $1",

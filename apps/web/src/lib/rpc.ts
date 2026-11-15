@@ -1,18 +1,18 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { ContractRouterClient } from "@orpc/contract";
-import type { AppContract, ProductEvent } from "@rakazo/contracts";
-import { CLIENT_BUILD_HEADER, formatClientBuild } from "@rakazo/contracts";
-import { displayIdentityEvent, displayIdentityResult } from "@rakazo/core";
-import { clientCorrelationHeaders, responseCorrelation } from "@rakazo/logging/monitoring";
+import type { AppContract, ProductEvent } from "@robots/contracts";
+import { CLIENT_BUILD_HEADER, formatClientBuild } from "@robots/contracts";
+import { displayIdentityEvent, displayIdentityResult } from "@robots/core";
+import { clientCorrelationHeaders, responseCorrelation } from "@robots/logging/monitoring";
 import { authClient } from "./auth";
 import { CLIENT_BUILD } from "./client-build";
 import { i18n } from "./i18n";
 import { identityLabels } from "./identity-display";
 import { reportClientError } from "./monitoring";
 
-const SPACE_STORAGE_KEY = "rakazo:space-id";
-export const ORGANIZATION_SPACES_STORAGE_KEY = "rakazo:org-spaces";
+const SPACE_STORAGE_KEY = "robots:space-id";
+export const ORGANIZATION_SPACES_STORAGE_KEY = "robots:org-spaces";
 
 type RpcClientContext = {
   spaceId?: string | null;
@@ -30,7 +30,7 @@ export function selectedSpaceId(): string | null {
 }
 
 /** Fired after the selected Space changes, so per-organization state (billing) can reload. */
-export const SPACE_SELECTED_EVENT = "rakazo:space-selected";
+export const SPACE_SELECTED_EVENT = "robots:space-selected";
 
 export function selectSpace(id: string): boolean {
   let selected: boolean;
@@ -58,14 +58,14 @@ export function clearSpaceSelection(): void {
   }
 }
 
-/** Adds `x-rakazo-space-id` when a space is selected. */
+/** Adds `x-robots-space-id` when a space is selected. */
 export function withSpaceHeaders(
   init?: HeadersInit,
   spaceId: string | null = selectedSpaceId(),
 ): Headers {
   const headers = new Headers(init);
-  if (spaceId) headers.set("x-rakazo-space-id", spaceId);
-  else headers.delete("x-rakazo-space-id");
+  if (spaceId) headers.set("x-robots-space-id", spaceId);
+  else headers.delete("x-robots-space-id");
   return headers;
 }
 

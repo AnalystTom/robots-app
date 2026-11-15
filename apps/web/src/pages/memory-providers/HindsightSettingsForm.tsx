@@ -8,7 +8,7 @@ import {
   Switch,
   ToggleGroup,
   ToggleGroupItem,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { useId, useState } from "react";
 import type { ConnectionMode } from "./ConnectionModeFields";

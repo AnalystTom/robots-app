@@ -2,10 +2,10 @@ import { randomBytes } from "node:crypto";
 import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { AdapterContext, SandboxProvider } from "@rakazo/adapter-kit";
-import { SandboxDamagedError } from "@rakazo/adapter-kit";
-import type * as Db from "@rakazo/db";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
+import type { AdapterContext, SandboxProvider } from "@robots/adapter-kit";
+import { SandboxDamagedError } from "@robots/adapter-kit";
+import type * as Db from "@robots/db";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ComputerBusyError,
@@ -22,7 +22,7 @@ import { MemoryObjectStorage } from "./object-storage.test-support.js";
 import { InMemoryJobQueue } from "./wakeup.js";
 
 // The plan's size is read from billing, which these Prisma doubles do not model.
-vi.mock("@rakazo/db", async (importOriginal) => ({
+vi.mock("@robots/db", async (importOriginal) => ({
   ...(await importOriginal<typeof Db>()),
   planComputerSize: vi.fn(async () => "standard"),
 }));
@@ -41,7 +41,7 @@ afterEach(async () => {
 });
 
 async function fixture(provider: "fake" | "desktop" = "fake") {
-  const root = await mkdtemp(path.join(tmpdir(), "rakazo-recovery-"));
+  const root = await mkdtemp(path.join(tmpdir(), "robots-recovery-"));
   roots.push(root);
   const sandbox: SandboxProvider =
     provider === "desktop" ? new DesktopSandboxProvider({ root }) : new FakeSandboxProvider();

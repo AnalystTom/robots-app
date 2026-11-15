@@ -29,7 +29,7 @@ export const signInProviderSchema = z.object({
 export type SignInProvider = z.infer<typeof signInProviderSchema>;
 
 /** Readable by the sign-in page; set only after a sign-in succeeds. Holds a provider id or `email`. */
-export const LAST_SIGN_IN_COOKIE = "rakazo_last_sign_in";
+export const LAST_SIGN_IN_COOKIE = "robots_last_sign_in";
 
 /** The chooser button a remembered sign-in method belongs to: a provider id, or `email`. */
 export function lastSignInChoice(method: string | null | undefined): string | null {

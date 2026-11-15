@@ -15,12 +15,12 @@
 
 脚本使用 `pg_dump` 备份数据库，并将 `data/` 打包到 `backups/<stamp>/`。
 备份目录权限是 `0700`，文件权限是 `0600`，即使复用已有路径也会设置权限。
-没有 `data/` 时备份会失败；设置 `RAKAZO_BACKUP_SKIP_HOMES=1` 时只备份数据库，并生成空归档，恢复时视为未包含主目录。
+没有 `data/` 时备份会失败；设置 `ROBOTS_BACKUP_SKIP_HOMES=1` 时只备份数据库，并生成空归档，恢复时视为未包含主目录。
 数据库或归档失败会使备份失败，应丢弃该次输出目录。
 
 ### 恢复源码备份
 
-`scripts/restore.sh` 只接收上面脚本生成的备份，目标是开发 Compose 中的空 `rakazo` 数据库：
+`scripts/restore.sh` 只接收上面脚本生成的备份，目标是开发 Compose 中的空 `robots` 数据库：
 
 ```bash
 ./scripts/restore.sh backups/<stamp>
@@ -36,26 +36,26 @@ SQL 成功后，原目录移到 `data.rollback.<random>/data`，脚本打印回�
 
 全部成功后才启动服务。如果关闭写入后又发生失败，脚本会再次尝试停止服务。
 SQL 提交后的文件替换失败不能自动回滚数据库。应保持应用停止，保留两个目录，恢复与回滚目录配套的数据库后再恢复文件。
-需要回滚时，必须事先单独备份恢复前的数据库。此脚本不能读取生产备份的 `rakazo.dump` 或 `appdata.tgz`。
+需要回滚时，必须事先单独备份恢复前的数据库。此脚本不能读取生产备份的 `robots.dump` 或 `appdata.tgz`。
 
 ## 生产快照
 
-单虚拟机生产部署使用 `infra/compose/backup-prod.sh`，安装到 `/usr/local/sbin/rakazo-backup`，
-并启用配套的 `rakazo-backup.timer`。它在 `/var/backups/rakazo` 创建经过验证的 Postgres 自定义格式备份和应用数据归档，文件权限为 `0600`。
+单虚拟机生产部署使用 `infra/compose/backup-prod.sh`，安装到 `/usr/local/sbin/robots-backup`，
+并启用配套的 `robots-backup.timer`。它在 `/var/backups/robots` 创建经过验证的 Postgres 自定义格式备份和应用数据归档，文件权限为 `0600`。
 安装步骤见[生产部署（英文）](../self-host-production.md)。
 
-默认保留 `RAKAZO_BACKUP_KEEP=3` 份快照，受 `RAKAZO_BACKUP_MAX_GB=50` GiB 限制，并保留至少
-`RAKAZO_BACKUP_MIN_FREE_GB=5` GiB 可用磁盘空间。
+默认保留 `ROBOTS_BACKUP_KEEP=3` 份快照，受 `ROBOTS_BACKUP_MAX_GB=50` GiB 限制，并保留至少
+`ROBOTS_BACKUP_MIN_FREE_GB=5` GiB 可用磁盘空间。
 脚本先清理遗留的未完成快照和超额历史，再检查容量；空间不足时保留最新的已验证快照，失败时清理该次未完成输出。
 仅有本地快照无法应对整台服务器丢失。
 
-默认部署目录是 `/srv/rakazo`。其他目录可在 root 所有、权限为 `0600` 的 `/etc/rakazo/backup.env` 中设置：
+默认部署目录是 `/srv/robots`。其他目录可在 root 所有、权限为 `0600` 的 `/etc/robots/backup.env` 中设置：
 
 ```env
-RAKAZO_DEPLOY_DIR=/srv/rakazo
-RAKAZO_BACKUP_KEEP=3
-RAKAZO_BACKUP_MAX_GB=50
-RAKAZO_BACKUP_MIN_FREE_GB=5
+ROBOTS_DEPLOY_DIR=/srv/robots
+ROBOTS_BACKUP_KEEP=3
+ROBOTS_BACKUP_MAX_GB=50
+ROBOTS_BACKUP_MIN_FREE_GB=5
 ```
 
 自定义 Compose 项目名时，还要设置相同的 `COMPOSE_PROJECT_NAME`。
@@ -63,7 +63,7 @@ RAKAZO_BACKUP_MIN_FREE_GB=5
 
 使用专用备份盘时，应持久挂载该磁盘，并把它的 `backups` 目录 bind mount 到 `/var/backups`。
 在 `/etc/fstab` 的 bind 挂载选项中加上 `x-systemd.requires-mounts-for=/mnt/your-backup-volume`。
-在 `/etc/rakazo/backup.env` 中设置 `RAKAZO_BACKUP_REQUIRE_VOLUME=1`，并为备份服务添加
+在 `/etc/robots/backup.env` 中设置 `ROBOTS_BACKUP_REQUIRE_VOLUME=1`，并为备份服务添加
 `[Unit]` drop-in，写入：
 
 ```ini
@@ -79,29 +79,29 @@ AssertPathIsMountPoint=/var/backups
 在自己掌控的另一台机器上生成 age 密钥，不要在服务器上生成或保存私钥：
 
 ```bash
-age-keygen -o rakazo-backup.key
+age-keygen -o robots-backup.key
 ```
 
 离线保存身份文件（私钥），并考虑为另一位运维人员添加第二个接收者。
-服务器需安装 `age`；`harden-host.sh` 会安装它。将公钥填入 `/etc/rakazo/backup.env`：
+服务器需安装 `age`；`harden-host.sh` 会安装它。将公钥填入 `/etc/robots/backup.env`：
 
 ```env
-RAKAZO_BACKUP_AGE_RECIPIENTS=age1exampleprimaryrecipient age1examplerecoveryrecipient
+ROBOTS_BACKUP_AGE_RECIPIENTS=age1exampleprimaryrecipient age1examplerecoveryrecipient
 # 也可指定每行一个公钥的文件：
-# RAKAZO_BACKUP_AGE_RECIPIENTS_FILE=/etc/rakazo/backup-recipients.txt
+# ROBOTS_BACKUP_AGE_RECIPIENTS_FILE=/etc/robots/backup-recipients.txt
 ```
 
-示例公钥必须替换为实际公钥。设置后，快照包含 `rakazo.dump.age`、`appdata.tgz.age`、`SOURCE_SIZE_KB` 和 `SHA256SUMS`。
+示例公钥必须替换为实际公钥。设置后，快照包含 `robots.dump.age`、`appdata.tgz.age`、`SOURCE_SIZE_KB` 和 `SHA256SUMS`。
 数据库和文件流直接进入 age，明文不落盘；验证过程不需要私钥。
 未设置接收者时会生成明文并告警；一旦成功生成过加密备份，之后缺少接收者会拒绝备份。
-只有明确接受明文风险时才设置 `RAKAZO_BACKUP_ALLOW_PLAINTEXT=1`。
+只有明确接受明文风险时才设置 `ROBOTS_BACKUP_ALLOW_PLAINTEXT=1`。
 
 异地备份需要 `rclone`。在同一设置文件中把目标设为任意 rclone 远端和路径，
 例如 S3 兼容存储桶或 SFTP 服务器：
 
 ```env
-RAKAZO_BACKUP_OFFSITE_REMOTE=offsite:rakazo-backups
-RAKAZO_BACKUP_OFFSITE_KEEP=14
+ROBOTS_BACKUP_OFFSITE_REMOTE=offsite:robots-backups
+ROBOTS_BACKUP_OFFSITE_KEEP=14
 RCLONE_CONFIG_OFFSITE_TYPE=s3
 RCLONE_CONFIG_OFFSITE_PROVIDER=Other
 RCLONE_CONFIG_OFFSITE_ENDPOINT=https://s3.example.com
@@ -111,7 +111,7 @@ RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY=replace-me
 
 将占位值替换为自己的配置。异地副本必须加密；上传后通过 `rclone check` 校验，最后上传 `SHA256SUMS` 标记完成。
 默认保留最新 14 份完整异地快照，与本地保留数量独立。
-设置 `RAKAZO_BACKUP_OFFSITE_KEEP=0` 可让存储桶生命周期规则负责删除，此时凭据无需删除权限。
+设置 `ROBOTS_BACKUP_OFFSITE_KEEP=0` 可让存储桶生命周期规则负责删除，此时凭据无需删除权限。
 上传失败保留本地快照，但备份服务会失败并触发告警。
 
 ## 演练与恢复生产快照
@@ -119,8 +119,8 @@ RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY=replace-me
 在私钥所在机器取回快照，再运行验证演练；不要将私钥留在服务器：
 
 ```bash
-rclone copy offsite:rakazo-backups/<stamp> ./<stamp>
-bash infra/compose/backup-drill.sh ./<stamp> rakazo-backup.key
+rclone copy offsite:robots-backups/<stamp> ./<stamp>
+bash infra/compose/backup-drill.sh ./<stamp> robots-backup.key
 ```
 
 需要 `age`、`tar`，以及与服务器 Postgres 主版本相同或更新的 `pg_restore`；生产 Compose 当前使用 Postgres 18。
@@ -138,32 +138,32 @@ bash infra/compose/backup-drill.sh ./<stamp> rakazo-backup.key
 set -euo pipefail
 umask 077
 COMPOSE="sudo docker compose --env-file .env -f infra/compose/docker-compose.prod.yml"
-VOLUME=rakazo-prod_appdata
+VOLUME=robots-prod_appdata
 
-ssh deploy@app.example.com "cd /srv/rakazo && $COMPOSE stop api worker web"
+ssh deploy@app.example.com "cd /srv/robots && $COMPOSE stop api worker web"
 ROLLBACK_DUMP="$(mktemp "$PWD/before-restore.dump.XXXXXX")"
 if ! ssh deploy@app.example.com \
-  "cd /srv/rakazo && $COMPOSE exec -T postgres sh -c 'pg_dump -Fc -U \"\$POSTGRES_USER\" \"\$POSTGRES_DB\"'" \
+  "cd /srv/robots && $COMPOSE exec -T postgres sh -c 'pg_dump -Fc -U \"\$POSTGRES_USER\" \"\$POSTGRES_DB\"'" \
   > "$ROLLBACK_DUMP"; then
   printf '恢复前数据库导出失败。不要使用 %s 这个不完整文件，并保持应用停止。\n' "$ROLLBACK_DUMP" >&2
   exit 1
 fi
 
 APPDATA="$(ssh deploy@app.example.com "sudo docker volume inspect -f '{{.Mountpoint}}' '$VOLUME'")"
-RESTORE="$(ssh deploy@app.example.com "sudo mktemp -d '${APPDATA%/*}/rakazo-restore.XXXXXX'")"
+RESTORE="$(ssh deploy@app.example.com "sudo mktemp -d '${APPDATA%/*}/robots-restore.XXXXXX'")"
 ssh deploy@app.example.com "sudo mkdir '$RESTORE/staged'"
 printf '记录这组回滚路径：\n数据库导出：%s\n远程数据目录：%s/previous\n' \
   "$ROLLBACK_DUMP" "$RESTORE"
-age -d -i rakazo-backup.key <stamp>/appdata.tgz.age | ssh deploy@app.example.com \
+age -d -i robots-backup.key <stamp>/appdata.tgz.age | ssh deploy@app.example.com \
   "sudo tar -xzf - --numeric-owner -C '$RESTORE/staged'"
 
-age -d -i rakazo-backup.key <stamp>/rakazo.dump.age | ssh deploy@app.example.com \
-  "cd /srv/rakazo && $COMPOSE exec -T postgres sh -c 'pg_restore --clean --if-exists --no-owner --exit-on-error --single-transaction -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\"'"
+age -d -i robots-backup.key <stamp>/robots.dump.age | ssh deploy@app.example.com \
+  "cd /srv/robots && $COMPOSE exec -T postgres sh -c 'pg_restore --clean --if-exists --no-owner --exit-on-error --single-transaction -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\"'"
 
 ssh deploy@app.example.com \
   "sudo mv -- '$APPDATA' '$RESTORE/previous' && sudo mv -- '$RESTORE/staged' '$APPDATA'"
 ssh deploy@app.example.com \
-  "cd /srv/rakazo && $COMPOSE up -d --force-recreate --wait --pull never api worker web"
+  "cd /srv/robots && $COMPOSE up -d --force-recreate --wait --pull never api worker web"
 ```
 
 归档必须先成功解包，然后才能开始导入 SQL。干净的临时目录和回滚目录都位于数据卷活动目录的同级，
@@ -183,16 +183,16 @@ ssh deploy@app.example.com \
 如果第一次目录移动就失败了，旧目录仍在 `$APPDATA`；移动任何内容前先检查两个路径。
 只切回文件目录不会回滚数据库。
 
-明文快照没有 `.age` 后缀，应分别用 `cat` 代替 `age -d`，文件名是 `rakazo.dump` 和 `appdata.tgz`；
+明文快照没有 `.age` 后缀，应分别用 `cat` 代替 `age -d`，文件名是 `robots.dump` 和 `appdata.tgz`；
 干净目录与回滚步骤不变。
 
-恢复到新部署时，必须先创建 `rakazo_app` 角色，再执行上述流程。备份会把权限授予该角色，
+恢复到新部署时，必须先创建 `robots_app` 角色，再执行上述流程。备份会把权限授予该角色，
 而新部署只有迁移会创建它，因此缺少角色时 `pg_restore` 会停止。
 不要先运行迁移：比快照更新的表会阻止恢复；流程最后启动应用时才会应用迁移。
 
 ```bash
-ssh deploy@app.example.com "cd /srv/rakazo && $COMPOSE up -d --wait postgres"
-ssh deploy@app.example.com "cd /srv/rakazo && $COMPOSE exec -T postgres sh -c 'psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"CREATE ROLE rakazo_app NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE\"'"
+ssh deploy@app.example.com "cd /srv/robots && $COMPOSE up -d --wait postgres"
+ssh deploy@app.example.com "cd /srv/robots && $COMPOSE exec -T postgres sh -c 'psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -c \"CREATE ROLE robots_app NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE\"'"
 ```
 
 ## 时间点恢复
@@ -219,7 +219,7 @@ Postgres 为复制槽最多再保留同样大小的 WAL（`max_slot_wal_keep_siz
 ```env
 COMPOSE_PROFILES=pitr
 PITR_DATABASE_PASSWORD=replace-with-openssl-rand-hex-24
-PITR_BUCKET=example-rakazo-pitr
+PITR_BUCKET=example-robots-pitr
 PITR_ENDPOINT=https://s3.example.com
 PITR_REGION=example-region
 PITR_ACCESS_KEY_ID=replace-me
@@ -236,23 +236,23 @@ PITR_AGE_RECIPIENTS=age1exampleprimaryrecipient age1examplerecoveryrecipient
 sudo infra/compose/pitr.sh enable
 ```
 
-该命令会创建 `rakazo_pitr` 复制登录、在 `pg_hba.conf` 中允许它，设置 `archive_timeout` 和
+该命令会创建 `robots_pitr` 复制登录、在 `pg_hba.conf` 中允许它，设置 `archive_timeout` 和
 `max_slot_wal_keep_size`，并重新加载 Postgres，不会重启它。随后 sidecar 会创建第一份基础备份。
 修改 `PITR_DATABASE_PASSWORD` 或 `PITR_MAX_WAL_GB` 后，以及把 Postgres 移到新集群后，都要再次运行 `enable`。
 上传内容按集群的系统标识分组，因此新集群不会覆盖旧集群的 WAL。
 
 上传等待超过十分钟、接收暂停、复制槽没有流，或最近基础备份超过 30 小时时，sidecar 的健康检查会失败。
-设置 `RAKAZO_MONITOR_COMPOSE_PROJECT` 后，宿主机检查会对此告警。可查看详细状态：
+设置 `ROBOTS_MONITOR_COMPOSE_PROJECT` 后，宿主机检查会对此告警。可查看详细状态：
 
 ```bash
-sudo docker compose --env-file .env -f infra/compose/docker-compose.prod.yml exec pitr rakazo-pitr health
+sudo docker compose --env-file .env -f infra/compose/docker-compose.prod.yml exec pitr robots-pitr health
 ```
 
 任何装有 Docker 且有这份代码的机器都可以执行恢复。身份文件从标准输入传入，只存在于恢复容器内存中。
 先验证最近一个恢复点能恢复到临时卷，演练结束后会删除该卷。启用后、修改 PITR 脚本后以及定期都应执行：
 
 ```bash
-sudo infra/compose/pitr.sh drill < rakazo-backup.key
+sudo infra/compose/pitr.sh drill < robots-backup.key
 ```
 
 不在服务器上操作时，把 `PITR_ENV_FILE` 指向一个只含 `PITR_` 存储设置的文件。
@@ -261,11 +261,11 @@ sudo infra/compose/pitr.sh drill < rakazo-backup.key
 
 ```bash
 COMPOSE="sudo docker compose --env-file .env -f infra/compose/docker-compose.prod.yml"
-ssh deploy@app.example.com "cd /srv/rakazo && $COMPOSE stop api worker web pitr postgres"
+ssh deploy@app.example.com "cd /srv/robots && $COMPOSE stop api worker web pitr postgres"
 ssh deploy@app.example.com \
-  "cd /srv/rakazo && sudo infra/compose/pitr.sh restore '2026-01-31 09:41:00+00' rakazo-prod_postgres" \
-  < rakazo-backup.key
-ssh deploy@app.example.com "cd /srv/rakazo && $COMPOSE up -d --wait"
+  "cd /srv/robots && sudo infra/compose/pitr.sh restore '2026-01-31 09:41:00+00' robots-prod_postgres" \
+  < robots-backup.key
+ssh deploy@app.example.com "cd /srv/robots && $COMPOSE up -d --wait"
 ```
 
 恢复会选择目标时间之前最近完成的完整基础备份，重放 WAL 到目标时间并提升数据库，从而开启新的时间线；
@@ -273,7 +273,7 @@ sidecar 会为它创建新的基础备份。恢复期间应暂停 CI 部署。�
 
 ```bash
 ssh deploy@app.example.com \
-  "cd /srv/rakazo && $COMPOSE run --rm --no-deps --entrypoint sh postgres -c 'rm -rf \"\$PGDATA\".before-restore-*'"
+  "cd /srv/robots && $COMPOSE run --rm --no-deps --entrypoint sh postgres -c 'rm -rf \"\$PGDATA\".before-restore-*'"
 ```
 
 关闭 PITR 时，先从 `COMPOSE_PROFILES` 中移除 `pitr`，再运行 `sudo infra/compose/pitr.sh disable`。
@@ -281,7 +281,7 @@ ssh deploy@app.example.com \
 
 ## 在不同实例间迁移账号
 
-在不同 Rakazo 实例之间迁移账号，可在旧实例“设置 → 导出数据”，在新实例导入。
+在不同 RoBots 实例之间迁移账号，可在旧实例“设置 → 导出数据”，在新实例导入。
 导出 ZIP 包含所属空间的机器人、聊天、文件、记忆、例行任务、技能、工作区文件，以及自己拥有空间的看板。
 ZIP 中的内容已解密，应保密保存。导入会创建自己拥有的新空间，例行任务默认关闭。
 模型密钥和其他连接凭据（包括应用、MCP 服务器和消息集成）不会迁移，需重新连接。

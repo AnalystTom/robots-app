@@ -14,22 +14,22 @@ import {
 describe("normalizeRepoUrl", () => {
   it("accepts the official repository and https forks", () => {
     expect(normalizeRepoUrl(OFFICIAL_REPO_URL)).toEqual({
-      url: "https://github.com/elie222/rakazo",
+      url: "https://github.com/AnalystTom/robots-app",
     });
-    expect(normalizeRepoUrl("  https://github.com/me/rakazo.git/  ")).toEqual({
-      url: "https://github.com/me/rakazo.git",
+    expect(normalizeRepoUrl("  https://github.com/me/robots.git/  ")).toEqual({
+      url: "https://github.com/me/robots.git",
     });
-    expect(normalizeRepoUrl("https://git.example.com:8443/team/rakazo.git")).toEqual({
-      url: "https://git.example.com:8443/team/rakazo.git",
+    expect(normalizeRepoUrl("https://git.example.com:8443/team/robots.git")).toEqual({
+      url: "https://git.example.com:8443/team/robots.git",
     });
   });
 
   it("accepts ssh remotes in both spellings", () => {
-    expect(normalizeRepoUrl("git@github.com:me/rakazo.git")).toEqual({
-      url: "git@github.com:me/rakazo.git",
+    expect(normalizeRepoUrl("git@github.com:me/robots.git")).toEqual({
+      url: "git@github.com:me/robots.git",
     });
-    expect(normalizeRepoUrl("ssh://git@github.com/me/rakazo.git")).toEqual({
-      url: "ssh://git@github.com/me/rakazo.git",
+    expect(normalizeRepoUrl("ssh://git@github.com/me/robots.git")).toEqual({
+      url: "ssh://git@github.com/me/robots.git",
     });
   });
 
@@ -37,46 +37,46 @@ describe("normalizeRepoUrl", () => {
     for (const input of [
       "",
       "   ",
-      "http://github.com/me/rakazo",
-      "git://github.com/me/rakazo",
+      "http://github.com/me/robots",
+      "git://github.com/me/robots",
       "file:///etc/passwd",
-      "/srv/rakazo",
+      "/srv/robots",
       "https://github.com",
       "https://github.com/onlyone",
       "https://github.com/me/../../etc",
-      "https://user:secret@github.com/me/rakazo",
-      "https://token@github.com/me/rakazo",
-      "ssh://bad%0auser@github.com/me/rakazo",
-      "https://github.com/me/rakazo?x=1",
-      "https://github.com/me/rakazo#frag",
+      "https://user:secret@github.com/me/robots",
+      "https://token@github.com/me/robots",
+      "ssh://bad%0auser@github.com/me/robots",
+      "https://github.com/me/robots?x=1",
+      "https://github.com/me/robots#frag",
       "https://github.com/me/rak azo",
       "--upload-pack=touch /tmp/pwned",
       "-o ProxyCommand=id",
-      `https://github.com/me/rakazo${"x".repeat(400)}`,
+      `https://github.com/me/robots${"x".repeat(400)}`,
     ]) {
       expect(normalizeRepoUrl(input), input).toHaveProperty("error");
     }
   });
 
   it("rejects an embedded newline that could smuggle a second argument", () => {
-    expect(normalizeRepoUrl("https://github.com/me/rakazo\n--exec=id")).toHaveProperty("error");
+    expect(normalizeRepoUrl("https://github.com/me/robots\n--exec=id")).toHaveProperty("error");
   });
 });
 
 describe("repoIdentity", () => {
   it("treats every spelling of the same remote as one repository", () => {
-    const identity = "github.com/elie222/rakazo";
-    expect(repoIdentity("https://github.com/elie222/rakazo")).toBe(identity);
-    expect(repoIdentity("https://github.com/elie222/rakazo.git")).toBe(identity);
-    expect(repoIdentity("git@github.com:elie222/rakazo.git")).toBe(identity);
-    expect(repoIdentity("ssh://git@github.com/Elie222/Rakazo")).toBe(identity);
+    const identity = "github.com/analysttom/robots-app";
+    expect(repoIdentity("https://github.com/AnalystTom/robots-app")).toBe(identity);
+    expect(repoIdentity("https://github.com/AnalystTom/robots-app.git")).toBe(identity);
+    expect(repoIdentity("git@github.com:AnalystTom/robots-app.git")).toBe(identity);
+    expect(repoIdentity("ssh://git@github.com/AnalystTom/robots-app")).toBe(identity);
     expect(repoIdentity("not a url")).toBeNull();
   });
 
   it("only calls the real upstream official", () => {
-    expect(isOfficialRepoUrl("git@github.com:elie222/rakazo.git")).toBe(true);
-    expect(isOfficialRepoUrl("https://github.com/attacker/rakazo")).toBe(false);
-    expect(isOfficialRepoUrl("https://githubb.com/elie222/rakazo")).toBe(false);
+    expect(isOfficialRepoUrl("git@github.com:AnalystTom/robots-app.git")).toBe(true);
+    expect(isOfficialRepoUrl("https://github.com/attacker/robots")).toBe(false);
+    expect(isOfficialRepoUrl("https://githubb.com/AnalystTom/robots-app")).toBe(false);
   });
 });
 

@@ -1,10 +1,10 @@
-import type { RealtimeFanout } from "@rakazo/adapter-kit";
-import { DATABASE_KEEPALIVE } from "@rakazo/db";
-import { bestEffort } from "@rakazo/logging";
+import type { RealtimeFanout } from "@robots/adapter-kit";
+import { DATABASE_KEEPALIVE } from "@robots/db";
+import { bestEffort } from "@robots/logging";
 import type { Notification } from "pg";
 import { Client } from "pg";
 
-const POSTGRES_CHANNEL = "rakazo_events";
+const POSTGRES_CHANNEL = "robots_events";
 const MAX_NOTIFY_PAYLOAD_BYTES = 7_900;
 
 type Subscriber = (payload: string) => void;
@@ -48,7 +48,7 @@ export class PostgresRealtimeFanout implements RealtimeFanout {
       (() =>
         new Client({
           connectionString: options.connectionString,
-          application_name: "rakazo-realtime",
+          application_name: "robots-realtime",
           connectionTimeoutMillis: 5_000,
           // An idle listener never writes, so without probes a failover leaves it deaf.
           ...DATABASE_KEEPALIVE,

@@ -1,6 +1,6 @@
-import type { AttachmentMimeType } from "@rakazo/contracts";
-import { ATTACHMENT_MAX_BYTES, ATTACHMENT_MAX_COUNT, attachmentSizeLabel } from "@rakazo/contracts";
-import { newClientId } from "@rakazo/core";
+import type { AttachmentMimeType } from "@robots/contracts";
+import { ATTACHMENT_MAX_BYTES, ATTACHMENT_MAX_COUNT, attachmentSizeLabel } from "@robots/contracts";
+import { newClientId } from "@robots/core";
 
 export type PickedAttachment = {
   id: string;

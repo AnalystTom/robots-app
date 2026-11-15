@@ -1,5 +1,5 @@
-import type { SignupAttribution as Attribution } from "@rakazo/contracts";
-import { SIGNUP_ATTRIBUTION_COOKIE, SignupAttribution } from "@rakazo/contracts";
+import type { SignupAttribution as Attribution } from "@robots/contracts";
+import { SIGNUP_ATTRIBUTION_COOKIE, SignupAttribution } from "@robots/contracts";
 import { getDomain } from "tldts";
 import { signupAttributionFromCookie } from "./signup-attribution.js";
 

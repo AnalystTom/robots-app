@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { NavLink } from "@rakazo/contracts";
-import { ANDROID_APP_STORE_URL, IOS_APP_STORE_URL } from "@rakazo/contracts";
+import type { NavLink } from "@robots/contracts";
+import { ANDROID_APP_STORE_URL, IOS_APP_STORE_URL } from "@robots/contracts";
 import {
   AppMarkStack,
   Button,
@@ -8,7 +8,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import {
   BookOpen,
   Check,
@@ -268,7 +268,7 @@ export function SidebarFooter({
             ) : null}
             <a
               className={`${buttonVariants({ variant: "ghost" })} h-9 w-full justify-start gap-2.5 font-normal`}
-              href="https://github.com/elie222/rakazo/blob/main/docs/self-host.md"
+              href="https://github.com/AnalystTom/robots-app/blob/main/docs/self-host.md"
               target="_blank"
               rel="noreferrer"
             >

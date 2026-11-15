@@ -1,5 +1,5 @@
-import type { ColorTokens, ResolvedAppearance } from "@rakazo/ui-tokens";
-import { darkTokens } from "@rakazo/ui-tokens";
+import type { ColorTokens, ResolvedAppearance } from "@robots/ui-tokens";
+import { darkTokens } from "@robots/ui-tokens";
 import type { ASTNode, RenderRules } from "@ronradtke/react-native-markdown-display";
 import Markdown, {
   createMarkdownIt,

@@ -1,6 +1,6 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { canDeleteOrganization } from "@rakazo/core";
+import { canDeleteOrganization } from "@robots/core";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";

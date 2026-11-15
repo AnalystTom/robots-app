@@ -1,5 +1,5 @@
-import type { SecretStore } from "@rakazo/adapter-kit";
-import { VoiceAccountError } from "@rakazo/adapter-kit";
+import type { SecretStore } from "@robots/adapter-kit";
+import { VoiceAccountError } from "@robots/adapter-kit";
 import { describe, expect, it, vi } from "vitest";
 import { serializeModelSecret } from "./model-secret.js";
 import type { VoiceKeyDeps } from "./voice-model-connection.js";

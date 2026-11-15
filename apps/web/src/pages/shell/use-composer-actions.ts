@@ -7,9 +7,9 @@ import type {
   MessageReaction,
   ThreadMessage,
   ThreadSnapshot,
-} from "@rakazo/contracts";
-import { attachmentMaxBytes, attachmentMaxCount, attachmentSizeLabel } from "@rakazo/contracts";
-import type { ComposerMention } from "@rakazo/core";
+} from "@robots/contracts";
+import { attachmentMaxBytes, attachmentMaxCount, attachmentSizeLabel } from "@robots/contracts";
+import type { ComposerMention } from "@robots/core";
 import {
   applyThreadSendReceipt,
   attachmentsForThread,
@@ -17,7 +17,7 @@ import {
   isImageInputConfirmation,
   newClientId,
   resolveComposerSendPlan,
-} from "@rakazo/core";
+} from "@robots/core";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { requestBrowserNotificationPermission } from "../../lib/browser-notifications";

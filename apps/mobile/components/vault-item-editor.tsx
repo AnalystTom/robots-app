@@ -1,9 +1,9 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { ContactFields, VaultKind, VaultPolicy, VaultRevealed } from "@rakazo/contracts";
-import { commandVariableName, decodeLoginSecret, VAULT_ALSO_ON_LIMIT } from "@rakazo/contracts";
-import { vaultAccessControls, vaultLoginSave } from "@rakazo/core";
-import { secretAnswerErrorText, vaultPolicyLabels } from "@rakazo/i18n/vault";
+import type { ContactFields, VaultKind, VaultPolicy, VaultRevealed } from "@robots/contracts";
+import { commandVariableName, decodeLoginSecret, VAULT_ALSO_ON_LIMIT } from "@robots/contracts";
+import { vaultAccessControls, vaultLoginSave } from "@robots/core";
+import { secretAnswerErrorText, vaultPolicyLabels } from "@robots/i18n/vault";
 import type { ReactNode } from "react";
 import { useRef, useState } from "react";
 import type { TextInputInstance, TextInputProps } from "react-native";

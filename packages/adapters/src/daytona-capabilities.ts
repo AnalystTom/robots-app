@@ -1,5 +1,5 @@
-import type { SandboxKindCapabilities } from "@rakazo/adapter-kit";
-import { DEFAULT_COMPUTER_SCREEN } from "@rakazo/core";
+import type { SandboxKindCapabilities } from "@robots/adapter-kit";
+import { DEFAULT_COMPUTER_SCREEN } from "@robots/core";
 
 export const daytonaSandboxCapabilities: SandboxKindCapabilities = {
   terminal: true,

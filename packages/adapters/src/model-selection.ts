@@ -1,13 +1,13 @@
-import type { SecretStore } from "@rakazo/adapter-kit";
-import { SecretStoreUnavailableError } from "@rakazo/adapter-kit";
-import type { Actor, ModelSettings } from "@rakazo/contracts";
+import type { SecretStore } from "@robots/adapter-kit";
+import { SecretStoreUnavailableError } from "@robots/adapter-kit";
+import type { Actor, ModelSettings } from "@robots/contracts";
 import {
   canonicalPiProviderId,
   selectCompatibleModelCredential,
   usableModelId,
-} from "@rakazo/contracts";
-import { MODEL_UNPRICED_FOR_CREDITS_ERROR } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/contracts";
+import { MODEL_UNPRICED_FOR_CREDITS_ERROR } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
 import {
   chooseModelCredential,
   findModelCredential,
@@ -15,7 +15,7 @@ import {
   GUEST_ROLE,
   modelCredentialProviderFilter,
   organizationForMember,
-} from "@rakazo/db";
+} from "@robots/db";
 import { resolveDeploymentModel } from "./deployment-model.js";
 import type { modelCredentialDto } from "./model-connect.js";
 import { compatibleModelThinkingLevels } from "./model-connect.js";
@@ -167,7 +167,7 @@ export type SpaceCatalogAuth = {
   modelSettingsBySecretId?: Partial<Record<string, Record<string, ModelSettings>>>;
 };
 
-/** Whether this space would run the model on Rakazo credits rather than a member's own connection. */
+/** Whether this space would run the model on RoBots credits rather than a member's own connection. */
 export function runsOnHostedCredits(
   auth: SpaceCatalogAuth,
   entry: { provider: string; id: string },

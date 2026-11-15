@@ -1,5 +1,5 @@
 import { t } from "@lingui/core/macro";
-import type { RpcInput, RpcOutput, RpcPath } from "@rakazo/contracts";
+import type { RpcInput, RpcOutput, RpcPath } from "@robots/contracts";
 import type { DataTag, QueryFunction, QueryKey } from "@tanstack/react-query";
 import { QueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -42,7 +42,7 @@ function spaceScope(spaceId?: string): string[] {
  */
 function requestScope(context: ApiRequestContext, account: boolean): string {
   const session = [`server:${context.apiBase}`, `session:${context.sessionGeneration}`];
-  const space = `space:${context.headers["x-rakazo-space-id"] ?? ""}`;
+  const space = `space:${context.headers["x-robots-space-id"] ?? ""}`;
   return (account ? session : [...session, space]).join("\n");
 }
 

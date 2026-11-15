@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { MODEL_CREDIT_CAP_REACHED_ERROR } from "@rakazo/core";
+import { MODEL_CREDIT_CAP_REACHED_ERROR } from "@robots/core";
 import type { PrismaClient } from "./client.js";
 import type { Prisma } from "./generated/prisma/client.js";
 import { runAsSystemInTransaction } from "./row-security.js";

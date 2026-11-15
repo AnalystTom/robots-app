@@ -1,9 +1,9 @@
-import type { SignupSurvey } from "@rakazo/contracts";
+import type { SignupSurvey } from "@robots/contracts";
 import {
   SIGNUP_SURVEY_TEAM_SIZES,
   signupSurveyAsksTeamSize,
   signupSurveyTeamSizeLabel,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 
 export type SignupSurveyTeamSize = (typeof SIGNUP_SURVEY_TEAM_SIZES)[number];
 

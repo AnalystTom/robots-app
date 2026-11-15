@@ -1,6 +1,6 @@
 import type { Models } from "@earendil-works/pi-ai";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
-import { canonicalPiProviderId } from "@rakazo/contracts";
+import { canonicalPiProviderId } from "@robots/contracts";
 import { CLAUDE_CODE_PROVIDER_ID, claudeCodeModel } from "./cli-models/claude-code/provider.js";
 import { DEFAULT_OPENROUTER_MODEL_ID } from "./deployment-model.js";
 import { liveModelSibling, withLiveImageInput } from "./pi-live-model.js";

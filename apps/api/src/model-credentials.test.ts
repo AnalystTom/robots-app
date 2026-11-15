@@ -1,13 +1,13 @@
-import type * as Adapters from "@rakazo/adapters";
-import type { CodexLiveCatalog } from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
-import { ModelConnectInputSchema, OPENAI_COMPATIBLE_PROVIDER_ID } from "@rakazo/contracts";
+import type * as Adapters from "@robots/adapters";
+import type { CodexLiveCatalog } from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
+import { ModelConnectInputSchema, OPENAI_COMPATIBLE_PROVIDER_ID } from "@robots/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { createModelConnector } from "./model-credentials.js";
 import type { RouterDeps } from "./router.js";
 
 const compatibleKeyCheck = vi.hoisted(() => vi.fn());
-vi.mock("@rakazo/adapters", async (importOriginal) => {
+vi.mock("@robots/adapters", async (importOriginal) => {
   const adapters = await importOriginal<typeof Adapters>();
   compatibleKeyCheck.mockImplementation(adapters.verifyOpenAiCompatibleApiKey);
   return { ...adapters, verifyOpenAiCompatibleApiKey: compatibleKeyCheck };

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="robots_call_channel">Llamada en curso</string>
+  <string name="robots_call_title">Llamada de RoBots</string>
+  <string name="robots_call_text">El micrófono está activo</string>
+  <string name="robots_call_answer">Responder</string>
+  <string name="robots_call_decline">Rechazar</string>
+</resources>

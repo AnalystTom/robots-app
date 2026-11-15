@@ -1,13 +1,13 @@
-import { SecretNotFoundError, SecretStoreUnavailableError } from "@rakazo/adapter-kit";
-import type { BotSecretDestination, VaultPolicy } from "@rakazo/contracts";
+import { SecretNotFoundError, SecretStoreUnavailableError } from "@robots/adapter-kit";
+import type { BotSecretDestination, VaultPolicy } from "@robots/contracts";
 import {
   BLOCKED_ITEM_ANSWER,
   encodeCardSecret,
   encodeContactSecret,
   encodeLoginSecret,
   UNCHOSEN_ITEM_ANSWER,
-} from "@rakazo/contracts";
-import { runAsTenant } from "@rakazo/db";
+} from "@robots/contracts";
+import { runAsTenant } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import type { BotSecretScope, VaultItemBots } from "./bot-secrets.js";
 import {
@@ -52,7 +52,7 @@ const TEST_KEY = ("GEZDGNBV" + "GY3TQOJQ").repeat(2);
 const OTHER_TEST_KEY = "MFRGGZDF" + "MZTWQ2LK" + "NNWG23TP" + "OBYXE43U";
 
 // A refused call is audited; there is no database to record it in.
-vi.mock("@rakazo/db", async (importOriginal) => ({
+vi.mock("@robots/db", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   recordAuditEvent: vi.fn(async () => {}),
 }));

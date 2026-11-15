@@ -52,28 +52,28 @@ describe("sentry sink", () => {
       undefined,
     );
     expect(
-      (await createSentrySinkFromEnv("rakazo-api", { SENTRY_DSN: "bad" })).sink,
+      (await createSentrySinkFromEnv("robots-api", { SENTRY_DSN: "bad" })).sink,
     ).toBeUndefined();
   });
 
   it("passes the root logger service to the SDK scope", async () => {
-    await createRootLogger("rakazo-worker", { SENTRY_DSN: DSN });
-    expect(Sentry.getIsolationScope().getScopeData().tags.service).toBe("rakazo-worker");
+    await createRootLogger("robots-worker", { SENTRY_DSN: DSN });
+    expect(Sentry.getIsolationScope().getScopeData().tags.service).toBe("robots-worker");
   });
 
   it("tags exceptions captured outside log writes with the service", async () => {
     const { events, transport } = recordingTransport();
-    const sink = await createSentrySink("rakazo-api", { dsn: DSN }, transport);
+    const sink = await createSentrySink("robots-api", { dsn: DSN }, transport);
     Sentry.captureException(new Error("unexpected failure"));
     await sink.flush?.();
 
     expect(events).toHaveLength(1);
-    expect(events[0]?.tags).toEqual({ service: "rakazo-api" });
+    expect(events[0]?.tags).toEqual({ service: "robots-api" });
   });
 
   it("redacts stack frame paths on exceptions the SDK captures directly", async () => {
     const { events, transport } = recordingTransport();
-    const sink = await createSentrySink("rakazo-api", { dsn: DSN }, transport);
+    const sink = await createSentrySink("robots-api", { dsn: DSN }, transport);
     const error = new Error("unexpected failure");
     error.stack = "Error: unexpected failure\n    at run (/home/ada@example.com/app/index.js:1:1)";
     Sentry.captureException(error);
@@ -85,8 +85,8 @@ describe("sentry sink", () => {
   it("redacts user profile paths from reported errors", async () => {
     const { events, transport } = recordingTransport();
     const logger = createLogger({
-      service: "rakazo-api",
-      sinks: [await createSentrySink("rakazo-api", { dsn: DSN }, transport)],
+      service: "robots-api",
+      sinks: [await createSentrySink("robots-api", { dsn: DSN }, transport)],
     });
     const error = new Error("cannot read /home/example-user/state.json");
     error.stack =
@@ -100,11 +100,11 @@ describe("sentry sink", () => {
   it("reports error logs with the exception chain, tags, and no log context", async () => {
     const { events, transport } = recordingTransport();
     const sink = await createSentrySink(
-      "rakazo-worker",
+      "robots-worker",
       { dsn: DSN, environment: "prod-acme", release: "abc" },
       transport,
     );
-    const logger = createLogger({ service: "rakazo-worker", sinks: [sink] });
+    const logger = createLogger({ service: "robots-worker", sinks: [sink] });
     const error = new Error("run failed", { cause: new TypeError("bad input") });
     logger.error("job crashed", error, {
       "job.id": "j1",
@@ -124,7 +124,7 @@ describe("sentry sink", () => {
       release: "abc",
       level: "error",
       tags: {
-        service: "rakazo-worker",
+        service: "robots-worker",
         "job.id": "j1",
         "run.id": "r1",
         "model.provider": "openai-compatible",
@@ -143,8 +143,8 @@ describe("sentry sink", () => {
   it("titles database errors by code and model operation", async () => {
     const { events, transport } = recordingTransport();
     const logger = createLogger({
-      service: "rakazo-api",
-      sinks: [await createSentrySink("rakazo-api", { dsn: DSN }, transport)],
+      service: "robots-api",
+      sinks: [await createSentrySink("robots-api", { dsn: DSN }, transport)],
     });
     const error = Object.assign(
       new Error(
@@ -167,12 +167,12 @@ describe("sentry sink", () => {
 
   it("redacts what it copies out when handed an event directly", async () => {
     const { events, transport } = recordingTransport();
-    const sink = await createSentrySink("rakazo-api", { dsn: DSN }, transport);
+    const sink = await createSentrySink("robots-api", { dsn: DSN }, transport);
     sink.write({
       timestamp: new Date().toISOString(),
       level: "error",
       message: "login failed for ada@example.com",
-      "service.name": "rakazo-api",
+      "service.name": "robots-api",
       "request.id": "Bearer abc.def",
       password: "hunter2",
       runId: "x".repeat(201),
@@ -198,11 +198,11 @@ describe("sentry sink", () => {
     const { events, transport } = recordingTransport();
     const secret = "test-pseudonym-secret";
     const sink = await createSentrySink(
-      "rakazo-api",
+      "robots-api",
       { dsn: DSN, pseudonymSecret: secret },
       transport,
     );
-    const logger = createLogger({ service: "rakazo-api", sinks: [sink] });
+    const logger = createLogger({ service: "robots-api", sinks: [sink] });
     await logger.withContext({ "user.id": "user-raw-1", "space.id": "space-1" }, async () => {
       logger.error("rpc failed for ada@example.com", new Error("boom"));
     });
@@ -220,8 +220,8 @@ describe("sentry sink", () => {
 
   it("sends no user without a pseudonym secret", async () => {
     const { events, transport } = recordingTransport();
-    const sink = await createSentrySink("rakazo-api", { dsn: DSN }, transport);
-    const logger = createLogger({ service: "rakazo-api", sinks: [sink] });
+    const sink = await createSentrySink("robots-api", { dsn: DSN }, transport);
+    const logger = createLogger({ service: "robots-api", sinks: [sink] });
     logger.error("failed", new Error("boom"), { "user.id": "user-raw-2" });
     await logger.flush();
     expect(events[0]!.user).toEqual({ ip_address: null });
@@ -234,7 +234,7 @@ describe("sentry sink", () => {
 
   it("scrubs SDK and scope metadata before sending", async () => {
     const { events, transport } = recordingTransport();
-    const sink = await createSentrySink("rakazo-api", { dsn: DSN }, transport);
+    const sink = await createSentrySink("robots-api", { dsn: DSN }, transport);
     Sentry.withScope((scope) => {
       scope.setUser({ id: "private-user", email: "private@example.com" });
       scope.setExtra("content", "private content");
@@ -265,8 +265,8 @@ describe("sentry sink", () => {
   it("reports error logs without an error as messages and ignores lower levels", async () => {
     const { events, transport } = recordingTransport();
     const logger = createLogger({
-      service: "rakazo-api",
-      sinks: [await createSentrySink("rakazo-api", { dsn: DSN }, transport)],
+      service: "robots-api",
+      sinks: [await createSentrySink("robots-api", { dsn: DSN }, transport)],
     });
     logger.info("started");
     logger.warn("slow");
@@ -279,7 +279,7 @@ describe("sentry sink", () => {
     expect(events[0]).toMatchObject({
       level: "error",
       message: "queue unavailable",
-      tags: { service: "rakazo-api", "request.id": "req-1" },
+      tags: { service: "robots-api", "request.id": "req-1" },
     });
     // No synthetic stack: the collector titles and groups these by their message.
     expect(events.map((event) => event.exception)).toEqual([undefined, undefined]);
@@ -289,8 +289,8 @@ describe("sentry sink", () => {
   it("groups a report by its logged fingerprint on top of the default grouping", async () => {
     const { events, transport } = recordingTransport();
     const logger = createLogger({
-      service: "rakazo-worker",
-      sinks: [await createSentrySink("rakazo-worker", { dsn: DSN }, transport)],
+      service: "robots-worker",
+      sinks: [await createSentrySink("robots-worker", { dsn: DSN }, transport)],
     });
     logger.error("run.failed", new Error("provider error"), {
       "error.fingerprint": ["run.failed", "openrouter", "rate", "429"],
@@ -307,8 +307,8 @@ describe("sentry sink", () => {
   it("attaches logged error details as a redacted extra", async () => {
     const { events, transport } = recordingTransport();
     const logger = createLogger({
-      service: "rakazo-worker",
-      sinks: [await createSentrySink("rakazo-worker", { dsn: DSN }, transport)],
+      service: "robots-worker",
+      sinks: [await createSentrySink("robots-worker", { dsn: DSN }, transport)],
     });
     logger.error("run.failed", new Error("Bad Request"), {
       "error.details": '{"status":400,"note":"token=sk-live-123456789"}',
@@ -323,8 +323,8 @@ describe("sentry sink", () => {
   it("titles a failed request report by its method, route and status", async () => {
     const { events, transport } = recordingTransport();
     const logger = createLogger({
-      service: "rakazo-api",
-      sinks: [await createSentrySink("rakazo-api", { dsn: DSN }, transport)],
+      service: "robots-api",
+      sinks: [await createSentrySink("robots-api", { dsn: DSN }, transport)],
     });
     logger.error("http.request.completed", {
       "http.method": "POST",

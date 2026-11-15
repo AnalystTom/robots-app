@@ -1,7 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { ModelCredential, ModelSettings } from "@rakazo/contracts";
-import { MAX_MODEL_CONTEXT_WINDOW, MAX_MODEL_MAX_TOKENS } from "@rakazo/contracts";
-import type { ModelSettingsFields as Fields } from "@rakazo/core";
+import type { ModelCredential, ModelSettings } from "@robots/contracts";
+import { MAX_MODEL_CONTEXT_WINDOW, MAX_MODEL_MAX_TOKENS } from "@robots/contracts";
+import type { ModelSettingsFields as Fields } from "@robots/core";
 import {
   credentialModelSettings,
   modelCapabilitiesConfigurable,
@@ -9,8 +9,8 @@ import {
   modelSettingsDefaults,
   modelSettingsFields,
   modelSettingsRequest,
-} from "@rakazo/core";
-import { Button, ModelSettingsFields } from "@rakazo/ui-web";
+} from "@robots/core";
+import { Button, ModelSettingsFields } from "@robots/ui-web";
 import { useState } from "react";
 import type { ModelCatalogEntry } from "../../lib/model-auth";
 import { useSpaceRpc } from "../../lib/space-rpc";

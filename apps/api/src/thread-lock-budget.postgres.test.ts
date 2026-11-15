@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { Actor } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
+import type { Actor } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
 import {
   appendEvent,
   asSystem,
@@ -11,7 +11,7 @@ import {
   runAsSystem,
   runAsTenant,
   sendUserMessage,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { destroyBot } from "../../../packages/adapters/src/child-bots.js";
 import { publishMessage } from "../../../packages/adapters/src/run-messages.js";

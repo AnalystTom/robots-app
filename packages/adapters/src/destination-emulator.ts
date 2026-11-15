@@ -4,7 +4,7 @@ import type {
   ConnectorEvent,
   ConnectorProvider,
   ConnectorTool,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 
 export interface DestinationRecord {
   id: string;

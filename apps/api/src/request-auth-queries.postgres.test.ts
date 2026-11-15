@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { asSystem, createDb } from "@rakazo/db";
+import { asSystem, createDb } from "@robots/db";
 import { expect, it } from "vitest";
 import { sessionCookieHeader } from "../../../packages/testkit/src/index.js";
 import { createApp } from "./app.js";
@@ -14,7 +14,7 @@ const AUTH_TABLE = /FROM "public"\."(session|user|member|space_members)"/;
 it.skipIf(!databaseUrl)(
   "authorizes a signed-in request with one session, user and membership read, and still refuses revoked access",
   async () => {
-    const dataDir = await mkdtemp(join(tmpdir(), "rakazo-request-auth-"));
+    const dataDir = await mkdtemp(join(tmpdir(), "robots-request-auth-"));
     const db = createDb(databaseUrl!);
     // Only this request's reads, not background work its signup started.
     const counted = new AsyncLocalStorage<string[]>();

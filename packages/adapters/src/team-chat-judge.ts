@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import type { AgentRunModel, AgentRuntime, SecretStore } from "@rakazo/adapter-kit";
-import { redactSecrets } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { findModelCredential, recordUsage } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+import type { AgentRunModel, AgentRuntime, SecretStore } from "@robots/adapter-kit";
+import { redactSecrets } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { findModelCredential, recordUsage } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import {
   persistRefreshedModelCredential,
   refreshStoredModelCredential,

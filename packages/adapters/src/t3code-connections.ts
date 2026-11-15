@@ -1,8 +1,8 @@
-import type { AdapterContext, ConnectorTool } from "@rakazo/adapter-kit";
-import { CloudAgentRequestRejected } from "@rakazo/adapter-kit";
-import type { McpServer, PrismaClient } from "@rakazo/db";
-import { availableInSpace } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+import type { AdapterContext, ConnectorTool } from "@robots/adapter-kit";
+import { CloudAgentRequestRejected } from "@robots/adapter-kit";
+import type { McpServer, PrismaClient } from "@robots/db";
+import { availableInSpace } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type {
   CloudAgentActor,
   CloudAgentConnection,

@@ -41,7 +41,7 @@
 	}
 }
 
-{$RAKAZO_HOST:app.example.com} {
+{$ROBOTS_HOST:app.example.com} {
 	import access_log
 	encode zstd gzip
 

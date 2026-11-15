@@ -1,12 +1,12 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ComposioConnector, FakeComposioClient } from "@rakazo/adapters";
-import type { Bot, BotTemplateListing, MessageBlock } from "@rakazo/contracts";
-import { BOT_TEMPLATE_CHANGED } from "@rakazo/contracts";
-import { buildSkillMd, findBotTemplate } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
-import { createDb } from "@rakazo/db";
+import { ComposioConnector, FakeComposioClient } from "@robots/adapters";
+import type { Bot, BotTemplateListing, MessageBlock } from "@robots/contracts";
+import { BOT_TEMPLATE_CHANGED } from "@robots/contracts";
+import { buildSkillMd, findBotTemplate } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
+import { createDb } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { sessionCookieHeader } from "./index.js";
 import { asSystem } from "./system-db.js";
@@ -26,10 +26,10 @@ describeIntegration("bot templates", () => {
   let stop: () => Promise<void>;
   const composio = new ComposioConnector({ client: new FakeComposioClient() });
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const dataDir = mkdtempSync(path.join(tmpdir(), "rakazo-bot-templates-"));
+  const dataDir = mkdtempSync(path.join(tmpdir(), "robots-bot-templates-"));
 
   beforeAll(async () => {
-    const { createApp } = await import("@rakazo/api/app");
+    const { createApp } = await import("@robots/api/app");
     const handles = await createApp({
       databaseUrl: process.env.DATABASE_URL!,
       dataDir,
@@ -49,7 +49,7 @@ describeIntegration("bot templates", () => {
   });
 
   it("creates the bot, its skill and a paused routine, and asks only for missing apps", async () => {
-    const cookie = await signup(app, `template-${stamp}@rakazo.test`);
+    const cookie = await signup(app, `template-${stamp}@robots.test`);
     const owner = await ownerOf(cookie);
     // Gmail is already connected, so only the calendar is asked for.
     await composio.begin(
@@ -108,7 +108,7 @@ describeIntegration("bot templates", () => {
   });
 
   it("returns the existing bot on a repeat, even from an older preview, until it is deleted", async () => {
-    const cookie = await signup(app, `template-repeat-${stamp}@rakazo.test`);
+    const cookie = await signup(app, `template-repeat-${stamp}@robots.test`);
     const owner = await ownerOf(cookie);
     const input = { templateId: triage.id, version: triage.version };
 
@@ -160,7 +160,7 @@ describeIntegration("bot templates", () => {
   });
 
   it("renames its skill on a clash and points the routine at the new name", async () => {
-    const cookie = await signup(app, `template-clash-${stamp}@rakazo.test`);
+    const cookie = await signup(app, `template-clash-${stamp}@robots.test`);
     const existing = buildSkillMd({ name: "Inbox triage", description: "Mine", body: "Mine." });
     await rpc(app, cookie, "agentSkills/create", { content: existing });
     // The name the preview showed in the user's language is the one the bot gets.
@@ -190,7 +190,7 @@ describeIntegration("bot templates", () => {
   });
 
   it("writes nothing when the last write fails", async () => {
-    const cookie = await signup(app, `template-rollback-${stamp}@rakazo.test`);
+    const cookie = await signup(app, `template-rollback-${stamp}@robots.test`);
     const owner = await ownerOf(cookie);
     const count = async () => ({
       bots: await db.bot.count({ where: owner }),

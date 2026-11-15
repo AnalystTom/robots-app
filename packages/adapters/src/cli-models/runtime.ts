@@ -1,5 +1,5 @@
-import type { AgentRuntime } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
+import type { AgentRuntime } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
 import { createRuntimeModels } from "../pi-runtime-models.js";
 import { withRuntimeModels } from "../pi-runtime-scope.js";
 import type { RunRuntimeEnv } from "../run-runtime.js";

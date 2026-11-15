@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { AssistantMessage, Context, Message, ToolCall } from "@earendil-works/pi-ai";
-import type { AgentRunRequest, AgentSteeringMessage } from "@rakazo/adapter-kit";
-import { TOOL_STEP_CALLS_KEPT, toolStepOutcomeText } from "@rakazo/core";
+import type { AgentRunRequest, AgentSteeringMessage } from "@robots/adapter-kit";
+import { TOOL_STEP_CALLS_KEPT, toolStepOutcomeText } from "@robots/core";
 import { neutralizeSpeakerLabels } from "./history-speakers.js";
 import { normalizeAgentToolName } from "./pi-runtime-tools.js";
 import { bounded, IMAGE_NOT_KEPT, TOOL_CALL_TEXT_MAX_CHARS } from "./tool-step-calls.js";
@@ -24,7 +24,7 @@ export const HISTORY_FORMAT_VERSION = 2;
  * Provider, api and model stamped on replayed own replies. None matches a real model, so Pi
  * replays them as plain text from another model: no signatures or reasoning, same on every provider.
  */
-const HISTORY_ASSISTANT = { api: "rakazo-history", provider: "rakazo-history", model: "history" };
+const HISTORY_ASSISTANT = { api: "robots-history", provider: "robots-history", model: "history" };
 const NO_USAGE = {
   input: 0,
   output: 0,
@@ -37,9 +37,9 @@ const NO_USAGE = {
 const CONVERSATION_START = "[Conversation start]";
 
 type HistoryMessage = Message & {
-  rakazoHistory: true;
-  rakazoMessageId?: string;
-  rakazoCreatedAt?: string;
+  robotsHistory: true;
+  robotsMessageId?: string;
+  robotsCreatedAt?: string;
 };
 
 type HistoryEntry = AgentRunRequest["history"][number];
@@ -49,7 +49,7 @@ type HistoryStep = Extract<
 >["steps"][number];
 type HistoryCommon = Pick<
   HistoryMessage,
-  "timestamp" | "rakazoHistory" | "rakazoMessageId" | "rakazoCreatedAt"
+  "timestamp" | "robotsHistory" | "robotsMessageId" | "robotsCreatedAt"
 >;
 
 /** The bot's words before a step, capped as the text form caps step notes. */
@@ -296,9 +296,9 @@ export function toHistory(
     const created = m.createdAt ? Date.parse(m.createdAt) : Number.NaN;
     const common = {
       timestamp: Number.isNaN(created) ? 0 : created,
-      rakazoHistory: true as const,
-      rakazoMessageId: m.id,
-      rakazoCreatedAt: m.createdAt,
+      robotsHistory: true as const,
+      robotsMessageId: m.id,
+      robotsCreatedAt: m.createdAt,
     };
     if (m.role === "assistant" && !m.speaker) {
       if (offered.size > 0 && m.segments && replaysAsToolCalls(m.segments))
@@ -339,7 +339,7 @@ export function toHistory(
 export function isHistoryReply(message: Message | undefined): boolean {
   return (
     (message?.role === "assistant" || message?.role === "toolResult") &&
-    Boolean((message as Message & { rakazoHistory?: true }).rakazoHistory)
+    Boolean((message as Message & { robotsHistory?: true }).robotsHistory)
   );
 }
 

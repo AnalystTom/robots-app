@@ -1,13 +1,13 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { AgentImportSetupState, MessageBlock } from "@rakazo/contracts";
+import type { AgentImportSetupState, MessageBlock } from "@robots/contracts";
 import {
   importSetupStateInput,
   isImportSetupComplete,
   isImportSetupDone,
   isImportSetupVerifiable,
   isRetiredImportSetup,
-} from "@rakazo/core";
-import { Button } from "@rakazo/ui-web";
+} from "@robots/core";
+import { Button } from "@robots/ui-web";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BuiCard, SuccessPop } from "../../components/ai/primitives";

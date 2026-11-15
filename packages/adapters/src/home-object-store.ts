@@ -7,9 +7,9 @@ import type {
   AgentHomeStore,
   ObjectStorage,
   PortableFile,
-} from "@rakazo/adapter-kit";
-import { retry } from "@rakazo/core";
-import type { ContentKeyRing, ContentLocation, DataKey, PrismaClient } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import { retry } from "@robots/core";
+import type { ContentKeyRing, ContentLocation, DataKey, PrismaClient } from "@robots/db";
 import {
   ContentDecryptionError,
   ciphertextKeyId,
@@ -19,8 +19,8 @@ import {
   openArtifact,
   runAsSystem,
   sealArtifact,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { LocalAgentHomeStore, newRevision } from "./home.js";
 import type { HomeArchiveLimits } from "./home-archive.js";
 import {

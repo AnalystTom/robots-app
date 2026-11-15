@@ -1,8 +1,8 @@
-import type { MessagingInboundMessage } from "@rakazo/adapter-kit";
-import type { TeamChat } from "@rakazo/adapters";
-import { toTeamChatInbound } from "@rakazo/adapters";
-import { SpaceDeletionInProgressError } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+import type { MessagingInboundMessage } from "@robots/adapter-kit";
+import type { TeamChat } from "@robots/adapters";
+import { toTeamChatInbound } from "@robots/adapters";
+import { SpaceDeletionInProgressError } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { MessagingInboundDeps } from "./messaging-inbound.js";
 import { teamChatSenderCanWakeMessageRoutines, wakeMessageRoutines } from "./messaging-inbound.js";
 import type { TeamChatBridge } from "./team-chat-bridge.js";

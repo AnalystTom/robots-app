@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import type { DesktopUpdateState } from "@rakazo/contracts";
-import { Toaster } from "@rakazo/ui-web";
+import type { DesktopUpdateState } from "@robots/contracts";
+import { Toaster } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -25,7 +25,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  delete window.rakazoDesktop;
+  delete window.robotsDesktop;
   vi.restoreAllMocks();
 });
 async function render(
@@ -35,7 +35,7 @@ async function render(
   onBoard?: () => void,
   logos?: Array<{ name: string; logo?: string }>,
 ) {
-  const email = "account@rakazo.test";
+  const email = "account@robots.test";
   await act(async () =>
     root.render(
       <DesktopUpdatesProvider>
@@ -76,7 +76,7 @@ function bridge(phase: DesktopUpdateState["phase"]) {
     checkedAt: null,
   };
   const install = vi.fn(async () => state);
-  window.rakazoDesktop = {
+  window.robotsDesktop = {
     platform: "darwin",
     window: {
       close: async () => {},
@@ -165,7 +165,9 @@ it("offers Google Play on Android", async () => {
   const mobile = [...document.querySelectorAll("a")].find(
     (link) => link.textContent === "Get the mobile app",
   )!;
-  expect(mobile.href).toBe("https://play.google.com/store/apps/details?id=com.rakazo.app");
+  expect(mobile.href).toBe(
+    "https://play.google.com/store/apps/details?id=com.analysttom.robotsapp",
+  );
 });
 
 it("falls back when app artwork fails and accepts replacement artwork", async () => {
@@ -190,7 +192,7 @@ it.each(["throw", "state"] as const)(
     if (failure === "throw") install.mockRejectedValueOnce(new Error("offline"));
     else
       install.mockResolvedValueOnce({
-        ...(await window.rakazoDesktop!.update.state()),
+        ...(await window.robotsDesktop!.update.state()),
         phase: "error",
         message: "Update could not be installed",
       });
@@ -269,7 +271,7 @@ async function renderOrganizations(
         <SidebarFooter
           name="Demo User"
           initials="DU"
-          email="account@rakazo.test"
+          email="account@robots.test"
           open
           onOpenChange={() => {}}
           onIntegrations={() => {}}

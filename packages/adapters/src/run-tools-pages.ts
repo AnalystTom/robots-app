@@ -1,8 +1,8 @@
-import type { MessageBlock } from "@rakazo/contracts";
-import { PAGE_TITLE_MAX_LENGTH, PageTitleSchema } from "@rakazo/contracts";
-import { CARD_TITLE_ESCAPED_CHARACTERS, containsSecret, redactSecrets } from "@rakazo/core";
-import { isUniqueViolation } from "@rakazo/db";
-import { checkPageSource, PAGE_KIT_GUIDE } from "@rakazo/page-kit/validate";
+import type { MessageBlock } from "@robots/contracts";
+import { PAGE_TITLE_MAX_LENGTH, PageTitleSchema } from "@robots/contracts";
+import { CARD_TITLE_ESCAPED_CHARACTERS, containsSecret, redactSecrets } from "@robots/core";
+import { isUniqueViolation } from "@robots/db";
+import { checkPageSource, PAGE_KIT_GUIDE } from "@robots/page-kit/validate";
 import { MAX_APPROVAL_DETAIL_LENGTH } from "./approval-ask.js";
 import type { RunContext } from "./run-context.js";
 import { markReadOutsideContent, neverAsks } from "./run-context.js";

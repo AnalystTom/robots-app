@@ -1,5 +1,5 @@
 import { InstaboxError } from "@insforge/instabox-sdk";
-import type { PageBrowserCommand } from "@rakazo/adapter-kit";
+import type { PageBrowserCommand } from "@robots/adapter-kit";
 import { describe, expect, it, vi } from "vitest";
 import { ComputerBrowserProvider } from "./computer-browser.js";
 import { INSTABOX_COMPUTER_TEMPLATE } from "./instabox-sandbox.js";
@@ -59,7 +59,7 @@ describe("instabox computer backend", () => {
     expect(computer).toMatchObject({ kind: "instabox", fresh: true });
     const machine = emulator.computers.get(computer.id)!;
     expect(machine.template).toBe(INSTABOX_COMPUTER_TEMPLATE);
-    expect(machine.metadata).toMatchObject({ botId: "bot", rakazo: "computer" });
+    expect(machine.metadata).toMatchObject({ botId: "bot", robots: "computer" });
     expect(machine.published).toEqual(new Set([6100]));
     expect(emulator.commands[0]).toContain("ln -s");
     const screen = await provider.connectScreen(computer, { view: "stream" }, ctx);
@@ -79,7 +79,7 @@ describe("instabox computer backend", () => {
       ctx,
     );
     const { files } = emulator.computers.get(computer.id)!;
-    files.set("/home/user/rakazo-home/notes/deep/x", { content: new Uint8Array(1), mode: 0o644 });
+    files.set("/home/user/robots-home/notes/deep/x", { content: new Uint8Array(1), mode: 0o644 });
     expect(await provider.listFiles(computer, "notes", ctx)).toEqual([
       { path: "notes/a b.txt", kind: "file", size: 2 },
       { path: "notes/deep", kind: "dir", size: 4096 },
@@ -323,7 +323,7 @@ describe("instabox page tools", () => {
   };
   const pageFiles = (emulator: InstaboxEmulator, id: string) =>
     [...emulator.computers.get(id)!.files.keys()].filter((path) =>
-      path.startsWith("/tmp/rakazo-page-input-"),
+      path.startsWith("/tmp/robots-page-input-"),
     );
 
   it("offers the page tools, which the other remote desktops leave off", async () => {
@@ -352,7 +352,7 @@ describe("instabox page tools", () => {
     const installer = installPageBrowserCommand();
     expect(Buffer.byteLength(installer)).toBeGreaterThan(65_536);
     const script = emulator.requests
-      .find((name) => name.startsWith("write /tmp/rakazo-page-browser-"))
+      .find((name) => name.startsWith("write /tmp/robots-page-browser-"))
       ?.slice("write ".length);
     expect(script).toBeDefined();
     expect(written).toBe(installer);
@@ -376,7 +376,7 @@ describe("instabox page tools", () => {
       const { provider, computer } = await started(emulator);
       expect(
         [...emulator.computers.get(computer.id)!.files.keys()].filter((path) =>
-          path.startsWith("/tmp/rakazo-page-browser-"),
+          path.startsWith("/tmp/robots-page-browser-"),
         ),
       ).toEqual([]);
       emulator.fails = () => false;
@@ -417,7 +417,7 @@ describe("instabox page tools", () => {
       );
       expect(
         [...emulator.computers.get(computer.id)!.files.keys()].filter((path) =>
-          path.startsWith("/tmp/rakazo-page-browser-"),
+          path.startsWith("/tmp/robots-page-browser-"),
         ),
       ).toEqual([]);
     },
@@ -439,7 +439,7 @@ describe("instabox page tools", () => {
       await preparing;
       expect(
         [...emulator.computers.get(computer.id)!.files.keys()].filter((path) =>
-          path.startsWith("/tmp/rakazo-page-browser-"),
+          path.startsWith("/tmp/robots-page-browser-"),
         ),
       ).toEqual([]);
     } finally {
@@ -475,7 +475,7 @@ describe("instabox page tools", () => {
     const provider = create();
     const computer = await provider.provision(request, ctx);
     emulator.onWrite = (path) => {
-      if (path.startsWith("/tmp/rakazo-page-browser-")) emulator.computers.delete(computer.id);
+      if (path.startsWith("/tmp/robots-page-browser-")) emulator.computers.delete(computer.id);
     };
     const failure = await provider.prepare(computer, ctx).catch((error: unknown) => error);
     expect(isSandboxGoneError(failure)).toBe(true);
@@ -512,7 +512,7 @@ describe("instabox page tools", () => {
     expect(
       emulator.commands.some(
         (command) =>
-          command.startsWith("bash -c 'rm -f --") && command.includes("/tmp/rakazo-page-browser-"),
+          command.startsWith("bash -c 'rm -f --") && command.includes("/tmp/robots-page-browser-"),
       ),
     ).toBe(false);
   });
@@ -542,7 +542,7 @@ describe("instabox page tools", () => {
       emulator.writeError = new Error("partial transfer");
       let attempts = 0;
       emulator.fails = (command) => {
-        if (!command.startsWith("rm -f -- '/tmp/rakazo-page-input-")) return false;
+        if (!command.startsWith("rm -f -- '/tmp/robots-page-input-")) return false;
         attempts++;
         if (attempts !== 1) return false;
         if (failure === "rejection") throw new Error("temporary transport failure");
@@ -594,7 +594,7 @@ describe("instabox page tools", () => {
       true,
     );
     const write = emulator.requests.find((name) =>
-      name.startsWith("write /tmp/rakazo-page-input-"),
+      name.startsWith("write /tmp/robots-page-input-"),
     );
     const folder = write!.slice("write ".length, write!.lastIndexOf("/"));
     expect(emulator.commands).toContainEqual(`mkdir -m 700 -- '${folder}'`);
@@ -609,7 +609,7 @@ describe("instabox page tools", () => {
       "Could not transfer browser input",
     );
     expect(emulator.commands.some((command) => command.includes("exec 0<"))).toBe(false);
-    expect(emulator.commands.at(-1)).toMatch(/^rm -f -- '\/tmp\/rakazo-page-input-/);
+    expect(emulator.commands.at(-1)).toMatch(/^rm -f -- '\/tmp\/robots-page-input-/);
   });
 
   it("falls back to the desktop tools when the helper is missing", async () => {

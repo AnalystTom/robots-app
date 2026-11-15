@@ -7,8 +7,8 @@ import type {
   VoiceProvider,
   VoiceSynthesizeRequest,
   VoiceVerifyResult,
-} from "@rakazo/adapter-kit";
-import { deadlineSignal } from "@rakazo/core";
+} from "@robots/adapter-kit";
+import { deadlineSignal } from "@robots/core";
 import {
   readVoiceAudio,
   readVoiceJson,

@@ -28,7 +28,7 @@ import {
   VAULT_CHANGED,
   validateBotModelChange,
   wakeRun,
-} from "@rakazo/adapters";
+} from "@robots/adapters";
 import type {
   Actor,
   Bot,
@@ -38,7 +38,7 @@ import type {
   VaultImportReason,
   VaultImportResult,
   VaultPutInput,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   AUTHENTICATOR_KEY_UNREADABLE,
   BLOCKED_ITEM_ANSWER,
@@ -50,9 +50,9 @@ import {
   VaultPolicy,
   vaultImportLogin,
   vaultImportOrigin,
-} from "@rakazo/contracts";
-import { ACTIVE_RUN_STATUSES, COMPUTER_USING_RUNS, displayName } from "@rakazo/core";
-import type { Prisma } from "@rakazo/db";
+} from "@robots/contracts";
+import { ACTIVE_RUN_STATUSES, COMPUTER_USING_RUNS, displayName } from "@robots/core";
+import type { Prisma } from "@robots/db";
 import {
   BotSectionNameConflictError,
   botProfileLabelsChanged,
@@ -68,8 +68,8 @@ import {
   SpaceDeletionInProgressError,
   settingsTarget,
   THREAD_LOCK_TRANSACTION_OPTIONS,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { AgentImportServices } from "../agent-import.js";
 import { agentImportSetupState, createImportedBot, previewAgentImport } from "../agent-import.js";
 import { deleteAgentSecret, listAgentSecrets, putAgentSecret } from "../agent-secrets.js";

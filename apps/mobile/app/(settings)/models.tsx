@@ -4,9 +4,9 @@ import {
   compatibleEndpointPresets,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   savedCompatibleEndpointMatches,
-} from "@rakazo/contracts";
-import { popularModelProvidersFirst } from "@rakazo/core";
-import { fetchFresh } from "@rakazo/core/query";
+} from "@robots/contracts";
+import { popularModelProvidersFirst } from "@robots/core";
+import { fetchFresh } from "@robots/core/query";
 import { isCancelledError, useQuery } from "@tanstack/react-query";
 import type { Href } from "expo-router";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";

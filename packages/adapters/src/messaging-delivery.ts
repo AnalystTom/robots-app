@@ -7,14 +7,14 @@ import type {
   MessagingOutboundAttachment,
   MessagingOutboundStatus,
   MessagingSurface,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   messagingReplyJobKey,
   messagingSendJob,
   messagingSendJobKey,
   RetryJobLaterError,
-} from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
+} from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
 import {
   botMessageHopExhausted,
   botMessageMaxHops,
@@ -23,8 +23,8 @@ import {
   nextBotMessageHop,
   pageLinksAsTitles,
   teamChatResponseText,
-} from "@rakazo/core";
-import type { DatabaseOutage, Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { DatabaseOutage, Prisma, PrismaClient, ThreadEvents } from "@robots/db";
 import {
   accountDeactivated,
   appendEventInTransaction,
@@ -37,8 +37,8 @@ import {
   runAsSystem,
   SpaceDeletionInProgressError,
   THREAD_LOCK_TRANSACTION_OPTIONS,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { MessagingSendError } from "./chat-sdk-surface.js";
 import { splitOutboundBody } from "./messaging-platforms.js";
 import { resolveMessagingThreadId } from "./team-chat-messaging.js";
@@ -54,7 +54,7 @@ export const MESSAGING_DM_OUTBOUND_CAP = 140;
 
 /**
  * How long one send may take, file upload included. Providers that take the abort signal stop
- * there; the vendor clients Rakazo configures (Slack, Sendblue) already give up well before it.
+ * there; the vendor clients RoBots configures (Slack, Sendblue) already give up well before it.
  */
 export const MESSAGING_SEND_TIMEOUT_MS = 60_000;
 
@@ -1145,7 +1145,7 @@ export class MessagingDelivery {
           )
         : ambient
           ? ""
-          : `${run.bot.name} could not complete that request. Open Rakazo for details.`;
+          : `${run.bot.name} could not complete that request. Open RoBots for details.`;
     const recorded = await this.deps.prisma.$transaction(async (tx) => {
       const claimed = await tx.externalMessage.updateMany({
         where: { id: message.id, status: "running" },
@@ -1191,7 +1191,7 @@ export class MessagingDelivery {
         : null;
     const body =
       run.status === "failed"
-        ? `${run.bot.name} could not complete the delegated request. Open Rakazo for details.`
+        ? `${run.bot.name} could not complete the delegated request. Open RoBots for details.`
         : teamChatResponseText(
             Array.isArray(reply?.blocks) ? (reply.blocks as MessageBlock[]) : [],
             run.bot.name,

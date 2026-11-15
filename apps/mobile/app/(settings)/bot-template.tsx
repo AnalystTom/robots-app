@@ -1,9 +1,9 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { ChatMarkdown } from "@rakazo/chat-ui/native";
-import type { Bot, BotTemplateListing } from "@rakazo/contracts";
-import { isBotTemplateChanged } from "@rakazo/contracts";
-import { botTemplateApps, formatCron } from "@rakazo/core";
+import { ChatMarkdown } from "@robots/chat-ui/native";
+import type { Bot, BotTemplateListing } from "@robots/contracts";
+import { isBotTemplateChanged } from "@robots/contracts";
+import { botTemplateApps, formatCron } from "@robots/core";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import type { ReactNode } from "react";

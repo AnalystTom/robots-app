@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import type { ComputerStatus } from "@rakazo/contracts";
+import type { ComputerStatus } from "@robots/contracts";
 import { useFocusEffect } from "expo-router";
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";

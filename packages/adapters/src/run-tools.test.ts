@@ -1,4 +1,4 @@
-import { BACKGROUND_HELPER_TRIGGER } from "@rakazo/core";
+import { BACKGROUND_HELPER_TRIGGER } from "@robots/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApprovedEffectReplayQueue, terminatingToolResult } from "./approval-effect.js";
 import { CATALOG_EXECUTE } from "./lazy-tool-catalog.js";

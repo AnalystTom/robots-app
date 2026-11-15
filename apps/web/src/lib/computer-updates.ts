@@ -1,4 +1,4 @@
-import { createComputerUpdates } from "@rakazo/core";
+import { createComputerUpdates } from "@robots/core";
 import { rpc, SPACE_SELECTED_EVENT, selectedSpaceId } from "./rpc";
 export const computerUpdates = createComputerUpdates({
   list: () => rpc.computer.updates(),

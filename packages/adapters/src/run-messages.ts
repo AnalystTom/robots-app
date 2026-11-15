@@ -1,18 +1,18 @@
-import type { HistoryToolStep, MessageBlock } from "@rakazo/contracts";
+import type { HistoryToolStep, MessageBlock } from "@robots/contracts";
 import {
   callIdFromClientNonce,
   isBackgroundRunTrigger,
   redactSecrets,
   splitToolHistory,
-} from "@rakazo/core";
-import type { Prisma, RunLease } from "@rakazo/db";
+} from "@robots/core";
+import type { Prisma, RunLease } from "@robots/db";
 import {
   appendEventInTransaction,
   createThreadMessageInTransaction,
   THREAD_LOCK_TRANSACTION_OPTIONS,
   withTransactionRetry,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { redactConnectorPayload } from "./connector-safety.js";
 import type { ExecutorDeps } from "./executor-deps.js";
 

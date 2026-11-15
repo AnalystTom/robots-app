@@ -1,5 +1,5 @@
-import type { MessagingSurface, SecretStore } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
+import type { MessagingSurface, SecretStore } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
 import { InstalledMessagingSurface } from "./installed-messaging-surface.js";
 import { MessagingInstallations } from "./messaging-installations.js";
 import type { SecretCleanupDeps } from "./secret-cleanup.js";

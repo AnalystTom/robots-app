@@ -1,4 +1,4 @@
-import type { ConnectorTool, SemanticMemoryProvider } from "@rakazo/adapter-kit";
+import type { ConnectorTool, SemanticMemoryProvider } from "@robots/adapter-kit";
 import { describe, expect, it, vi } from "vitest";
 import { appendMemoryFact, editMemory, selectMemoryTools } from "./memory-tools.js";
 import type { RunContext } from "./run-context.js";

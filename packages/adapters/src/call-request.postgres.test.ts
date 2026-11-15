@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { BackgroundJob } from "@rakazo/adapter-kit";
-import { createDb, createThreadEvents, runAsSystem, runAsTenant } from "@rakazo/db";
+import type { BackgroundJob } from "@robots/adapter-kit";
+import { createDb, createThreadEvents, runAsSystem, runAsTenant } from "@robots/db";
 import { describe, expect, it, vi } from "vitest";
 import { reconcileCallRequests, requestUserCall, settleCallRequest } from "./call-request.js";
 
@@ -18,7 +18,7 @@ postgres("call isolation and cooldown (PostgreSQL)", () => {
     try {
       const runs = await fixture(async () => {
         await prisma.user.create({
-          data: { id: userId, name: "Call tester", email: `${id}@rakazo.test` },
+          data: { id: userId, name: "Call tester", email: `${id}@robots.test` },
         });
         await prisma.organization.create({
           data: { id: organizationId, name: "Call tests", slug: id, createdAt: new Date() },

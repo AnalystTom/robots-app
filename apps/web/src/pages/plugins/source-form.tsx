@@ -3,7 +3,7 @@ import type {
   IntegrationCatalogResult,
   IntegrationCatalogSurface,
   McpSourcePreset,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   Button,
   Field,
@@ -12,7 +12,7 @@ import {
   Input,
   NativeSelect,
   NativeSelectOption,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { useState } from "react";
 import { ViewTitle } from "./parts";
 

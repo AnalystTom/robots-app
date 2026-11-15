@@ -3,15 +3,15 @@ import type {
   BackgroundJobPayloads,
   JobPublisher,
   ManagedConnectorProvider,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   connectionCleanupJob,
   connectionCleanupJobKey,
   RetryJobLaterError,
-} from "@rakazo/adapter-kit";
-import type { Prisma, PrismaClient } from "@rakazo/db";
-import { ProviderTransactionBusyError, runProviderTransaction } from "@rakazo/db";
-import { getLogger, unwrapJobPayload } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { Prisma, PrismaClient } from "@robots/db";
+import { ProviderTransactionBusyError, runProviderTransaction } from "@robots/db";
+import { getLogger, unwrapJobPayload } from "@robots/logging";
 import { advisoryLock } from "./advisory-lock.js";
 import { sanitizeIntegrationError } from "./composio-connector.js";
 import type { ConnectorRegistry } from "./connector-registry.js";

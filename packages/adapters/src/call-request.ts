@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import type { JobPublisher, NotificationProvider } from "@rakazo/adapter-kit";
-import { callExpireJob } from "@rakazo/adapter-kit";
-import type { IncomingBotCall, MessageBlock } from "@rakazo/contracts";
-import { resolveBotAvatarSet } from "@rakazo/contracts";
-import type { CallRequestBlock } from "@rakazo/core";
+import type { JobPublisher, NotificationProvider } from "@robots/adapter-kit";
+import { callExpireJob } from "@robots/adapter-kit";
+import type { IncomingBotCall, MessageBlock } from "@robots/contracts";
+import { resolveBotAvatarSet } from "@robots/contracts";
+import type { CallRequestBlock } from "@robots/core";
 import {
   CALL_CLIENT_NONCE_PREFIX,
   callIdFromClientNonce,
@@ -12,16 +12,16 @@ import {
   callRequestClientNonce,
   phoneCallSettings,
   ringingCall,
-} from "@rakazo/core";
-import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { Prisma, PrismaClient, ThreadEvents } from "@robots/db";
 import {
   appendEventInTransaction,
   createThreadMessageInTransaction,
   isUniqueViolation,
   runAsSystem,
   THREAD_LOCK_TRANSACTION_OPTIONS,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { advisoryLock } from "./advisory-lock.js";
 import type { ExecutorDeps } from "./executor-deps.js";
 import { publishMessage, runLeaseFor } from "./run-messages.js";

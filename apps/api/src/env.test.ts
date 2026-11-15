@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { loadEnv, parseExtraAuthOrigins } from "./env.js";
 
 const base = {
-  DATABASE_URL: "postgres://rakazo:rakazo@127.0.0.1:5433/rakazo",
+  DATABASE_URL: "postgres://robots:robots@127.0.0.1:5433/robots",
   NODE_ENV: "test",
 };
 
@@ -63,12 +63,12 @@ describe("loadEnv", () => {
     expect(
       loadEnv({
         ...base,
-        RAKAZO_NAV_LINKS: '[{"id":"clients","label":"Clients","path":"/ext/clients/"}]',
+        ROBOTS_NAV_LINKS: '[{"id":"clients","label":"Clients","path":"/ext/clients/"}]',
       }).navLinks,
     ).toEqual([{ id: "clients", label: "Clients", path: "/ext/clients/", trusted: false }]);
     expect(() =>
-      loadEnv({ ...base, RAKAZO_NAV_LINKS: '[{"id":"x","label":"X","path":"/api/me"}]' }),
-    ).toThrow("RAKAZO_NAV_LINKS");
+      loadEnv({ ...base, ROBOTS_NAV_LINKS: '[{"id":"x","label":"X","path":"/api/me"}]' }),
+    ).toThrow("ROBOTS_NAV_LINKS");
   });
   it("keeps Crisp chat off unless a valid website ID is set", () => {
     expect(loadEnv(base).crispWebsiteId).toBeNull();
@@ -276,16 +276,16 @@ describe("loadEnv", () => {
   it("exposes a deployed git revision when GIT_SHA is set", () => {
     expect(loadEnv(base).gitSha).toBeUndefined();
     expect(loadEnv({ ...base, GIT_SHA: "  3c6e209  " }).gitSha).toBe("3c6e209");
-    expect(loadEnv({ ...base, RAKAZO_GIT_SHA: "abc1234" }).gitSha).toBe("abc1234");
+    expect(loadEnv({ ...base, ROBOTS_GIT_SHA: "abc1234" }).gitSha).toBe("abc1234");
   });
 
   it("loads per-client minimum builds and refuses a malformed one", () => {
     expect(loadEnv(base).minimumClientBuilds).toEqual({});
     expect(
-      loadEnv({ ...base, RAKAZO_MIN_CLIENT_BUILD: "web=20261022093015" }).minimumClientBuilds,
+      loadEnv({ ...base, ROBOTS_MIN_CLIENT_BUILD: "web=20261022093015" }).minimumClientBuilds,
     ).toEqual({ web: "20261022093015" });
-    expect(() => loadEnv({ ...base, RAKAZO_MIN_CLIENT_BUILD: "latest" })).toThrow(
-      /RAKAZO_MIN_CLIENT_BUILD/,
+    expect(() => loadEnv({ ...base, ROBOTS_MIN_CLIENT_BUILD: "latest" })).toThrow(
+      /ROBOTS_MIN_CLIENT_BUILD/,
     );
   });
 
@@ -301,12 +301,12 @@ describe("loadEnv", () => {
       loadEnv({
         ...base,
         SMTP_URL: " smtps://user:secret@smtp.example.test:465 ",
-        EMAIL_FROM: " Rakazo <no-reply@example.test> ",
+        EMAIL_FROM: " RoBots <no-reply@example.test> ",
         EMAIL_EMULATOR: "true",
       }),
     ).toMatchObject({
       smtpUrl: "smtps://user:secret@smtp.example.test:465",
-      emailFrom: "Rakazo <no-reply@example.test>",
+      emailFrom: "RoBots <no-reply@example.test>",
       emailEmulator: true,
     });
     expect(
@@ -430,7 +430,7 @@ describe("social sign-in environment", () => {
   });
 
   it("reads the Apple private key from a file", () => {
-    const dir = mkdtempSync(join(tmpdir(), "rakazo-apple-"));
+    const dir = mkdtempSync(join(tmpdir(), "robots-apple-"));
     const file = join(dir, "key.p8");
     try {
       writeFileSync(file, privateKey);
@@ -545,7 +545,7 @@ describe("directory provisioning environment", () => {
   );
 });
 
-describe("RAKAZO_EXTRA_AUTH_ORIGINS", () => {
+describe("ROBOTS_EXTRA_AUTH_ORIGINS", () => {
   it("is empty when unset or blank", () => {
     expect(loadEnv(base).extraAuthOrigins).toEqual([]);
     expect(parseExtraAuthOrigins(" , ")).toEqual([]);
@@ -567,7 +567,7 @@ describe("RAKAZO_EXTRA_AUTH_ORIGINS", () => {
   it("drops invalid entries", () => {
     expect(
       parseExtraAuthOrigins(
-        "http://example.com,ftp://host,rakazo://,not a url,https://host/path,https://u:p@host,*",
+        "http://example.com,ftp://host,robots://,not a url,https://host/path,https://u:p@host,*",
       ),
     ).toEqual([]);
   });

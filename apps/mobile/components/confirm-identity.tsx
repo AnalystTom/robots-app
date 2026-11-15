@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { runWithIdentityConfirmation } from "@rakazo/contracts";
+import { runWithIdentityConfirmation } from "@robots/contracts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Platform } from "react-native";
 import { confirmIdentity, fetchAccountSecurity, requestIdentityCode } from "../lib/api-auth";

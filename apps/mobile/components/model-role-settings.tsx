@@ -12,7 +12,7 @@ import type {
   ModelRoleSettings as Settings,
   SettingsScope,
   ThinkingLevel,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   backupChoiceKey,
   connectedBackupOptions,
@@ -20,14 +20,14 @@ import {
   MAX_MODEL_BACKUPS,
   modelRoleChoiceKey,
   withConnectionName,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   catalogEntryFor,
   connectionForModelChoice,
   createModelRoleSettings,
   modelRoleListPatch,
   modelThinkingLevels,
-} from "@rakazo/core";
+} from "@robots/core";
 import type { Href } from "expo-router";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";

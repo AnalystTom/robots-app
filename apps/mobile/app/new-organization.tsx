@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { typeScale } from "@rakazo/ui-tokens";
+import { typeScale } from "@robots/ui-tokens";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";

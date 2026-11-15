@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["RobotsPdfViewModule"]
+  },
+  "android": {
+    "modules": ["com.robots.pdfview.RobotsPdfViewModule"]
+  }
+}

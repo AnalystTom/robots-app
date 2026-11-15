@@ -7,10 +7,10 @@ import type {
   BackgroundJob,
   JobPublisher,
   MediaVideoJob,
-} from "@rakazo/adapter-kit";
-import { MediaGenerationError } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { asSystem, clearThread, createDb, runAsSystem, runAsTenant } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import { MediaGenerationError } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { asSystem, clearThread, createDb, runAsSystem, runAsTenant } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createArtifactStore } from "./artifact-store-factory.js";
 import { FakeMediaGenerationProvider } from "./media-generation-provider.js";
@@ -49,7 +49,7 @@ describePostgres("background video delivery (PostgreSQL)", () => {
   let prisma: PrismaClient;
   let db: ReturnType<typeof createDb>;
   const users: string[] = [];
-  const dataDir = mkdtempSync(path.join(tmpdir(), "rakazo-media-poll-"));
+  const dataDir = mkdtempSync(path.join(tmpdir(), "robots-media-poll-"));
   beforeAll(() => {
     db = createDb(process.env.DATABASE_URL!);
     prisma = db.prisma;

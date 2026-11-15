@@ -5,10 +5,10 @@ import type {
   SpendingPayment,
   SpendingPeriod,
   SpendingStatus,
-} from "@rakazo/contracts";
-import { SPENDING_CURRENCIES } from "@rakazo/contracts";
-import { formatMinorAmount, parseLimitInput } from "@rakazo/core";
-import { writeSaved } from "@rakazo/core/query";
+} from "@robots/contracts";
+import { SPENDING_CURRENCIES } from "@robots/contracts";
+import { formatMinorAmount, parseLimitInput } from "@robots/core";
+import { writeSaved } from "@robots/core/query";
 import {
   Button,
   Input,
@@ -18,7 +18,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSave, useSpaceQueries } from "../lib/query";

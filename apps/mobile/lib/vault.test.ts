@@ -1,10 +1,10 @@
-import type { BotSecretMetadata, ContactFields } from "@rakazo/contracts";
+import type { BotSecretMetadata, ContactFields } from "@robots/contracts";
 import {
   decodeCardSecret,
   decodeContactSecret,
   decodeLoginSecret,
   vaultKind,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 
 import type { VaultDraft, VaultItem } from "./vault";

@@ -1,9 +1,9 @@
-import { BillingPaymentNotCompletedError } from "@rakazo/adapter-kit";
-import { BillingEmulator } from "@rakazo/adapters";
-import type { Actor } from "@rakazo/contracts";
-import { BYOK_TIERS } from "@rakazo/contracts";
-import type { PrismaClient } from "@rakazo/db";
-import { asSystem, billingAccountForOrganization, createDb } from "@rakazo/db";
+import { BillingPaymentNotCompletedError } from "@robots/adapter-kit";
+import { BillingEmulator } from "@robots/adapters";
+import type { Actor } from "@robots/contracts";
+import { BYOK_TIERS } from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
+import { asSystem, billingAccountForOrganization, createDb } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createBillingService, TRIAL_DAYS } from "./billing.js";
 
@@ -16,7 +16,7 @@ dbTests("model credit billing service", () => {
   const actor: Actor = {
     userId,
     spaceId,
-    email: `credit-${stamp}@rakazo.test`,
+    email: `credit-${stamp}@robots.test`,
     isDeploymentOwner: false,
   };
   const provider = new BillingEmulator({ modelCredits: true, namespace: `credits-${stamp}` });

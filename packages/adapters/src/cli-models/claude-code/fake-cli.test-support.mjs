@@ -35,7 +35,7 @@ if (
 async function inventory() {
   const at = args.indexOf("--mcp-config");
   if (at < 0) return { tools: [] };
-  const server = JSON.parse(readFileSync(args[at + 1], "utf8")).mcpServers.rakazo;
+  const server = JSON.parse(readFileSync(args[at + 1], "utf8")).mcpServers.robots;
   const child = spawn(server.command, server.args, { stdio: ["pipe", "pipe", "inherit"] });
   const lines = createInterface({ input: child.stdout })[Symbol.asyncIterator]();
   const request = async (id, method, params) => {
@@ -60,10 +60,10 @@ async function chat() {
     tools:
       scenario === "built-in-tools"
         ? ["Bash", "Read"]
-        : tools.tools.map((tool) => `mcp__rakazo__${tool.name}`),
+        : tools.tools.map((tool) => `mcp__robots__${tool.name}`),
     mcp_servers:
       tools.tools.length && scenario !== "no-tool-server"
-        ? [{ name: "rakazo", status: "connected" }]
+        ? [{ name: "robots", status: "connected" }]
         : [],
   });
   if (scenario === "deaf") {
@@ -185,10 +185,10 @@ async function chat() {
           id: "toolu_1",
           name:
             {
-              "unoffered-tool": "mcp__rakazo__feedback",
+              "unoffered-tool": "mcp__robots__feedback",
               "wrong-prefix": "mcp__other__lookup",
               "bare-tool": "lookup",
-            }[scenario] ?? "mcp__rakazo__lookup",
+            }[scenario] ?? "mcp__robots__lookup",
           input: {},
         },
       });

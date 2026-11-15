@@ -13,8 +13,8 @@ import type {
   RealtimeFanout,
   SandboxProvider,
   TransactionalEmailProvider,
-} from "@rakazo/adapter-kit";
-import { EmailRecipientRejectedError } from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
+import { EmailRecipientRejectedError } from "@robots/adapter-kit";
 import type {
   ComposioProvider,
   ConnectorRegistry,
@@ -24,7 +24,7 @@ import type {
   RemoteConnectorDependencies,
   RunRuntimeEnv,
   UserDeviceGateway,
-} from "@rakazo/adapters";
+} from "@robots/adapters";
 import {
   BillingEmulator,
   ChatSdkMessagingSurface,
@@ -78,8 +78,8 @@ import {
   WorkActivities,
   withHostComputerScreen,
   withSecretPersistence,
-} from "@rakazo/adapters";
-import type { DirectoryAccountChange } from "@rakazo/auth";
+} from "@robots/adapters";
+import type { DirectoryAccountChange } from "@robots/auth";
 import {
   buildTrustedOrigins,
   CLIENT_IP_HEADER,
@@ -87,15 +87,15 @@ import {
   createDirectory,
   isBlockedAuthPath,
   publicSignInProviders,
-} from "@rakazo/auth";
-import type { Actor, AuthCapabilities, ModelCredential } from "@rakazo/contracts";
+} from "@robots/auth";
+import type { Actor, AuthCapabilities, ModelCredential } from "@robots/contracts";
 import {
   isLocalhostOrLoopbackIp,
   PLUGIN_SUBMISSIONS_PATH,
   SERVER_BUILD_HEADER,
-} from "@rakazo/contracts";
-import { encryptionKeyWarning, signupPolicyFromEnv } from "@rakazo/core";
-import type { Pool, PrismaClient } from "@rakazo/db";
+} from "@robots/contracts";
+import { encryptionKeyWarning, signupPolicyFromEnv } from "@robots/core";
+import type { Pool, PrismaClient } from "@robots/db";
 import {
   configureProviderTransactionPool,
   createBoardEvents,
@@ -114,8 +114,8 @@ import {
   rowSecurityWarning,
   runAsSystem,
   verifyContentKeys,
-} from "@rakazo/db";
-import type { Logger } from "@rakazo/logging";
+} from "@robots/db";
+import type { Logger } from "@robots/logging";
 import {
   bestEffort,
   createServiceLogger,
@@ -123,9 +123,9 @@ import {
   getLogger,
   installLogger,
   SERVICE_NAMES,
-} from "@rakazo/logging";
-import { requestLogging } from "@rakazo/logging/hono";
-import { MarkdownMemoryStore } from "@rakazo/memory";
+} from "@robots/logging";
+import { requestLogging } from "@robots/logging/hono";
+import { MarkdownMemoryStore } from "@robots/memory";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { deleteAccountContent, finishStalledOrganizationDeletions } from "./account-deletion.js";
@@ -189,7 +189,7 @@ import { mountWebhookHttpRoutes } from "./webhook.js";
  * The loopback entries are the Expo web dev server.
  */
 export const MOBILE_AUTH_ORIGINS = [
-  "rakazo://",
+  "robots://",
   "http://localhost:8081",
   "http://127.0.0.1:8081",
   "http://localhost:19006",
@@ -283,7 +283,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     ? { prisma: prismaOverride, pool: undefined }
     : createDb(env.databaseUrl, {
         poolMax,
-        applicationName: "rakazo-api",
+        applicationName: "robots-api",
         keyProvider: contentKeyProviderFromEnv(),
         encryptContent: env.contentEncryption,
       });
@@ -354,7 +354,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
   if (!inMemoryJobs && !created.pool) {
     ownedJobPool = createPool(env.databaseUrl, {
       poolMax: parsePositiveInteger(process.env.DB_POOL_MAX, 4),
-      applicationName: "rakazo-api-jobs",
+      applicationName: "robots-api-jobs",
     });
   }
   const jobPool = created.pool ?? ownedJobPool;
@@ -991,7 +991,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       requireMembership(
         prisma,
         session.user,
-        request.headers.get("x-rakazo-space-id"),
+        request.headers.get("x-robots-space-id"),
         session.session,
       ),
     );
@@ -1205,7 +1205,7 @@ export function isTrustedOrigin(
   env: Pick<AppEnv, "webOrigin" | "apiUrl" | "authUrl"> & { extraAuthOrigins?: string[] },
 ) {
   if (!origin) return true;
-  if (origin.startsWith("rakazo://")) return true;
+  if (origin.startsWith("robots://")) return true;
   return new Set(trustedRequestOrigins(env)).has(origin);
 }
 

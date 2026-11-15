@@ -89,7 +89,7 @@ class SelectTest(unittest.TestCase):
 
     def test_captions_are_plain_text(self):
         [(_, caption)] = self.select(
-            [{"file": "01-chat.png", "caption": "![x](y) <img src=x> @someone\n<!-- rakazo-pr-screenshots:end -->"}]
+            [{"file": "01-chat.png", "caption": "![x](y) <img src=x> @someone\n<!-- robots-pr-screenshots:end -->"}]
         )
         self.assertIsNone(re.search(r"(?<!\\)[<>\[\]()!@]", caption))
         self.assertNotIn(shots.END, caption)
@@ -229,7 +229,7 @@ class EfficiencyTest(unittest.TestCase):
         return {"state": "open", "head": {"sha": self.sha}, "body": body}
 
     def test_author_markers_and_images_cannot_skip_assessment(self):
-        body = f"{shots.START}\n<!-- screenshot-commit:{self.sha} -->\n![Chat](https://example.com/a.png)\n{shots.END}\n<!-- rakazo-screenshot-reviewed:{self.sha} -->"
+        body = f"{shots.START}\n<!-- screenshot-commit:{self.sha} -->\n![Chat](https://example.com/a.png)\n{shots.END}\n<!-- robots-screenshot-reviewed:{self.sha} -->"
         self.assertFalse(shots.obsolete(self.pr(body), self.sha))
         with mock.patch.object(shots, "api", return_value=[{"artifacts": []}]):
             self.assertFalse(shots.assessed("example/repo", "1", self.sha))
@@ -239,7 +239,7 @@ class EfficiencyTest(unittest.TestCase):
         self.assertTrue(shots.obsolete(self.pr(""), "b" * 40))
 
     def test_evidence_requires_publisher_and_current_commit(self):
-        body = f"<!-- rakazo-playwright-screenshots -->\n<!-- screenshot-commit:{self.sha} -->\nGallery"
+        body = f"<!-- robots-playwright-screenshots -->\n<!-- screenshot-commit:{self.sha} -->\nGallery"
         comment = {"user": {"login": "github-actions[bot]"}, "body": body}
         pages = [[{**comment, "user": {"login": "someone"}}], [comment]]
         self.assertEqual(shots.evidence(pages, self.sha), body)
@@ -275,7 +275,7 @@ class SourcesReadyTest(unittest.TestCase):
     repo = "example/repo"
 
     def preview(self, **overrides):
-        return [[{"user": {"login": "github-actions[bot]"}, "body": "<!-- rakazo-preview -->\n" + shots.commit_marker(self.sha), **overrides}]]
+        return [[{"user": {"login": "github-actions[bot]"}, "body": "<!-- robots-preview -->\n" + shots.commit_marker(self.sha), **overrides}]]
 
     def artifacts(self, source="e2e", **overrides):
         return [{"artifacts": [{"name": f"pr-screenshot-{source}-{self.sha}", "expired": False, "workflow_run": {"id": 1}, **overrides}]}]
@@ -297,7 +297,7 @@ class SourcesReadyTest(unittest.TestCase):
             self.assertFalse(shots.sources_ready(self.repo, "1", self.sha))
 
     def test_author_and_stale_preview_comments_do_not_prove_deployment(self):
-        for overrides in ({"user": {"login": "contributor"}}, {"body": "<!-- rakazo-preview -->\n" + shots.commit_marker("b" * 40)}):
+        for overrides in ({"user": {"login": "contributor"}}, {"body": "<!-- robots-preview -->\n" + shots.commit_marker("b" * 40)}):
             with self.subTest(overrides=overrides), mock.patch.object(shots, "api", return_value=self.preview(**overrides)) as api:
                 self.assertFalse(shots.sources_ready(self.repo, "1", self.sha))
                 self.assertEqual(api.call_count, 1)

@@ -25,7 +25,7 @@ vi.mock("./api", () => ({
     scope.pinned ?? {
       apiBase: "https://app.example.test",
       sessionGeneration: scope.generation,
-      headers: spaceId ? { "x-rakazo-space-id": spaceId } : {},
+      headers: spaceId ? { "x-robots-space-id": spaceId } : {},
     },
   rpc: scope.rpc,
 }));
@@ -252,7 +252,7 @@ const pinnedTo = (spaceId: string, sessionGeneration = 1) => ({
   requestContext: {
     apiBase: "https://app.example.test",
     sessionGeneration,
-    headers: { "x-rakazo-space-id": spaceId },
+    headers: { "x-robots-space-id": spaceId },
   },
 });
 

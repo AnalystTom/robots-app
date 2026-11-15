@@ -7,8 +7,8 @@ import {
   mcpStdioAvailable,
   resolveMemberMainModel,
   selectConfiguredModel,
-} from "@rakazo/adapters";
-import type { Actor, Me } from "@rakazo/contracts";
+} from "@robots/adapters";
+import type { Actor, Me } from "@robots/contracts";
 import {
   attachmentMaxBytes,
   attachmentMaxCount,
@@ -17,12 +17,12 @@ import {
   modelCreditsUsd,
   resolveBotAvatarSet,
   resolveLabs,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import { isAdmin } from "../admins.js";
 import { effectiveSandboxProvider } from "../computer-provider-config.js";
 import type { RouterDeps } from "../router.js";
 
-export { createAdapterContext as computerContext } from "@rakazo/adapter-kit";
+export { createAdapterContext as computerContext } from "@robots/adapter-kit";
 
 function hostCredentials(active: boolean, provider: string) {
   return active

@@ -1,4 +1,4 @@
-import { MODEL_KEY_FORMAT_ERROR } from "@rakazo/contracts";
+import { MODEL_KEY_FORMAT_ERROR } from "@robots/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SpaceCatalogAuth } from "./model-selection.js";
 import { defaultCatalogModelId, spaceCanRunCatalogModel } from "./model-selection.js";
@@ -262,7 +262,7 @@ describe("Pi model catalog", () => {
         providerName: "OpenAI",
         auth: "api-key",
         subscription: false,
-        billing: "Uses your OpenAI API key. Rakazo does not pay for model usage.",
+        billing: "Uses your OpenAI API key. RoBots does not pay for model usage.",
       });
       expect(entry.oauthLabel).toBeUndefined();
       expect(entry.signIn).toBeUndefined();
@@ -275,7 +275,7 @@ describe("Pi model catalog", () => {
         providerName: "Azure OpenAI",
         auth: "api-key",
         subscription: false,
-        billing: "Uses your Azure OpenAI API key. Rakazo does not pay for model usage.",
+        billing: "Uses your Azure OpenAI API key. RoBots does not pay for model usage.",
       });
     }
   });
@@ -392,8 +392,8 @@ describe("Pi model catalog", () => {
     expect(routing("cloudflare-ai-gateway")).toEqual(["accountId", "gatewayId"]);
     expect(routing("anthropic")).toBeUndefined();
 
-    const previous = process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-    process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = "0";
+    const previous = process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+    process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = "0";
     try {
       await expect(
         probeOpenAiCompatibleModels(
@@ -418,8 +418,8 @@ describe("Pi model catalog", () => {
         expect(requestedUrl).toContain(baseUrl);
       }
     } finally {
-      if (previous === undefined) delete process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC;
-      else process.env.RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
+      if (previous === undefined) delete process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC;
+      else process.env.ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC = previous;
     }
   });
 
@@ -456,14 +456,14 @@ describe("Pi model catalog", () => {
 
   it("adds a configured OpenRouter model that is newer than the static catalog", async () => {
     vi.stubEnv("PI_DEFAULT_PROVIDER", " openrouter ");
-    vi.stubEnv("PI_DEFAULT_MODEL", " rakazo-test/unknown-future-model ");
+    vi.stubEnv("PI_DEFAULT_MODEL", " robots-test/unknown-future-model ");
     vi.resetModules();
 
     const { listPiCatalog: listConfiguredCatalog } = await import("./pi-models.js");
     expect(listConfiguredCatalog()[0]).toMatchObject({
       provider: "openrouter",
-      id: "rakazo-test/unknown-future-model",
-      label: "rakazo-test/unknown-future-model",
+      id: "robots-test/unknown-future-model",
+      label: "robots-test/unknown-future-model",
     });
   });
 
@@ -582,7 +582,7 @@ describe("models agents can run", () => {
     expect(offeredCatalog(entries, new Set(["google:gemini-2.5-flash"]))).toEqual([entries[0]]);
   });
 
-  describe("models Rakazo credits cannot price", () => {
+  describe("models RoBots credits cannot price", () => {
     const credits: SpaceCatalogAuth = {
       managedProvider: "openrouter",
       byProvider: { openrouter: "api_key" },

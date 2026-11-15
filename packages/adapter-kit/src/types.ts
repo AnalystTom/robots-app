@@ -8,7 +8,7 @@ import type {
   PurchaseCardField,
   SandboxKind,
   VoiceAccountErrorCode,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 
 export interface AdapterContext {
   operationId: string;

@@ -1,6 +1,6 @@
-import type { ComputerRef } from "@rakazo/adapter-kit";
-import { encodeLoginSecret } from "@rakazo/contracts";
-import { installAuditEventStore } from "@rakazo/db";
+import type { ComputerRef } from "@robots/adapter-kit";
+import { encodeLoginSecret } from "@robots/contracts";
+import { installAuditEventStore } from "@robots/db";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeAuditLog, fakeDatabase } from "./bot-secrets.test-support.js";
 import type * as ComputerLifecycleModule from "./computer-lifecycle.js";

@@ -1,5 +1,5 @@
-import type { MessageBlock } from "@rakazo/contracts";
-import type { ToolStepOutcome } from "@rakazo/core";
+import type { MessageBlock } from "@robots/contracts";
+import type { ToolStepOutcome } from "@robots/core";
 import {
   appendTextSegment,
   appendToolCallSegment,
@@ -11,8 +11,8 @@ import {
   redactSecrets,
   redactSecretsAfter,
   withToolStepOutcomes,
-} from "@rakazo/core";
-import type { Run } from "@rakazo/db";
+} from "@robots/core";
+import type { Run } from "@robots/db";
 import type { ExecutorDeps } from "./executor-deps.js";
 import { IMAGE_RETURNING_COMPUTER_TOOLS } from "./model-vision.js";
 import type { ReplyState, RunContext } from "./run-context.js";

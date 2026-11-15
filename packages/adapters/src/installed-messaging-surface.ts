@@ -7,7 +7,7 @@ import type {
   MessagingInstallProvider,
   MessagingSendRequest,
   MessagingSurface,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import { MessagingSendError } from "./chat-sdk-surface.js";
 import { credentialDigest } from "./credential-digest.js";
 

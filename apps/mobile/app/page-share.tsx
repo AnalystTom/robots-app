@@ -1,7 +1,7 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { PageVisibility } from "@rakazo/contracts";
-import { accountDisplay } from "@rakazo/core";
+import type { PageVisibility } from "@robots/contracts";
+import { accountDisplay } from "@robots/core";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";

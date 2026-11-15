@@ -83,8 +83,8 @@ describe("controls", () => {
     click(ask!);
     click(label!);
     expect(posted).toEqual([
-      { type: "rakazo-page:reply", text: "Summarise the tickets" },
-      { type: "rakazo-page:reply", text: "Use my label" },
+      { type: "robots-page:reply", text: "Summarise the tickets" },
+      { type: "robots-page:reply", text: "Use my label" },
     ]);
     expect(replyText("x".repeat(300))).toHaveLength(300);
     expect(replyText("   ")).toBeUndefined();
@@ -109,17 +109,17 @@ describe("controls", () => {
     const [yes, no, silent] = host.querySelectorAll("button");
     await act(async () => yes!.click());
     const asked = posted as { type: string; id: string; text: string }[];
-    expect(asked).toEqual([{ type: "rakazo-page:copy", id: expect.any(String), text: "yes" }]);
+    expect(asked).toEqual([{ type: "robots-page:copy", id: expect.any(String), text: "yes" }]);
     // Another copy's answer, or a forged one for no request, changes nothing.
-    await answer({ type: "rakazo-page:copied", id: "other", ok: true });
+    await answer({ type: "robots-page:copied", id: "other", ok: true });
     expect(yes!.textContent).toBe("Copy yes");
-    await answer({ type: "rakazo-page:copied", id: asked[0]!.id, ok: true });
+    await answer({ type: "robots-page:copied", id: asked[0]!.id, ok: true });
     expect(yes!.textContent).toBe("Copied");
     await act(async () => vi.advanceTimersByTime(1600));
     expect(yes!.textContent).toBe("Copy yes");
 
     await act(async () => no!.click());
-    await answer({ type: "rakazo-page:copied", id: asked[1]!.id, ok: false });
+    await answer({ type: "robots-page:copied", id: asked[1]!.id, ok: false });
     expect(no!.textContent).toBe("Copy no");
     expect(q(".rk-copy-fallback")!.textContent).toBe("no");
 
@@ -144,14 +144,14 @@ describe("controls", () => {
     await act(async () => {
       window.dispatchEvent(
         new MessageEvent("message", {
-          data: { type: "rakazo-page:copied", id: requests[1]!.id, ok },
+          data: { type: "robots-page:copied", id: requests[1]!.id, ok },
         }),
       );
     });
     await act(async () => {
       window.dispatchEvent(
         new MessageEvent("message", {
-          data: { type: "rakazo-page:copied", id: requests[0]!.id, ok: !ok },
+          data: { type: "robots-page:copied", id: requests[0]!.id, ok: !ok },
         }),
       );
     });
@@ -168,7 +168,7 @@ describe("controls", () => {
     await act(async () => {
       window.dispatchEvent(
         new MessageEvent("message", {
-          data: { type: "rakazo-page:copied", id: request.id, ok },
+          data: { type: "robots-page:copied", id: request.id, ok },
         }),
       );
     });
@@ -186,7 +186,7 @@ describe("controls", () => {
       await act(async () => {
         window.dispatchEvent(
           new MessageEvent("message", {
-            data: { type: "rakazo-page:copied", id: request.id, ok },
+            data: { type: "robots-page:copied", id: request.id, ok },
           }),
         );
       });
@@ -214,7 +214,7 @@ describe("controls", () => {
     await act(async () => {
       window.dispatchEvent(
         new MessageEvent("message", {
-          data: { type: "rakazo-page:copied", id: request.id, ok },
+          data: { type: "robots-page:copied", id: request.id, ok },
         }),
       );
     });
@@ -231,7 +231,7 @@ describe("controls", () => {
     await act(async () => {
       window.dispatchEvent(
         new MessageEvent("message", {
-          data: { type: "rakazo-page:copied", id: requests[0]!.id, ok: false },
+          data: { type: "robots-page:copied", id: requests[0]!.id, ok: false },
         }),
       );
     });
@@ -240,7 +240,7 @@ describe("controls", () => {
     await act(async () => {
       window.dispatchEvent(
         new MessageEvent("message", {
-          data: { type: "rakazo-page:copied", id: requests[1]!.id, ok: true },
+          data: { type: "robots-page:copied", id: requests[1]!.id, ok: true },
         }),
       );
     });
@@ -259,7 +259,7 @@ describe("controls", () => {
       await act(async () => {
         window.dispatchEvent(
           new MessageEvent("message", {
-            data: { type: "rakazo-page:copied", id: requests[1]!.id, ok: true },
+            data: { type: "robots-page:copied", id: requests[1]!.id, ok: true },
           }),
         );
       });
@@ -270,7 +270,7 @@ describe("controls", () => {
       await act(async () => {
         window.dispatchEvent(
           new MessageEvent("message", {
-            data: { type: "rakazo-page:copied", id: requests[2]!.id, ok: true },
+            data: { type: "robots-page:copied", id: requests[2]!.id, ok: true },
           }),
         );
       });
@@ -300,9 +300,9 @@ describe("controls", () => {
     expect(host.textContent).toContain("plain");
     for (const link of links) click(link);
     expect(posted).toEqual([
-      { type: "rakazo-page:open-link", url: "https://example.com/a" },
-      { type: "rakazo-page:open-link", url: "mailto:a@example.com" },
-      { type: "rakazo-page:open-link", url: "https://example.com/b" },
+      { type: "robots-page:open-link", url: "https://example.com/a" },
+      { type: "robots-page:open-link", url: "mailto:a@example.com" },
+      { type: "robots-page:open-link", url: "https://example.com/b" },
     ]);
   });
 

@@ -1,6 +1,6 @@
-import type { JobPublisher } from "@rakazo/adapter-kit";
-import { PiAgentRuntime } from "@rakazo/adapters";
-import type { PrismaClient } from "@rakazo/db";
+import type { JobPublisher } from "@robots/adapter-kit";
+import { PiAgentRuntime } from "@robots/adapters";
+import type { PrismaClient } from "@robots/db";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { compactHistory } from "../../adapters/src/history-compaction.js";
 import { startModelEmulator } from "./model-emulator.js";

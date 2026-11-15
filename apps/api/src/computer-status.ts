@@ -3,10 +3,10 @@ import {
   diskUsedPercent,
   holdsUserControl,
   sandboxKindCapabilities,
-} from "@rakazo/adapters";
-import type { ComputerStatus } from "@rakazo/contracts";
-import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/adapters";
+import type { ComputerStatus } from "@robots/contracts";
+import { ACTIVE_RUN_STATUSES } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
 
 /** What this bot is doing with its computer: which run holds it, and whether one waits for a person. */
 export async function resolveComputerWork(

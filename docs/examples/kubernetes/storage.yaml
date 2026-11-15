@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: rakazo-database
+  name: robots-database
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   accessModes:
     - ReadWriteOnce
@@ -17,10 +17,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: rakazo-data
+  name: robots-data
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   accessModes:
     - ReadWriteOnce
@@ -32,10 +32,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: rakazo-web-assets
+  name: robots-web-assets
   labels:
-    rakazo.example/phase: foundation
-  namespace: rakazo
+    robots.example/phase: foundation
+  namespace: robots
 spec:
   accessModes:
     - ReadWriteOnce

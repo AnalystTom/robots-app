@@ -1,13 +1,13 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { McpServer, PluginPart } from "@rakazo/contracts";
-import { mcpServerConnection, mcpServerNeedsSignIn, PluginPreviewSchema } from "@rakazo/contracts";
+import type { McpServer, PluginPart } from "@robots/contracts";
+import { mcpServerConnection, mcpServerNeedsSignIn, PluginPreviewSchema } from "@robots/contracts";
 import {
   catalogItemKey,
   connectCatalogItem,
   installedPluginParts,
   isCatalogItemConnected,
-} from "@rakazo/core";
+} from "@robots/core";
 import { useQuery } from "@tanstack/react-query";
 import type { NativeStackNavigationOptions } from "expo-router";
 import {

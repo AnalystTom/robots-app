@@ -1,13 +1,13 @@
-import type { JobPublisher } from "@rakazo/adapter-kit";
-import { ACTIVE_RUN_STATUSES, COMPUTER_USING_RUNS, ONCE_ROUTINE_CRON } from "@rakazo/core";
-import type { Prisma, PrismaClient } from "@rakazo/db";
+import type { JobPublisher } from "@robots/adapter-kit";
+import { ACTIVE_RUN_STATUSES, COMPUTER_USING_RUNS, ONCE_ROUTINE_CRON } from "@robots/core";
+import type { Prisma, PrismaClient } from "@robots/db";
 import {
   isUniqueViolation,
   memberHasModelAccess,
   STRATEGIC_INITIATIVE_NONCE_PREFIX,
   THREAD_LOCK_TRANSACTION_OPTIONS,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { modelCreditBillingEnabled } from "./run-model.js";
 import { initiativePrompt } from "./strategic-initiative.prompt.js";
 import { wakeRun } from "./wake-run.js";

@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
-import type { BackgroundJob } from "@rakazo/adapter-kit";
-import { ONCE_ROUTINE_CRON } from "@rakazo/core";
-import type { Prisma, PrismaClient } from "@rakazo/db";
+import type { BackgroundJob } from "@robots/adapter-kit";
+import { ONCE_ROUTINE_CRON } from "@robots/core";
+import type { Prisma, PrismaClient } from "@robots/db";
 import {
   appendEvent,
   asSystem,
   createDb,
   provisionMessagingIdentity,
   runAsSystem,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createRunExecutor } from "./executor.js";
 import { findPendingRoutineTick, routineTimerNonce } from "./routine-coalescing.js";
@@ -19,7 +19,7 @@ describePostgres("routine timer coalescing (PostgreSQL)", () => {
   let db: ReturnType<typeof createDb>;
   let system: PrismaClient;
   let identity: { userId: string; spaceId: string; botId: string; threadId: string };
-  const address = `routine-${randomUUID()}@rakazo.test`;
+  const address = `routine-${randomUUID()}@robots.test`;
   beforeAll(async () => {
     db = createDb(url!);
     system = asSystem(db.prisma);

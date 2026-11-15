@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import { isModelRequiredSendError } from "@rakazo/core";
-import { typeScale } from "@rakazo/ui-tokens";
+import { isModelRequiredSendError } from "@robots/core";
+import { typeScale } from "@robots/ui-tokens";
 import { Alert, Image, Platform, Pressable, Text, View } from "react-native";
 import { showIOSActionSheet } from "../lib/ios-action-sheet";
 import { openModelSettings } from "../lib/model-settings";

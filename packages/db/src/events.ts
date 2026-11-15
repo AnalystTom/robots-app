@@ -1,11 +1,11 @@
-import type { ProductAnalytics, RealtimeFanout } from "@rakazo/adapter-kit";
-import type { ChatAlert, MessageBlock, ProductEvent, SpaceChangeKind } from "@rakazo/contracts";
+import type { ProductAnalytics, RealtimeFanout } from "@robots/adapter-kit";
+import type { ChatAlert, MessageBlock, ProductEvent, SpaceChangeKind } from "@robots/contracts";
 import {
   AnalyticsTrigger,
   hasThinkingActivityMarker,
   STEP_SCREENSHOT_MIME_TYPES,
   ThreadActivityPayloadSchema,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   BACKGROUND_HELPER_TRIGGER,
   callIdFromClientNonce,
@@ -17,8 +17,8 @@ import {
   QUEUE_HOLDING_RUN_STATUSES,
   sanitizeJsonValue,
   splitToolHistory,
-} from "@rakazo/core";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/core";
+import { getLogger } from "@robots/logging";
 import { cancelRunsInTransaction } from "./cancel-runs.js";
 import { createChatAlerts } from "./chat-alerts.js";
 import type { PrismaClient } from "./client.js";

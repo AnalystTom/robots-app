@@ -1,4 +1,4 @@
-import type { SpaceMemoryConfig } from "@rakazo/contracts";
+import type { SpaceMemoryConfig } from "@robots/contracts";
 import type { ComponentType, ReactNode } from "react";
 import { HindsightSettingsForm } from "./HindsightSettingsForm";
 import { HonchoSettingsForm } from "./HonchoSettingsForm";

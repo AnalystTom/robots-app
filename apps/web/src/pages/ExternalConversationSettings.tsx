@@ -5,8 +5,8 @@ import type {
   Bot,
   ExternalConversation,
   ExternalConversationPolicy,
-} from "@rakazo/contracts";
-import type { ListenMode } from "@rakazo/core";
+} from "@robots/contracts";
+import type { ListenMode } from "@robots/core";
 import {
   AUTOMATED_SENDER_MODES,
   ambientValue,
@@ -15,7 +15,7 @@ import {
   senderPolicy,
   withRollupHours,
   withSenderMode,
-} from "@rakazo/core";
+} from "@robots/core";
 import {
   Button,
   Input,
@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
   Textarea,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { RotateCcw } from "lucide-react";
 import { useId, useMemo, useRef, useState } from "react";
 import { SuccessPop } from "../components/ai/primitives";

@@ -16,7 +16,7 @@ DEPENDENCY_TREE = pathlib.Path(__file__).with_name("mobile-dependency-tree.mjs")
 
 OLD_RUNTIME = "1.0.11"
 RUNTIME = "1.0.12"
-SWIFT_FILE = "apps/mobile/modules/rakazo-foo/ios/FooModule.swift"
+SWIFT_FILE = "apps/mobile/modules/robots-foo/ios/FooModule.swift"
 
 
 def app_json(version, icon_key=None):
@@ -375,7 +375,7 @@ class OtaBaseStepTests(OtaBaseTestCase):
 
     def test_classifies_source_from_every_workspace_package_the_bundle_imports(self):
         tokens = "packages/ui-tokens/src/index.ts"
-        icon = "packages/ui-tokens/assets/Rakazo.icon/icon.json"
+        icon = "packages/ui-tokens/assets/RoBots.icon/icon.json"
         eligible = "Mobile OTA eligible"
         for files, expected, summary_line in (
             ({tokens: "export const a = 1;\n"}, "publish=true", eligible),

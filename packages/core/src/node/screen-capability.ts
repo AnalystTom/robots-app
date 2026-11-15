@@ -3,7 +3,7 @@ import {
   ipVersion,
   isLocalhostOrLoopbackIp,
   isPrivateNetworkAddress,
-} from "@rakazo/contracts/network-host";
+} from "@robots/contracts/network-host";
 
 export const SCREEN_PROXY_TTL_MS = 60 * 60_000;
 export const SCREEN_TARGET_ENDPOINT = "/api/internal/screen-target";
@@ -263,6 +263,6 @@ function isAllowedTargetName(hostname: string) {
   return (
     hostname === "localhost" ||
     (ipVersion(hostname) !== 0 && isPrivateNetworkAddress(hostname)) ||
-    /^rakazo-bot-[a-zA-Z0-9_.-]+$/.test(hostname)
+    /^robots-bot-[a-zA-Z0-9_.-]+$/.test(hostname)
   );
 }

@@ -1,8 +1,8 @@
-import type { JobPublisher } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { DatabaseOutage } from "@rakazo/db";
-import type { LogEvent } from "@rakazo/logging";
-import { createLogger, createTestSink, getLogger, installLogger } from "@rakazo/logging";
+import type { JobPublisher } from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { DatabaseOutage } from "@robots/db";
+import type { LogEvent } from "@robots/logging";
+import { createLogger, createTestSink, getLogger, installLogger } from "@robots/logging";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createJobReconciler } from "./job-reconciler.js";
 

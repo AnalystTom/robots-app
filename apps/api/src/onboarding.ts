@@ -1,18 +1,18 @@
-import type { ConnectorRegistry } from "@rakazo/adapters";
-import type { Actor, ConnectionCatalogItem, MessageBlock } from "@rakazo/contracts";
+import type { ConnectorRegistry } from "@robots/adapters";
+import type { Actor, ConnectionCatalogItem, MessageBlock } from "@robots/contracts";
 import {
   appConnectCard,
   connectedAppBlocks,
   matchAppCatalog,
   matchesAppConnection,
-} from "@rakazo/core";
-import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { Prisma, PrismaClient, ThreadEvents } from "@robots/db";
 import {
   appendEventInTransaction,
   createThreadMessageInTransaction,
   IsolationError,
   THREAD_LOCK_TRANSACTION_OPTIONS,
-} from "@rakazo/db";
+} from "@robots/db";
 import { requireBotThread } from "./bot-thread.js";
 import { resolveThreadTarget } from "./thread-target.js";
 

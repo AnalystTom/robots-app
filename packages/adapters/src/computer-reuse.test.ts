@@ -1,8 +1,8 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import path from "node:path";
-import type { AdapterContext } from "@rakazo/adapter-kit";
-import type * as Db from "@rakazo/db";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
+import type { AdapterContext } from "@robots/adapter-kit";
+import type * as Db from "@robots/db";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ComputerBusyError, provisionComputer } from "./computer-lifecycle.js";
 import { DockerSandboxProvider } from "./docker-sandbox.js";
@@ -12,7 +12,7 @@ import { HostAwareSandbox } from "./host-aware-sandbox.js";
 import { InMemoryJobQueue } from "./wakeup.js";
 
 // The plan's size is read from billing, which these Prisma doubles do not model.
-vi.mock("@rakazo/db", async (importOriginal) => ({
+vi.mock("@robots/db", async (importOriginal) => ({
   ...(await importOriginal<typeof Db>()),
   planComputerSize: vi.fn(async () => "standard"),
 }));
@@ -135,8 +135,8 @@ describe("running Docker computer reuse", () => {
             expect.objectContaining({
               method: "GET",
               headers: expect.objectContaining({
-                "x-rakazo-bot-id": "bot",
-                "x-rakazo-space-id": "space",
+                "x-robots-bot-id": "bot",
+                "x-robots-space-id": "space",
               }),
             }),
           );

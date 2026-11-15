@@ -1,7 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { MessageReaction, ThreadMessage } from "@rakazo/contracts";
-import { canReactToThreadMessage, MESSAGE_REACTIONS } from "@rakazo/contracts";
-import { canMarkMessageUnread, copyableMessageText } from "@rakazo/core";
+import type { MessageReaction, ThreadMessage } from "@robots/contracts";
+import { canReactToThreadMessage, MESSAGE_REACTIONS } from "@robots/contracts";
+import { canMarkMessageUnread, copyableMessageText } from "@robots/core";
 import {
   CopyTextFallback,
   DropdownMenu,
@@ -12,7 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
   useCopyText,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { Check, Copy, MessageSquareDot, MoreHorizontal, Reply, Smile } from "lucide-react";
 import { useState } from "react";
 import { MessageHoverMetadata } from "../../components/MessageHoverMetadata";

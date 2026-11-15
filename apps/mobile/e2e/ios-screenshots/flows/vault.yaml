@@ -1,11 +1,11 @@
-appId: com.rakazo.app
+appId: com.analysttom.robotsapp
 name: Vault logins
 ---
 - runFlow:
     file: ../subflows/sign-in.yaml
     env:
-      RAKAZO_ACTIVE_EMAIL: ${RAKAZO_SCREENSHOT_EMAIL}
-- openLink: "rakazo:///vault"
+      ROBOTS_ACTIVE_EMAIL: ${ROBOTS_SCREENSHOT_EMAIL}
+- openLink: "robots:///vault"
 - extendedWaitUntil:
     visible: ".*Help desk.*"
     timeout: 15000
@@ -22,7 +22,7 @@ name: Vault logins
 - extendedWaitUntil:
     visible: "Confirm it's you"
     timeout: 10000
-- inputText: ${RAKAZO_SCREENSHOT_PASSWORD}
+- inputText: ${ROBOTS_SCREENSHOT_PASSWORD}
 - tapOn: "Continue"
 - extendedWaitUntil:
     visible: "Save"

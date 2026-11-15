@@ -4,14 +4,14 @@ import type {
   BotAvatarSet,
   SignInProvider,
   UsageSummary,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   APP_LOCALE_LABELS,
   accountDisplay,
   displayName,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
-} from "@rakazo/core";
+} from "@robots/core";
 import {
   Button,
   Field,
@@ -25,7 +25,7 @@ import {
   Switch,
   ToggleGroup,
   ToggleGroupItem,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import {
   Table,
   TableBody,
@@ -33,7 +33,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@rakazo/ui-web/components/ui/table";
+} from "@robots/ui-web/components/ui/table";
 import type { RefObject } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import { AccountAccess, LinkSsoRow } from "../components/AccountAccess";
@@ -325,10 +325,10 @@ export function GeneralSettingsPanels({
                     <Trans>Original</Trans>
                   </ToggleGroupItem>
                   <ToggleGroupItem
-                    value="rakazo"
+                    value="robots"
                     className="text-body-sm aria-pressed:bg-background aria-pressed:shadow-sm"
                   >
-                    <Trans>Rakazo</Trans>
+                    <Trans>RoBots</Trans>
                   </ToggleGroupItem>
                 </ToggleGroup>
                 {botStyleError ? (

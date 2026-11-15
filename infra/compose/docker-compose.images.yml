@@ -7,7 +7,7 @@
 # Pin a published vX.Y.Z tag for a fixed version; `latest` moves to each new stable release.
 # Default SANDBOX_PROVIDER=docker boots a local computer via the in-stack supervisor (no E2B key).
 # Optional: set e2b / daytona / boat plus the matching API key for remote computers.
-name: rakazo
+name: robots
 
 # What the api and worker both read. Each service adds the keys only it reads, so a process
 # only sees what it uses instead of the whole .env. A key with no value is passed through
@@ -16,7 +16,7 @@ name: rakazo
 x-app-environment: &app-environment # Runtime
   NODE_ENV: production
   # The app's own login, subject to row-level security (docs/self-host-configuration.md#database-roles).
-  DATABASE_URL: postgres://rakazo_app:${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-rakazo}
+  DATABASE_URL: postgres://robots_app:${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-robots}
   REALTIME_DATABASE_URL:
   DB_POOL_MAX:
   DATA_DIR: /data
@@ -41,11 +41,11 @@ x-app-environment: &app-environment # Runtime
   API_URL: ${API_URL:-http://127.0.0.1:5173}
   MAX_UPLOAD_SIZE_MB:
   MAX_ATTACHMENTS_PER_MESSAGE:
-  RAKAZO_UPDATE_RESTART_SUPERVISOR:
+  ROBOTS_UPDATE_RESTART_SUPERVISOR:
   TICKET_BOARD_ENABLED:
   USER_DEVICES_ENABLED:
   BOT_MESSAGE_MAX_HOPS:
-  RAKAZO_MESSAGE_USER_MAX_CHARS:
+  ROBOTS_MESSAGE_USER_MAX_CHARS:
   TEACH_RECORDING_TTL_MS:
   STUCK_WORK_NOTIFY_AFTER_MS:
   STUCK_WORK_EXPIRE_AFTER_MS:
@@ -55,7 +55,7 @@ x-app-environment: &app-environment # Runtime
   # The worker names each bot's address to it and sends its email; the API receives the mail.
   INBOUND_EMAIL_DOMAIN:
   BOT_EMAIL_SMTP_URL:
-  RAKAZO_SECRETS_ALLOW_PRIVATE_HTTP:
+  ROBOTS_SECRETS_ALLOW_PRIVATE_HTTP:
   EXPO_ACCESS_TOKEN:
   APNS_VOIP_KEY_ID:
   APNS_VOIP_TEAM_ID:
@@ -100,7 +100,7 @@ x-app-environment: &app-environment # Runtime
   PI_DEFAULT_MODEL:
   PI_DEFAULT_CREDENTIALS:
   PI_SESSION_RECORDING:
-  RAKAZO_LIVE_MODEL_CATALOG:
+  ROBOTS_LIVE_MODEL_CATALOG:
   OPENROUTER_API_KEY:
   ANTHROPIC_API_KEY:
   TYPESAFE_API_KEY:
@@ -109,24 +109,24 @@ x-app-environment: &app-environment # Runtime
   MODEL_STREAM_TIMEOUT_MS:
   MODEL_CONNECT_TIMEOUT_MS:
   MODEL_STREAM_IDLE_TIMEOUT_MS:
-  RAKAZO_LOCAL_MODELS:
-  RAKAZO_LOCAL_MODELS_URL:
-  RAKAZO_LOCAL_MODELS_API_KEY:
+  ROBOTS_LOCAL_MODELS:
+  ROBOTS_LOCAL_MODELS_URL:
+  ROBOTS_LOCAL_MODELS_API_KEY:
   # Where a localhost model or speech URL goes: the computer running Docker.
-  RAKAZO_LOOPBACK_HOST: host.docker.internal
-  RAKAZO_LOCAL_VISION_MODELS:
-  RAKAZO_LOCAL_REASONING_MODELS:
-  RAKAZO_LOCAL_CONTEXT_WINDOW:
-  RAKAZO_LOCAL_MAX_TOKENS:
-  RAKAZO_LOCAL_TOKENS_PER_MINUTE:
-  RAKAZO_LOCAL_PROMPT_CACHE:
-  RAKAZO_OPENAI_COMPATIBLE_VISION_MODELS:
-  RAKAZO_OPENAI_COMPAT_ALLOW_PUBLIC:
-  RAKAZO_OPENAI_COMPAT_PRIVATE_HOSTS:
-  RAKAZO_AUTO_REVIEW_PROVIDER:
-  RAKAZO_AUTO_REVIEW_MODEL:
-  RAKAZO_AUTO_REVIEW_MIN_CONFIDENCE:
-  RAKAZO_AUTO_REVIEW_TIMEOUT_MS:
+  ROBOTS_LOOPBACK_HOST: host.docker.internal
+  ROBOTS_LOCAL_VISION_MODELS:
+  ROBOTS_LOCAL_REASONING_MODELS:
+  ROBOTS_LOCAL_CONTEXT_WINDOW:
+  ROBOTS_LOCAL_MAX_TOKENS:
+  ROBOTS_LOCAL_TOKENS_PER_MINUTE:
+  ROBOTS_LOCAL_PROMPT_CACHE:
+  ROBOTS_OPENAI_COMPATIBLE_VISION_MODELS:
+  ROBOTS_OPENAI_COMPAT_ALLOW_PUBLIC:
+  ROBOTS_OPENAI_COMPAT_PRIVATE_HOSTS:
+  ROBOTS_AUTO_REVIEW_PROVIDER:
+  ROBOTS_AUTO_REVIEW_MODEL:
+  ROBOTS_AUTO_REVIEW_MIN_CONFIDENCE:
+  ROBOTS_AUTO_REVIEW_TIMEOUT_MS:
   RELEASE_WATCH_EVAL_MODEL:
   FISH_TTS_MODEL:
   FISH_ASR_MODEL:
@@ -224,7 +224,7 @@ x-app-environment: &app-environment # Runtime
   RAILWAY_ENVIRONMENT_ID:
   RAILWAY_SANDBOX_REGION:
   RAILWAY_MAX_WORKSPACE_FILE_BYTES:
-  RAKAZO_COMPUTER_PROXY:
+  ROBOTS_COMPUTER_PROXY:
   WUYING_ACCESS_KEY_ID:
   WUYING_ACCESS_KEY_SECRET:
   WUYING_DESKTOP_ID:
@@ -315,22 +315,22 @@ services:
     pids_limit: 200
     mem_limit: 2g
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-rakazo}
+      POSTGRES_USER: ${POSTGRES_USER:-robots}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:-rakazo}
+      POSTGRES_DB: ${POSTGRES_DB:-robots}
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
       - data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rakazo} -d ${POSTGRES_DB:-rakazo}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-robots} -d ${POSTGRES_DB:-robots}"]
       interval: 5s
       timeout: 5s
       retries: 20
 
   # Pull-only stub so `compose up` fetches the published desktop image without a checkout.
   computer:
-    image: ${RAKAZO_COMPUTER_IMAGE:-ghcr.io/elie222/rakazo/computer}:${RAKAZO_COMPUTER_IMAGE_TAG:-edge}
+    image: ${ROBOTS_COMPUTER_IMAGE:-ghcr.io/analysttom/robots-app/computer}:${ROBOTS_COMPUTER_IMAGE_TAG:-edge}
     command: ["true"]
     network_mode: none
     restart: "no"
@@ -366,9 +366,9 @@ services:
   # Runs from the app image. Not published as its own image and not exposed on the host:
   # access to the supervisor is equivalent to control of the Docker host.
   supervisor:
-    image: ${RAKAZO_IMAGE:-ghcr.io/elie222/rakazo/app}:${RAKAZO_IMAGE_TAG:-edge}
+    image: ${ROBOTS_IMAGE:-ghcr.io/analysttom/robots-app/app}:${ROBOTS_IMAGE_TAG:-edge}
     restart: unless-stopped
-    command: ["pnpm", "--filter", "@rakazo/sandbox-supervisor", "start"]
+    command: ["pnpm", "--filter", "@robots/sandbox-supervisor", "start"]
     init: true
     user: root
     security_opt:
@@ -382,10 +382,10 @@ services:
       SUPERVISOR_HOST: "0.0.0.0"
       SUPERVISOR_PORT: "7091"
       DOCKER_SOCKET: /var/run/docker.sock
-      RAKAZO_COMPUTER_IMAGE: ${RAKAZO_COMPUTER_IMAGE:-ghcr.io/elie222/rakazo/computer}:${RAKAZO_COMPUTER_IMAGE_TAG:-edge}
-      RAKAZO_COMPUTER_MEMORY: ${RAKAZO_COMPUTER_MEMORY:-2g}
-      RAKAZO_COMPUTER_CPUS: ${RAKAZO_COMPUTER_CPUS:-2}
-      RAKAZO_COMPUTER_PIDS_LIMIT: ${RAKAZO_COMPUTER_PIDS_LIMIT:-2048}
+      ROBOTS_COMPUTER_IMAGE: ${ROBOTS_COMPUTER_IMAGE:-ghcr.io/analysttom/robots-app/computer}:${ROBOTS_COMPUTER_IMAGE_TAG:-edge}
+      ROBOTS_COMPUTER_MEMORY: ${ROBOTS_COMPUTER_MEMORY:-2g}
+      ROBOTS_COMPUTER_CPUS: ${ROBOTS_COMPUTER_CPUS:-2}
+      ROBOTS_COMPUTER_PIDS_LIMIT: ${ROBOTS_COMPUTER_PIDS_LIMIT:-2048}
       SANDBOX_COMMAND_TIMEOUT_MS: ${SANDBOX_COMMAND_TIMEOUT_MS:-300000}
       SANDBOX_SUPERVISOR_TOKEN: ${SANDBOX_SUPERVISOR_TOKEN:?Set SANDBOX_SUPERVISOR_TOKEN in .env}
       SANDBOX_SCREEN_NETWORK: isolated
@@ -423,10 +423,10 @@ services:
       retries: 20
 
   # Applies migrations as the database owner, creates the runtime login, and exits. Only this
-  # container gets the owner login: the API and worker connect as rakazo_app, which row-level
+  # container gets the owner login: the API and worker connect as robots_app, which row-level
   # security binds, so code running in either cannot find a login that bypasses it.
   migrate:
-    image: ${RAKAZO_IMAGE:-ghcr.io/elie222/rakazo/app}:${RAKAZO_IMAGE_TAG:-edge}
+    image: ${ROBOTS_IMAGE:-ghcr.io/analysttom/robots-app/app}:${ROBOTS_IMAGE_TAG:-edge}
     working_dir: /app/apps/api
     command: ["pnpm", "db:deploy"]
     restart: "no"
@@ -437,8 +437,8 @@ services:
     pids_limit: 256
     mem_limit: 1536m
     environment:
-      DATABASE_URL: postgres://rakazo_app:${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-rakazo}
-      DATABASE_MIGRATION_URL: postgres://${POSTGRES_USER:-rakazo}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-rakazo}
+      DATABASE_URL: postgres://robots_app:${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-robots}
+      DATABASE_MIGRATION_URL: postgres://${POSTGRES_USER:-robots}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-robots}
     networks:
       - data
     depends_on:
@@ -446,7 +446,7 @@ services:
         condition: service_healthy
 
   api:
-    image: ${RAKAZO_IMAGE:-ghcr.io/elie222/rakazo/app}:${RAKAZO_IMAGE_TAG:-edge}
+    image: ${ROBOTS_IMAGE:-ghcr.io/analysttom/robots-app/app}:${ROBOTS_IMAGE_TAG:-edge}
     restart: unless-stopped
     # Node runs directly, not through pnpm: pnpm does not pass SIGTERM on, so a stop would kill the
     # process before its graceful shutdown finishes in-flight requests and jobs.
@@ -469,7 +469,7 @@ services:
       BETTER_AUTH_SECRET:
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://127.0.0.1:5173}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://127.0.0.1:5173}
-      RAKAZO_EXTRA_AUTH_ORIGINS:
+      ROBOTS_EXTRA_AUTH_ORIGINS:
       AUTH_PASSWORD_ENABLED: ${AUTH_PASSWORD_ENABLED:-true}
       AUTH_BREACHED_PASSWORD_CHECK_ENABLED: ${AUTH_BREACHED_PASSWORD_CHECK_ENABLED:-false}
       PASSKEY_APPLE_APP_IDS:
@@ -496,8 +496,8 @@ services:
       SIGNUPS_ENABLED:
       SIGNUP_ALLOWLIST:
       SCREEN_PROXY_SECRET: ${SCREEN_PROXY_SECRET:?Set SCREEN_PROXY_SECRET in .env}
-      RAKAZO_DESKTOP_STACK_TOKEN: ${RAKAZO_DESKTOP_STACK_TOKEN:-}
-      RAKAZO_GIT_SHA:
+      ROBOTS_DESKTOP_STACK_TOKEN: ${ROBOTS_DESKTOP_STACK_TOKEN:-}
+      ROBOTS_GIT_SHA:
       SENTRY_BROWSER_DSN: ${SENTRY_BROWSER_DSN:-}
       PRIVACY_POLICY_URL:
       INBOUND_EMAIL_SECRET:
@@ -514,14 +514,14 @@ services:
       CRISP_WEBSITE_ID:
       INTEGRATIONS_CATALOG_URL:
       TEAM_CHAT_BOT_ID:
-      SLACK_RAKAZO_BOT_ID:
+      SLACK_ROBOTS_BOT_ID:
       SPACE_TEARDOWN_TIMEOUT_MS:
-      RAKAZO_MIN_CLIENT_BUILD:
-      RAKAZO_NAV_LINKS:
-      RAKAZO_ADMIN_EMAILS:
+      ROBOTS_MIN_CLIENT_BUILD:
+      ROBOTS_NAV_LINKS:
+      ROBOTS_ADMIN_EMAILS:
       VOICE_SUMMARY_MIN_CHARS:
     ports:
-      - "127.0.0.1:${RAKAZO_API_PORT:-3100}:3100"
+      - "127.0.0.1:${ROBOTS_API_PORT:-3100}:3100"
     volumes:
       - appdata:/data
     networks:
@@ -547,7 +547,7 @@ services:
       retries: 20
 
   worker:
-    image: ${RAKAZO_IMAGE:-ghcr.io/elie222/rakazo/app}:${RAKAZO_IMAGE_TAG:-edge}
+    image: ${ROBOTS_IMAGE:-ghcr.io/analysttom/robots-app/app}:${ROBOTS_IMAGE_TAG:-edge}
     restart: unless-stopped
     # Directly, not through pnpm, so a stop reaches it (see the api command).
     working_dir: /app/apps/worker
@@ -591,7 +591,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ${RAKAZO_IMAGE:-ghcr.io/elie222/rakazo/app}:${RAKAZO_IMAGE_TAG:-edge}
+    image: ${ROBOTS_IMAGE:-ghcr.io/analysttom/robots-app/app}:${ROBOTS_IMAGE_TAG:-edge}
     restart: unless-stopped
     # Directly, not through pnpm, so a stop reaches it (see the api command).
     working_dir: /app/apps/web
@@ -612,19 +612,19 @@ services:
       # Keep that fixed so pids_limit holds on many-core hosts (#2430).
       RAYON_NUM_THREADS: "4"
       API_PROXY_TARGET: http://api:3100
-      RAKAZO_HOST: ${RAKAZO_HOST:-localhost}
-      RAKAZO_ALLOWED_HOSTS: ${RAKAZO_ALLOWED_HOSTS:-}
+      ROBOTS_HOST: ${ROBOTS_HOST:-localhost}
+      ROBOTS_ALLOWED_HOSTS: ${ROBOTS_ALLOWED_HOSTS:-}
       # Set only by the packaged desktop app. Its authenticated probe prevents a
       # source dev server on the same host port from impersonating this stack.
-      RAKAZO_DESKTOP_STACK_TOKEN: ${RAKAZO_DESKTOP_STACK_TOKEN:-}
-      RAKAZO_IMAGE_TAG: ${RAKAZO_IMAGE_TAG:-edge}
+      ROBOTS_DESKTOP_STACK_TOKEN: ${ROBOTS_DESKTOP_STACK_TOKEN:-}
+      ROBOTS_IMAGE_TAG: ${ROBOTS_IMAGE_TAG:-edge}
       SCREEN_PROXY_SECRET: ${SCREEN_PROXY_SECRET:?Set SCREEN_PROXY_SECRET in .env}
-      RAKAZO_CSP_SCRIPT_SRC: ${RAKAZO_CSP_SCRIPT_SRC:-}
-      RAKAZO_CSP_CONNECT_SRC: ${RAKAZO_CSP_CONNECT_SRC:-}
-      RAKAZO_THEME: ${RAKAZO_THEME:-}
+      ROBOTS_CSP_SCRIPT_SRC: ${ROBOTS_CSP_SCRIPT_SRC:-}
+      ROBOTS_CSP_CONNECT_SRC: ${ROBOTS_CSP_CONNECT_SRC:-}
+      ROBOTS_THEME: ${ROBOTS_THEME:-}
       CRISP_WEBSITE_ID:
     ports:
-      - "${RAKAZO_WEB_BIND:-127.0.0.1}:${RAKAZO_WEB_PORT:-5173}:5173"
+      - "${ROBOTS_WEB_BIND:-127.0.0.1}:${ROBOTS_WEB_PORT:-5173}:5173"
     networks:
       - app
     depends_on:

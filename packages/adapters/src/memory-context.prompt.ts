@@ -1,5 +1,5 @@
-import type { MemoryPromptBudget, MemoryPromptDocumentUse } from "@rakazo/contracts";
-import { BOT_MEMORY_MAX_BYTES, MEMORY_INDEX_PATH } from "@rakazo/contracts";
+import type { MemoryPromptBudget, MemoryPromptDocumentUse } from "@robots/contracts";
+import { BOT_MEMORY_MAX_BYTES, MEMORY_INDEX_PATH } from "@robots/contracts";
 import { byteLength, truncateUtf8 } from "./utf8.js";
 
 /** How much durable memory a prompt carries before the rest is left out. */

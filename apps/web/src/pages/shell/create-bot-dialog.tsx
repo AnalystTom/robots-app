@@ -1,12 +1,12 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { BotAvatarSet } from "@rakazo/contracts";
-import { BOT_NAME_MAX_LENGTH } from "@rakazo/contracts";
+import type { BotAvatarSet } from "@robots/contracts";
+import { BOT_NAME_MAX_LENGTH } from "@robots/contracts";
 import {
   newBotLook,
   newBotLookInput,
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
-} from "@rakazo/core";
+} from "@robots/core";
 import {
   BotAvatar,
   Button,
@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { useRef, useState } from "react";
 import { errorText } from "../../lib/user-error";
 import { BotLookPicker } from "./avatar-studio-popover";

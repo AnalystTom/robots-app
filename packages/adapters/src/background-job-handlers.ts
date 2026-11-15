@@ -10,17 +10,17 @@ import type {
   PaymentWalletProvider,
   SandboxProvider,
   SecretStore,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   memoryRetainTurnJob,
   memoryRetainTurnRecoveryJobKey,
   SandboxRateLimitError,
   SandboxUnavailableError,
   SandboxUnresponsiveError,
-} from "@rakazo/adapter-kit";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import { runAsSystem, runAsTenant } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
+import { runAsSystem, runAsTenant } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { settleCallRequest } from "./call-request.js";
 import type { CloudAgentConnection, UserCloudAgents } from "./cloud-agent-factory.js";
 import { pollCloudAgent } from "./cloud-agent-poll.js";

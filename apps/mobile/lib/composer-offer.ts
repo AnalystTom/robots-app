@@ -1,4 +1,4 @@
-import { createKeyedListeners } from "@rakazo/core";
+import { createKeyedListeners } from "@robots/core";
 
 const offers = createKeyedListeners<string>();
 

@@ -10,7 +10,7 @@ const describePostgres =
 
 describePostgres("ticket board app wiring", () => {
   it("serves the board over HTTP once the account turns it on in Labs", async () => {
-    const dataDir = await mkdtemp(join(tmpdir(), "rakazo-board-test-"));
+    const dataDir = await mkdtemp(join(tmpdir(), "robots-board-test-"));
     const handles = await createApp({
       databaseUrl: process.env.DATABASE_URL!,
       dataDir,
@@ -26,7 +26,7 @@ describePostgres("ticket board app wiring", () => {
         method: "POST",
         headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
         body: JSON.stringify({
-          email: `board-${Date.now()}@rakazo.test`,
+          email: `board-${Date.now()}@robots.test`,
           password: "test-password-123",
           name: "Board tester",
         }),

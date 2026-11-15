@@ -21,7 +21,7 @@ vi.mock("@lingui/react/macro", () => ({
   }),
   Trans: ({ children }: { children: ReactNode }) => children,
 }));
-vi.mock("@rakazo/ui-web", () => ({
+vi.mock("@robots/ui-web", () => ({
   Button: ({
     children,
     variant,
@@ -32,7 +32,7 @@ vi.mock("@rakazo/ui-web", () => ({
       {children}
     </button>
   ),
-  LogoAvatar: () => <svg aria-hidden="true" data-rakazo-logo="" />,
+  LogoAvatar: () => <svg aria-hidden="true" data-robots-logo="" />,
   Input: (props: React.ComponentProps<"input">) => <input {...props} />,
   InputOTP: ({
     maxLength,
@@ -100,7 +100,7 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   vi.restoreAllMocks();
-  delete window.rakazoDesktop;
+  delete window.robotsDesktop;
 });
 async function render(mode: "in" | "up" | "forgot" = "in", entry = "/") {
   await act(async () =>
@@ -170,7 +170,7 @@ it.each(["in", "up"] as const)("offers providers before the email form on %s", a
   expect(provider.className).toContain("w-full");
   expect(emailChoice.dataset.variant).toBe("outline");
   expect(emailChoice.className).toContain("w-full");
-  expect(host.querySelector("[data-rakazo-logo]")).not.toBeNull();
+  expect(host.querySelector("[data-robots-logo]")).not.toBeNull();
   expect(
     provider.compareDocumentPosition(emailChoice) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
@@ -207,7 +207,7 @@ it("shows a configured provider beside the password form and hides the rest", as
   expect(emailChoice.dataset.variant).toBe("outline");
   expect(emailChoice.className).toContain("w-full");
   expect(host.textContent).toContain("Welcome back");
-  expect(host.querySelector("[data-rakazo-logo]")).not.toBeNull();
+  expect(host.querySelector("[data-robots-logo]")).not.toBeNull();
   await act(async () => google.click());
   expect(authClient.signIn.social).toHaveBeenCalledWith(
     expect.objectContaining({ provider: "google" }),
@@ -254,7 +254,7 @@ it("hides SSO in password recovery", async () => {
 
 it("selects a non-redirecting SSO request on desktop", async () => {
   vi.spyOn(window, "open").mockReturnValue({ close: vi.fn() } as unknown as Window);
-  window.rakazoDesktop = {} as NonNullable<Window["rakazoDesktop"]>;
+  window.robotsDesktop = {} as NonNullable<Window["robotsDesktop"]>;
   vi.mocked(fetchAuthCapabilities).mockResolvedValue(capabilities);
   vi.mocked(authClient.signIn.social).mockResolvedValue({
     data: null,
@@ -273,7 +273,7 @@ it("selects a non-redirecting SSO request on desktop", async () => {
 
 it("lets the desktop app change its server from sign in", async () => {
   const change = vi.fn(async () => undefined);
-  window.rakazoDesktop = { server: { change } } as unknown as NonNullable<Window["rakazoDesktop"]>;
+  window.robotsDesktop = { server: { change } } as unknown as NonNullable<Window["robotsDesktop"]>;
   vi.mocked(fetchAuthCapabilities).mockResolvedValue(capabilities);
   await render();
   const button = Array.from(host.querySelectorAll("button")).find(

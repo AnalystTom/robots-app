@@ -1,12 +1,12 @@
-import { clearInactiveUserComputerControl, expireComputerControl } from "@rakazo/adapters";
-import type { TestSink } from "@rakazo/logging";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import { clearInactiveUserComputerControl, expireComputerControl } from "@robots/adapters";
+import type { TestSink } from "@robots/logging";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { expireStaleComputerControl } from "./computer-control.js";
 import type { RouterDeps } from "./router.js";
 
-vi.mock("@rakazo/adapters", async (original) => ({
-  ...(await original<typeof import("@rakazo/adapters")>()),
+vi.mock("@robots/adapters", async (original) => ({
+  ...(await original<typeof import("@robots/adapters")>()),
   expireComputerControl: vi.fn(),
   clearInactiveUserComputerControl: vi.fn(),
 }));
@@ -33,10 +33,10 @@ describe("expireStaleComputerControl", () => {
     vi.mocked(expireComputerControl).mockReset();
     vi.mocked(clearInactiveUserComputerControl).mockReset();
     sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-api", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
   });
   afterEach(() => {
-    installLogger(createLogger({ service: "rakazo-api", level: "off", sinks: [] }));
+    installLogger(createLogger({ service: "robots-api", level: "off", sinks: [] }));
   });
 
   it("ends a lapsed lease and asks the caller to read the computer again", async () => {

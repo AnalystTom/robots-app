@@ -1,11 +1,11 @@
-import type { McpAppCsp } from "@rakazo/contracts";
+import type { McpAppCsp } from "@robots/contracts";
 import {
   ipVersion,
   isCloudMetadataHost,
   isInternalHostname,
   MCP_APP_DOMAINS_MAX,
   MCP_APP_PROTOCOL_VERSION,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 
 /**
  * MCP Apps (SEP-1865) on the host side: the content policy an app runs under, the document the
@@ -24,7 +24,7 @@ const SOURCE = /^(https|wss):\/\/(\*\.)?([^/:]+)(?::(\d{1,5}))?\/?$/;
  * The declared origins an app may reach, as CSP sources. Only public names over https (or wss
  * for connections): no IP literals, local or internal names, single-label hosts, bare wildcards,
  * or any host in `excludeHosts` (the app's own), so a declaration cannot point the view at the
- * person's network or at Rakazo itself.
+ * person's network or at RoBots itself.
  */
 export function mcpAppDomains(
   values: unknown,
@@ -124,7 +124,7 @@ const SHELL_CSP =
  * The shell passes JSON-RPC both ways and marks a view's message with the latest gesture, if
  * it is still fresh.
  */
-export const MCP_APP_SHELL_HTML = `<!DOCTYPE html><meta http-equiv="Content-Security-Policy" content="${SHELL_CSP}"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;background:transparent}iframe{display:block;width:100%;height:100%;border:0;background:transparent}html,body{height:100%}</style><iframe id="app" title="App" sandbox="allow-scripts allow-forms" referrerpolicy="no-referrer"></iframe><!--rakazo-app-boot--><script>
+export const MCP_APP_SHELL_HTML = `<!DOCTYPE html><meta http-equiv="Content-Security-Policy" content="${SHELL_CSP}"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;background:transparent}iframe{display:block;width:100%;height:100%;border:0;background:transparent}html,body{height:100%}</style><iframe id="app" title="App" sandbox="allow-scripts allow-forms" referrerpolicy="no-referrer"></iframe><!--robots-app-boot--><script>
 (() => {
   const frame = document.getElementById("app");
   const native = Boolean(window.ReactNativeWebView);
@@ -133,7 +133,7 @@ export const MCP_APP_SHELL_HTML = `<!DOCTYPE html><meta http-equiv="Content-Secu
   let key = "", gesture = 0, gestureAt = 0;
   const guard = () => {
     key = Array.from(crypto.getRandomValues(new Uint32Array(4)), (n) => n.toString(36)).join("");
-    return \`<script>(() => { const up = parent, key = "\${key}"; document.currentScript.remove(); const apply = Reflect.apply, repeat = Object.getOwnPropertyDescriptor(KeyboardEvent.prototype, "repeat").get; const tell = () => up.postMessage({ type: "rakazo-app:gesture", key }, "*"); addEventListener("pointerup", (event) => { if (event.isTrusted) tell(); }, true); addEventListener("keydown", (event) => { if (event.isTrusted && !apply(repeat, event, [])) tell(); }, true); })();</\${"script"}>\`;
+    return \`<script>(() => { const up = parent, key = "\${key}"; document.currentScript.remove(); const apply = Reflect.apply, repeat = Object.getOwnPropertyDescriptor(KeyboardEvent.prototype, "repeat").get; const tell = () => up.postMessage({ type: "robots-app:gesture", key }, "*"); addEventListener("pointerup", (event) => { if (event.isTrusted) tell(); }, true); addEventListener("keydown", (event) => { if (event.isTrusted && !apply(repeat, event, [])) tell(); }, true); })();</\${"script"}>\`;
   };
   const load = (app) => {
     if (!app || typeof app.head !== "string" || typeof app.body !== "string") return;
@@ -145,21 +145,21 @@ export const MCP_APP_SHELL_HTML = `<!DOCTYPE html><meta http-equiv="Content-Secu
     const data = event.data;
     if (event.source === frame.contentWindow) {
       const active = navigator.userActivation ? navigator.userActivation.isActive : false;
-      if (data && data.type === "rakazo-app:gesture") {
+      if (data && data.type === "robots-app:gesture") {
         if (key && data.key === key && active) { gesture += 1; gestureAt = Date.now(); }
         return;
       }
       if (!rpc(data)) return;
       const fresh = active && gesture > 0 && Date.now() - gestureAt <= GESTURE_WINDOW_MS ? key + ":" + gesture : null;
-      up({ type: "rakazo-app:view", message: data, gesture: fresh });
+      up({ type: "robots-app:view", message: data, gesture: fresh });
       return;
     }
     const fromHost = native ? event.source === window : event.source === parent && parent !== window;
     if (!fromHost || !data || typeof data !== "object") return;
-    if (data.type === "rakazo-app:load") load(data);
-    else if (data.type === "rakazo-app:host" && rpc(data.message)) frame.contentWindow.postMessage(data.message, "*");
+    if (data.type === "robots-app:load") load(data);
+    else if (data.type === "robots-app:host" && rpc(data.message)) frame.contentWindow.postMessage(data.message, "*");
   });
-  if (window.__rakazoApp) load(window.__rakazoApp);
+  if (window.__robotsApp) load(window.__robotsApp);
 })();
 </script>`;
 
@@ -171,8 +171,8 @@ export function mcpAppShellDocument(app: { head: string; body: string }): string
     .replace(/\u2029/g, "\\u2029");
   // A function, so `$&` and the like in the app's own code are not read as replacement patterns.
   return MCP_APP_SHELL_HTML.replace(
-    "<!--rakazo-app-boot-->",
-    () => `<script>window.__rakazoApp=${boot};</script>`,
+    "<!--robots-app-boot-->",
+    () => `<script>window.__robotsApp=${boot};</script>`,
   );
 }
 
@@ -241,7 +241,7 @@ export function createMcpAppHost(options: McpAppHostOptions) {
       case "ui/initialize":
         return reply(id, {
           protocolVersion: MCP_APP_PROTOCOL_VERSION,
-          hostInfo: { name: "rakazo", version: "1.0.0" },
+          hostInfo: { name: "robots", version: "1.0.0" },
           hostCapabilities: {
             openLinks: {},
             message: { text: {} },
@@ -309,7 +309,7 @@ export function createMcpAppHost(options: McpAppHostOptions) {
       teardowns += 1;
       options.send({
         jsonrpc: "2.0",
-        id: `rakazo-teardown-${teardowns}`,
+        id: `robots-teardown-${teardowns}`,
         method: "ui/resource-teardown",
         params: {},
       });

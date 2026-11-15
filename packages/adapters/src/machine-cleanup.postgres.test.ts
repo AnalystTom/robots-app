@@ -7,16 +7,16 @@ import type {
   ComputerRef,
   UnreferencedMachine,
   UnreferencedMachineRecords,
-} from "@rakazo/adapter-kit";
-import { machineCleanupJobKey } from "@rakazo/adapter-kit";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/adapter-kit";
+import { machineCleanupJobKey } from "@robots/adapter-kit";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
 import {
   asSystem,
   createDb,
   provisionMessagingIdentity,
   runAsSystem,
   runAsTenant,
-} from "@rakazo/db";
+} from "@robots/db";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { provisionComputer } from "./computer-lifecycle.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
@@ -115,7 +115,7 @@ describePostgres("machine cleanup (PostgreSQL)", () => {
   });
 
   beforeEach(async () => {
-    dataDir = await mkdtemp(path.join(tmpdir(), "rakazo-machine-cleanup-"));
+    dataDir = await mkdtemp(path.join(tmpdir(), "robots-machine-cleanup-"));
     sandbox = new RecordingSandbox(machineCleanupRecords(jobs));
     await prisma.computerExecutionLease.deleteMany({ where: { computerId } });
     await prisma.computer.update({

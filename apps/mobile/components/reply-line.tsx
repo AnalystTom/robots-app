@@ -1,7 +1,7 @@
 import { t } from "@lingui/core/macro";
-import type { ReplyPreview } from "@rakazo/contracts";
-import { isPageOriginReply, replyLabel } from "@rakazo/core";
-import { typeScale } from "@rakazo/ui-tokens";
+import type { ReplyPreview } from "@robots/contracts";
+import { isPageOriginReply, replyLabel } from "@robots/core";
+import { typeScale } from "@robots/ui-tokens";
 import { Pressable, Text } from "react-native";
 import { mobileTokens } from "../lib/appearance";
 import type { MobileArtifactTarget } from "../lib/artifact-open";

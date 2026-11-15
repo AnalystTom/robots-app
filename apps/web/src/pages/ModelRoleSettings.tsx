@@ -7,15 +7,15 @@ import type {
   ModelRoleSettings as ModelRoleSettingsValue,
   SettingsScope,
   ThinkingLevel,
-} from "@rakazo/contracts";
-import { connectedBackupOptions, MAX_MODEL_BACKUPS, modelRoleChoiceKey } from "@rakazo/contracts";
+} from "@robots/contracts";
+import { connectedBackupOptions, MAX_MODEL_BACKUPS, modelRoleChoiceKey } from "@robots/contracts";
 import {
   catalogEntryFor,
   connectionForModelChoice,
   createModelRoleSettings,
   modelRoleListPatch,
   modelThinkingLevels,
-} from "@rakazo/core";
+} from "@robots/core";
 import {
   Button,
   DropdownMenu,
@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
   SectionHeading,
   Spinner,
-} from "@rakazo/ui-web";
+} from "@robots/ui-web";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GripVertical, MoreHorizontal, Plus } from "lucide-react";
 import type { ReactNode } from "react";

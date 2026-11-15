@@ -4,7 +4,7 @@ import type {
   AutoReviewRequest,
   ConnectorCall,
   ToolBatch,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   applyJudgeDecision,
   approvalModeFromPreference,
@@ -27,11 +27,11 @@ import {
   SITE_SENDING_TOOLS,
   toolRequiresApproval,
   toolRequiresExplicitApproval,
-} from "@rakazo/core";
-import { normalizedHttpUrl, urlSite } from "@rakazo/core/egress";
-import { approvalEffectKey, toolEffectIdempotencyKey } from "@rakazo/core/node/approval-effect-key";
-import type { AuditEventInput } from "@rakazo/db";
-import { recordAuditEvent, runSecretKind } from "@rakazo/db";
+} from "@robots/core";
+import { normalizedHttpUrl, urlSite } from "@robots/core/egress";
+import { approvalEffectKey, toolEffectIdempotencyKey } from "@robots/core/node/approval-effect-key";
+import type { AuditEventInput } from "@robots/db";
+import { recordAuditEvent, runSecretKind } from "@robots/db";
 import type { FleetCardSummary } from "./approval-ask.js";
 import { buildApprovalAskBlock, MAX_FETCH_URL_LENGTH } from "./approval-ask.js";
 import {
@@ -48,7 +48,7 @@ import {
   resolveAutoReviewChecker,
 } from "./auto-review.js";
 import { reviewWithBackups } from "./auto-review-backups.js";
-import { RAKAZO_DOCS_URLS } from "./builtin-skills.js";
+import { ROBOTS_DOCS_URLS } from "./builtin-skills.js";
 import type { ExecutorDeps } from "./executor-deps.js";
 import { CATALOG_LOAD, CATALOG_SEARCH } from "./lazy-tool-catalog.js";
 import { findConnectedModelCredential } from "./model-selection.js";
@@ -233,7 +233,7 @@ export async function gateToolCall(
           site: fetchSite,
           trusted:
             ctx.trust.searchResultUrls.has(fetchUrl) ||
-            (name === "web_fetch" && RAKAZO_DOCS_URLS.includes(fetchUrl)) ||
+            (name === "web_fetch" && ROBOTS_DOCS_URLS.includes(fetchUrl)) ||
             (await ctx.trust.loadTrustedSites()).has(fetchSite),
           rules: await ctx.trust.loadApprovalRules(),
         })

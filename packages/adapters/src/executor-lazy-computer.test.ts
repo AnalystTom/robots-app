@@ -1,7 +1,7 @@
-import type { AgentRunRequest, ComputerRef } from "@rakazo/adapter-kit";
-import { SandboxRateLimitError, SandboxUnresponsiveError } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+import type { AgentRunRequest, ComputerRef } from "@robots/adapter-kit";
+import { SandboxRateLimitError, SandboxUnresponsiveError } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VaultKeyUnavailableError } from "./bot-secrets.js";
 import type * as ComputerLifecycleModule from "./computer-lifecycle.js";

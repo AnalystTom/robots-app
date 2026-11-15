@@ -1,4 +1,4 @@
-import { LOGO_AVATAR_LOOP_MS } from "@rakazo/core";
+import { LOGO_AVATAR_LOOP_MS } from "@robots/core";
 import { useEffect, useRef } from "react";
 import {
   cancelAnimation,

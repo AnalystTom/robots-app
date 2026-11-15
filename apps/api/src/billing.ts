@@ -7,21 +7,21 @@ import type {
   BillingSubscriptionSnapshot,
   ProductAnalytics,
   SandboxProvider,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   BillingCheckoutCompletedError,
   BillingCustomerNotFoundError,
   BillingNoMonthlyCreditsError,
   BillingPaymentNotCompletedError,
-} from "@rakazo/adapter-kit";
-import { sandboxAllowance, sandboxHoursLeft } from "@rakazo/adapters";
+} from "@robots/adapter-kit";
+import { sandboxAllowance, sandboxHoursLeft } from "@robots/adapters";
 import type {
   Actor,
   AnalyticsEvent,
   BillingStatus,
   ByokInterval,
   ByokTier,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import {
   BYOK_TIERS,
   ByokTierSchema,
@@ -29,8 +29,8 @@ import {
   INVITED_TRIAL_WEEKS,
   sandboxAllowanceHours,
   TRIAL_DAYS,
-} from "@rakazo/contracts";
-import type { BillingAccount, Prisma, PrismaClient } from "@rakazo/db";
+} from "@robots/contracts";
+import type { BillingAccount, Prisma, PrismaClient } from "@robots/db";
 import {
   billingAccountForOrganization,
   byokFreeUntil,
@@ -59,8 +59,8 @@ import {
   reserveByokTrialCheckout,
   syncBillingSnapshot,
   unexpiredCreditAccount,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { applyAccessGrants } from "./access-grants.js";
 import { createExperiments } from "./experiments.js";
 import { createReferrals } from "./referrals.js";

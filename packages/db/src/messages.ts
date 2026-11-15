@@ -1,5 +1,5 @@
-import type { MessageAuthor, MessageBlock, ToolHistory } from "@rakazo/contracts";
-import { splitToolHistory } from "@rakazo/core";
+import type { MessageAuthor, MessageBlock, ToolHistory } from "@robots/contracts";
+import { splitToolHistory } from "@robots/core";
 import type { Prisma, PrismaClient } from "./client.js";
 import { markThreadUnreadForMembers } from "./thread-reads.js";
 import { THREAD_LOCK_TRANSACTION_OPTIONS, withTransactionRetry } from "./transaction-retry.js";

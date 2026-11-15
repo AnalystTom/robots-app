@@ -1,4 +1,4 @@
-// Relative source path: Vercel functions cannot resolve the TypeScript exports of @rakazo/core.
+// Relative source path: Vercel functions cannot resolve the TypeScript exports of @robots/core.
 import { readBoundedJsonResponse } from "../../../packages/core/src/http-response.js";
 import { GITHUB_API_REPO } from "./site";
 
@@ -97,7 +97,7 @@ async function fetchGithubJson<T>(
   maxBytes: number,
   fetchImpl: typeof fetch,
 ): Promise<T | null> {
-  if (process.env.RAKAZO_GITHUB_API === "offline") return null;
+  if (process.env.ROBOTS_GITHUB_API === "offline") return null;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GITHUB_STARS_TIMEOUT_MS);
   try {
@@ -105,7 +105,7 @@ async function fetchGithubJson<T>(
       fetchImpl(url, {
         headers: {
           Accept: "application/vnd.github+json",
-          "User-Agent": "rakazo-www",
+          "User-Agent": "robots-www",
           // Optional: anonymous requests share a 60/hour limit per IP.
           ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
         },

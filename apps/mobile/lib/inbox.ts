@@ -1,4 +1,4 @@
-import { snoozeWakeDay } from "@rakazo/core";
+import { snoozeWakeDay } from "@robots/core";
 import { dateLocaleForUi } from "./i18n";
 
 const DAY_MS = 86_400_000;

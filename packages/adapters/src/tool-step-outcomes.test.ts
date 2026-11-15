@@ -1,6 +1,6 @@
-import type { HistoryToolStep, RunTrigger } from "@rakazo/contracts";
-import { RUN_TRIGGERS } from "@rakazo/contracts";
-import { appendToolCallSegment } from "@rakazo/core";
+import type { HistoryToolStep, RunTrigger } from "@robots/contracts";
+import { RUN_TRIGGERS } from "@robots/contracts";
+import { appendToolCallSegment } from "@robots/core";
 import { describe, expect, it, vi } from "vitest";
 import type { ReplyState, RunContext } from "./run-context.js";
 import { redactBlocks } from "./run-messages.js";

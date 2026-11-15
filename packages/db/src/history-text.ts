@@ -1,5 +1,5 @@
-import type { MessageBlock } from "@rakazo/contracts";
-import { toolStepsHistoryText } from "@rakazo/core";
+import type { MessageBlock } from "@robots/contracts";
+import { toolStepsHistoryText } from "@robots/core";
 import type { Prisma } from "./client.js";
 
 function objectBlocks(blocks: Prisma.JsonValue): MessageBlock[] {

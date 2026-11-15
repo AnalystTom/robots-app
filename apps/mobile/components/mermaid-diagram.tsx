@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import { chatMermaidConfig } from "@rakazo/chat-ui/mermaid";
-import type { MermaidDiagramProps } from "@rakazo/chat-ui/native";
+import { chatMermaidConfig } from "@robots/chat-ui/mermaid";
+import type { MermaidDiagramProps } from "@robots/chat-ui/native";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { StyleSheet, View } from "react-native";
 import { WebView } from "react-native-webview";

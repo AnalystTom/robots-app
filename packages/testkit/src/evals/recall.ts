@@ -1,6 +1,6 @@
-import type { HistoryToolStep } from "@rakazo/contracts";
-import { MessageBlock, ToolStepCallSchema } from "@rakazo/contracts";
-import { toolStepsHistoryText } from "@rakazo/core";
+import type { HistoryToolStep } from "@robots/contracts";
+import { MessageBlock, ToolStepCallSchema } from "@robots/contracts";
+import { toolStepsHistoryText } from "@robots/core";
 import { z } from "zod";
 import type { Criterion, EvalCase, Evidence } from "./cases.js";
 import { readCasesFile } from "./cases.js";
@@ -339,7 +339,7 @@ const calibrationRecord = (earlier: Earlier) =>
     ),
   );
 
-const PROFILE = "/home/rakazo/.config/chromium/Default";
+const PROFILE = "/home/robots/.config/chromium/Default";
 const EXTENSIONS = `${PROFILE}/Extensions`;
 const MANIFEST = `${EXTENSIONS}/${EXTENSION_ID}/10.7.1_0/manifest.json`;
 const FIND = /\b(?:find|locate)\b[^;&|]*(?:Extensions|chromium|midnight|lizard|manifest)/i;
@@ -353,7 +353,7 @@ const FIND_BY_ID = new RegExp(`\\bfind\\b[^;&|]*-i?name\\s+["']?${EXTENSION_ID}`
  * the home folder: the starting folders and depths bots used, each too shallow to reach it.
  */
 const SHALLOW_FIND =
-  /\bfind\s+(?=[^;&|]*manifest)(?:(?:~|"?\$HOME"?|\.|\/home\/rakazo)\/?\s[^;&|]*-maxdepth\s+[1-6]\b|"?(?:~|\$HOME)\/\.config"?\/?\s[^;&|]*-maxdepth\s+[1-5]\b|"?(?:~|\$HOME)\/\.config\/chromium"?\/?\s[^;&|]*-maxdepth\s+[1-4]\b|\/\s[^;&|]*-maxdepth\s+[1-8]\b)/;
+  /\bfind\s+(?=[^;&|]*manifest)(?:(?:~|"?\$HOME"?|\.|\/home\/robots)\/?\s[^;&|]*-maxdepth\s+[1-6]\b|"?(?:~|\$HOME)\/\.config"?\/?\s[^;&|]*-maxdepth\s+[1-5]\b|"?(?:~|\$HOME)\/\.config\/chromium"?\/?\s[^;&|]*-maxdepth\s+[1-4]\b|\/\s[^;&|]*-maxdepth\s+[1-8]\b)/;
 /** A find of the Preferences file piped to `xargs grep -l` for the extension: that file matches. */
 const FIND_PREFERENCES_GREP =
   /\bfind\b[^;&|]*-name\s+["']?Preferences["']?[^;&|]*\|\s*xargs\s+grep\s+(?:-\w+\s+)*-\w*l\w*\s[^;&|]*(?:midnight|lizard)/i;
@@ -384,17 +384,17 @@ const ELSEWHERE = {
 };
 /** The home folder and config folder a bot lists while looking around. */
 const HOME = [
-  { match: /^\s*pwd\s*$/, output: "/home/rakazo" },
+  { match: /^\s*pwd\s*$/, output: "/home/robots" },
   // The home's other folders are empty.
   { match: /^\s*ls\b[^;&|]*~\/(?:Downloads|Desktop)\b/, output: "" },
   {
     // `-a` shows the hidden folders too.
     match:
-      /^\s*ls\b(?:\s+-\w+)*\s+-\w*a\w*(?:\s+-\w+)*(?:\s+(?:~|"?\$HOME"?|\/home\/rakazo)\/?)?\s*(?:[0-9&]?>\S*\s*)*$/,
+      /^\s*ls\b(?:\s+-\w+)*\s+-\w*a\w*(?:\s+-\w+)*(?:\s+(?:~|"?\$HOME"?|\/home\/robots)\/?)?\s*(?:[0-9&]?>\S*\s*)*$/,
     output: ".\n..\n.cache\n.config\nDesktop\nDownloads\nattachments",
   },
   {
-    match: /^\s*ls\b(?:\s+-\w+)*(?:\s+(?:~|"?\$HOME"?|\/home\/rakazo)\/?)?\s*(?:[0-9&]?>\S*\s*)*$/,
+    match: /^\s*ls\b(?:\s+-\w+)*(?:\s+(?:~|"?\$HOME"?|\/home\/robots)\/?)?\s*(?:[0-9&]?>\S*\s*)*$/,
     output: "Desktop\nDownloads\nattachments",
   },
   { match: /\bls\b[^;&|]*\.config\/?["']?(?:\s|$)/, output: "chromium" },
@@ -402,7 +402,7 @@ const HOME = [
   // `ls -d ~/.config/chromium*`: the profile folder itself.
   {
     match: /\bls\s+-\w*d\w*\b[^;&|]*\.config\/chromium\*/,
-    output: "/home/rakazo/.config/chromium",
+    output: "/home/robots/.config/chromium",
   },
 ];
 /** What any Chromium computer answers, extension or not: the running browser and its version. */
@@ -410,7 +410,7 @@ const CHROMIUM = [
   {
     match: /\b(?:ps|pgrep)\b/,
     output: [
-      "  812 /usr/lib/chromium/chromium --user-data-dir=/home/rakazo/.config/chromium --no-first-run https://example.com/",
+      "  812 /usr/lib/chromium/chromium --user-data-dir=/home/robots/.config/chromium --no-first-run https://example.com/",
       "  845 /usr/lib/chromium/chromium --type=renderer --lang=en-US",
     ].join("\n"),
   },
@@ -423,7 +423,7 @@ const CHROMIUM = [
   { match: /^\s*history\b/, output: "" },
   {
     match: /bash_history/,
-    output: "cat: /home/rakazo/.bash_history: No such file or directory",
+    output: "cat: /home/robots/.bash_history: No such file or directory",
     exitCode: 1,
   },
   DISK,
@@ -1293,7 +1293,7 @@ const TOOL_HEAVY_WORK: Array<{
         [
           shellCall(
             "ps aux --sort=-%mem | head -4",
-            "USER  PID %CPU %MEM    RSS COMMAND\nrakazo 812  3.1 11.2 917504 /usr/lib/chromium/chromium\nrakazo 1290 1.4  3.7 303104 node /usr/lib/language-server\n",
+            "USER  PID %CPU %MEM    RSS COMMAND\nrobots 812  3.1 11.2 917504 /usr/lib/chromium/chromium\nrobots 1290 1.4  3.7 303104 node /usr/lib/language-server\n",
           ),
         ],
         "Listing the top processes by memory with ps.",
@@ -1394,7 +1394,7 @@ const TOOL_HEAVY_WORK: Array<{
           ),
           shellCall(
             "ls -l reports/python-3.13.1-notes.html",
-            "-rw-r--r-- 1 rakazo rakazo 122880 reports/python-3.13.1-notes.html\n",
+            "-rw-r--r-- 1 robots robots 122880 reports/python-3.13.1-notes.html\n",
           ),
           shellCall(
             "head -c 60 reports/python-3.13.1-notes.html",

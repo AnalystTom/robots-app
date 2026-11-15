@@ -4,7 +4,7 @@ import {
   getDefaultEnvironment,
   StdioClientTransport,
 } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { pollUntil } from "@rakazo/core";
+import { pollUntil } from "@robots/core";
 import type { HostScreen, HostScreenAction, HostScreenObservation } from "./host-screen.js";
 import {
   actThenObserve,
@@ -83,7 +83,7 @@ export function cuaDriverConnector(options: {
       },
       stderr: "ignore",
     });
-    const client = new Client({ name: "rakazo", version: "1" });
+    const client = new Client({ name: "robots", version: "1" });
     await client.connect(transport);
     return {
       async call(name, args, signal) {
@@ -204,7 +204,7 @@ export function createCuaHostScreen(options: CuaHostScreenOptions): HostScreen {
   async function target(query: string, signal: AbortSignal): Promise<Target> {
     const app = matchApp(await listApps(signal), query);
     if (app.running && app.pid === options.selfPid)
-      throw new HostScreenError("Rakazo can't use its own window.");
+      throw new HostScreenError("RoBots can't use its own window.");
     const pid = app.running ? app.pid : await launch(app, signal);
     if (!pid) throw new HostScreenError(`${app.name} did not open.`);
     // An app started in the background may open no window; launching it again asks it to

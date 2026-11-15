@@ -1,8 +1,8 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { LoginFieldInput } from "@rakazo/contracts";
-import { LoginSecretValue, loginCardFields } from "@rakazo/contracts";
-import { secretAnswerErrorText } from "@rakazo/i18n/vault";
+import type { LoginFieldInput } from "@robots/contracts";
+import { LoginSecretValue, loginCardFields } from "@robots/contracts";
+import { secretAnswerErrorText } from "@robots/i18n/vault";
 import { useEffect, useRef, useState } from "react";
 import type { TextInputInstance } from "react-native";
 import { Modal, Platform, ScrollView, StyleSheet, Text, View } from "react-native";

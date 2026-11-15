@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
-import { displayName } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+import { displayName } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
 import {
   crossSpaceCommunicationAllowed,
   formatMessagingLinkCode,
@@ -8,7 +8,7 @@ import {
   isUniqueViolation,
   runAsSystem,
   spaceIsShared,
-} from "@rakazo/db";
+} from "@robots/db";
 import type { RouterContext } from "./context.js";
 
 export function messagingRoutes(ctx: RouterContext) {

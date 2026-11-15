@@ -1,11 +1,11 @@
-appId: com.rakazo.app
+appId: com.analysttom.robotsapp
 name: Compose
 ---
 - runFlow:
     file: ../subflows/sign-in.yaml
     env:
-      RAKAZO_ACTIVE_EMAIL: ${RAKAZO_SCREENSHOT_EMAIL}
-- openLink: "rakazo:///new-space"
+      ROBOTS_ACTIVE_EMAIL: ${ROBOTS_SCREENSHOT_EMAIL}
+- openLink: "robots:///new-space"
 - extendedWaitUntil:
     visible: "Customer support|Create space"
     timeout: 15000
@@ -13,7 +13,7 @@ name: Compose
     timeout: 3000
 - takeScreenshot: 02-new-space
 - tapOn: "Cancel"
-- openLink: "rakazo:///new-bot"
+- openLink: "robots:///new-bot"
 - extendedWaitUntil:
     visible: "Name your Bot"
     timeout: 15000
@@ -21,7 +21,7 @@ name: Compose
     timeout: 3000
 - takeScreenshot: 02b-new-bot
 - tapOn: "Cancel"
-- openLink: "rakazo:///new-group"
+- openLink: "robots:///new-group"
 - extendedWaitUntil:
     visible: "Search bots"
     timeout: 15000
@@ -35,4 +35,4 @@ name: Compose
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: 04-new-group-name
-- openLink: "rakazo:///"
+- openLink: "robots:///"

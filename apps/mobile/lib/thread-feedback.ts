@@ -1,11 +1,11 @@
 import { t } from "@lingui/core/macro";
-import type { AgentSkillCatalogEntry, RpcPath } from "@rakazo/contracts";
-import type { ComposerMention, resolveComposerSendPlan } from "@rakazo/core";
+import type { AgentSkillCatalogEntry, RpcPath } from "@robots/contracts";
+import type { ComposerMention, resolveComposerSendPlan } from "@robots/core";
 import {
   isImageInputConfirmation,
   isModelRequiredSendError,
   isServerUnreachable,
-} from "@rakazo/core";
+} from "@robots/core";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { RpcOptions, rpc } from "./api";
 import type { PickedAttachment } from "./pick-attachments";

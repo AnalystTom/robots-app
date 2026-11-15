@@ -105,7 +105,7 @@ it("cancels once the popup is closed and the app has focus again", async () => {
   await vi.advanceTimersByTimeAsync(500);
   expect(window.open).toHaveBeenCalledWith(
     "https://identity.example.test/authorize",
-    "rakazo-mcp-oauth:session",
+    "robots-mcp-oauth:session",
     "popup,width=560,height=720",
   );
   await expect(flow).resolves.toBe("cancelled");

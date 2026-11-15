@@ -1,6 +1,6 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { RoutineEmailSenders } from "@rakazo/contracts";
+import type { RoutineEmailSenders } from "@robots/contracts";
 import type { BotEmail } from "./bot-email";
 import { useBotEmailRows } from "./bot-email";
 import { MenuPicker } from "./menu-picker";

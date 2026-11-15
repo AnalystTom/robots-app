@@ -1,26 +1,26 @@
-import type { JobPublisher } from "@rakazo/adapter-kit";
+import type { JobPublisher } from "@robots/adapter-kit";
 import {
   messagingReplyJob,
   teamChatAmbientJob,
   teamChatEngageJob,
   teamChatEngageJobKey,
-} from "@rakazo/adapter-kit";
-import type { AutomatedSenderPolicies, MessageBlock } from "@rakazo/contracts";
-import { ATTACHMENT_MAX_COUNT, AutomatedSenderPoliciesSchema } from "@rakazo/contracts";
+} from "@robots/adapter-kit";
+import type { AutomatedSenderPolicies, MessageBlock } from "@robots/contracts";
+import { ATTACHMENT_MAX_COUNT, AutomatedSenderPoliciesSchema } from "@robots/contracts";
 import {
   messageBlockForArtifact,
   promptTextForAttachments,
   teamChatAmbientPrompt,
   teamChatPrompt,
-} from "@rakazo/core";
-import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
+} from "@robots/core";
+import type { Prisma, PrismaClient, ThreadEvents } from "@robots/db";
 import {
   runAsSystem,
   SendClaimLostError,
   SpaceDeletionInProgressError,
   teamChatRunClientNonce,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { inboundDeliveryClientNonce, messagingWakeIdempotencyKey } from "./inbound-delivery.js";
 import type { TeamChatEngagementJudge } from "./team-chat-judge.js";
 import { wakeRun } from "./wake-run.js";
@@ -158,14 +158,14 @@ export class TeamChat {
   constructor(private readonly deps: TeamChatDeps) {}
 
   /**
-   * Copies a message into the bot's Rakazo thread before anything answers it. With `files`, the
+   * Copies a message into the bot's RoBots thread before anything answers it. With `files`, the
    * receiving process stored its attachments; without, uploads an earlier attempt finished are
    * reused, since attachment fetchers do not survive a restart.
    */
   async mirrorTranscript(message: TeamChatMessage, files?: TranscriptFiles): Promise<void> {
     if (message.threadMessageId) return;
     const conversation = message.externalConversation;
-    if (!conversation.thread) throw new Error("Team chat conversation has no Rakazo thread");
+    if (!conversation.thread) throw new Error("Team chat conversation has no RoBots thread");
     const stored = files ?? {
       artifacts: await this.deps.prisma.artifact.findMany({
         where: {
@@ -218,7 +218,7 @@ export class TeamChat {
     if (!message || !from.includes(message.status)) return;
     const conversation = message.externalConversation;
     const thread = conversation.thread;
-    if (!thread) throw new Error("Team chat conversation has no Rakazo thread");
+    if (!thread) throw new Error("Team chat conversation has no RoBots thread");
     // A routine the previous release woke without claiming the message already answers it.
     if (await this.routineWoken(message)) {
       await this.settle(message.id, from, {

@@ -1,6 +1,6 @@
-import type { RealtimeFanout } from "@rakazo/adapter-kit";
-import { abortableDelay } from "@rakazo/core";
-import { getLogger } from "@rakazo/logging";
+import type { RealtimeFanout } from "@robots/adapter-kit";
+import { abortableDelay } from "@robots/core";
+import { getLogger } from "@robots/logging";
 import type { PrismaClient } from "./client.js";
 import { retryWhileDatabaseUnavailable } from "./database-outage.js";
 import { ChangeLatch, threadTopic } from "./event-stream.js";

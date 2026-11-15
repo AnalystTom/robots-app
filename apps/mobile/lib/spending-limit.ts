@@ -1,6 +1,6 @@
 import { ph, t } from "@lingui/core/macro";
-import type { SpendingLimit } from "@rakazo/contracts";
-import { formatMinorAmount } from "@rakazo/core";
+import type { SpendingLimit } from "@robots/contracts";
+import { formatMinorAmount } from "@robots/core";
 import { dateLocaleForUi } from "./i18n";
 import type { UiLocale } from "./ui-locale";
 

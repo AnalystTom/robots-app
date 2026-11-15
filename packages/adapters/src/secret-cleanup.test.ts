@@ -1,4 +1,4 @@
-import type { BackgroundJob } from "@rakazo/adapter-kit";
+import type { BackgroundJob } from "@robots/adapter-kit";
 import { describe, expect, it, vi } from "vitest";
 import type { SecretCleanup, SecretCleanupDeps } from "./secret-cleanup.js";
 import {

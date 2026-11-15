@@ -1,11 +1,11 @@
 import { ph, t } from "@lingui/core/macro";
-import type { SpaceBot, SpaceGroup } from "@rakazo/contracts";
+import type { SpaceBot, SpaceGroup } from "@robots/contracts";
 import {
   botAvatarActivity,
   chatSnoozed,
   groupBotsForSidebar,
   logoAvatarNeedsAttention,
-} from "@rakazo/core";
+} from "@robots/core";
 import { rpc, selectedSpaceId } from "./api";
 import { adoptDeletedSpaceFallback, selectSpace } from "./api-server";
 import { mobileLogoAvatarActivity } from "./logo-avatar-activity";

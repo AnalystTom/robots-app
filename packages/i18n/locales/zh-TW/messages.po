@@ -1,7 +1,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: rakazo-web\n"
+"Project-Id-Version: robots-web\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-08-26 00:00+0000\n"
 "PO-Revision-Date: \n"
@@ -1354,8 +1354,8 @@ msgid "Allow once"
 msgstr "允許一次"
 
 #: apps/web/src/lib/dictation.ts
-msgid "Allow Rakazo to use Speech Recognition and the microphone in System Settings."
-msgstr "請在系統設定中允許 Rakazo 使用語音辨識和麥克風。"
+msgid "Allow RoBots to use Speech Recognition and the microphone in System Settings."
+msgstr "請在系統設定中允許 RoBots 使用語音辨識和麥克風。"
 
 #: apps/mobile/lib/call-session.ts
 #: apps/mobile/lib/composer-dictation.ts
@@ -2436,8 +2436,8 @@ msgstr "選擇資料夾"
 
 #: apps/web/src/components/ModelCredits.tsx
 #: apps/web/src/components/SubscriptionGate.tsx
-msgid "Choose how to use Rakazo"
-msgstr "選擇 Rakazo 的使用方式"
+msgid "Choose how to use RoBots"
+msgstr "選擇 RoBots 的使用方式"
 
 #. js-lingui-explicit-id
 #: packages/i18n/src/vault.ts
@@ -2889,8 +2889,8 @@ msgstr "連接你的 AI"
 
 #. js-lingui-explicit-id
 #: packages/i18n/src/run-error.ts
-msgid "Connect your own API key in Models or choose Rakazo credits in Billing."
-msgstr "請在「模型」中連接你自己的 API 金鑰，或在「帳務」中選擇 Rakazo 點數。"
+msgid "Connect your own API key in Models or choose RoBots credits in Billing."
+msgstr "請在「模型」中連接你自己的 API 金鑰，或在「帳務」中選擇 RoBots 點數。"
 
 #: apps/mobile/app/(settings)/bot-template.tsx
 #: apps/mobile/app/(settings)/computers.tsx
@@ -5003,8 +5003,8 @@ msgid "Ends {day}"
 msgstr "於 {day} 結束"
 
 #: apps/web/src/components/GitHubStarPrompt.tsx
-msgid "Enjoying Rakazo?"
-msgstr "喜歡 Rakazo 嗎？"
+msgid "Enjoying RoBots?"
+msgstr "喜歡 RoBots 嗎？"
 
 #: apps/mobile/lib/user-error.ts
 #: apps/web/src/lib/user-error.ts
@@ -5775,8 +5775,8 @@ msgstr "如何檢查"
 
 #: apps/mobile/app/(settings)/signup-survey.tsx
 #: apps/web/src/components/SignupSurvey.tsx
-msgid "How will you use Rakazo?"
-msgstr "你會如何使用 Rakazo？"
+msgid "How will you use RoBots?"
+msgstr "你會如何使用 RoBots？"
 
 #: apps/mobile/components/compatible-endpoint-form.tsx
 msgid "http://127.0.0.1:8000/v1"
@@ -7321,8 +7321,8 @@ msgid "Not imported"
 msgstr "未匯入"
 
 #: apps/web/src/pages/shell/import-status.ts
-msgid "Not in Rakazo's catalog"
-msgstr "不在 Rakazo 目錄中"
+msgid "Not in RoBots's catalog"
+msgstr "不在 RoBots 目錄中"
 
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/web/src/pages/plugins/plugin-browse.tsx
@@ -7371,12 +7371,12 @@ msgstr "未傳送。點一下重試"
 
 #: apps/web/src/pages/shell/agent-import-plan.tsx
 #: apps/web/src/pages/shell/import-status.ts
-msgid "Not supported in Rakazo"
-msgstr "Rakazo 不支援"
+msgid "Not supported in RoBots"
+msgstr "RoBots 不支援"
 
 #: apps/web/src/pages/shell/agent-import-plan.tsx
-msgid "Not used by Rakazo"
-msgstr "Rakazo 不使用"
+msgid "Not used by RoBots"
+msgstr "RoBots 不使用"
 
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/web/src/components/McpServerHealthLine.tsx
@@ -7601,8 +7601,8 @@ msgstr "開啟導覽"
 #: apps/web/src/components/pages/PublicPageShell.tsx
 #: apps/web/src/pages/Invite.tsx
 #: apps/web/src/pages/SharedPage.tsx
-msgid "Open Rakazo"
-msgstr "開啟 Rakazo"
+msgid "Open RoBots"
+msgstr "開啟 RoBots"
 
 #: apps/mobile/lib/composer-dictation.ts
 #: apps/mobile/lib/thread-voice.ts
@@ -7849,8 +7849,8 @@ msgstr "貼上替換金鑰"
 
 #: apps/mobile/components/compatible-endpoint-form.tsx
 #: apps/web/src/pages/model-settings/compatible-model-fields.tsx
-msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
-msgstr "貼上伺服器的 OpenAI 相容地址。需要時 Rakazo 會補上 /v1。"
+msgid "Paste the OpenAI-compatible address from your server. RoBots adds /v1 if needed."
+msgstr "貼上伺服器的 OpenAI 相容地址。需要時 RoBots 會補上 /v1。"
 
 #: apps/web/src/pages/shell/agent-import.tsx
 msgid "Paste the reply"
@@ -8158,17 +8158,17 @@ msgstr "引用"
 #: apps/mobile/app/bot-settings.tsx
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
 #: apps/web/src/pages/shell/avatar-studio-popover.tsx
-msgid "Rakazo"
-msgstr "Rakazo"
+msgid "RoBots"
+msgstr "RoBots"
 
 #: apps/mobile/app/(settings)/billing.tsx
 #: apps/web/src/pages/onboarding/use-onboarding-model.ts
-msgid "Rakazo credits"
-msgstr "Rakazo 額度"
+msgid "RoBots credits"
+msgstr "RoBots 額度"
 
 #: apps/web/src/pages/memory-providers/HonchoSettingsForm.tsx
-msgid "rakazo-shared and IDs starting with bot- are reserved for Rakazo."
-msgstr "rakazo-shared 與以 bot- 開頭的 ID 保留給 Rakazo 使用。"
+msgid "robots-shared and IDs starting with bot- are reserved for RoBots."
+msgstr "robots-shared 與以 bot- 開頭的 ID 保留給 RoBots 使用。"
 
 #: apps/mobile/components/thread/message-row.tsx
 #: apps/web/src/pages/shell/message-hover-actions.tsx
@@ -8214,8 +8214,8 @@ msgid "Recall from banks"
 msgstr "從記憶庫回想"
 
 #: apps/web/src/pages/memory-providers/HonchoSettingsForm.tsx
-msgid "Recall from this peer; save to Rakazo’s own peers."
-msgstr "從此 peer 讀取；儲存至 Rakazo 自己的 peer。"
+msgid "Recall from this peer; save to RoBots’s own peers."
+msgstr "從此 peer 讀取；儲存至 RoBots 自己的 peer。"
 
 #: apps/web/src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Recall only"
@@ -8817,8 +8817,8 @@ msgstr "返回收件匣"
 
 #: apps/web/src/pages/McpOAuthCallback.tsx
 #: apps/web/src/pages/SlackInstallCallback.tsx
-msgid "Return to Rakazo"
-msgstr "返回 Rakazo"
+msgid "Return to RoBots"
+msgstr "返回 RoBots"
 
 #: apps/web/src/lib/model-connection-preflight.ts
 msgid "Review provider settings and test again."
@@ -9592,13 +9592,13 @@ msgid "Sign in at <0>{0}</0>, then paste the code here."
 msgstr "在 <0>{0}</0> 登入，然後將代碼貼到這裡。"
 
 #: apps/mobile/app/sign-in.tsx
-msgid "Sign in to continue to Rakazo"
-msgstr "登入以繼續使用 Rakazo"
+msgid "Sign in to continue to RoBots"
+msgstr "登入以繼續使用 RoBots"
 
 #: apps/mobile/app/sign-in.tsx
 #: apps/web/src/pages/Auth.tsx
-msgid "Sign in to Rakazo"
-msgstr "登入 Rakazo"
+msgid "Sign in to RoBots"
+msgstr "登入 RoBots"
 
 #: apps/mobile/lib/user-error.ts
 #: apps/web/src/lib/user-error.ts
@@ -9629,8 +9629,8 @@ msgid "Sign up"
 msgstr "註冊"
 
 #: apps/mobile/app/sign-in.tsx
-msgid "Sign up for Rakazo"
-msgstr "註冊 Rakazo"
+msgid "Sign up for RoBots"
+msgstr "註冊 RoBots"
 
 #: apps/web/src/pages/PluginsOverlay.tsx
 msgid "Sign-in cancelled. Retry in Manage MCP servers."
@@ -9941,8 +9941,8 @@ msgid "Start recording"
 msgstr "開始錄製"
 
 #: apps/mobile/app/paywall.tsx
-msgid "Start using Rakazo"
-msgstr "開始使用 Rakazo"
+msgid "Start using RoBots"
+msgstr "開始使用 RoBots"
 
 #: apps/mobile/app/(settings)/billing.tsx
 #: apps/web/src/components/ModelCredits.tsx
@@ -10259,8 +10259,8 @@ msgid "That isn't a Grok Bot export. Paste the Bot's whole reply."
 msgstr "這不是 Grok Bot 的匯出內容。請貼上該 Bot 的完整回覆。"
 
 #: apps/mobile/lib/endpoint.ts
-msgid "That URL did not look like a Rakazo server"
-msgstr "該地址看起來不是 Rakazo 伺服器"
+msgid "That URL did not look like a RoBots server"
+msgstr "該地址看起來不是 RoBots 伺服器"
 
 #: apps/mobile/lib/endpoint.ts
 msgid "That URL is missing a host"
@@ -10547,8 +10547,8 @@ msgid "This device"
 msgstr "本裝置"
 
 #: apps/web/src/lib/agent-import-errors.ts
-msgid "This export is newer than Rakazo can read. Update Rakazo and try again."
-msgstr "此匯出內容的版本比 Rakazo 能讀取的更新。請更新 Rakazo 後再試一次。"
+msgid "This export is newer than RoBots can read. Update RoBots and try again."
+msgstr "此匯出內容的版本比 RoBots 能讀取的更新。請更新 RoBots 後再試一次。"
 
 #: apps/web/src/lib/agent-import-errors.ts
 msgid "This export is too large to import."
@@ -10718,8 +10718,8 @@ msgstr "此空間使用自己的保管庫，因此其機器人無法使用帳號
 
 #: apps/mobile/app/(settings)/model-connection.tsx
 #: apps/web/src/pages/model-settings/connection-controls.tsx
-msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
-msgstr "此訂閱登入在 Rakazo 中尚不可用。請使用部署憑證或選擇其他供應商。"
+msgid "This subscription sign-in is not available in RoBots yet. Use a deployment credential or choose another provider."
+msgstr "此訂閱登入在 RoBots 中尚不可用。請使用部署憑證或選擇其他供應商。"
 
 #: apps/mobile/app/(settings)/bot-template.tsx
 #: apps/web/src/components/bot-templates/bot-templates-dialog.tsx
@@ -11271,8 +11271,8 @@ msgstr "輸入密碼時，請使用受保護的輸入。"
 
 #: apps/mobile/app/(settings)/billing.tsx
 #: apps/web/src/components/ModelCredits.tsx
-msgid "Use Rakazo credits"
-msgstr "使用 Rakazo 額度"
+msgid "Use RoBots credits"
+msgstr "使用 RoBots 額度"
 
 #: apps/mobile/components/space-bots-model.tsx
 msgid "Use space default"
@@ -11504,8 +11504,8 @@ msgstr "歡迎回來"
 
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/web/src/components/SignupSurvey.tsx
-msgid "Welcome to Rakazo"
-msgstr "歡迎使用 Rakazo"
+msgid "Welcome to RoBots"
+msgstr "歡迎使用 RoBots"
 
 #: apps/web/src/pages/shell/dialogs.tsx
 msgid "What about its memories?"
@@ -11517,8 +11517,8 @@ msgstr "此空間可以使用什麼？"
 
 #: apps/mobile/app/(settings)/signup-survey.tsx
 #: apps/web/src/components/SignupSurvey.tsx
-msgid "What do you most want Rakazo to help with?"
-msgstr "你最希望 Rakazo 幫你做什麼？"
+msgid "What do you most want RoBots to help with?"
+msgstr "你最希望 RoBots 幫你做什麼？"
 
 #: apps/web/src/pages/shell/message-cards.tsx
 msgid "What do you want me on first?"

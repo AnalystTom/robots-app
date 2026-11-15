@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="robots_call_channel">שיחה פעילה</string>
+  <string name="robots_call_title">שיחת RoBots</string>
+  <string name="robots_call_text">המיקרופון פעיל</string>
+  <string name="robots_call_answer">מענה</string>
+  <string name="robots_call_decline">דחייה</string>
+</resources>

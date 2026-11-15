@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { Bot, McpServer, McpTransport } from "@rakazo/contracts";
-import { deriveMcpSlug } from "@rakazo/core";
+import type { Bot, McpServer, McpTransport } from "@robots/contracts";
+import { deriveMcpSlug } from "@robots/core";
 import {
   Button,
   Checkbox,
@@ -16,8 +16,8 @@ import {
   TabsTrigger,
   Textarea,
   Toggle,
-} from "@rakazo/ui-web";
-import { Disclosure } from "@rakazo/ui-web/components/ui/disclosure";
+} from "@robots/ui-web";
+import { Disclosure } from "@robots/ui-web/components/ui/disclosure";
 import { ChevronLeft, X } from "lucide-react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import type { AgentAccess } from "../components/integrations/agent-access";
@@ -47,7 +47,7 @@ export type McpServerDraft = {
   envRows: EnvRow[];
 };
 
-/** How an env value asks Rakazo to inject the granted OAuth access token. */
+/** How an env value asks RoBots to inject the granted OAuth access token. */
 const oauthEnvReference = "{{oauth.access_token}}";
 
 let nextEnvRowId = 0;

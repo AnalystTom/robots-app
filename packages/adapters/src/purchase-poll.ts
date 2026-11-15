@@ -1,7 +1,7 @@
-import type { AdapterContext, PurchaseSnapshot, PurchaseStatus } from "@rakazo/adapter-kit";
-import { PaymentWalletDisconnected, PaymentWalletRequestRejected } from "@rakazo/adapter-kit";
-import type { Purchase } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+import type { AdapterContext, PurchaseSnapshot, PurchaseStatus } from "@robots/adapter-kit";
+import { PaymentWalletDisconnected, PaymentWalletRequestRejected } from "@robots/adapter-kit";
+import type { Purchase } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { PurchaseDeps } from "./purchase-service.js";
 import {
   enqueuePurchasePoll,

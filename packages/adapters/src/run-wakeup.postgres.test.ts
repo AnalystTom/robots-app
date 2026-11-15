@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import type { BackgroundJobHandlers, JobPublisher } from "@rakazo/adapter-kit";
-import { runContinueJob } from "@rakazo/adapter-kit";
-import { stuckWorkStatusMessage } from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+import type { BackgroundJobHandlers, JobPublisher } from "@robots/adapter-kit";
+import { runContinueJob } from "@robots/adapter-kit";
+import { stuckWorkStatusMessage } from "@robots/core";
+import type { PrismaClient } from "@robots/db";
 import {
   appendEvent,
   appendEventInTransaction,
@@ -14,8 +14,8 @@ import {
   provisionMessagingIdentity,
   runAsSystem,
   runAsTenant,
-} from "@rakazo/db";
-import { createLogger, createTestSink, installLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { InMemoryRealtimeFanout } from "./realtime.js";
 import { RunJobPublisher, RunStarter, RunWorkerHost } from "./run-wakeup.js";
@@ -28,7 +28,7 @@ describePostgres("direct run dispatch (PostgreSQL)", () => {
   let db: ReturnType<typeof createDb>;
   let system: PrismaClient;
   let identity: { userId: string; spaceId: string; botId: string; threadId: string };
-  const address = `dispatch-${randomUUID()}@rakazo.test`;
+  const address = `dispatch-${randomUUID()}@robots.test`;
   beforeAll(async () => {
     db = createDb(url!);
     system = asSystem(db.prisma);

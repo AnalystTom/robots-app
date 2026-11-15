@@ -1,10 +1,10 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { ProcessEvent } from "@rakazo/adapter-kit";
-import type { BotSecretDestination } from "@rakazo/contracts";
-import { createStreamingRedactor, redactSecrets } from "@rakazo/core";
-import { installAuditEventStore } from "@rakazo/db";
+import type { ProcessEvent } from "@robots/adapter-kit";
+import type { BotSecretDestination } from "@robots/contracts";
+import { createStreamingRedactor, redactSecrets } from "@robots/core";
+import { installAuditEventStore } from "@robots/db";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { redactAgentCommandResult } from "./agent-environment.js";
 import {
@@ -393,7 +393,7 @@ describe("shell command environment", () => {
       scope,
       registerRedactions: vi.fn(),
     });
-    const root = mkdtempSync(path.join(tmpdir(), "rakazo-command-env-"));
+    const root = mkdtempSync(path.join(tmpdir(), "robots-command-env-"));
     const desktop = new DesktopSandboxProvider({ root });
     const context = {
       operationId: "test",

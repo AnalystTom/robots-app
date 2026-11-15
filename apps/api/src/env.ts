@@ -3,7 +3,7 @@ import type {
   ApnsVoipConfig,
   PhotonProjectCredentials,
   TelegramBotCredentials,
-} from "@rakazo/adapters";
+} from "@robots/adapters";
 import {
   apnsVoipConfig,
   boatApiKeyFromEnv,
@@ -16,12 +16,12 @@ import {
   resolveSandboxProvider,
   secretStoreOptionsFromEnv,
   telegramBotsFromEnv,
-} from "@rakazo/adapters";
-import type { OidcConfig, SocialAuthConfig } from "@rakazo/auth";
-import { socialAuthFromFields } from "@rakazo/auth";
-import type { LabFeature, MinimumClientBuilds, NavLink } from "@rakazo/contracts";
-import { isPrivateNetworkHost, parseMinimumClientBuilds, parseNavLinks } from "@rakazo/contracts";
-import { parseCrispWebsiteId } from "@rakazo/contracts/content-security-policy";
+} from "@robots/adapters";
+import type { OidcConfig, SocialAuthConfig } from "@robots/auth";
+import { socialAuthFromFields } from "@robots/auth";
+import type { LabFeature, MinimumClientBuilds, NavLink } from "@robots/contracts";
+import { isPrivateNetworkHost, parseMinimumClientBuilds, parseNavLinks } from "@robots/contracts";
+import { parseCrispWebsiteId } from "@robots/contracts/content-security-policy";
 import {
   attachmentCountFromEnv,
   phoneCallSettings,
@@ -31,10 +31,10 @@ import {
   resolveScreenProxySecret,
   resolveSupervisorToken,
   uploadSizeFromEnv,
-} from "@rakazo/core";
-import { getLogger, monitoringPseudonymSecret } from "@rakazo/logging";
+} from "@robots/core";
+import { getLogger, monitoringPseudonymSecret } from "@robots/logging";
 
-export { resolveCloudAgentProvider, resolveSandboxProvider } from "@rakazo/adapters";
+export { resolveCloudAgentProvider, resolveSandboxProvider } from "@robots/adapters";
 
 /** Where a local development stack serves the web client. */
 const DEFAULT_WEB_ORIGIN = "http://127.0.0.1:5173";
@@ -55,7 +55,7 @@ export interface AppEnv {
   authSecret: string;
   authUrl: string;
   webOrigin: string;
-  /** Extra browser origins trusted for sign-in and CORS, from `RAKAZO_EXTRA_AUTH_ORIGINS`. */
+  /** Extra browser origins trusted for sign-in and CORS, from `ROBOTS_EXTRA_AUTH_ORIGINS`. */
   extraAuthOrigins: string[];
   /** `<TEAM_ID>.<bundle id>` of iOS apps that may use this domain's passkeys. */
   passkeyAppleAppIds: string[];
@@ -80,10 +80,10 @@ export interface AppEnv {
   userDevicesEnabled: boolean;
   /** COMPUTER_SETTINGS_ENABLED=true lets Settings choose where computers run. Default off. */
   computerSettingsEnabled: boolean;
-  /** Operator menu links that frame a same-origin page (RAKAZO_NAV_LINKS). */
+  /** Operator menu links that frame a same-origin page (ROBOTS_NAV_LINKS). */
   navLinks?: NavLink[];
   /** Verified accounts that review plugin submissions, add stdio MCP servers, and grant access
-   * (RAKAZO_ADMIN_EMAILS), lowercased. */
+   * (ROBOTS_ADMIN_EMAILS), lowercased. */
   adminEmails: string[];
   phoneCallsEnabled: boolean;
   phoneCallRingSeconds: number;
@@ -188,7 +188,7 @@ export interface AppEnv {
   mcpAllowPrivateEndpoint: boolean;
   port: number;
   gitSha: string | undefined;
-  /** Oldest client build per kind the API still serves (RAKAZO_MIN_CLIENT_BUILD). */
+  /** Oldest client build per kind the API still serves (ROBOTS_MIN_CLIENT_BUILD). */
   minimumClientBuilds?: MinimumClientBuilds;
   /** Browser error reporting, served to the web app at runtime. The DSN is public by design. */
   browserMonitoring:
@@ -268,11 +268,11 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     nodeEnv: source.NODE_ENV ?? "",
     databaseUrl: required(source, "DATABASE_URL"),
     realtimeDatabaseUrl: source.REALTIME_DATABASE_URL ?? required(source, "DATABASE_URL"),
-    desktopStackToken: optional(source.RAKAZO_DESKTOP_STACK_TOKEN),
+    desktopStackToken: optional(source.ROBOTS_DESKTOP_STACK_TOKEN),
     authSecret,
     authUrl: resolveWebOrigin(source.BETTER_AUTH_URL, webOrigin, "BETTER_AUTH_URL"),
     webOrigin,
-    extraAuthOrigins: parseExtraAuthOrigins(source.RAKAZO_EXTRA_AUTH_ORIGINS),
+    extraAuthOrigins: parseExtraAuthOrigins(source.ROBOTS_EXTRA_AUTH_ORIGINS),
     passkeyAppleAppIds: list(source.PASSKEY_APPLE_APP_IDS),
     passkeyAndroidCertFingerprints: androidCertFingerprints(source.PASSKEY_ANDROID_CERT_SHA256),
     privacyPolicyUrl: optional(source.PRIVACY_POLICY_URL),
@@ -292,8 +292,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     deploymentLabs: deploymentLabsFromEnv(source),
     userDevicesEnabled: source.USER_DEVICES_ENABLED !== "false",
     computerSettingsEnabled: source.COMPUTER_SETTINGS_ENABLED === "true",
-    navLinks: parseNavLinks(source.RAKAZO_NAV_LINKS),
-    adminEmails: list(source.RAKAZO_ADMIN_EMAILS).map((email) => email.toLowerCase()),
+    navLinks: parseNavLinks(source.ROBOTS_NAV_LINKS),
+    adminEmails: list(source.ROBOTS_ADMIN_EMAILS).map((email) => email.toLowerCase()),
     ...phoneCallSettings(source),
     maxUploadSizeBytes: uploadSizeFromEnv(source),
     maxAttachmentsPerMessage: attachmentCountFromEnv(source),
@@ -372,7 +372,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     photonWebhookSecret: optional(source.PHOTON_WEBHOOK_SECRET),
     photonProjects: photonProjectsFromEnv(source),
     messagingOpenSignup: source.MESSAGING_OPEN_SIGNUP === "true",
-    teamChatBotId: optional(source.TEAM_CHAT_BOT_ID) ?? optional(source.SLACK_RAKAZO_BOT_ID),
+    teamChatBotId: optional(source.TEAM_CHAT_BOT_ID) ?? optional(source.SLACK_ROBOTS_BOT_ID),
     teamChatJudgeProvider: optional(source.TEAM_CHAT_JUDGE_PROVIDER),
     teamChatJudgeModel: optional(source.TEAM_CHAT_JUDGE_MODEL),
     defaultProvider: deploymentModel.provider,
@@ -386,8 +386,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     mcpStdio: mcpStdioOptionsFromEnv(source),
     mcpAllowPrivateEndpoint: source.MCP_ALLOW_PRIVATE_ENDPOINT === "true",
     port: Number(source.API_PORT ?? 3100),
-    gitSha: optional(source.GIT_SHA) ?? optional(source.RAKAZO_GIT_SHA),
-    minimumClientBuilds: parseMinimumClientBuilds(source.RAKAZO_MIN_CLIENT_BUILD),
+    gitSha: optional(source.GIT_SHA) ?? optional(source.ROBOTS_GIT_SHA),
+    minimumClientBuilds: parseMinimumClientBuilds(source.ROBOTS_MIN_CLIENT_BUILD),
     browserMonitoring: browserMonitoringFromEnv(source),
     crispWebsiteId: parseCrispWebsiteId(source.CRISP_WEBSITE_ID),
   };
@@ -428,7 +428,7 @@ export function parseExtraAuthOrigins(value: string | undefined): string[] {
       origins.add(url.origin);
     } catch {
       // The entry is not logged: it may carry credentials.
-      getLogger().warn("ignoring invalid RAKAZO_EXTRA_AUTH_ORIGINS entry");
+      getLogger().warn("ignoring invalid ROBOTS_EXTRA_AUTH_ORIGINS entry");
     }
   }
   return [...origins];

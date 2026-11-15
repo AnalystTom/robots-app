@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { LabFeature } from "@rakazo/contracts";
-import { withLab } from "@rakazo/contracts";
+import type { LabFeature } from "@robots/contracts";
+import { withLab } from "@robots/contracts";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { Alert, ScrollView } from "react-native";

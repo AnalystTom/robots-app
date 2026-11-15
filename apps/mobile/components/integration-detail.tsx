@@ -1,8 +1,8 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { Connection, ConnectionCatalogItem, RpcOutput } from "@rakazo/contracts";
-import { CONNECTION_LABEL_MAX_LENGTH } from "@rakazo/contracts";
-import { appToolLabel, catalogItemKey } from "@rakazo/core";
+import type { Connection, ConnectionCatalogItem, RpcOutput } from "@robots/contracts";
+import { CONNECTION_LABEL_MAX_LENGTH } from "@robots/contracts";
+import { appToolLabel, catalogItemKey } from "@robots/core";
 import type { Dispatch, SetStateAction } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { native, useThemedStyles } from "../lib/native";

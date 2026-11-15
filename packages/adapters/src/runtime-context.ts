@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { Api, Context, Message, Model } from "@earendil-works/pi-ai";
-import type { AdapterContext, AgentRunRequest, AgentUsage } from "@rakazo/adapter-kit";
-import { DEFAULT_CONTEXT_STRATEGY } from "@rakazo/adapter-kit";
-import { getLogger } from "@rakazo/logging";
+import type { AdapterContext, AgentRunRequest, AgentUsage } from "@robots/adapter-kit";
+import { DEFAULT_CONTEXT_STRATEGY } from "@robots/adapter-kit";
+import { getLogger } from "@robots/logging";
 import { imagePartCount, normalizedImageLimit, pruneForRebuild } from "./context-pruning.js";
 import type { CacheRequest, ContextBudget } from "./context-selection.js";
 import {
@@ -128,9 +128,9 @@ interface SentTranscript {
   appends: number;
 }
 interface OriginalMetadata {
-  rakazoHistory?: boolean;
-  rakazoMessageId?: string;
-  rakazoCreatedAt?: string;
+  robotsHistory?: boolean;
+  robotsMessageId?: string;
+  robotsCreatedAt?: string;
 }
 /**
  * Where the last `count` stored messages start. A reply replayed with its tool calls is several
@@ -138,7 +138,7 @@ interface OriginalMetadata {
  */
 function storedMessagesStart(messages: Message[], count: number): number {
   const id = (message: Message | undefined) =>
-    (message as (Message & OriginalMetadata) | undefined)?.rakazoMessageId;
+    (message as (Message & OriginalMetadata) | undefined)?.robotsMessageId;
   let seen = 0;
   for (let index = messages.length - 1; index >= 0; index--) {
     const current = id(messages[index]);
@@ -245,8 +245,8 @@ export function createRuntimeContextPolicy(
   );
   function original(message: Message) {
     const metadata = message as Message & OriginalMetadata;
-    if (metadata.rakazoMessageId) return historyById.get(metadata.rakazoMessageId);
-    if (metadataPresent && !metadata.rakazoHistory) return undefined;
+    if (metadata.robotsMessageId) return historyById.get(metadata.robotsMessageId);
+    if (metadataPresent && !metadata.robotsHistory) return undefined;
     const content = text(message);
     // Older persisted checkpoints replay own replies as user text "Assistant: ...".
     return request.history.find(
@@ -329,7 +329,7 @@ export function createRuntimeContextPolicy(
         ? "cache-aware"
         : DEFAULT_CONTEXT_STRATEGY);
     metadataPresent = ctx.messages.some((message) =>
-      Boolean((message as Message & OriginalMetadata).rakazoHistory),
+      Boolean((message as Message & OriginalMetadata).robotsHistory),
     );
     const fullPrefix = providerContextPrefix(ctx.systemPrompt ?? "", ctx.tools ?? [], ctx.messages);
     const cacheRequest: CacheRequest = cache.stamp({
@@ -485,9 +485,9 @@ export function createRuntimeContextPolicy(
     }
     const summaries = ctx.messages.filter(
       (message) =>
-        (message as Message & OriginalMetadata).rakazoHistory &&
-        !(message as Message & OriginalMetadata).rakazoMessageId &&
-        (text(message).startsWith("Rakazo-owned compacted context through message sequence ") ||
+        (message as Message & OriginalMetadata).robotsHistory &&
+        !(message as Message & OriginalMetadata).robotsMessageId &&
+        (text(message).startsWith("RoBots-owned compacted context through message sequence ") ||
           text(message).startsWith(`${RECALLED_MEMORY_LEAD} `)),
     );
     for (const summary of summaries) {

@@ -10,7 +10,7 @@ import {
   shapes,
 } from "@expo/ui/swift-ui/modifiers";
 import { useLingui } from "@lingui/react/macro";
-import { TICKET_STATUSES } from "@rakazo/contracts";
+import { TICKET_STATUSES } from "@robots/contracts";
 import { ticketStatusLabel } from "../lib/board";
 import { useFloatingHeaderInset } from "../lib/floating-header";
 import { native, useMobileTokens, useResolvedAppearance } from "../lib/native";

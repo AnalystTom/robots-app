@@ -1,12 +1,12 @@
 // Reads the grok-bot-export v1 document a Grok Bot writes about itself. The export prompt,
 // reply repairs and export reading adapt OpenMausBot (Apache-2.0), which adapts Hermes'
 // agent-importers plugin (MIT); see NOTICE. Exports written for either import here.
-import type { AgentImportMemory, AgentImportSkill } from "@rakazo/contracts";
+import type { AgentImportMemory, AgentImportSkill } from "@robots/contracts";
 import {
   AGENT_IMPORT_MAX_TOTAL_LENGTH,
   BOT_DESCRIPTION_MAX_LENGTH,
   BOT_NAME_MAX_LENGTH,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import JSON5 from "json5";
 import { buildSkillMd, parseSkillMd } from "../agent-skill.js";
 import { nextCronDateAcrossStrict } from "../cron.js";

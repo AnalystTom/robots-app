@@ -1,11 +1,11 @@
-import type { Bot, ModelApiProtocol, ModelCatalogEntry, ModelSettings } from "@rakazo/contracts";
+import type { Bot, ModelApiProtocol, ModelCatalogEntry, ModelSettings } from "@robots/contracts";
 import {
   canonicalPiProviderId,
   normalizeOpenAiCompatibleBaseUrl,
   OPENAI_COMPATIBLE_PROVIDER_ID,
   selectCompatibleModelCredential,
   withConnectionName,
-} from "@rakazo/contracts";
+} from "@robots/contracts";
 import { listSearch } from "./list-search.js";
 
 /** Bots that pick their own model ignore the space default and its changes. */

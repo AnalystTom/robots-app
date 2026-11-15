@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { MAX_PASSWORD_LENGTH, PASSWORD_RULES } from "@rakazo/core";
+import { MAX_PASSWORD_LENGTH, PASSWORD_RULES } from "@robots/core";
 import { useRouter } from "expo-router";
 import { useContext, useEffect, useRef, useState } from "react";
 import {

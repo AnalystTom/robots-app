@@ -1,10 +1,10 @@
 import { ORPCError } from "@orpc/server";
-import type { UsageOperationKind } from "@rakazo/adapter-kit";
-import { planLimitsReader, readMemberPlanLimits, resolveBotWorkspacePath } from "@rakazo/adapters";
-import type { ExportManifest } from "@rakazo/contracts";
-import { attachmentMaxBytes, resolveBotAvatarSet } from "@rakazo/contracts";
-import { AttachmentValidationError } from "@rakazo/core";
-import { IsolationError, LISTED_ARTIFACT, parseComputerMode } from "@rakazo/db";
+import type { UsageOperationKind } from "@robots/adapter-kit";
+import { planLimitsReader, readMemberPlanLimits, resolveBotWorkspacePath } from "@robots/adapters";
+import type { ExportManifest } from "@robots/contracts";
+import { attachmentMaxBytes, resolveBotAvatarSet } from "@robots/contracts";
+import { AttachmentValidationError } from "@robots/core";
+import { IsolationError, LISTED_ARTIFACT, parseComputerMode } from "@robots/db";
 import {
   ArtifactListCursorError,
   createOwnedArtifact,

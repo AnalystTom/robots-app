@@ -1,4 +1,4 @@
-import type { BotMessageIntent, MessageBlock } from "@rakazo/contracts";
+import type { BotMessageIntent, MessageBlock } from "@robots/contracts";
 import {
   BOT_MESSAGE_MAX_LENGTH,
   BOT_MESSAGE_TOO_LONG,
@@ -8,8 +8,8 @@ import {
   clampBotMessage,
   nextBotMessageHop,
   resolveBotAddress,
-} from "@rakazo/core";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/core";
+import type { PrismaClient } from "@robots/db";
 import {
   appendEventInTransaction,
   createThreadMessageInTransaction,
@@ -17,8 +17,8 @@ import {
   spaceTakesWork,
   THREAD_LOCK_TRANSACTION_OPTIONS,
   withTransactionRetry,
-} from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { ExecutorDeps } from "./executor-deps.js";
 import { runLeaseFor } from "./run-messages.js";
 import { wakeRun } from "./wake-run.js";

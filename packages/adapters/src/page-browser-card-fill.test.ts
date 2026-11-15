@@ -1,5 +1,5 @@
-import type { AdapterContext, ComputerRef } from "@rakazo/adapter-kit";
-import * as Logging from "@rakazo/logging";
+import type { AdapterContext, ComputerRef } from "@robots/adapter-kit";
+import * as Logging from "@robots/logging";
 import { describe, expect, it, vi } from "vitest";
 import type { CardFillStep } from "./browser-tools.js";
 import {

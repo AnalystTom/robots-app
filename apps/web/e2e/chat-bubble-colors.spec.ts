@@ -4,7 +4,7 @@ import { activeBotId, captureScreenshot, completeOnboarding, rpc, signup } from 
 test("user bubbles stay close to the avatar color with white text in both themes", async ({
   page,
 }, testInfo) => {
-  await signup(page, `bubble-colors-${Date.now()}@rakazo.test`, "password12", "Bubble Demo");
+  await signup(page, `bubble-colors-${Date.now()}@robots.test`, "password12", "Bubble Demo");
   await completeOnboarding(page);
   await rpc(page, "bots/update", { botId: activeBotId(page), color: "#FF781C" });
   await page.reload();
@@ -17,7 +17,7 @@ test("user bubbles stay close to the avatar color with white text in both themes
   await expect(bubble).toBeVisible();
 
   for (const theme of ["dark", "light"]) {
-    await page.evaluate((theme) => localStorage.setItem("rakazo.uiAppearance", theme), theme);
+    await page.evaluate((theme) => localStorage.setItem("robots.uiAppearance", theme), theme);
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expect(bubble).toHaveCSS("color", "rgb(255, 255, 255)");

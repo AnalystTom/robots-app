@@ -3,10 +3,10 @@ import type {
   ModelCredentialFailedState,
   ModelCredentialRetireReason,
   SecretStore,
-} from "@rakazo/adapter-kit";
-import type { Prisma, PrismaClient } from "@rakazo/db";
-import { retireModelCredential } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { Prisma, PrismaClient } from "@robots/db";
+import { retireModelCredential } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { advisoryLock } from "./advisory-lock.js";
 import type { KeptModelSettings, StoredModelSecret } from "./model-secret.js";
 import { keptModelSettings, parseModelSecret, serializeModelSecret } from "./model-secret.js";

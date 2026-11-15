@@ -1,6 +1,6 @@
 import { ph, t } from "@lingui/core/macro";
-import type { CronLabels, CronUnit } from "@rakazo/core";
-import { ENGLISH_CRON_LABELS, localizedClock, polishInterval, russianInterval } from "@rakazo/core";
+import type { CronLabels, CronUnit } from "@robots/core";
+import { ENGLISH_CRON_LABELS, localizedClock, polishInterval, russianInterval } from "@robots/core";
 import { getActiveUiLocale } from "./i18n";
 import type { UiLocale } from "./ui-locale";
 

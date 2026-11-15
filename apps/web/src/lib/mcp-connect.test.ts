@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { RakazoDesktopMcpOAuthCallback } from "@rakazo/contracts";
+import type { RobotsDesktopMcpOAuthCallback } from "@robots/contracts";
 import { beforeEach, expect, it, vi } from "vitest";
 import { connectMcpOauth, MCP_OAUTH_CHANNEL } from "./mcp-connect";
 
@@ -27,18 +27,18 @@ beforeEach(() => {
 });
 
 it("gives the desktop shell a per-server sign-in window and completes its captured code", async () => {
-  let captured: ((callback: RakazoDesktopMcpOAuthCallback) => void) | undefined;
+  let captured: ((callback: RobotsDesktopMcpOAuthCallback) => void) | undefined;
   const unsubscribe = vi.fn();
-  window.rakazoDesktop = {
+  window.robotsDesktop = {
     platform: "darwin",
     mcpBrowser: {
       clear: vi.fn(),
-      onOAuthCallback: (listener: (callback: RakazoDesktopMcpOAuthCallback) => void) => {
+      onOAuthCallback: (listener: (callback: RobotsDesktopMcpOAuthCallback) => void) => {
         captured = listener;
         return unsubscribe;
       },
     },
-  } as unknown as NonNullable<Window["rakazoDesktop"]>;
+  } as unknown as NonNullable<Window["robotsDesktop"]>;
   openPopup();
 
   try {
@@ -46,7 +46,7 @@ it("gives the desktop shell a per-server sign-in window and completes its captur
     await vi.waitFor(() => expect(captured).toBeTypeOf("function"));
     expect(window.open).toHaveBeenCalledWith(
       authorizationUrl,
-      "rakazo-mcp-signin:clx123",
+      "robots-mcp-signin:clx123",
       "popup,width=560,height=720",
     );
 
@@ -64,7 +64,7 @@ it("gives the desktop shell a per-server sign-in window and completes its captur
     });
     expect(unsubscribe).toHaveBeenCalled();
   } finally {
-    delete window.rakazoDesktop;
+    delete window.robotsDesktop;
   }
 });
 
@@ -88,17 +88,17 @@ it("keeps the browser flow's session-named window and callback page", async () =
 });
 
 it("treats a refusal of this attempt as a cancel and ignores a stale one", async () => {
-  let captured: ((callback: RakazoDesktopMcpOAuthCallback) => void) | undefined;
-  window.rakazoDesktop = {
+  let captured: ((callback: RobotsDesktopMcpOAuthCallback) => void) | undefined;
+  window.robotsDesktop = {
     platform: "linux",
     mcpBrowser: {
       clear: vi.fn(),
-      onOAuthCallback: (listener: (callback: RakazoDesktopMcpOAuthCallback) => void) => {
+      onOAuthCallback: (listener: (callback: RobotsDesktopMcpOAuthCallback) => void) => {
         captured = listener;
         return () => undefined;
       },
     },
-  } as unknown as NonNullable<Window["rakazoDesktop"]>;
+  } as unknown as NonNullable<Window["robotsDesktop"]>;
   openPopup();
 
   try {
@@ -110,6 +110,6 @@ it("treats a refusal of this attempt as a cancel and ignores a stale one", async
     await expect(connecting).resolves.toBe("cancelled");
     expect(rpcMock.mcp.oauth.complete).not.toHaveBeenCalled();
   } finally {
-    delete window.rakazoDesktop;
+    delete window.robotsDesktop;
   }
 });

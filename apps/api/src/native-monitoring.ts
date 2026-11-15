@@ -1,13 +1,13 @@
 import { promisify } from "node:util";
 import { gunzip } from "node:zlib";
-import { AnalyticsScreen } from "@rakazo/contracts";
+import { AnalyticsScreen } from "@robots/contracts";
 import {
   CORRELATION_TAG_KEYS,
   isMonitoringUserId,
   sanitizeMonitoringEvent,
   scrubMonitoringText,
   stripMonitoringUrl,
-} from "@rakazo/logging/monitoring";
+} from "@robots/logging/monitoring";
 
 const decompress = promisify(gunzip);
 const MAX_BYTES = 1024 * 1024;

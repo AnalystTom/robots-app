@@ -5,12 +5,12 @@ import type {
   MessagingSurface,
   SandboxProvider,
   SecretStore,
-} from "@rakazo/adapter-kit";
-import type { MessagingDelivery, MessagingInstallations, TeamChat } from "@rakazo/adapters";
-import { applyMessagingOutboundStatus, createMessagingTeamChatHistory } from "@rakazo/adapters";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import { provisionMessagingIdentity, runAsSystem } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { MessagingDelivery, MessagingInstallations, TeamChat } from "@robots/adapters";
+import { applyMessagingOutboundStatus, createMessagingTeamChatHistory } from "@robots/adapters";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
+import { provisionMessagingIdentity, runAsSystem } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import type { Hono } from "hono";
 import { storeInboundAttachment } from "./artifacts.js";
 import type { AppEnv } from "./env.js";

@@ -3,15 +3,15 @@ import type {
   BackgroundJob,
   ManagedConnectorProvider,
   SecretStore,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   CONNECTION_CLEANUP_MAX_ATTEMPTS,
   connectionCleanupJobKey,
   RetryJobLaterError,
-} from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
-import { currentDbContext, runProviderTransaction } from "@rakazo/db";
-import { createLogger, createTestSink, installLogger, wrapJobPayload } from "@rakazo/logging";
+} from "@robots/adapter-kit";
+import type { PrismaClient } from "@robots/db";
+import { currentDbContext, runProviderTransaction } from "@robots/db";
+import { createLogger, createTestSink, installLogger, wrapJobPayload } from "@robots/logging";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createBackgroundJobHandlers } from "./background-job-handlers.js";
 import {
@@ -56,7 +56,7 @@ function cleanupJob(connector: Record<string, unknown> | undefined) {
     connectors: { managed: () => connector },
   } as unknown as Parameters<typeof createBackgroundJobHandlers>[0]);
   const sink = createTestSink();
-  installLogger(createLogger({ service: "rakazo-worker", sinks: [sink] }));
+  installLogger(createLogger({ service: "robots-worker", sinks: [sink] }));
   const errors = () => sink.events.filter((event) => event.level === "error");
   return { run: handlers["connection.cleanup"], connection, tx, prisma, jobs, errors };
 }
@@ -493,7 +493,7 @@ describe("a connection cleanup that runs out of attempts", () => {
 
   it("is reported with what to remove by hand, and never with the provider's raw error", () => {
     const sink = createTestSink();
-    installLogger(createLogger({ service: "rakazo-worker", sinks: [sink] }));
+    installLogger(createLogger({ service: "robots-worker", sinks: [sink] }));
     const failed = (task_identifier: string, payload: unknown) =>
       recordConnectionCleanupAttemptsExhausted(
         { task_identifier, payload: wrapJobPayload(payload), attempts: 125 },

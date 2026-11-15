@@ -1,4 +1,4 @@
-import { sanitizeMessagingLabel } from "@rakazo/core";
+import { sanitizeMessagingLabel } from "@robots/core";
 import { formatCurrentTimeInstruction } from "./current-time.prompt.js";
 import type { TeamChatEngagementMessage } from "./team-chat-judge.js";
 

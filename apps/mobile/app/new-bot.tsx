@@ -1,13 +1,13 @@
 import { useLingui } from "@lingui/react/macro";
-import type { BotAvatarSet } from "@rakazo/contracts";
-import { BOT_NAME_MAX_LENGTH, resolveBotAvatarSet } from "@rakazo/contracts";
+import type { BotAvatarSet } from "@robots/contracts";
+import { BOT_NAME_MAX_LENGTH, resolveBotAvatarSet } from "@robots/contracts";
 import {
   botLookState,
   newBotLook,
   newBotLookInput,
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
-} from "@rakazo/core";
+} from "@robots/core";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { BackHandler, ScrollView, Text, TextInput, View } from "react-native";
@@ -52,7 +52,7 @@ export default function NewBot() {
         const set = resolveBotAvatarSet(me.botAvatarSet);
         setAvatarSet(set);
         // The logo has no studio shapes; drop one picked while the Original set was shown.
-        if (set === "rakazo")
+        if (set === "robots")
           setLook((current) => ({ ...current, color: botLookState(current.color).color }));
       })
       .catch(() => undefined);

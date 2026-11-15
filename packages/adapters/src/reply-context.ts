@@ -1,14 +1,14 @@
-import type { MessageBlock, ToolHistory } from "@rakazo/contracts";
-import { ToolHistorySchema, truncateReplyQuote } from "@rakazo/contracts";
-import type { AgentHistorySegment } from "@rakazo/core";
+import type { MessageBlock, ToolHistory } from "@robots/contracts";
+import { ToolHistorySchema, truncateReplyQuote } from "@robots/contracts";
+import type { AgentHistorySegment } from "@robots/core";
 import {
   blocksToAgentHistorySegments,
   blocksToAgentHistoryText,
   messageReaction,
   withToolHistory,
-} from "@rakazo/core";
-import { isPageCardMessage } from "@rakazo/core/message-quote";
-import type { PrismaClient } from "@rakazo/db";
+} from "@robots/core";
+import { isPageCardMessage } from "@robots/core/message-quote";
+import type { PrismaClient } from "@robots/db";
 
 type QuotedMessage = {
   id: string;

@@ -1,9 +1,9 @@
-import type { AdapterContext, JobPublisher, SandboxProvider } from "@rakazo/adapter-kit";
-import { computerControlExpireJob, computerControlExpireJobKey } from "@rakazo/adapter-kit";
-import { COMPUTER_CONTROL_LEASE_MS } from "@rakazo/core";
-import type { PrismaClient, ThreadEvents } from "@rakazo/db";
-import { recordComputerRunEnd } from "@rakazo/db";
-import { getLogger } from "@rakazo/logging";
+import type { AdapterContext, JobPublisher, SandboxProvider } from "@robots/adapter-kit";
+import { computerControlExpireJob, computerControlExpireJobKey } from "@robots/adapter-kit";
+import { COMPUTER_CONTROL_LEASE_MS } from "@robots/core";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
+import { recordComputerRunEnd } from "@robots/db";
+import { getLogger } from "@robots/logging";
 import { toComputerRef } from "./computer-support.js";
 import { isSandboxGoneError } from "./sandbox-errors.js";
 import { wakeRun } from "./wake-run.js";
@@ -14,7 +14,7 @@ export {
   hasActiveComputerControl,
   holdsUserControl,
   userControlHeldBy,
-} from "@rakazo/db";
+} from "@robots/db";
 
 export const CONTROL_LEASE_MS = COMPUTER_CONTROL_LEASE_MS;
 

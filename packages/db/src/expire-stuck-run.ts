@@ -1,7 +1,7 @@
-import type { RealtimeFanout } from "@rakazo/adapter-kit";
-import type { MessageBlock } from "@rakazo/contracts";
-import type { StuckWorkStatus } from "@rakazo/core";
-import { ACTIVE_RUN_STATUSES, stuckWorkExpiredNonce, stuckWorkStatusMessage } from "@rakazo/core";
+import type { RealtimeFanout } from "@robots/adapter-kit";
+import type { MessageBlock } from "@robots/contracts";
+import type { StuckWorkStatus } from "@robots/core";
+import { ACTIVE_RUN_STATUSES, stuckWorkExpiredNonce, stuckWorkStatusMessage } from "@robots/core";
 import type { Prisma, PrismaClient } from "./client.js";
 import { expireComputerExecutionLeases } from "./computers.js";
 import { notifyRealtime } from "./event-stream.js";

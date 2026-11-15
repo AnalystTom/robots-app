@@ -25,7 +25,7 @@ describePostgres("run secret cleanup (PostgreSQL)", () => {
     };
     for (const id of [ownerId, otherId]) {
       await prisma.user.create({
-        data: { id, name: "Run Secret Test", email: `${id}@rakazo.test`, emailVerified: false },
+        data: { id, name: "Run Secret Test", email: `${id}@robots.test`, emailVerified: false },
       });
     }
     await prisma.organization.create({

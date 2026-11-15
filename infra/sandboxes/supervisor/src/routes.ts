@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { boundedSandboxCommandTimeoutMs } from "@rakazo/core";
-import { getLogger } from "@rakazo/logging";
-import { requestLogging } from "@rakazo/logging/hono";
+import { boundedSandboxCommandTimeoutMs } from "@robots/core";
+import { getLogger } from "@robots/logging";
+import { requestLogging } from "@robots/logging/hono";
 import type Docker from "dockerode";
 import type { Context } from "hono";
 import { Hono } from "hono";
@@ -63,7 +63,7 @@ import {
   ComputerIdentityError,
   countSpaceContainers,
   findBotContainer,
-  isRakazoContainer,
+  isRobotsContainer,
   managedContainer,
 } from "./identity.js";
 import { withBotLifecycleLock, withComputerScreenLock, withSpaceComputerLock } from "./locks.js";
@@ -122,10 +122,10 @@ app.use("*", requestLogging());
 /** The bot, Space, and screen a request acts for, as the API sends them. */
 function identityHeaders(c: Context) {
   return {
-    botId: c.req.header("x-rakazo-bot-id"),
-    spaceId: c.req.header("x-rakazo-space-id"),
-    screenId: c.req.header("x-rakazo-screen-id"),
-    screenLeaseId: c.req.header("x-rakazo-screen-lease-id"),
+    botId: c.req.header("x-robots-bot-id"),
+    spaceId: c.req.header("x-robots-space-id"),
+    screenId: c.req.header("x-robots-screen-id"),
+    screenLeaseId: c.req.header("x-robots-screen-lease-id"),
   };
 }
 
@@ -333,7 +333,7 @@ app.post("/computers", async (c) => {
           removeOwnedComputer(
             docker.getContainer(name),
             (id) => docker.getContainer(id).remove({ force: true }),
-            (info) => isRakazoContainer(info, body.botId, body.spaceId),
+            (info) => isRobotsContainer(info, body.botId, body.spaceId),
             (id) => clearComputerScreenRegistry(computerScreens, computerScreenBoots, id),
           );
         try {
@@ -465,7 +465,7 @@ app.post("/computers/:id/exec", async (c) => {
           container,
           body.argv.length ? body.argv : ["/bin/echo", "ready"],
           {
-            workingDir: body.cwd ?? "/home/rakazo",
+            workingDir: body.cwd ?? "/home/robots",
             env: [
               ...computerCommandEnv(layout),
               ...Object.entries(body.env ?? {}).map(([k, v]) => `${k}=${v}`),
@@ -562,7 +562,7 @@ app.post("/computers/:id/browser", async (c) => {
               z.object({
                 kind: z.literal("click"),
                 ref: z.string().min(1).max(200),
-                // The user approved a purchase click on this site (see rakazo-page-browser).
+                // The user approved a purchase click on this site (see robots-page-browser).
                 approved: z.boolean().optional(),
                 // Empty for a page without a host (about:blank, data:, file:).
                 site: z.string().max(253).optional(),
@@ -647,20 +647,20 @@ app.post("/computers/:id/browser", async (c) => {
       // also keep the argv copy so a computer still on an older image keeps working until it is
       // replaced.
       [
-        "/usr/local/bin/rakazo-page-browser",
+        "/usr/local/bin/robots-page-browser",
         body.command,
         ...(carriesSavedLogin ? [] : [JSON.stringify(body)]),
       ],
       {
         env: [
           `DISPLAY=${layout.display}`,
-          `RAKAZO_CDP_PORT=${layout.debugPort}`,
-          "HOME=/home/rakazo",
+          `ROBOTS_CDP_PORT=${layout.debugPort}`,
+          "HOME=/home/robots",
           "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-          "RAKAZO_BROWSER_WATCH_STDIN=1",
-          "RAKAZO_BROWSER_ARGS_STDIN=1",
-          ...(process.env.RAKAZO_BROWSER_UPLOAD_MAX_BYTES !== undefined
-            ? [`RAKAZO_BROWSER_UPLOAD_MAX_BYTES=${process.env.RAKAZO_BROWSER_UPLOAD_MAX_BYTES}`]
+          "ROBOTS_BROWSER_WATCH_STDIN=1",
+          "ROBOTS_BROWSER_ARGS_STDIN=1",
+          ...(process.env.ROBOTS_BROWSER_UPLOAD_MAX_BYTES !== undefined
+            ? [`ROBOTS_BROWSER_UPLOAD_MAX_BYTES=${process.env.ROBOTS_BROWSER_UPLOAD_MAX_BYTES}`]
             : []),
         ],
         timeoutMs: 25_000,
@@ -1055,8 +1055,8 @@ app.delete("/computers/:id/screen", async (c) => {
     const { container } = await managedContainer(id, headers.botId, headers.spaceId);
     containerFound = true;
     const screenId = headers.screenId || headers.botId || id;
-    const cancelRunWork = c.req.header("x-rakazo-cancel-run-work") === "1";
-    const keepScreenWarm = c.req.header("x-rakazo-preserve-screen") === "1" && !cancelRunWork;
+    const cancelRunWork = c.req.header("x-robots-cancel-run-work") === "1";
+    const keepScreenWarm = c.req.header("x-robots-preserve-screen") === "1" && !cancelRunWork;
     const screenLeaseId = headers.screenLeaseId;
     await withComputerScreenLock(id, async () => {
       const info = await container.inspect();
@@ -1157,7 +1157,7 @@ app.post("/computers/:id/stop", async (c) => {
   try {
     const { container } = await managedContainer(id, botId, spaceId);
     // The caller gave up on what is running: the computer may be unable to run the checkpoint.
-    const discardUnsaved = c.req.header("x-rakazo-discard-unsaved") === "1";
+    const discardUnsaved = c.req.header("x-robots-discard-unsaved") === "1";
     if (discardUnsaved) {
       // A screen command on a stuck computer can hold the screen lock forever, so this stop
       // does not wait for it. Stopping the container ends that command and frees the lock.

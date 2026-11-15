@@ -15,21 +15,21 @@ import type {
   ScreenRequest,
   ScreenSession,
   TerminalRequest,
-} from "@rakazo/adapter-kit";
+} from "@robots/adapter-kit";
 import {
   INVALID_BROWSER_REQUEST,
   SandboxDamagedError,
   SandboxRequestRejectedError,
   SandboxUnresponsiveError,
-} from "@rakazo/adapter-kit";
-import { COMPUTER_UNRESPONSIVE_ERROR } from "@rakazo/contracts";
+} from "@robots/adapter-kit";
+import { COMPUTER_UNRESPONSIVE_ERROR } from "@robots/contracts";
 import {
   boundedSandboxCommandTimeoutMs,
   cancelResponseBody,
   requestDeadline,
   resolveSupervisorToken,
-} from "@rakazo/core";
-import { outgoingCorrelationHeaders } from "@rakazo/logging";
+} from "@robots/core";
+import { outgoingCorrelationHeaders } from "@robots/logging";
 import {
   boundedComputerActions,
   clampRounded,
@@ -153,12 +153,12 @@ export class DockerSandboxProvider implements SandboxProvider {
   private headers(context: AdapterContext, botId?: string) {
     return {
       authorization: `Bearer ${this.supervisorToken}`,
-      "x-rakazo-space-id": context.spaceId,
+      "x-robots-space-id": context.spaceId,
       ...outgoingCorrelationHeaders(),
-      ...(botId ? { "x-rakazo-bot-id": botId } : {}),
-      ...(context.botId ? { "x-rakazo-screen-id": context.botId } : {}),
-      ...(context.screenLeaseId ? { "x-rakazo-screen-lease-id": context.screenLeaseId } : {}),
-      ...(context.cancelRunWork ? { "x-rakazo-cancel-run-work": "1" } : {}),
+      ...(botId ? { "x-robots-bot-id": botId } : {}),
+      ...(context.botId ? { "x-robots-screen-id": context.botId } : {}),
+      ...(context.screenLeaseId ? { "x-robots-screen-lease-id": context.screenLeaseId } : {}),
+      ...(context.cancelRunWork ? { "x-robots-cancel-run-work": "1" } : {}),
     };
   }
 
@@ -291,7 +291,7 @@ export class DockerSandboxProvider implements SandboxProvider {
       body: JSON.stringify({
         ...request,
         argv: sandboxCommandArgv(request),
-        cwd: workspaceCwd("/home/rakazo", request.cwd),
+        cwd: workspaceCwd("/home/robots", request.cwd),
         timeoutMs,
       }),
       signal: streamSignal,
@@ -643,7 +643,7 @@ export class DockerSandboxProvider implements SandboxProvider {
           headers: {
             ...this.headers(context, computer.botId),
             ...(context.keepScreenWarm && !context.cancelRunWork && !context.signal.aborted
-              ? { "x-rakazo-preserve-screen": "1" }
+              ? { "x-robots-preserve-screen": "1" }
               : {}),
           },
           signal: deadline.signal,
@@ -670,7 +670,7 @@ export class DockerSandboxProvider implements SandboxProvider {
       method: "POST",
       headers: {
         ...this.headers(context, computer.botId),
-        ...(options?.discardUnsaved ? { "x-rakazo-discard-unsaved": "1" } : {}),
+        ...(options?.discardUnsaved ? { "x-robots-discard-unsaved": "1" } : {}),
       },
       signal: context.signal,
     });

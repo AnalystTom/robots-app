@@ -21,7 +21,7 @@ it("requires every selected platform and rejects feeds naming absent assets", ()
   const root = mkdtempSync(path.join(os.tmpdir(), "release-assets-"));
   try {
     mkdirSync(path.join(root, "release-artifacts"));
-    for (const name of ["App.dmg", "App.zip", "rakazo-server-darwin-arm64-1.2.3.tar.xz"])
+    for (const name of ["App.dmg", "App.zip", "robots-server-darwin-arm64-1.2.3.tar.xz"])
       writeFileSync(path.join(root, "release-artifacts", name), "fixture");
     const feed = path.join(root, "release-artifacts/latest-mac.yml");
     writeFileSync(feed, "version: 1.2.3\npath: App.zip\n");
@@ -83,7 +83,7 @@ it.each([undefined, "false", "true", "invalid"])("selects release platforms for 
 });
 
 describe("release repository feed", () => {
-  it.each(["own-app", ".rakazo", "_rakazo", "-rakazo"])(
+  it.each(["own-app", ".robots", "_robots", "-robots"])(
     "packages repository %s without changing identity or signing settings",
     (repo) => {
       const root = mkdtempSync(path.join(os.tmpdir(), "release-feed-"));

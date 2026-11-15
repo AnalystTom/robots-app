@@ -1,7 +1,7 @@
 import { t } from "@lingui/core/macro";
-import type { ComposerMention, ComposerMentionBinding, SlashActionId } from "@rakazo/core";
-import { composerMentionSegments, mentionChipKey } from "@rakazo/core";
-import { BotAvatar, resolvePersonaColorDef } from "@rakazo/ui-web";
+import type { ComposerMention, ComposerMentionBinding, SlashActionId } from "@robots/core";
+import { composerMentionSegments, mentionChipKey } from "@robots/core";
+import { BotAvatar, resolvePersonaColorDef } from "@robots/ui-web";
 import { Clock, Puzzle, X } from "lucide-react";
 import type { ComponentProps, ReactNode, Ref } from "react";
 import { Fragment } from "react";

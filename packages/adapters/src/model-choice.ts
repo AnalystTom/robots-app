@@ -1,5 +1,5 @@
-import type { Actor } from "@rakazo/contracts";
-import { canonicalPiProviderId } from "@rakazo/contracts";
+import type { Actor } from "@robots/contracts";
+import { canonicalPiProviderId } from "@robots/contracts";
 import type { BotModelChangeDeps } from "./model-selection.js";
 import { modelCredentialAuthKindsForSpace, spaceCanRunCatalogModel } from "./model-selection.js";
 import { listAvailablePiCatalog } from "./pi-catalog-availability.js";

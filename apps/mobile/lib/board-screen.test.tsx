@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { Ticket } from "@rakazo/contracts";
+import type { Ticket } from "@robots/contracts";
 import type { EffectCallback, ReactNode } from "react";
 import { act, createElement, useEffect } from "react";
 import type { Root } from "react-dom/client";

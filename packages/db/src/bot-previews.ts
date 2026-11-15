@@ -1,5 +1,5 @@
-import type { MessageBlock } from "@rakazo/contracts";
-import { BACKGROUND_RUN_TRIGGERS, isBackgroundRunTrigger, userVisibleMessages } from "@rakazo/core";
+import type { MessageBlock } from "@robots/contracts";
+import { BACKGROUND_RUN_TRIGGERS, isBackgroundRunTrigger, userVisibleMessages } from "@robots/core";
 import type { PrismaClient } from "./client.js";
 import { Prisma } from "./client.js";
 import { contentEncryptionOf } from "./content-encryption.js";
