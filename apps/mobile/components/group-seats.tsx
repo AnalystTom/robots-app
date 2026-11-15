@@ -203,7 +203,8 @@ function seatArt(
       ),
     };
   }
-  const color = parsed.kind === "color" ? parsed.color : member.color;
+  // A seat is one vector drawing, so a robot character sits as a body in its colour.
+  const color = parsed.kind === "color" || parsed.kind === "robot" ? parsed.color : member.color;
   const seed = avatarIdentitySeed(member.botId ?? member.name ?? color);
   const outline = organicAvatarPath(seed);
   const [x, y, units] = ORGANIC_AVATAR_VIEWBOX.split(" ").map(Number) as [number, number, number];

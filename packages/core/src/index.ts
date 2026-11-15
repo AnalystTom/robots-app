@@ -93,6 +93,7 @@ export * from "./remote-images.js";
 export * from "./response-bytes.js";
 export * from "./retry.js";
 export * from "./retry-policy.js";
+export * from "./robot-character.js";
 export * from "./room-settings.js";
 export * from "./routine-dispatch.js";
 export * from "./routine-draft.js";

@@ -1,10 +1,9 @@
-import { BOT_COLORS } from "@robots/contracts";
+import { parseRobotCharacter, ROBOT_PARTS } from "@robots/contracts";
 import {
   newClientId,
   ORGANIC_AVATAR_HEART_FAMILY,
   organicAvatarFamily,
   organicAvatarLook,
-  seededLogoAvatarColor,
 } from "@robots/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "./client.js";
@@ -95,8 +94,12 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     expect(
       created.every((bot) => organicAvatarFamily(bot.id) !== ORGANIC_AVATAR_HEART_FAMILY),
     ).toBe(true);
-    const firstColors = all.slice(0, BOT_COLORS.length).map((bot) => bot.color);
-    expect(new Set(firstColors).size).toBe(firstColors.length);
+    // Each gets a robot character, and no robot colour repeats until every colour is worn.
+    expect(created.every((bot) => parseRobotCharacter(bot.color) !== null)).toBe(true);
+    const firstColours = all
+      .flatMap((bot) => parseRobotCharacter(bot.color)?.colour ?? [])
+      .slice(0, ROBOT_PARTS.colour.length);
+    expect(new Set(firstColours).size).toBe(firstColours.length);
     expect(created.every((bot) => /^c[a-z0-9]{24}$/.test(bot.id))).toBe(true);
 
     const after = await system.bot.findMany({
@@ -116,13 +119,13 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       repos.createBot(actor(), botInput("RoBots default")),
     );
     expect(created).toMatchObject({ avatarSet: "robots" });
-    expect(BOT_COLORS).toContain(created.color);
+    expect(parseRobotCharacter(created.color)).not.toBeNull();
     await system.user.update({ where: { id: owner.userId }, data: { botAvatarSet: "organic" } });
     const keptOriginal = await runAsTenant(owner, () =>
       repos.createBot(actor(), botInput("Original account")),
     );
     expect(keptOriginal).toMatchObject({ avatarSet: "organic" });
-    expect(BOT_COLORS).toContain(keptOriginal.color);
+    expect(parseRobotCharacter(keptOriginal.color)).not.toBeNull();
     await system.user.update({ where: { id: owner.userId }, data: { botAvatarSet: "robots" } });
     for (const color of ["#8B5CF6", "#8B5CF6::shape_3", "data:image/png;base64,aGVsbG8="]) {
       const original = await runAsTenant(owner, () =>
@@ -149,7 +152,9 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       const [first, retry] = await runAsTenant(owner, () =>
         Promise.all([repos.createBot(actor(), input), repos.createBot(actor(), input)]),
       );
-      expect(first).toMatchObject({ id, color: explicit ?? seededLogoAvatarColor(id) });
+      expect(first.id).toBe(id);
+      if (explicit) expect(first.color).toBe(explicit);
+      else expect(parseRobotCharacter(first.color)).not.toBeNull();
       expect(retry).toMatchObject({ id: first.id, color: first.color, threadId: first.threadId });
       expect(await runAsTenant(owner, () => repos.getBot(actor(), id))).toMatchObject({
         id,

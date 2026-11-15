@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import type { BotAvatarSet } from "@robots/contracts";
-import { ORGANIC_AVATAR_LOOKS } from "@robots/core";
+import { parseBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
+import { ORGANIC_AVATAR_LOOKS, robotCharacterDataUri } from "@robots/core";
 import type { ReactNode } from "react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -82,31 +83,45 @@ describe("CreateBotDialog", () => {
     expect(button("Create").disabled).toBe(false);
   });
 
-  it("draws the account's set without offering another, and leaves the set to the server", async () => {
+  it.each(["organic", "robots"] as const)(
+    "starts %s accounts on a random robot character and sends it as previewed",
+    async (avatarSet) => {
+      const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
+      await render(onCreate, avatarSet);
+      expect(document.querySelector('[role="tablist"]')).toBeNull();
+      const preview = document.querySelector<HTMLImageElement>(
+        '[data-testid="create-bot-dialog"] img',
+      )!;
+      await typeName("Scout");
+      await click(button("Create"));
+      const input = onCreate.mock.lastCall![0];
+      expect(parseBotAvatarValue(input.color).kind).toBe("robot");
+      expect(preview.getAttribute("src")).toBe(
+        robotCharacterDataUri(parseRobotCharacter(input.color)!),
+      );
+      expect(input.id).toMatch(/^c[a-z0-9]{24}$/);
+      expect(input).not.toHaveProperty("avatarFamily");
+      expect(input).not.toHaveProperty("avatarSet");
+    },
+  );
+
+  it("builds the robot from part chips and Shuffle", async () => {
     const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
     await render(onCreate);
-    expect(document.querySelector('[role="tablist"]')).toBeNull();
-    const family = Number(
-      document.querySelector(".robots-organic-avatar")?.getAttribute("data-shape-family"),
-    );
+    await click(button("Steam"));
+    // Shuffle draws new parts and takes the extra off.
+    await click(button("Shuffle"));
+    await click(button("Chef's hat"));
+    await click(button("Monocle"));
+    await click(button("Teal"));
     await typeName("Scout");
     await click(button("Create"));
-    expect(onCreate.mock.lastCall?.[0]).toMatchObject({ name: "Scout", avatarFamily: family });
-    expect(onCreate.mock.lastCall?.[0]).not.toHaveProperty("avatarSet");
-    expect(onCreate.mock.lastCall?.[0]).not.toHaveProperty("id");
-  });
-
-  it("sends the RoBots preview id without an organic family", async () => {
-    const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
-    await render(onCreate, "robots");
-    await typeName("Scout");
-    await click(button("Create"));
-    const input = onCreate.mock.lastCall![0];
-    const preview = document.querySelector(".robots-logo-avatar")!;
-    expect(input).toMatchObject({ name: "Scout" });
-    expect(input).not.toHaveProperty("avatarFamily");
-    expect(input.id).toMatch(/^c[a-z0-9]{24}$/);
-    expect(input.color?.toUpperCase()).toBe(preview.getAttribute("data-color")?.toUpperCase());
+    expect(parseRobotCharacter(onCreate.mock.lastCall![0].color)).toMatchObject({
+      colour: "teal",
+      headwear: "chef-hat",
+      face: "monocle",
+      extra: "none",
+    });
   });
 
   it("preserves an explicitly chosen RoBots colour through a failed create and retry", async () => {
@@ -165,15 +180,17 @@ describe("CreateBotDialog", () => {
   });
 });
 
-it("retains the preview identity and colour through rerenders and a retry", async () => {
+it("retains the preview identity and look through rerenders and a retry", async () => {
   const onCreate = vi
     .fn(async (_input: CreateBotDialogInput) => undefined)
     .mockRejectedValueOnce(new Error("Try again"));
   await render(onCreate, "robots");
-  const colour = document.querySelector(".robots-logo-avatar")!.getAttribute("data-color");
+  const preview = () =>
+    document.querySelector('[data-testid="create-bot-dialog"] img')!.getAttribute("src");
+  const look = preview();
   await typeName("First name");
   await render(onCreate, "robots");
-  expect(document.querySelector(".robots-logo-avatar")!.getAttribute("data-color")).toBe(colour);
+  expect(preview()).toBe(look);
   await click(button("Create"));
   const first = onCreate.mock.lastCall![0];
   await typeName("Retry name");
@@ -182,5 +199,5 @@ it("retains the preview identity and colour through rerenders and a retry", asyn
   expect(first.id).toMatch(/^c[a-z0-9]{24}$/);
   expect(second.id).toBe(first.id);
   expect(second.color).toBe(first.color);
-  expect(second.color?.toUpperCase()).toBe(colour?.toUpperCase());
+  expect(robotCharacterDataUri(parseRobotCharacter(second.color)!)).toBe(look);
 });

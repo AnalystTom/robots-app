@@ -1665,7 +1665,7 @@ export const builtinAgentTools: ConnectorTool[] = [
         color: {
           type: "string",
           description:
-            "Avatar color or encoded shape, e.g. #8B5CF6 or #8B5CF6::shape_3. Do not pass http URLs.",
+            "Avatar: robot:<colour>.<headwear>.<face>.<outfit>.<extra>, #hex or #hex::shape_N. No URLs.",
         },
         artifact_id: {
           type: "string",

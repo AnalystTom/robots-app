@@ -21,12 +21,24 @@ test("bot settings open Avatar Studio on the Bot tab", async ({ page }, testInfo
   await expect(studio.getByRole("tab", { name: "Upload", exact: true })).toBeVisible();
   await expect(studio.getByTestId("avatar-studio-bot-tab")).toBeVisible();
 
+  // The first bot wears a robot character, built from part chips.
+  await expect(studio.getByTestId("robot-builder")).toBeVisible();
+  const monocle = studio.getByRole("button", { name: "Monocle", exact: true });
+  await monocle.click();
+  await expect(monocle).toHaveAttribute("aria-pressed", "true");
+  await expect(studio.locator('img[src^="data:image/svg+xml"]').first()).toBeVisible();
+  await captureScreenshot(page, testInfo, "avatar-studio-robot-builder");
+
+  // The earlier styles are one fold away.
+  await studio.getByText("More styles", { exact: true }).click();
   await expect(studio.getByRole("tab", { name: "Original", exact: true })).toHaveAttribute(
     "aria-selected",
     "true",
   );
   const defaultLook = studio.getByTestId("avatar-studio-default");
   const wedge = studio.getByRole("button", { name: "wedge", exact: true });
+  await expect(defaultLook).toHaveAttribute("aria-pressed", "false");
+  await defaultLook.click();
   await expect(defaultLook).toHaveAttribute("aria-pressed", "true");
   await expect(wedge).toHaveAttribute("aria-pressed", "false");
 
