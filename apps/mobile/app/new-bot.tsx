@@ -53,7 +53,11 @@ export default function NewBot() {
         setAvatarSet(set);
         // The logo has no studio shapes; drop one picked while the Original set was shown.
         if (set === "robots")
-          setLook((current) => ({ ...current, color: botLookState(current.color).color }));
+          setLook((current) =>
+            botLookState(current.color).shapeIndex === null
+              ? current
+              : { ...current, color: botLookState(current.color).color },
+          );
       })
       .catch(() => undefined);
     // A first bot needs a model; ask before the form is filled in rather than after.

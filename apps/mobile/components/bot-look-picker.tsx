@@ -6,15 +6,18 @@ import {
   botLookState,
   botLookWithColor,
   botLookWithShape,
+  randomRobotCharacterValue,
   SHIPPED_BOT_AVATAR_SHAPE_KEYS,
 } from "@robots/core";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useMobileTokens } from "../lib/native";
 import { BotAvatar } from "./bot-avatar";
+import { NativeSymbol } from "./native-symbol";
 
 /**
- * The shape grid and color row for a bot's look, as on web. With `organicIdentities`, the grid
+ * A robot character with a Shuffle, then the shape grid and color row for a bot's look, as on web. With `organicIdentities`, the grid
  * offers the organic body each identity draws (for a bot that has no id yet); without them,
  * "Default" restores the bot's own organic body.
  */
@@ -36,11 +39,41 @@ export function BotLookPicker({
 }) {
   const { t } = useLingui();
   const tokens = useMobileTokens();
-  const { photo, shapeIndex: shape, color, defaultLook } = botLookState(value);
+  const { photo, shapeIndex: shape, color, robot, defaultLook } = botLookState(value);
   const labeled = !organicIdentities;
+  // The robot offered while the bot wears another look; Shuffle draws a new one.
+  const [spareRobot, setSpareRobot] = useState(randomRobotCharacterValue);
+  const shownRobot = robot ? value : spareRobot;
 
   return (
     <View style={{ gap: 20 }}>
+      <View>
+        {labeled ? <Label>{t`Robot`}</Label> : null}
+        <View accessibilityRole="radiogroup" style={grid}>
+          <Choice
+            disabled={disabled}
+            label={t`Robot`}
+            selected={robot !== null}
+            onPress={() => onChange(shownRobot)}
+          >
+            <BotAvatar color={shownRobot} size={40} />
+          </Choice>
+          <Choice
+            disabled={disabled}
+            label={t`Shuffle`}
+            selected={false}
+            onPress={() => {
+              const next = randomRobotCharacterValue();
+              setSpareRobot(next);
+              onChange(next);
+            }}
+          >
+            <View style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+              <NativeSymbol ios="shuffle" android="shuffle" size={22} color={tokens.foreground} />
+            </View>
+          </Choice>
+        </View>
+      </View>
       {avatarSet === "organic" ? (
         <View>
           {labeled ? <Label>{t`Shape`}</Label> : null}

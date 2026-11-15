@@ -1,10 +1,8 @@
 import { Trans } from "@lingui/react/macro";
-import { BOT_COLOR_LIST } from "@robots/contracts";
 import { Button } from "@robots/ui-web";
 import { rpc } from "../../lib/rpc";
 
 const FIRST_BOT_NAME = "Chief";
-const FIRST_BOT_COLOR = BOT_COLOR_LIST.find((color) => color.id === "orange")!.hex;
 const FIRST_BOT_SPAWN_KEY = "onboarding:first";
 const FIRST_BOT_LOCK = "robots:onboarding-first-bot";
 
@@ -31,7 +29,6 @@ async function createOrReuseFirstBot(): Promise<{ id: string }> {
       description: "",
       instructions: "",
       notifyOnFinish: true,
-      color: FIRST_BOT_COLOR,
       spawnKey: FIRST_BOT_SPAWN_KEY,
     });
     return { id: created.id };

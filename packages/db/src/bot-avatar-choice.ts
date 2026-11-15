@@ -1,11 +1,17 @@
 import { randomInt } from "node:crypto";
 import type { BotAvatarSet } from "@robots/contracts";
-import { BOT_COLORS, parseBotAvatarValue } from "@robots/contracts";
+import {
+  BOT_COLORS,
+  parseBotAvatarValue,
+  ROBOT_PARTS,
+  robotCharacterValue,
+} from "@robots/contracts";
 import {
   ORGANIC_AVATAR_HEART_FAMILY,
   ORGANIC_AVATAR_LOOKS,
   organicAvatarFamily,
   organicAvatarLook,
+  randomRobotLook,
   resolvePersonaColorDef,
   seededLogoAvatarColor,
 } from "@robots/core";
@@ -32,6 +38,23 @@ export function pickLeastUsed<T>(
   const preferred = least.filter((option) => !avoid.includes(option));
   const candidates = preferred.length > 0 ? preferred : least;
   return candidates[Math.floor(random() * candidates.length)] ?? options[0]!;
+}
+
+/**
+ * The robot character a bot created without a look gets: a colour the user's robots wear
+ * least, and random headwear, face and outfit, so bots look distinct.
+ */
+export function chooseRobotCharacter(
+  existing: readonly { color: string }[],
+  random: Random = cryptoRandom,
+): string {
+  const used = existing.flatMap((bot) => {
+    const avatar = parseBotAvatarValue(bot.color);
+    return avatar.kind === "robot" ? [avatar.look.colour] : [];
+  });
+  return robotCharacterValue(
+    randomRobotLook(random, pickLeastUsed(ROBOT_PARTS.colour, used, random)),
+  );
 }
 
 /** Cuid-shaped: "c", eight base-36 time digits, then sixteen random base-36 digits. */

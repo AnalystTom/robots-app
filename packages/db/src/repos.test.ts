@@ -1,4 +1,5 @@
 import type { Actor } from "@robots/contracts";
+import { isBotAvatarValue, parseBotAvatarValue } from "@robots/contracts";
 import { describe, expect, it, vi } from "vitest";
 import type { PrismaClient } from "./client.js";
 import { createRepos } from "./repos.js";
@@ -677,7 +678,7 @@ describe("createRepos.createBot computer", () => {
       deploymentSettings: { findUnique: vi.fn(async () => null) },
       $transaction: vi.fn(async (run: (client: typeof tx) => Promise<unknown>) => run(tx)),
     };
-    return { prisma: prisma as unknown as PrismaClient, upserts };
+    return { prisma: prisma as unknown as PrismaClient, upserts, tx };
   }
 
   const input = { name: "Helper", description: "", instructions: "", notifyOnFinish: true };
@@ -713,5 +714,17 @@ describe("createRepos.createBot computer", () => {
 
   it("rejects an unknown default", async () => {
     await expect(create("shared")).rejects.toThrow("COMPUTER_DEFAULT_MODE");
+  });
+
+  it("gives a bot created without a look a robot character, and keeps a given look", async () => {
+    const savedColor = async (color?: string) => {
+      const { prisma, tx } = createFakePrisma();
+      await createRepos(prisma).createBot(actor, { ...input, color });
+      return tx.bot.create.mock.calls[0]![0].data.color as string;
+    };
+    const color = await savedColor();
+    expect(parseBotAvatarValue(color).kind).toBe("robot");
+    expect(isBotAvatarValue(color)).toBe(true);
+    expect(await savedColor("#2A92FE")).toBe("#2A92FE");
   });
 });
