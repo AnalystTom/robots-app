@@ -149,7 +149,7 @@ it.each([
   const { client } = meDeps(stored);
   await expect(client.me()).resolves.toMatchObject({
     labs,
-    labsAvailable: ["board"],
+    labsAvailable: ["board", "today", "email", "docs"],
     ticketBoardEnabled,
   });
 });
@@ -158,7 +158,7 @@ it("reports a feature the deployment turns on as on and not switchable", async (
   const { client } = meDeps([], ["board"]);
   await expect(client.me()).resolves.toMatchObject({
     labs: ["board"],
-    labsAvailable: [],
+    labsAvailable: ["today", "email", "docs"],
     ticketBoardEnabled: true,
   });
 });
