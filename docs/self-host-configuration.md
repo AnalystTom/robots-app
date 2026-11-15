@@ -106,7 +106,8 @@ Each entry must be a bare origin (scheme, host, optional port; no path). `https:
 any host. `http://` is accepted only for loopback, `.local`, and private-network IPs (RFC 1918 and
 Tailscale's 100.64.0.0/10). Anything else is ignored and logged as a warning. Only origins you list
 are trusted; the default is none. `WEB_ORIGIN` stays the address used in links, passkeys and OAuth
-callbacks.
+callbacks. [Connect other devices](./connect.md) covers opening the web port to a LAN or private
+network and pairing devices with a one-time code.
 
 ## Feature switches
 
