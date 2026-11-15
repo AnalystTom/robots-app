@@ -617,6 +617,8 @@ services:
       API_PROXY_TARGET: http://api:3100
       ROBOTS_HOST: ${ROBOTS_HOST:-localhost}
       ROBOTS_ALLOWED_HOSTS: ${ROBOTS_ALLOWED_HOSTS:-}
+      # "true" closes connections from outside loopback and private networks; set with a LAN bind.
+      ROBOTS_WEB_PRIVATE_PEERS_ONLY: ${ROBOTS_WEB_PRIVATE_PEERS_ONLY:-}
       # Set only by the packaged desktop app. Its authenticated probe prevents a
       # source dev server on the same host port from impersonating this stack.
       ROBOTS_DESKTOP_STACK_TOKEN: ${ROBOTS_DESKTOP_STACK_TOKEN:-}

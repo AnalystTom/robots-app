@@ -63,7 +63,17 @@ function NetworkAccess({
     local: t`Local network`,
     "private-https": t`Private network (HTTPS)`,
   };
-  const failure = change.error ? errorText(change.error) : state.error;
+  const reasons: Record<string, string> = {
+    missing: t`Install and sign in to your private network on this computer first.`,
+    stopped: t`Connect this computer to your private network first.`,
+    "no-https": t`Turn on HTTPS names for your private network first.`,
+    "in-use": t`Your private network's HTTPS address already serves something else.`,
+  };
+  const failure = change.error
+    ? errorText(change.error)
+    : state.error
+      ? (reasons[state.error] ?? t`Could not change network access.`)
+      : null;
   return (
     <SettingsGroup title={<Trans>Network access</Trans>} data-testid="network-access">
       <SettingsRow

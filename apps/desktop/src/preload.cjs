@@ -27,6 +27,10 @@ contextBridge.exposeInMainWorld("robotsDesktop", {
   server: {
     change: () => ipcRenderer.invoke("desktop.server.change"),
   },
+  network: {
+    state: () => ipcRenderer.invoke("desktop.network.state"),
+    setMode: (mode) => ipcRenderer.invoke("desktop.network.setMode", mode),
+  },
   settings: {
     onOpen: subscribe("desktop.settings.open"),
   },

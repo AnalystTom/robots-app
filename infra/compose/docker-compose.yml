@@ -559,6 +559,8 @@ services:
       SCREEN_PROXY_SECRET: ${SCREEN_PROXY_SECRET:?Set SCREEN_PROXY_SECRET in .env}
       ROBOTS_HOST: ${ROBOTS_HOST:-localhost}
       ROBOTS_ALLOWED_HOSTS: ${ROBOTS_ALLOWED_HOSTS:-}
+      # "true" closes connections from outside loopback and private networks; set with a LAN bind.
+      ROBOTS_WEB_PRIVATE_PEERS_ONLY: ${ROBOTS_WEB_PRIVATE_PEERS_ONLY:-}
       ROBOTS_CSP_SCRIPT_SRC: ${ROBOTS_CSP_SCRIPT_SRC:-}
       ROBOTS_CSP_CONNECT_SRC: ${ROBOTS_CSP_CONNECT_SRC:-}
       ROBOTS_THEME: ${ROBOTS_THEME:-}

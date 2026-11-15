@@ -108,7 +108,11 @@ export interface DesktopNetworkState {
   available: DesktopNetworkMode[];
   /** Addresses another device can open, best first. Empty while off. */
   urls: string[];
-  /** Why the last change did not apply, already in the app's language. */
+  /**
+   * Why the last change did not apply, as a code the page words: `missing` (no private network
+   * software), `stopped` (not connected), `no-https` (HTTPS names are off), `in-use` (its HTTPS
+   * port serves something else), or `failed`.
+   */
   error: string | null;
 }
 
