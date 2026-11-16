@@ -2,7 +2,7 @@
 
 import type { BotAvatarSet } from "@robots/contracts";
 import { parseBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
-import { ORGANIC_AVATAR_LOOKS, robotCharacterDataUri } from "@robots/core";
+import { robotCharacterDataUri } from "@robots/core";
 import type { ReactNode } from "react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -17,6 +17,7 @@ vi.mock("@lingui/react/macro", () => {
 });
 
 import { CreateBotDialog } from "./create-bot-dialog";
+import { ROBOT_PRESETS } from "./robot-presets";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -105,66 +106,18 @@ describe("CreateBotDialog", () => {
     },
   );
 
-  it("builds the robot from part chips and Shuffle", async () => {
+  it("offers preset robots and sends the one picked", async () => {
     const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
     await render(onCreate);
-    await click(button("Steam"));
-    // Shuffle draws new parts and takes the extra off.
-    await click(button("Shuffle"));
-    await click(button("Chef's hat"));
-    await click(button("Monocle"));
-    await click(button("Teal"));
+    expect(document.querySelectorAll('[role="radio"]')).toHaveLength(ROBOT_PRESETS.length);
+    expect(document.querySelector('[data-testid="robot-builder"]')).toBeNull();
+    await click(button("Researcher"));
+    expect(button("Researcher").getAttribute("aria-checked")).toBe("true");
     await typeName("Scout");
     await click(button("Create"));
-    expect(parseRobotCharacter(onCreate.mock.lastCall![0].color)).toMatchObject({
-      colour: "teal",
-      headwear: "chef-hat",
-      face: "monocle",
-      extra: "none",
-    });
-  });
-
-  it("preserves an explicitly chosen RoBots colour through a failed create and retry", async () => {
-    const onCreate = vi
-      .fn(async (_input: CreateBotDialogInput) => undefined)
-      .mockRejectedValueOnce(new Error("Try again"));
-    await render(onCreate, "robots");
-    await click(button("Color #00C972"));
-    await typeName("Scout");
-    await click(button("Create"));
-    expect(onCreate.mock.lastCall?.[0]).toMatchObject({ color: "#00C972" });
-    await click(button("Create"));
-    expect(onCreate.mock.lastCall?.[0]).toMatchObject({ color: "#00C972" });
-  });
-
-  it("sends the organic family the preview draws", async () => {
-    const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
-    await render(onCreate);
-    await click(button("Shape 2"));
-    await click(button("Color #00C972"));
-    const preview = document.querySelector(".robots-organic-avatar");
-    const family = Number(preview?.getAttribute("data-shape-family"));
-    await typeName("Scout");
-    await click(button("Create"));
-    expect(onCreate).toHaveBeenCalledWith({
-      name: "Scout",
-      color: "#00C972",
-      avatarFamily: family,
-    });
-    expect(family).toBe(ORGANIC_AVATAR_LOOKS[1]);
-  });
-
-  it("sends a studio shape without an organic family", async () => {
-    const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
-    await render(onCreate);
-    await click(button("Color #FF781C"));
-    await click(button("wedge"));
-    await typeName("Scout");
-    await click(button("Create"));
-    expect(onCreate).toHaveBeenCalledWith({
-      name: "Scout",
-      color: "#FF781C::shape_1",
-    });
+    expect(parseRobotCharacter(onCreate.mock.lastCall![0].color)).toEqual(
+      ROBOT_PRESETS.find((preset) => preset.id === "researcher")!.look,
+    );
   });
 
   it("shows the error and stays open when creating fails", async () => {

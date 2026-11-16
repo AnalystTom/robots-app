@@ -1,12 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_NAME_MAX_LENGTH } from "@robots/contracts";
-import {
-  newBotLook,
-  newBotLookInput,
-  newBotPreviewIdentity,
-  ORGANIC_PREVIEW_IDENTITIES,
-} from "@robots/core";
+import { newBotLook, newBotLookInput, newBotPreviewIdentity } from "@robots/core";
 import {
   BotAvatar,
   Button,
@@ -19,7 +14,8 @@ import {
 } from "@robots/ui-web";
 import { useRef, useState } from "react";
 import { errorText } from "../../lib/user-error";
-import { BotLookPicker } from "./avatar-studio-popover";
+import type { RobotPresetId } from "./robot-presets";
+import { RobotPresetPicker, randomRobotPreset, robotPresetValue } from "./robot-presets";
 
 export interface CreateBotDialogInput {
   name: string;
@@ -44,7 +40,8 @@ export function CreateBotDialog({
   const { t } = useLingui();
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
-  const [look, setLook] = useState(newBotLook);
+  const [preset, setPreset] = useState<RobotPresetId>(randomRobotPreset);
+  const [look, setLook] = useState(() => ({ ...newBotLook(), color: robotPresetValue(preset) }));
   const identity = newBotPreviewIdentity(avatarSet, look);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,15 +106,16 @@ export function CreateBotDialog({
               {error}
             </p>
           ) : null}
-          <BotLookPicker
-            value={look.color}
-            identity={identity}
-            organicIdentities={ORGANIC_PREVIEW_IDENTITIES}
-            avatarSet={avatarSet}
-            onChange={(color, picked) => {
-              setLook((current) => ({ ...current, color, identity: picked ?? current.identity }));
+          <RobotPresetPicker
+            value={preset}
+            onChange={(next) => {
+              setPreset(next);
+              setLook((current) => ({ ...current, color: robotPresetValue(next) }));
             }}
           />
+          <p className="text-center text-caption text-muted-foreground">
+            <Trans>You can fine-tune the look later in the bot's settings.</Trans>
+          </p>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={submitting} onClick={onCancel}>
               <Trans>Cancel</Trans>

@@ -6,8 +6,8 @@ import type { Ticket, TicketStatus } from "@robots/contracts";
  */
 export const TASK_COLUMNS = [
   { id: "notStarted", statuses: ["todo"] },
-  { id: "needsYou", statuses: ["review", "blocked"] },
   { id: "working", statuses: ["doing"] },
+  { id: "needsYou", statuses: ["review", "blocked"] },
   { id: "done", statuses: ["done", "closed"] },
 ] as const satisfies ReadonlyArray<{ id: string; statuses: readonly TicketStatus[] }>;
 
@@ -15,7 +15,7 @@ export type TaskColumn = (typeof TASK_COLUMNS)[number];
 export type TaskColumnId = TaskColumn["id"];
 
 /** Tickets needing the user's review or unblocking; Today lists them too. */
-export const NEEDS_YOU_STATUSES: readonly TicketStatus[] = TASK_COLUMNS[1].statuses;
+export const NEEDS_YOU_STATUSES: readonly TicketStatus[] = TASK_COLUMNS[2].statuses;
 
 export function taskColumnOf(status: TicketStatus): TaskColumnId {
   const column = TASK_COLUMNS.find((candidate) =>

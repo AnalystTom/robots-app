@@ -17,7 +17,7 @@ import { WorkspaceLayout } from "./WorkspaceLayout";
 const COLUMN_PREVIEW = 4;
 const DRAG_TYPE = "text/plain";
 
-/** The ticket board in four columns; drag a card to move it, or change its status in the ticket. */
+/** The ticket board as four lanes, left to right; drag a card to move it, or change its status in the ticket. */
 export function TasksPage() {
   const { t } = useLingui();
   const { tickets, bots, error, reload, ticketsKey } = useBoard();
@@ -98,10 +98,7 @@ export function TasksPage() {
           {shownError}
         </p>
       ) : null}
-      <div
-        data-testid="task-columns"
-        className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4"
-      >
+      <div data-testid="task-columns" className="flex min-h-full snap-x gap-3 overflow-x-auto p-4">
         {TASK_COLUMNS.map(({ id }) => {
           const cards = columns[id];
           const all = expanded.has(id);
@@ -121,7 +118,7 @@ export function TasksPage() {
                   setOver(null);
               }}
               onDrop={(event) => dropped(event, id)}
-              className={`min-w-0 space-y-2 rounded-xl p-2 ${over === id ? "bg-accent" : ""}`}
+              className={`flex w-72 shrink-0 snap-start flex-col gap-2 rounded-xl border border-border p-2 ${over === id ? "bg-accent" : "bg-muted/50"}`}
             >
               <SectionHeading
                 as="h2"

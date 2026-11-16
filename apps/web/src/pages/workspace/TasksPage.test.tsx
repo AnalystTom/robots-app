@@ -157,8 +157,8 @@ it("groups tickets into the four columns with assignee and time on each card", a
   ]);
   expect(Array.from(container.querySelectorAll("h2")).map((node) => node.textContent)).toEqual([
     "Not started 1",
-    "Needs you 2",
     "Working on it 1",
+    "Needs you 2",
     "Done 1",
   ]);
   expect(cardIds(container, "needsYou").sort()).toEqual(["2", "3"]);
