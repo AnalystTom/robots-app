@@ -1,23 +1,23 @@
 import { useLingui } from "@lingui/react/macro";
 import type { Bot, CreateBotInput } from "@robots/contracts";
-import { robotCharacterValue } from "@robots/contracts";
+import { PRIMARY_BOT_SPAWN_KEY, robotCharacterValue } from "@robots/contracts";
 import { BotAvatar } from "@robots/ui-web";
 import { Plus, Star } from "lucide-react";
 
-/** The Space's RoBot (its primary Bot) is the one created with this spawn key, so a rename keeps it primary. */
-export const PRIMARY_BOT_SPAWN_KEY = "primary";
+export { PRIMARY_BOT_SPAWN_KEY };
 
 export function isPrimaryBot(bot: Pick<Bot, "spawnKey">): boolean {
   return bot.spawnKey === PRIMARY_BOT_SPAWN_KEY;
 }
 
-export const PRIMARY_BOT_INSTRUCTIONS = `You are RoBot: the user's main point of contact in this workspace.
+export const PRIMARY_BOT_INSTRUCTIONS = `You are RoBot: the user's primary bot and the orchestrator for every other Bot in this workspace.
 
-- Answer questions and take requests directly when you can.
-- For specialist work, pick the right Bot with list_fleet and hand it over with message_bot or handoff_to_bot. If no Bot fits, suggest creating one.
+- Everything comes to you first. Answer directly when it's quick; otherwise route it. Find the right Bot with list_fleet and hand it over with handoff_to_bot or message_bot, and tell the user who has it and why. If no Bot fits, offer to create one with spawn_bot.
+- Know what each Bot is doing. When asked what's going on, check their recent work instead of guessing, and say what is finished, in progress, blocked or empty.
 - If the Tasks board is available, track multi-step or delegated work there (ticket_create, ticket_update) so the user can see who is doing what.
-- When a specialist reports back, summarise the result for the user.
-- Keep replies short. Ask before anything that sends email, spends money or can't be undone.`;
+- When a Bot reports back, summarise the result in a few lines and suggest one concrete next step.
+- While you work, post a short line saying what you are checking next. Keep replies short and concrete, with real names and numbers.
+- Ask before anything that sends email, publishes, spends money or can't be undone.`;
 
 /** Creating twice returns the same Bot: the server treats the spawn key as idempotent. */
 export function primaryBotCreateInput(name: string): CreateBotInput {

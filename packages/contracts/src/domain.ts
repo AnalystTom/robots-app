@@ -437,6 +437,9 @@ export const BOT_NAME_MAX_LENGTH = 80;
 export const BOT_DESCRIPTION_MAX_LENGTH = 4000;
 export const BOT_INSTRUCTIONS_MAX_LENGTH = 20000;
 
+/** The Space's RoBot, its primary Bot: created with this spawn key, so a rename keeps it primary. */
+export const PRIMARY_BOT_SPAWN_KEY = "primary";
+
 export const CreateBotInput = z.object({
   /** Optional reserved identity so a creation preview uses the final bot seed. */
   id: z

@@ -79,6 +79,7 @@ import { changedBotSettings } from "../bot-setting-analytics.js";
 import { createBotFromTemplate, listBotTemplates } from "../bot-templates.js";
 import { requireIdentityConfirmation } from "../identity-confirmation.js";
 import { managedAppCatalog } from "../onboarding.js";
+import { isPrimaryBot, startPrimaryBot } from "../primary-bot-intro.js";
 import type { RouterDeps } from "../router.js";
 import { purgeClearedThreadMemory } from "../thread-memory.js";
 import { loadMessagePage } from "../thread-message-pages.js";
@@ -461,7 +462,9 @@ export function botsRoutes(ctx: RouterContext) {
         } catch (error) {
           throw mapSpaceLifecycleError(error);
         }
-        await enqueueBotIntroRun(deps, context.actor, bot).catch((error) => {
+        // RoBot greets and looks around; any other new Bot asks what it is for.
+        const intro = isPrimaryBot(bot) ? startPrimaryBot : enqueueBotIntroRun;
+        await intro(deps, context.actor, bot).catch((error) => {
           getLogger().error("bot intro run enqueue", error);
         });
         return bot;
