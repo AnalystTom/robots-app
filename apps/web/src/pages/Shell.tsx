@@ -81,6 +81,8 @@ import type { CreateBotDialogInput } from "./shell/create-bot-dialog";
 import type { ImportSetupTarget } from "./shell/import-setup-card";
 import { KeyboardShortcutsDialog } from "./shell/keyboard-shortcuts-dialog";
 import { isPrimaryBot, primaryBotCreateInput } from "./shell/primary-bot";
+import type { RailTarget } from "./shell/rail-shortcuts";
+import { RAIL_SHORTCUT_LIMIT, railShortcutLabel, useRailShortcuts } from "./shell/rail-shortcuts";
 import { ShellDialogs, useShellDialogs } from "./shell/shell-dialogs";
 import { AppOverlays, SettingsOverlays } from "./shell/shell-overlays";
 import { cycleBotId, isApplePlatform, useShellShortcuts } from "./shell/shell-shortcuts";
@@ -552,7 +554,7 @@ function SpaceShell() {
         []);
   const recordingSkill = activeTaughtSkills.find((skill) => skill.status === "recording") ?? null;
 
-  // The Primary Bot sits pinned above the roster, so the roster leaves it out.
+  // RoBot sits pinned above the roster, so the roster leaves it out.
   const primaryBot = bots.find(isPrimaryBot);
   const rosterBots = useMemo(() => bots.filter((bot) => !isPrimaryBot(bot)), [bots]);
   const [settingUpPrimaryBot, setSettingUpPrimaryBot] = useState(false);
@@ -591,6 +593,32 @@ function SpaceShell() {
       ),
     [sidebarSpaces, search.query, miniSidebar, t, snoozeNow],
   );
+  // Cmd/Ctrl+1..9: RoBot first, then the chats in roster order.
+  const railTargets = useMemo<RailTarget[]>(
+    () =>
+      [
+        ...(primaryBot
+          ? [{ key: `bot:${primaryBot.id}`, open: () => navigate(`/app/${primaryBot.id}`) }]
+          : []),
+        ...sidebarGroups.flatMap((group) =>
+          group.bots.map((item) => ({
+            key: `${item.kind}:${item.chat.id}`,
+            open: () =>
+              openSpaceChatRef.current(
+                item.chat.spaceId,
+                item.kind === "bot" ? `/app/${item.chat.id}` : `/app/g/${item.chat.id}`,
+              ),
+          })),
+        ),
+      ].slice(0, RAIL_SHORTCUT_LIMIT),
+    [primaryBot, sidebarGroups, navigate],
+  );
+  useRailShortcuts(railTargets, !isMobileSidebar);
+  const railShortcuts = useMemo(
+    () => new Map(railTargets.map((target, index) => [target.key, railShortcutLabel(index + 1)])),
+    [railTargets],
+  );
+  const shortcutOf = (key: string) => railShortcuts.get(key);
   // The Dock badge ignores the roster search box: a filter must not hide unread chats.
   const unreadChatCount = useMemo(
     () => countUnreadChats(sidebarGroupsForSpaces(sidebarSpaces, "", undefined, snoozeNow)),
@@ -910,12 +938,12 @@ function SpaceShell() {
     if (settingUpPrimaryBot) return;
     setSettingUpPrimaryBot(true);
     try {
-      const bot = await rpc.bots.create(primaryBotCreateInput(t`Primary Bot`));
+      const bot = await rpc.bots.create(primaryBotCreateInput(t`RoBot`));
       openCreatedBot(bot);
       setMobileSidebarOpen(false);
       await refreshBots().catch(() => undefined);
     } catch (error) {
-      toast(errorText(error, t`Could not set up the Primary Bot`));
+      toast(errorText(error, t`Could not set up RoBot`));
     } finally {
       setSettingUpPrimaryBot(false);
     }
@@ -1005,6 +1033,7 @@ function SpaceShell() {
         primaryBotCurrent={!!primaryBot && !inGroup && active?.id === primaryBot.id}
         settingUpPrimaryBot={settingUpPrimaryBot}
         setUpPrimaryBot={() => void setUpPrimaryBot()}
+        shortcutOf={shortcutOf}
         roster={
           <SidebarRoster
             mini={miniSidebar}
@@ -1034,6 +1063,7 @@ function SpaceShell() {
             chatMenu={chatMenu}
             reorderRosterBot={roster.reorderRosterBot}
             activeSnapshot={activeSnapshot}
+            shortcutOf={miniSidebar ? shortcutOf : undefined}
           />
         }
         archived={

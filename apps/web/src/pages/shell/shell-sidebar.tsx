@@ -9,9 +9,10 @@ import {
   InputGroupInput,
   Sidebar,
 } from "@robots/ui-web";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Grid2x2Plus, Search, SlidersHorizontal } from "lucide-react";
 import type { ReactNode, UIEvent } from "react";
 import { useState } from "react";
+import { IconTooltip } from "../../components/IconTooltip";
 import { InviteDialog } from "../../components/InviteDialog";
 import { PasskeyOffer } from "../../components/PasskeyOffer";
 import { useUsageHint } from "../../components/PlanUsage";
@@ -30,6 +31,7 @@ import { WorkspaceNav } from "../workspace/workspace-nav";
 import { useWorkspacePages } from "../workspace/workspace-pages";
 import type { ChatMenuState } from "./chat-context-menu";
 import { PrimaryBotRow } from "./primary-bot";
+import { useShortcutModifierHeld } from "./rail-shortcuts";
 import { SidebarHeader } from "./sidebar-header";
 import type { SidebarSearch } from "./use-sidebar-search";
 
@@ -82,6 +84,7 @@ export function ShellSidebar({
   primaryBotCurrent,
   settingUpPrimaryBot,
   setUpPrimaryBot,
+  shortcutOf,
   roster,
   archived,
   footerLogos,
@@ -115,6 +118,7 @@ export function ShellSidebar({
   primaryBotCurrent: boolean;
   settingUpPrimaryBot: boolean;
   setUpPrimaryBot: () => void;
+  shortcutOf: (key: string) => string | undefined;
   roster: ReactNode;
   archived: ReactNode;
   footerLogos: Array<{ name: string; logo?: string | null }>;
@@ -127,6 +131,9 @@ export function ShellSidebar({
 }) {
   const { t } = useLingui();
   const workspacePages = useWorkspacePages();
+  // The rail: the collapsed sidebar on desktop, always dark, with ⌘-numbers on its chats.
+  const rail = mini && !isMobile;
+  const modifierHeld = useShortcutModifierHeld(rail);
   const {
     query,
     setQuery,
@@ -147,6 +154,39 @@ export function ShellSidebar({
     activityFiltersId,
     activityFilterCount,
   } = search;
+  const header = (showChrome: boolean, showActions: boolean) => (
+    <SidebarHeader
+      showChrome={showChrome}
+      showActions={showActions}
+      mini={mini}
+      createMenuOpen={createMenuOpen}
+      setCreateMenuOpen={setCreateMenuOpen}
+      activityMode={activityMode}
+      toggleActivityMode={() => {
+        if (mini) setCollapsedPref(false);
+        toggleActivityMode();
+      }}
+      searchOpen={searchOpen && !mini}
+      onSearch={() => {
+        if (searchOpen && !mini) {
+          if (activityMode) setActivityFilters({ ...activityFilters, query: "" });
+          else setQuery("");
+          setSearchOpen(false);
+          return;
+        }
+        if (mini) setCollapsedPref(false);
+        setSearchOpen(true);
+        focusSidebarSearch();
+      }}
+      setBotsSidebarCollapsedPref={setCollapsedPref}
+      bots={bots}
+      setMobileSidebarOpen={setMobileOpen}
+      setPanel={setPanel}
+      navigate={navigate}
+      setNewSpaceOpen={setNewSpaceOpen}
+      setCreateBotOpen={setCreateBotOpen}
+    />
+  );
   return (
     <>
       <button
@@ -169,41 +209,16 @@ export function ShellSidebar({
         aria-hidden={isMobile && !mobileOpen ? true : undefined}
         data-bots-sidebar-density={density}
         data-collapsed={collapsed ? "true" : "false"}
+        data-theme={rail ? "dark" : undefined}
+        data-rail={rail ? "true" : undefined}
+        data-modifier-held={rail && modifierHeld ? "true" : undefined}
         className={
           isMobile
             ? `absolute inset-y-0 start-0 z-40 flex w-[calc(100%-48px)] max-w-[316px] shrink-0 flex-col border-e border-sidebar-border bg-sidebar transition-transform duration-200 ease-out motion-reduce:transition-none ${mobileOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full"}`
             : "h-full overflow-hidden border-sidebar-border"
         }
       >
-        <SidebarHeader
-          mini={mini}
-          createMenuOpen={createMenuOpen}
-          setCreateMenuOpen={setCreateMenuOpen}
-          activityMode={activityMode}
-          toggleActivityMode={() => {
-            if (mini) setCollapsedPref(false);
-            toggleActivityMode();
-          }}
-          searchOpen={searchOpen && !mini}
-          onSearch={() => {
-            if (searchOpen && !mini) {
-              if (activityMode) setActivityFilters({ ...activityFilters, query: "" });
-              else setQuery("");
-              setSearchOpen(false);
-              return;
-            }
-            if (mini) setCollapsedPref(false);
-            setSearchOpen(true);
-            focusSidebarSearch();
-          }}
-          setBotsSidebarCollapsedPref={setCollapsedPref}
-          bots={bots}
-          setMobileSidebarOpen={setMobileOpen}
-          setPanel={setPanel}
-          navigate={navigate}
-          setNewSpaceOpen={setNewSpaceOpen}
-          setCreateBotOpen={setCreateBotOpen}
-        />
+        {header(true, !rail)}
         {mini ||
         !(
           searchOpen ||
@@ -263,12 +278,13 @@ export function ShellSidebar({
           </InputGroup>
         )}
         {activityMode || showSpaceSearch ? null : (
-          <div className="flex shrink-0 flex-col gap-1.5 px-2.5 pb-2">
+          <div className={`flex shrink-0 flex-col gap-1.5 px-2.5 ${rail ? "pt-2 pb-1" : "pb-2"}`}>
             <PrimaryBotRow
               bot={primaryBot}
               current={primaryBotCurrent}
               mini={mini}
               creating={settingUpPrimaryBot}
+              shortcut={primaryBot ? shortcutOf(`bot:${primaryBot.id}`) : undefined}
               onOpen={(bot) => {
                 setMobileOpen(false);
                 navigate(`/app/${bot.id}`);
@@ -283,11 +299,14 @@ export function ShellSidebar({
                 navigate(page.path);
               }}
             />
+            {rail ? (
+              <div aria-hidden="true" className="mx-auto mt-1 h-px w-10 bg-sidebar-border" />
+            ) : null}
           </div>
         )}
         <div
           onScroll={resetFadeWhenUnscrollable}
-          className="rk-scroll scroll-fade-y scroll-fade-12 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 pb-2.5"
+          className={`rk-scroll scroll-fade-y scroll-fade-12 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 pb-2.5 ${rail ? "pt-2" : ""}`}
         >
           {showSpaceSearch && !mini ? (
             <SpaceSearchResults
@@ -339,6 +358,23 @@ export function ShellSidebar({
         <div className={mini ? "hidden" : "contents"}>
           <PasskeyOffer />
         </div>
+        {rail ? (
+          <div className="flex shrink-0 flex-col items-center gap-0.5 pt-2">
+            {header(false, true)}
+            <IconTooltip label={t`Connect apps`}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={t`Connect apps`}
+                data-testid="rail-connect-apps"
+                onClick={openIntegrations}
+                className="text-muted-foreground"
+              >
+                <Grid2x2Plus size={15} strokeWidth={1.8} aria-hidden="true" />
+              </Button>
+            </IconTooltip>
+          </div>
+        ) : null}
         <ShellSidebarFooter
           mini={mini}
           logos={footerLogos}

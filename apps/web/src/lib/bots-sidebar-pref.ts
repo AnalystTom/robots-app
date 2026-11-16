@@ -7,9 +7,10 @@ export function botsSidebarCollapsedStorageKey(userId: string | null | undefined
   return `${STORAGE_PREFIX}${userId}`;
 }
 
+/** The rail (collapsed sidebar) is the default; "0" records that the user expanded it. */
 export function readBotsSidebarCollapsed(userId: string | null | undefined): boolean {
   const storageKey = botsSidebarCollapsedStorageKey(userId);
-  return storageKey ? readStoredString(storageKey) === "1" : false;
+  return storageKey ? readStoredString(storageKey) !== "0" : true;
 }
 
 export function writeBotsSidebarCollapsed(
@@ -17,7 +18,7 @@ export function writeBotsSidebarCollapsed(
   collapsed: boolean,
 ): void {
   const storageKey = botsSidebarCollapsedStorageKey(userId);
-  if (storageKey) writeStoredString(storageKey, collapsed ? "1" : null);
+  if (storageKey) writeStoredString(storageKey, collapsed ? "1" : "0");
 }
 
 export const BOTS_SIDEBAR_MINI_WIDTH = 72;

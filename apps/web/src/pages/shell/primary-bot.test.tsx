@@ -32,8 +32,8 @@ afterEach(() => {
 
 const bot = {
   id: "cprimary",
-  name: "Primary Bot",
-  color: primaryBotCreateInput("Primary Bot").color,
+  name: "RoBot",
+  color: primaryBotCreateInput("RoBot").color,
   status: "idle",
   unread: false,
   spawnKey: "primary",
@@ -64,7 +64,7 @@ it("opens the Primary Bot, or offers to set one up", async () => {
     );
   });
   const setUp = container.querySelector<HTMLButtonElement>('[data-testid="primary-bot-setup"]')!;
-  expect(setUp.textContent).toContain("Set up Primary Bot");
+  expect(setUp.textContent).toContain("Set up RoBot");
   await act(async () => setUp.click());
   expect(onSetUp).toHaveBeenCalledOnce();
 
@@ -82,7 +82,7 @@ it("opens the Primary Bot, or offers to set one up", async () => {
   });
   const row = container.querySelector<HTMLButtonElement>('[data-testid="primary-bot"]')!;
   expect(row.getAttribute("aria-current")).toBe("page");
-  expect(row.textContent).toContain("Primary Bot");
+  expect(row.textContent).toContain("RoBot");
   await act(async () => row.click());
   expect(onOpen).toHaveBeenCalledWith(bot);
 });
