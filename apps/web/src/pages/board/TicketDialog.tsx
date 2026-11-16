@@ -124,7 +124,7 @@ export function TicketDialog({
     >
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{ticket?.title ?? t`New ticket`}</DialogTitle>
+          <DialogTitle>{ticket?.title ?? t`New task`}</DialogTitle>
         </DialogHeader>
         <form
           className="space-y-3"

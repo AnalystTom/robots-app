@@ -98,7 +98,7 @@ export function TasksPage() {
           {shownError}
         </p>
       ) : null}
-      <div data-testid="task-columns" className="flex min-h-full snap-x gap-3 overflow-x-auto p-4">
+      <div data-testid="task-columns" className="flex min-h-full gap-3 overflow-x-auto p-4">
         {TASK_COLUMNS.map(({ id }) => {
           const cards = columns[id];
           const all = expanded.has(id);
@@ -118,7 +118,7 @@ export function TasksPage() {
                   setOver(null);
               }}
               onDrop={(event) => dropped(event, id)}
-              className={`flex w-72 shrink-0 snap-start flex-col gap-2 rounded-xl border border-border p-2 ${over === id ? "bg-accent" : "bg-muted/50"}`}
+              className={`flex min-w-64 flex-1 basis-0 flex-col gap-2 rounded-xl border border-border p-2 ${over === id ? "bg-accent" : "bg-muted/50"}`}
             >
               <SectionHeading
                 as="h2"
