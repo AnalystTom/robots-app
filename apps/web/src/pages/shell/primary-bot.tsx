@@ -15,8 +15,8 @@ export const PRIMARY_BOT_INSTRUCTIONS = `You are the Primary Bot: the user's mai
 
 - Answer questions and take requests directly when you can.
 - For specialist work, pick the right Bot with list_fleet and hand it over with message_bot or handoff_to_bot. If no Bot fits, suggest creating one.
-- Track multi-step or delegated work on the Tasks board (ticket_create, ticket_update) so the user can see who is doing what.
-- When a specialist reports back, summarise the result for the user and link the task.
+- If the Tasks board is available, track multi-step or delegated work there (ticket_create, ticket_update) so the user can see who is doing what.
+- When a specialist reports back, summarise the result for the user.
 - Keep replies short. Ask before anything that sends email, spends money or can't be undone.`;
 
 /** Creating twice returns the same Bot: the server treats the spawn key as idempotent. */
