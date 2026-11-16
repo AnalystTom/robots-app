@@ -25,7 +25,7 @@ import {
 } from "@robots/core";
 import { writeSaved } from "@robots/core/query";
 import type { GroupAvatarMember } from "@robots/ui-web";
-import { Button } from "@robots/ui-web";
+import { Button, toast } from "@robots/ui-web";
 import { useIsMobile } from "@robots/ui-web/hooks/use-mobile";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -80,6 +80,7 @@ import { ComputerPanel } from "./shell/computer-panel";
 import type { CreateBotDialogInput } from "./shell/create-bot-dialog";
 import type { ImportSetupTarget } from "./shell/import-setup-card";
 import { KeyboardShortcutsDialog } from "./shell/keyboard-shortcuts-dialog";
+import { isPrimaryBot, primaryBotCreateInput } from "./shell/primary-bot";
 import { ShellDialogs, useShellDialogs } from "./shell/shell-dialogs";
 import { AppOverlays, SettingsOverlays } from "./shell/shell-overlays";
 import { cycleBotId, isApplePlatform, useShellShortcuts } from "./shell/shell-shortcuts";
@@ -551,11 +552,17 @@ function SpaceShell() {
         []);
   const recordingSkill = activeTaughtSkills.find((skill) => skill.status === "recording") ?? null;
 
+  // The Primary Bot sits pinned above the roster, so the roster leaves it out.
+  const primaryBot = bots.find(isPrimaryBot);
+  const rosterBots = useMemo(() => bots.filter((bot) => !isPrimaryBot(bot)), [bots]);
+  const [settingUpPrimaryBot, setSettingUpPrimaryBot] = useState(false);
   const sidebarSpaces = useMemo(
     () =>
       spaces.length > 0
         ? spaces.map((space) =>
-            space.id === bootstrapMe?.spaceId ? { ...space, bots, groups, botSections } : space,
+            space.id === bootstrapMe?.spaceId
+              ? { ...space, bots: rosterBots, groups, botSections }
+              : space,
           )
         : bootstrapMe
           ? [
@@ -566,13 +573,13 @@ function SpaceShell() {
                 hasContent: true,
                 canRename: false,
                 canDelete: false,
-                bots,
+                bots: rosterBots,
                 groups,
                 botSections,
               },
             ]
           : [],
-    [bootstrapMe, botSections, bots, groups, spaces],
+    [bootstrapMe, botSections, rosterBots, groups, spaces],
   );
   const sidebarGroups = useMemo(
     () =>
@@ -899,6 +906,21 @@ function SpaceShell() {
     setPanel(null);
   }
 
+  async function setUpPrimaryBot() {
+    if (settingUpPrimaryBot) return;
+    setSettingUpPrimaryBot(true);
+    try {
+      const bot = await rpc.bots.create(primaryBotCreateInput(t`Primary Bot`));
+      openCreatedBot(bot);
+      setMobileSidebarOpen(false);
+      await refreshBots().catch(() => undefined);
+    } catch (error) {
+      toast(errorText(error, t`Could not set up the Primary Bot`));
+    } finally {
+      setSettingUpPrimaryBot(false);
+    }
+  }
+
   async function createBot(input: CreateBotDialogInput) {
     const isFirstBot = botsRef.current.length === 0;
     const bot = await rpc.bots.create({ ...input, notifyOnFinish: true });
@@ -979,6 +1001,10 @@ function SpaceShell() {
         setNewSpaceOpen={dialogs.setNewSpaceOpen}
         setCreateBotOpen={dialogs.setCreateBotOpen}
         chatMenu={chatMenu}
+        primaryBot={primaryBot}
+        primaryBotCurrent={!!primaryBot && !inGroup && active?.id === primaryBot.id}
+        settingUpPrimaryBot={settingUpPrimaryBot}
+        setUpPrimaryBot={() => void setUpPrimaryBot()}
         roster={
           <SidebarRoster
             mini={miniSidebar}

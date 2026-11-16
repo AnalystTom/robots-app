@@ -29,6 +29,7 @@ import type { SettingsSection } from "../shell-overlay";
 import { WorkspaceNav } from "../workspace/workspace-nav";
 import { useWorkspacePages } from "../workspace/workspace-pages";
 import type { ChatMenuState } from "./chat-context-menu";
+import { PrimaryBotRow } from "./primary-bot";
 import { SidebarHeader } from "./sidebar-header";
 import type { SidebarSearch } from "./use-sidebar-search";
 
@@ -77,6 +78,10 @@ export function ShellSidebar({
   setNewSpaceOpen,
   setCreateBotOpen,
   chatMenu,
+  primaryBot,
+  primaryBotCurrent,
+  settingUpPrimaryBot,
+  setUpPrimaryBot,
   roster,
   archived,
   footerLogos,
@@ -106,6 +111,10 @@ export function ShellSidebar({
   setNewSpaceOpen: (open: boolean) => void;
   setCreateBotOpen: (open: boolean) => void;
   chatMenu: ChatMenuState;
+  primaryBot: Bot | undefined;
+  primaryBotCurrent: boolean;
+  settingUpPrimaryBot: boolean;
+  setUpPrimaryBot: () => void;
   roster: ReactNode;
   archived: ReactNode;
   footerLogos: Array<{ name: string; logo?: string | null }>;
@@ -254,7 +263,18 @@ export function ShellSidebar({
           </InputGroup>
         )}
         {activityMode || showSpaceSearch ? null : (
-          <div className="shrink-0 px-2.5 pb-2">
+          <div className="flex shrink-0 flex-col gap-1.5 px-2.5 pb-2">
+            <PrimaryBotRow
+              bot={primaryBot}
+              current={primaryBotCurrent}
+              mini={mini}
+              creating={settingUpPrimaryBot}
+              onOpen={(bot) => {
+                setMobileOpen(false);
+                navigate(`/app/${bot.id}`);
+              }}
+              onSetUp={setUpPrimaryBot}
+            />
             <WorkspaceNav
               pages={workspacePages}
               mini={mini}
