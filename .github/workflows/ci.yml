@@ -28,7 +28,7 @@ jobs:
   changes:
     name: Changed areas
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 5
     outputs:
       web: ${{ steps.areas.outputs.web }}
@@ -50,7 +50,7 @@ jobs:
     name: Production builds
     needs: changes
     if: needs.changes.outputs.web == 'true'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -94,7 +94,7 @@ jobs:
   # main always runs everything.
   static-checks:
     name: Lint and typecheck
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 25
     concurrency:
       group: ci-checks-${{ github.ref == 'refs/heads/main' && 'main' || github.run_id }}
@@ -164,7 +164,7 @@ jobs:
   # The unit suite is CPU-bound; six runners keep it under the native install floor.
   unit-tests-shard:
     name: Unit tests (${{ matrix.shard }}/6)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     strategy:
       fail-fast: false
       matrix:
@@ -224,7 +224,7 @@ jobs:
     name: Checks
     needs: [static-checks, unit-tests-shard]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     steps:
       - run: test "${{ needs.static-checks.result }}" = success && test "${{ needs.unit-tests-shard.result }}" = success
 
@@ -235,7 +235,7 @@ jobs:
   native-computer:
     name: Native computer (${{ matrix.os }})
     needs: changes
-    if: needs.changes.outputs.native == 'true'
+    if: needs.changes.outputs.native == 'true' && vars.HOSTED_RUNNERS == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -277,7 +277,7 @@ jobs:
   # The suites are CPU-bound; six runners keep them under the native install floor.
   test-integration-shard:
     name: Postgres journeys (${{ matrix.shard }}/6)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     strategy:
       fail-fast: false
       matrix:
@@ -339,7 +339,7 @@ jobs:
     name: Postgres journeys
     needs: test-integration-shard
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     steps:
       - run: test "${{ needs.test-integration-shard.result }}" = success
 
@@ -347,7 +347,7 @@ jobs:
     name: Postgres upgrade
     needs: changes
     if: needs.changes.outputs.compose == 'true'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -382,7 +382,7 @@ jobs:
     name: Publish compatible mobile update
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [checks, test-integration]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 20
     concurrency:
       group: mobile-production-update
@@ -597,7 +597,7 @@ jobs:
     # The host pulls the image published for this commit; it builds only if that pull fails.
     # Only checks that catch a broken server gate the deploy; lint, E2E, and Docker drills report on their own.
     needs: [checks, test-integration, publish-server-image]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     # Matches infra/compose/deploy-main.sh's own limits, including a fallback build, rollback, and
     # waiting twice for a replaced worker to finish its jobs.
     timeout-minutes: 140
