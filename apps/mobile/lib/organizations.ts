@@ -42,7 +42,7 @@ function noteOrganizationSwitch(): void {
 }
 
 /** A server without organizations refuses the list, so it is not asked again. */
-function organizationsQuery() {
+export function organizationsQuery() {
   return {
     ...rpcQuery("organizations/list"),
     retry: (failures: number, error: Error) => {
