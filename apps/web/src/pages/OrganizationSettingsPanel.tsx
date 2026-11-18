@@ -117,13 +117,7 @@ function OrganizationNameRow({
         </label>
       }
       control={
-        <form
-          className="flex max-w-full min-w-0 items-center gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (changed) rename.run(trimmed);
-          }}
-        >
+        <div className="flex max-w-full min-w-0 items-center gap-2">
           <Input
             id={nameId}
             className="w-56 min-w-0"
@@ -141,21 +135,24 @@ function OrganizationNameRow({
               if (event.key === "Escape") event.stopPropagation();
               if (event.nativeEvent.isComposing || event.keyCode === 229) return;
               if (event.key === "Enter") {
-                event.preventDefault();
                 if (changed) rename.run(trimmed);
-                return;
+              } else if (event.key === "Escape") {
+                setDraft(organization.name);
+                rename.reset();
               }
-              if (event.key !== "Escape") return;
-              setDraft(organization.name);
-              rename.reset();
             }}
           />
           {changed || rename.pending ? (
-            <Button type="submit" className="rounded-full" disabled={rename.pending}>
+            <Button
+              type="button"
+              className="rounded-full"
+              disabled={rename.pending}
+              onClick={() => rename.run(trimmed)}
+            >
               {rename.pending ? <Trans>Saving…</Trans> : <Trans>Save</Trans>}
             </Button>
           ) : null}
-        </form>
+        </div>
       }
     >
       {rename.error ? (
