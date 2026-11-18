@@ -134,10 +134,18 @@ function OrganizationNameRow({
               setDraft(event.target.value);
               rename.reset();
             }}
+            onBlur={() => {
+              if (!trimmed) setDraft(organization.name);
+            }}
             onKeyDown={(event) => {
+              if (event.key === "Escape") event.stopPropagation();
+              if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+              if (event.key === "Enter") {
+                event.preventDefault();
+                if (changed) rename.run(trimmed);
+                return;
+              }
               if (event.key !== "Escape") return;
-              event.stopPropagation();
-              if (event.nativeEvent.isComposing) return;
               setDraft(organization.name);
               rename.reset();
             }}

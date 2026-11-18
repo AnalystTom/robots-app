@@ -166,6 +166,44 @@ it("leaves the current organization's name alone when a new name is typed and Cr
   expect(container.querySelector('[role="dialog"]')).not.toBeNull();
 });
 
+it("puts an emptied name back to the saved one on blur without saving", async () => {
+  list.current = [home];
+  organizations.rename.mockReset();
+  await renderPanel();
+  const input = nameInput();
+  await act(async () => input.focus());
+  await type(input, "   ");
+  await act(async () => input.blur());
+  expect(nameInput().value).toBe("Personal");
+  expect(organizations.rename).not.toHaveBeenCalled();
+});
+
+it("does not submit a name while an IME is composing, and submits on Enter otherwise", async () => {
+  list.current = [home];
+  organizations.rename.mockReset().mockImplementation(async ({ name }: { name: string }) => ({
+    id: home.id,
+    name,
+  }));
+  await renderPanel();
+  const input = nameInput();
+  await type(input, "Acme");
+  await act(async () => {
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", keyCode: 229, bubbles: true, cancelable: true }),
+    );
+  });
+  expect(organizations.rename).not.toHaveBeenCalled();
+  await act(async () => {
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", keyCode: 13, bubbles: true, cancelable: true }),
+    );
+  });
+  expect(organizations.rename).toHaveBeenCalledExactlyOnceWith({
+    organizationId: "org-home",
+    name: "Acme",
+  });
+});
+
 it("renames the current organization only through Save", async () => {
   list.current = [home];
   organizations.rename.mockReset().mockImplementation(async ({ name }: { name: string }) => ({

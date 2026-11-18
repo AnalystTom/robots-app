@@ -100,6 +100,9 @@ export default function OrganizationSettings() {
               value={name}
               onChangeText={setDraft}
               onSubmitEditing={() => void rename()}
+              onEndEditing={() => {
+                if (!trimmed) setDraft(null);
+              }}
               returnKeyType="done"
             />
           ) : (
