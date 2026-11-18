@@ -27,3 +27,16 @@ export function canDeleteOrganization(
 ): boolean {
   return organization.canManage && organizations.filter((each) => each.canManage).length > 1;
 }
+
+export const PERSONAL_ORGANIZATION_NAME = "Personal";
+
+export function marksPersonalOrganization(
+  organizations: readonly Organization[],
+  organization: Organization,
+): boolean {
+  if (!organization.personal) return false;
+  return (
+    organization.name !== PERSONAL_ORGANIZATION_NAME ||
+    organizations.some((other) => other.id !== organization.id && other.name === organization.name)
+  );
+}

@@ -29,6 +29,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { Organization } from "../lib/organizations";
 import { useSidebarUpdate } from "./DesktopUpdates";
 import { IconTooltip } from "./IconTooltip";
+import { OrganizationName } from "./OrganizationName";
 
 type Props = {
   mini?: boolean;
@@ -167,7 +168,7 @@ export function SidebarFooter({
                       className="h-9 w-full justify-between gap-2.5 font-normal"
                       onClick={() => onSwitchOrganization?.(organization)}
                     >
-                      <span className="min-w-0 truncate">{organization.name}</span>
+                      <OrganizationName organization={organization} organizations={organizations} />
                       {active ? <Check aria-hidden="true" strokeWidth={1.75} /> : null}
                     </Button>
                   );

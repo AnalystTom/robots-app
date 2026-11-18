@@ -23,6 +23,7 @@ import { switchOrganization, useOrganizations } from "../lib/organizations";
 import { useQueryUserId } from "../lib/query";
 import { DeleteOrganizationDialog, removeOrganization } from "../pages/OrganizationSettingsPanel";
 import { DeleteAccountForm, hasDeleteRedirectError } from "./AccountAccess";
+import { OrganizationName } from "./OrganizationName";
 
 /**
  * The way out before the app opens (plan choice, onboarding): switch organization, delete an
@@ -85,7 +86,7 @@ export function AccountMenu({
               >
                 {organizations.map((organization) => (
                   <DropdownMenuRadioItem key={organization.id} value={organization.id}>
-                    <span className="min-w-0 truncate">{organization.name}</span>
+                    <OrganizationName organization={organization} organizations={organizations} />
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>

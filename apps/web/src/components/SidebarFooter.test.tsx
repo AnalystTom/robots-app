@@ -252,6 +252,7 @@ const personal = {
   defaultSpaceId: "s1",
   spaceIds: ["s1"],
   canManage: true,
+  personal: true,
 };
 const work = {
   id: "org-work",
@@ -259,6 +260,7 @@ const work = {
   defaultSpaceId: "s2",
   spaceIds: ["s2"],
   canManage: true,
+  personal: false,
 };
 
 async function renderOrganizations(
@@ -306,4 +308,13 @@ it("lists two organizations with the active one checked", async () => {
   expect(rows[1]!.querySelector("svg")).toBeNull();
   await act(async () => rows[1]!.click());
   expect(onSwitch).toHaveBeenCalledWith(work);
+});
+
+it("marks the personal organization once another one shares its name", async () => {
+  const renamed = { ...personal, name: "Northwind" };
+  const rows = await renderOrganizations([renamed, { ...work, name: "Northwind" }]);
+  expect(rows.map((row) => row.textContent).slice(0, 2)).toEqual([
+    "NorthwindPersonal",
+    "Northwind",
+  ]);
 });

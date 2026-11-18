@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { signupPolicyFromEnv } from "@robots/core";
+import { PERSONAL_ORGANIZATION_NAME, signupPolicyFromEnv } from "@robots/core";
 import type { PrismaClient } from "./client.js";
 import { isUniqueViolation } from "./prisma-errors.js";
 
@@ -99,18 +99,21 @@ export async function createOrganizationWithDefaultSpace(
   return orgId;
 }
 
+export function personalOrganizationSlug(userId: string): string {
+  return `user-${userId.slice(0, 12)}`;
+}
+
 /** Provision a personal workspace. Signup never grants deployment administration. */
 export async function bootstrapUserSpace(
   prisma: PrismaClient,
   user: { id: string },
   env: SignupPolicyEnv,
 ): Promise<{ spaceId: string }> {
-  // Concurrent bootstraps for the same user (e.g. overlapping first phone inbounds) share the slug.
   const spaceId = await createOrganizationWithDefaultSpace(prisma, {
     userId: user.id,
     orgId: newId(),
-    name: "Personal",
-    slug: `user-${user.id.slice(0, 12)}`,
+    name: PERSONAL_ORGANIZATION_NAME,
+    slug: personalOrganizationSlug(user.id),
   });
   const policy = signupPolicyFromEnv(env);
   await prisma.deploymentSettings.upsert({

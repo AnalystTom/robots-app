@@ -1,18 +1,16 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { canDeleteOrganization } from "@robots/core";
 import { Button, Field, FieldLabel, Input } from "@robots/ui-web";
-import { Plus } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { CreateOrganizationDialog } from "../components/CreateOrganizationDialog";
 import { SettingsGroup, SettingsRow } from "../components/SettingsRows";
 import type { Organization } from "../lib/organizations";
 import { organizationsQuery, useOrganizations } from "../lib/organizations";
-import { queryClient, useQueryUserId } from "../lib/query";
+import { useQueryUserId, useSave } from "../lib/query";
 import { clearSpaceSelection, rpc, selectSpace } from "../lib/rpc";
 import { errorText } from "../lib/user-error";
 
-/** The organization the app is showing: its name, and, for its owner, renaming and deletion. */
 export function OrganizationSettingsPanel({
   onBusyChange,
 }: {
@@ -40,101 +38,40 @@ function OrganizationSettings({
   canDelete: boolean;
   onBusyChange?: (busy: boolean) => void;
 }) {
-  const userId = useQueryUserId();
-  const nameId = useId();
-  const [draft, setDraft] = useState(organization.name);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [creating, setCreating] = useState(false);
-  useEffect(() => {
-    onBusyChange?.(pending);
-  }, [pending, onBusyChange]);
-
-  async function save() {
-    const trimmed = draft.trim();
-    if (pending) return;
-    if (!trimmed || trimmed === organization.name) {
-      setDraft(organization.name);
-      setError(null);
-      return;
-    }
-    setPending(true);
-    setError(null);
-    try {
-      await rpc.organizations.rename({ organizationId: organization.id, name: trimmed });
-      setDraft(trimmed);
-      await queryClient.invalidateQueries({ queryKey: organizationsQuery(userId).queryKey });
-    } catch (reason) {
-      setError(errorText(reason));
-    } finally {
-      setPending(false);
-    }
-  }
 
   return (
     <div className="space-y-8" data-testid="organization-settings">
       <SettingsGroup>
-        <SettingsRow
-          label={
-            organization.canManage ? (
-              <label htmlFor={nameId}>
-                <Trans>Name</Trans>
-              </label>
-            ) : (
-              <Trans>Name</Trans>
-            )
-          }
-          control={
-            organization.canManage ? (
-              <Input
-                id={nameId}
-                className="w-56"
-                maxLength={60}
-                value={draft}
-                disabled={pending}
-                onChange={(event) => {
-                  setDraft(event.target.value);
-                  setError(null);
-                }}
-                onBlur={() => void save()}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") event.stopPropagation();
-                  if (event.nativeEvent.isComposing || event.keyCode === 229) return;
-                  if (event.key === "Enter") event.currentTarget.blur();
-                  if (event.key === "Escape") {
-                    setDraft(organization.name);
-                    setError(null);
-                  }
-                }}
-              />
-            ) : (
-              <p className="break-words text-body">{organization.name}</p>
-            )
-          }
-        >
-          {error ? (
-            <p role="alert" className="pt-2 text-body-sm text-destructive">
-              {error}
-            </p>
-          ) : null}
-        </SettingsRow>
+        {organization.canManage ? (
+          <OrganizationNameRow organization={organization} onBusyChange={onBusyChange} />
+        ) : (
+          <SettingsRow
+            label={<Trans>Organization name</Trans>}
+            control={<p className="break-words text-body">{organization.name}</p>}
+          />
+        )}
       </SettingsGroup>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" className="rounded-full" onClick={() => setCreating(true)}>
-          <Plus aria-hidden="true" />
-          <Trans>Create organization</Trans>
+      <SettingsGroup data-testid="new-organization">
+        <SettingsRow
+          label={<Trans>New organization</Trans>}
+          control={
+            <Button variant="outline" className="rounded-full" onClick={() => setCreating(true)}>
+              <Trans>Create…</Trans>
+            </Button>
+          }
+        />
+      </SettingsGroup>
+      {canDelete ? (
+        <Button
+          variant="destructive"
+          className="rounded-full"
+          onClick={() => setConfirmingDelete(true)}
+        >
+          <Trans>Delete organization</Trans>
         </Button>
-        {canDelete ? (
-          <Button
-            variant="destructive"
-            className="rounded-full"
-            onClick={() => setConfirmingDelete(true)}
-          >
-            <Trans>Delete organization</Trans>
-          </Button>
-        ) : null}
-      </div>
+      ) : null}
       <CreateOrganizationDialog open={creating} onOpenChange={setCreating} />
       {confirmingDelete ? (
         <DeleteOrganizationDialog
@@ -144,6 +81,81 @@ function OrganizationSettings({
         />
       ) : null}
     </div>
+  );
+}
+
+function OrganizationNameRow({
+  organization,
+  onBusyChange,
+}: {
+  organization: Organization;
+  onBusyChange?: (busy: boolean) => void;
+}) {
+  const userId = useQueryUserId();
+  const nameId = useId();
+  const [draft, setDraft] = useState(organization.name);
+  const rename = useSave({
+    save: async (name: string, client) => {
+      onBusyChange?.(true);
+      try {
+        return await client.organizations.rename({ organizationId: organization.id, name });
+      } finally {
+        onBusyChange?.(false);
+      }
+    },
+    stale: [organizationsQuery(userId).queryKey],
+    onSaved: (renamed) => setDraft(renamed.name),
+  });
+  const trimmed = draft.trim();
+  const changed = trimmed !== "" && trimmed !== organization.name;
+
+  return (
+    <SettingsRow
+      label={
+        <label htmlFor={nameId}>
+          <Trans>Organization name</Trans>
+        </label>
+      }
+      control={
+        <form
+          className="flex max-w-full min-w-0 items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (changed) rename.run(trimmed);
+          }}
+        >
+          <Input
+            id={nameId}
+            className="w-56 min-w-0"
+            maxLength={60}
+            value={draft}
+            disabled={rename.pending}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              rename.reset();
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Escape" || event.nativeEvent.isComposing) return;
+              if (!changed) return;
+              event.stopPropagation();
+              setDraft(organization.name);
+              rename.reset();
+            }}
+          />
+          {changed || rename.pending ? (
+            <Button type="submit" className="rounded-full" disabled={rename.pending}>
+              {rename.pending ? <Trans>Saving…</Trans> : <Trans>Save</Trans>}
+            </Button>
+          ) : null}
+        </form>
+      }
+    >
+      {rename.error ? (
+        <p role="alert" className="pt-2 text-body-sm text-destructive">
+          {errorText(rename.error)}
+        </p>
+      ) : null}
+    </SettingsRow>
   );
 }
 
