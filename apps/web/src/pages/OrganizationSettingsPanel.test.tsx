@@ -160,7 +160,7 @@ it("leaves the current organization's name alone when a new name is typed and Cr
   await type(input, "Northwind Payments Research");
   await act(async () => {
     input.blur();
-    button("Create…")!.click();
+    button("Create organization")!.click();
   });
   expect(organizations.rename).not.toHaveBeenCalled();
   expect(container.querySelector('[role="dialog"]')).not.toBeNull();

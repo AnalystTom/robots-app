@@ -58,7 +58,7 @@ function OrganizationSettings({
           label={<Trans>New organization</Trans>}
           control={
             <Button variant="outline" className="rounded-full" onClick={() => setCreating(true)}>
-              <Trans>Create…</Trans>
+              <Trans>Create organization</Trans>
             </Button>
           }
         />
@@ -135,9 +135,9 @@ function OrganizationNameRow({
               rename.reset();
             }}
             onKeyDown={(event) => {
-              if (event.key !== "Escape" || event.nativeEvent.isComposing) return;
-              if (!changed) return;
+              if (event.key !== "Escape") return;
               event.stopPropagation();
+              if (event.nativeEvent.isComposing) return;
               setDraft(organization.name);
               rename.reset();
             }}

@@ -61,7 +61,7 @@ test("create, switch, rename and delete an organization", async ({ page }, testI
   ).toHaveCount(0);
   await settings.getByTestId("organization-settings").getByLabel("Organization name").fill("Work");
   await captureScreenshot(page, testInfo, "org-settings-single");
-  await settings.getByRole("button", { name: "Create…" }).click();
+  await settings.getByRole("button", { name: "Create organization" }).click();
   const create = page.getByRole("dialog", { name: "Create organization" });
   await create.getByLabel("Name").fill("Work");
   await captureScreenshot(page, testInfo, "org-create-dialog");

@@ -50,18 +50,16 @@ export default function OrganizationSettings() {
   }
   const current = organization;
   const name = draft ?? current.name;
+  const trimmed = name.trim();
+  const changed = trimmed !== "" && trimmed !== current.name;
   const canDelete = canDeleteOrganization(query.data?.organizations ?? [], current);
 
   async function rename() {
-    const next = name.trim();
-    if (!next || next === current.name || pending) {
-      setDraft(null);
-      return;
-    }
+    if (!changed || pending) return;
     setPending(true);
     setError(null);
     try {
-      await rpc("organizations/rename", { organizationId: current.id, name: next });
+      await rpc("organizations/rename", { organizationId: current.id, name: trimmed });
       await refreshOrganizations();
       setDraft(null);
     } catch (err) {
@@ -92,23 +90,34 @@ export default function OrganizationSettings() {
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <SettingsGroup accessibilityLabel={t`Name`} label={t`Name`}>
+        <SettingsGroup accessibilityLabel={t`Organization name`} label={t`Organization name`}>
           {current.canManage ? (
             <SettingsInputRow
               key="name"
-              accessibilityLabel={t`Name`}
+              accessibilityLabel={t`Organization name`}
               editable={!pending}
               maxLength={60}
               value={name}
               onChangeText={setDraft}
-              onEndEditing={() => void rename()}
+              onSubmitEditing={() => void rename()}
               returnKeyType="done"
             />
           ) : (
             <SettingsRow key="name" title={current.name} />
           )}
+          {current.canManage && changed ? (
+            <SettingsRow
+              key="save"
+              accessibilityRole="button"
+              disabled={pending}
+              dimmed={pending}
+              tinted
+              title={pending ? t`Saving…` : t`Save`}
+              onPress={() => void rename()}
+            />
+          ) : null}
         </SettingsGroup>
-        <SettingsGroup>
+        <SettingsGroup label={t`New organization`}>
           <SettingsRow
             key="create"
             accessibilityRole="button"
