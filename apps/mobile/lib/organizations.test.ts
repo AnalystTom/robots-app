@@ -249,7 +249,7 @@ describe("organizationSwitchActions", () => {
         activeOrganizationId: twin.id,
         organizations: [twin, personal],
       }).map((action) => action.title),
-    ).toEqual(["Northwind", "Northwind · Personal"]);
+    ).toEqual(["Northwind", "Northwind (Personal)"]);
   });
 });
 

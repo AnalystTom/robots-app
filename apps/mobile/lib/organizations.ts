@@ -94,7 +94,7 @@ function organizationMenuTitle(
 ): string {
   const name = organization.name;
   return marksPersonalOrganization(organizations, organization)
-    ? t`${ph({ name })} · Personal`
+    ? t`${ph({ name })} (Personal)`
     : name;
 }
 
