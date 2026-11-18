@@ -1,6 +1,6 @@
+import { mainRole, withModelRoles } from "@robots/adapters/testing/model-roles";
 import type { Actor, Bot } from "@robots/contracts";
 import { describe, expect, it, vi } from "vitest";
-import { mainRole, withModelRoles } from "../../../packages/adapters/src/testing/model-roles.js";
 import {
   isPrimaryBot,
   primaryBotGreeting,

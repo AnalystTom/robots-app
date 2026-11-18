@@ -33,6 +33,7 @@ import {
   screenLeaseIdForRun,
   serializeModelSecret,
 } from "@robots/adapters";
+import { mainRole, withModelRoles } from "@robots/adapters/testing/model-roles";
 import type { Actor, Bot, ProductEvent } from "@robots/contracts";
 import {
   BLOCKED_ITEM_ANSWER,
@@ -54,7 +55,6 @@ import {
 } from "@robots/db";
 import { createLogger, createTestSink, installLogger } from "@robots/logging";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mainRole, withModelRoles } from "../../../packages/adapters/src/testing/model-roles.js";
 import { beginConnection } from "./connection-flows.js";
 import { createModelConnector, prepareModelReconnectSettings } from "./model-credentials.js";
 import type { RouterDeps } from "./router.js";
