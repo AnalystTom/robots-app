@@ -1,0 +1,23 @@
+name: Setup pnpm
+description: Install pnpm into this job's temp directory, keep its store there, give git an empty job-local config, and detach from any desktop session the runner inherited, so host settings cannot change a job's output.
+runs:
+  using: composite
+  steps:
+    - name: Isolate pnpm store, git config and desktop session
+      shell: bash
+      run: |
+        set -euo pipefail
+        : > "$RUNNER_TEMP/gitconfig"
+        {
+          echo "GIT_CONFIG_GLOBAL=$RUNNER_TEMP/gitconfig"
+          echo "GIT_CONFIG_NOSYSTEM=1"
+          echo "pnpm_config_store_dir=$RUNNER_TEMP/pnpm-store"
+          echo "DISPLAY="
+          echo "WAYLAND_DISPLAY="
+          echo "XDG_SESSION_TYPE="
+          echo "DBUS_SESSION_BUS_ADDRESS="
+        } >> "$GITHUB_ENV"
+
+    - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      with:
+        dest: ${{ runner.temp }}/setup-pnpm
