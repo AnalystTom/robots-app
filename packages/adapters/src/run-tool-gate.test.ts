@@ -1,6 +1,6 @@
 import type * as Core from "@robots/core";
 import type * as Db from "@robots/db";
-import { recordAuditEvent } from "@robots/db";
+import { tryRecordAuditEvent } from "@robots/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { gateToolCall } from "./run-tool-gate.js";
 import type { ToolRequest } from "./run-tool-request.js";
@@ -20,8 +20,8 @@ vi.mock("@robots/core", async (importOriginal) => {
 vi.mock("@robots/db", async (importOriginal) => ({
   ...(await importOriginal<typeof Db>()),
   recordAuditEvent: vi.fn(async () => {}),
+  tryRecordAuditEvent: vi.fn(async () => true),
 }));
-// Recording the effect a person answers is where an ask begins; the test stops there.
 vi.mock("./run-effects.js", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   recordEffect: vi.fn(async () => {
@@ -77,6 +77,8 @@ function gate(options: {
       effects: { consumedIds: new Set(), counts: new Map(), occurrences: [] },
     },
     trust: {
+      initiator: options.trigger === "webhook" ? "webhook" : "you",
+      loadActionRules: async () => [],
       loadApprovalRules: async () =>
         options.rule
           ? [{ effect: options.rule, matchKind: "tool", matchValue: "browser_act" }]
@@ -104,7 +106,6 @@ describe("gateToolCall: a login that asks first", () => {
       expect(await gate(options)).toBe("asks the user");
       expect(plans).toEqual(["ask"]);
     }
-    // The same call without such a login runs in Never ask, without asking.
     plans.length = 0;
     await gate({ neverAsk: true, asks: false });
     expect(plans).toEqual(["allow"]);
@@ -117,8 +118,17 @@ describe("gateToolCall: a login that asks first", () => {
     expect(await gate({ trigger: "webhook" })).toEqual({
       result: { error: expect.stringContaining("a webhook run cannot ask") },
     });
-    expect(recordAuditEvent).toHaveBeenLastCalledWith(
-      expect.objectContaining({ outcome: "denied", metadata: { reason: "login_unattended" } }),
+    expect(tryRecordAuditEvent).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "tool.decision",
+        outcome: "denied",
+        metadata: expect.objectContaining({
+          decision: "denied",
+          basis: "policy",
+          reason: "login_unattended",
+          initiator: "webhook",
+        }),
+      }),
     );
   });
 });

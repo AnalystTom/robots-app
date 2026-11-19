@@ -25,7 +25,6 @@ vi.mock("@lingui/react/macro", () => {
     );
   return { useLingui: () => ({ t }), Trans: ({ children }: { children: ReactNode }) => children };
 });
-// Menus and popovers render open and inline, so a test clicks straight through them.
 vi.mock("@robots/ui-web", async () => {
   const { createContext, useContext } = await import("react");
   const Group = createContext<{ value: string[]; onValueChange: (value: string[]) => void }>({
@@ -101,13 +100,14 @@ vi.mock("@robots/ui-web", async () => {
   };
 });
 
+vi.mock("./ActionRulesSettings", () => ({ ActionRulesSettings: () => null }));
+
 import { ApprovalRulesSettings } from "./ApprovalRulesSettings";
 
 const settings = { mode: "ask", enabled: false, skipApprovals: false, checkerAvailable: true };
 
 beforeEach(() => {
   vi.resetAllMocks();
-  // Nothing to pay with yet, so the spending limit stays out of the way.
   rpcMock.spendingLimit.get.mockResolvedValue({ limit: null, spent: 0, shown: false });
 });
 
@@ -157,7 +157,6 @@ it("sets the mode, says what it does, and lists Auto only when an approval model
     expect(container.textContent).toContain(
       "Asks only before purchases and the first use of your computer. Only Block rules apply.",
     );
-    // No rules yet, so no rule groups.
     expect(container.querySelector('[data-testid^="approval-rules-"]')).toBeNull();
     await act(async () => root.unmount());
   } finally {
@@ -319,12 +318,10 @@ it("keeps a saved mode when the revisit's older background read lands after it",
         }),
     );
     const second = await mount();
-    // Cached, so the mode can change while the refresh is out.
     expect(rpcMock.autoReview.get).toHaveBeenCalledTimes(2);
     await act(async () => neverAsk()?.click());
     await vi.waitFor(() => expect(neverAsk()?.getAttribute("aria-pressed")).toBe("true"));
     await act(async () => resolveRead(settings));
-    // Query updates reach components on a timer; let any late write land.
     await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
     expect(neverAsk()?.getAttribute("aria-pressed")).toBe("true");
     await act(async () => second.unmount());

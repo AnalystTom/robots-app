@@ -110,7 +110,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       space.id,
     );
     const clientNonce = `routine-keys-${stamp}`;
-    // The peer test-runs their own routine under the key the owner's send will use.
     await rpc(
       app,
       peer,
@@ -133,8 +132,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       userId: ownerActor.userId,
     });
 
-    // The previous release stored `routine-test:<client nonce>` as given, so the peer could write
-    // a key shaped like the owner's. That run must not become the owner's receipt.
     const later = `routine-keys-legacy-${stamp}`;
     const peerThread = await db.thread.findUniqueOrThrow({ where: { botId: peerBot.id } });
     const task = await db.task.create({
@@ -206,7 +203,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     }
     await rpc(app, owner, "bots/archive", { botId: archived.id }, space.id);
     const botIds = [own.id, other.id, archived.id, cross.id, "missing-bot"];
-    // Members of one space share its bots and routines; archived and other-space bots stay out.
     const ownRows = await rpc<unknown[]>(app, owner, "routines/list", { botId: own.id }, space.id);
     const peerRows = await rpc<unknown[]>(
       app,
@@ -437,6 +433,8 @@ describeWithDatabase("API authorization and resource isolation", () => {
       ["approvalRules/list"],
       ["approvalRules/set", { effect: "deny", matchKind: "tool", matchValue: "gmail_send_email" }],
       ["approvalRules/remove", { id: "missing-rule" }],
+      ["actionRules/list"],
+      ["actionRules/set", { rules: [] }],
       ["artifacts/list", { botId: "missing-bot" }],
       ["artifacts/listSpace"],
       ["artifacts/listVersions"],
@@ -796,7 +794,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       groupCalls.map(([procedure, input]) => expectDenied(app, intruder, procedure, input)),
     );
 
-    // A caller cannot pair their own bot with another workspace's run ID.
     await expectDenied(app, intruder, "threads/answer", {
       botId: intruderBot.id,
       runId: ownerRun.id,
@@ -861,8 +858,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       await rpc<{ hits: unknown[] }>(app, intruder, "search/query", { q: ownerBot.name }),
     ).toEqual({ hits: [] });
 
-    // These endpoints are deliberately idempotent for unknown IDs. Success must not mutate
-    // a row in a different workspace or disclose whether it exists.
     await rpc(app, intruder, "capabilities/remove", { id: ownerCapability.id });
     await rpc(app, intruder, "connections/revoke", {
       connectionId: ownerConnection.connectionId,
@@ -892,7 +887,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       await db.memoryDocument.findUniqueOrThrow({ where: { id: ownerMemory.id } }),
     ).toMatchObject({ content: "owner-only-memory" });
 
-    // Destructive bot removal is checked last so an authorization regression is unmistakable.
     await expectDenied(app, intruder, "bots/removePreview", { botId: ownerBot.id });
     await expectDenied(app, intruder, "bots/remove", {
       botId: ownerBot.id,
@@ -911,7 +905,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     const device = "ExponentPushToken[shared-device]";
 
     await rpc(app, first, "notifications/registerPush", { token: device });
-    // Another device, or unregistering, only ever touches the caller's own token.
     await rpc(app, second, "notifications/registerPush", { token: "ExponentPushToken[other]" });
     await rpc(app, second, "notifications/unregisterPush");
     await expect(loadPushToken(firstUser)).resolves.toBe(device);
@@ -925,7 +918,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     expect(multiline.status).toBe(400);
   });
 
-  // On the wire, the POST older phone apps send without a body arrives as an empty one.
   const emptyBody = { method: "POST", body: "" };
 
   it("ends the session when an older phone app signs out with an empty body", async () => {
@@ -944,7 +936,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       ...emptyBody,
       headers: { ...phone.headers, "content-length": "0" },
     });
-    // A password account reaches the endpoint, which offers deletion by password instead.
     expect(await response.json()).toMatchObject({ code: "EMAIL_DELETION_UNAVAILABLE" });
   });
 
@@ -1067,7 +1058,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     expect(await me(phone.token)).toBe(200);
     expect(await me(encodeURIComponent(phone.token))).toBe(200);
 
-    // A token copied out of the session table, or given a forged signature, is not a session.
     expect(await me(stored.token)).toBe(401);
     expect(await me(`${stored.token}.${"A".repeat(43)}=`)).toBe(401);
     const rawSession = await app.request("/api/auth/get-session", {
@@ -1078,7 +1068,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     const signedIn = await authJson("/sign-in/email", "", { email, password: "password12" });
     expect(await me(signedIn)).toBe(200);
 
-    // Replacing the session on a password change hands the phone the signed replacement.
     const replaced = await authJson("/change-password", signedIn, {
       currentPassword: "password12",
       newPassword: "password34",
@@ -1096,7 +1085,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     const token = "ExponentPushToken[phone]";
     await rpc(app, phone, "notifications/registerPush", { token });
 
-    // Signing out or revoking other sessions elsewhere keeps the phone's token.
     await authPost(app, await signin(app, email), "/sign-out");
     await authPost(app, phone, "/revoke-other-sessions");
     await expect(loadPushToken(userId)).resolves.toBe(token);
@@ -1113,7 +1101,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     });
     await expect(loadPushToken(userId)).resolves.toBeUndefined();
 
-    // Changing the password on the phone itself replaces its session; the token follows it.
     const samePhone = await signin(app, email, "password34");
     await rpc(app, samePhone, "notifications/registerPush", { token });
     await authPost(app, samePhone, "/change-password", {
@@ -1207,6 +1194,13 @@ describeWithDatabase("API authorization and resource isolation", () => {
         where: { id: ownerRule.id },
       }),
     ).not.toBeNull();
+
+    const ownerActionRules = [
+      { id: "r1", matchKind: "tool", matchValue: "send_*", effect: "deny", initiator: "webhook" },
+    ];
+    await rpc(app, owner, "actionRules/set", { rules: ownerActionRules });
+    expect(await rpc(app, owner, "actionRules/list")).toEqual(ownerActionRules);
+    expect(await rpc(app, member, "actionRules/list")).toEqual([]);
   });
 
   it("keeps space data and computers behind the selected space boundary", async () => {
@@ -1262,8 +1256,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       }),
     ]);
 
-    // Owning a target in a different organization does not authorize a rename
-    // from the active organization.
     await expect(
       raw(app, cookie, "spaces/rename", { spaceId: otherWorkspaceId, name: "Wrong organization" }),
     ).resolves.toMatchObject({ status: 404 });
@@ -1415,7 +1407,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     ]);
 
     expect(modelPreference).toMatchObject({ modelId: "copy/model" });
-    // The new Space follows the member's main model without a copy of its own.
     await expect(
       rpc<ModelRoleSettings>(app, cookie, "models/role", { role: "main" }, created.id),
     ).resolves.toMatchObject({
@@ -1424,7 +1415,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     await expect(
       db.spaceModelRoleChoice.count({ where: { spaceId: created.id, userId: actor.userId } }),
     ).resolves.toBe(0);
-    // The new Space follows the account's voice instead of copying it.
     expect(voicePreference).toBeNull();
     await expect(rpc(app, cookie, "voice/status", undefined, created.id)).resolves.toMatchObject({
       voiceId: voice.voiceId,
@@ -1520,7 +1510,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       {},
       support.id,
     );
-    // The other Space follows the account's main model.
     expect(supportCredentials).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: connectedA.id, provider: "provider-a", isDefault: true }),
@@ -1537,7 +1526,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     await expectSpaceModelDefault(support.id, "provider-a", "a/shared");
     await expectSpaceModelDefault(actor.spaceId, "provider-a", "a/shared");
 
-    // A customized Space starts from the account's models and then keeps its own.
     await expect(
       rpc(
         app,
@@ -1584,7 +1572,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     await expectSpaceModelDefault(actor.spaceId, "provider-a", "a/three");
     await expectSpaceModelDefault(support.id, "provider-a", "a/support");
 
-    // Using the defaults again drops the Space's copy.
     await expect(
       rpc(
         app,
@@ -1658,7 +1645,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       hasContent: true,
       canDelete: true,
       canRename: true,
-      // The archived bot goes too, so the confirmation counts it.
       botCount: 3,
     });
     expect(listed.spaces.find((space) => space.id === actor.spaceId)?.canDelete).toBe(false);
@@ -1695,14 +1681,12 @@ describeWithDatabase("API authorization and resource isolation", () => {
     ]) {
       await expect(count).resolves.toBe(0);
     }
-    // Nothing outside the deleted space goes with it.
     await expect(db.bot.findUnique({ where: { id: keepBot.id } })).resolves.not.toBeNull();
     await expect(db.thread.count({ where: { botId: keepBot.id } })).resolves.toBe(1);
     await expect(db.routine.findUnique({ where: { id: keepRoutine.id } })).resolves.not.toBeNull();
     await expect(
       db.memoryDocument.count({ where: { spaceId: actor.spaceId } }),
     ).resolves.toBeGreaterThan(0);
-    // Already gone: a retry cannot reach another space.
     await expect(raw(app, cookie, "spaces/remove", { spaceId: busy.id })).resolves.toMatchObject({
       status: 404,
     });
@@ -1767,7 +1751,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     ).resolves.toEqual({ name: "Shared" });
     await expect(db.bot.findUnique({ where: { id: ownerBot.id } })).resolves.not.toBeNull();
 
-    // A member's only space stays even when they own it.
     await handles.prisma.spaceMember.deleteMany({
       where: { userId: memberActor.userId, spaceId: { not: shared.id } },
     });
@@ -1843,7 +1826,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
         where: { id: space.id },
         select: { deletionClaimId: true },
       });
-      // Teardown may have reached the provider, so the space stays claimed.
       expect(lifecycle.deletionClaimId).toBeTruthy();
     } finally {
       destroy.mockRestore();
@@ -1866,7 +1848,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
     const actor = await rpc<Actor>(app, cookie, "me");
     const space = await rpc<Space>(app, cookie, "spaces/create", { name: "Resume" });
     const bot = await rpc<Bot>(app, cookie, "bots/create", botInput("Resume bot"), space.id);
-    // A worker that claimed the space and then died.
     await runAsTenant({ spaceId: space.id, userId: actor.userId }, () =>
       claimSpaceDeletionForMember(handles.prisma, {
         currentSpaceId: space.id,
@@ -1943,7 +1924,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       userId: actor.userId,
       spaceId: space.id,
     };
-    // The procedures run these as a member of the Space being deleted.
     const asMember = <T>(fn: () => Promise<T>) =>
       runAsTenant({ spaceId: space.id, userId: actor.userId }, fn);
 
@@ -2573,8 +2553,6 @@ async function expectDenied(
 ) {
   const response = await raw(app, cookie, procedure, body, spaceId);
   if (procedure === "threads/subscribe" && response.status === 200) {
-    // Streaming transports commit the HTTP 200 before advancing the async iterator. The
-    // ownership error is therefore encoded in the iterator response instead of the status.
     expect(await response.text(), procedure).toMatch(/error|forbidden|not.found|unauthorized/i);
     return;
   }

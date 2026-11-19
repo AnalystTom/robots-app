@@ -22,6 +22,42 @@ Open **Settings → Approvals** and pick a **Mode**:
 > Start with **Ask** or **Auto**. As you approve the same action again and again, choose
 > **Always allow** on the card and the bot stops asking for that one.
 
+## Rules
+
+**Settings → Approvals → Rules** is an ordered list that decides an action before the mode does.
+Each rule names:
+
+- **What it matches**: an **Action** by name, where `*` matches anything (`send_email`, `gmail_*`,
+  `user_computer_*`), every action of an **App** (`gmail`), or a **Kind** of action (Email,
+  Purchases).
+- **Who started the run**, optionally: you in the app, a routine, a webhook, a chat app, or another
+  bot. **Anyone** matches every run.
+- **Allow**, **Ask** or **Deny**.
+
+How rules decide:
+
+- **Deny beats everything.** If any matching rule denies, the action is refused, wherever the rule
+  sits in the list and in every mode. The bot is told it isn't allowed and says so in the chat.
+- Otherwise the **first** matching rule decides between **Allow** and **Ask**. **Ask** shows a card
+  even in **Never ask**; **Allow** skips the card and the approval model.
+- If no rule matches, the **Mode** decides as before.
+- A rule that can't be read never allows: the action asks instead.
+- **Allow** never skips what always asks (see below), a purchase, a **Block** or **Always ask** entry
+  in your lists, or the first fetch from a new site.
+- A routine's change trigger is checked against rules for **A routine**; one that would ask or
+  deny can't run.
+
+Use the up and down arrows to reorder rules. **Test a rule** shows which rule would match an action
+name and who started the run, without saving anything.
+
+## Audit log
+
+Every decision about a bot's action is written to your organization's audit log as `tool.decision`
+**before** the action runs: allowed, asked, approved by you, or denied. Each entry names the bot, the
+action, who started the run, the mode, and the rule or list that decided it. It never includes the
+action's arguments. If the entry can't be written, the action doesn't run and the bot tells you.
+See [Audit log](./self-host-audit-log.md).
+
 ## Approval cards
 
 When a bot needs a yes, it posts a card in the chat showing exactly what it wants to do:

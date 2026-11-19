@@ -3,19 +3,10 @@ import { recordSecurityEvent } from "@robots/db";
 
 type AuditedProcedure = {
   type: SecurityEventType;
-  /** What kind of credential or setting changed. */
   kind?: string;
-  /**
-   * Input fields copied into metadata, by dotted path; the metadata key is the last segment.
-   * Identifiers and enums only, never values a user typed.
-   */
   fields?: readonly string[];
 };
 
-/**
- * Procedures that create, change, or remove a credential or a security setting. One table, so a
- * new credential route is audited by adding a line here instead of a call in its handler.
- */
 export const AUDITED_PROCEDURES: Record<string, AuditedProcedure> = {
   "models.connect": { type: "credential.created", kind: "model", fields: ["provider"] },
   "models.finishOAuth": { type: "credential.created", kind: "model" },
@@ -61,7 +52,6 @@ export const AUDITED_PROCEDURES: Record<string, AuditedProcedure> = {
   "memory.connectProvider": { type: "credential.created", kind: "memory" },
   "memory.updateProvider": { type: "credential.changed", kind: "memory" },
   "memory.disconnectProvider": { type: "credential.deleted", kind: "memory" },
-  // Starting a sign-in replaces any wallet already connected.
   "paymentWallet.connect": { type: "credential.changed", kind: "payment_wallet" },
   "paymentWallet.disconnect": { type: "credential.deleted", kind: "payment_wallet" },
   "devicePairing.create": { type: "credential.created", kind: "pairing_code" },
@@ -93,6 +83,7 @@ export const AUDITED_PROCEDURES: Record<string, AuditedProcedure> = {
   },
   "approvalRules.set": { type: "approval.policy.changed", fields: ["effect", "matchKind"] },
   "approvalRules.remove": { type: "approval.policy.changed", fields: ["id"] },
+  "actionRules.set": { type: "approval.policy.changed", kind: "action_rules", fields: ["scope"] },
   "models.setRole": { type: "approval.policy.changed", fields: ["role", "scope"] },
   "autoReview.set": { type: "approval.policy.changed", fields: ["enabled", "skipApprovals"] },
   "spendingLimit.set": {
@@ -106,10 +97,6 @@ export const AUDITED_PROCEDURES: Record<string, AuditedProcedure> = {
   },
 };
 
-/**
- * A connection becoming connected. Clients poll `connections.complete`, so the handler records
- * this on the transition instead of the table recording every call.
- */
 export function connectionCreatedEvent(
   procedure: "connections.begin" | "connections.catalog" | "connections.complete",
   connectionId: string,
@@ -123,7 +110,6 @@ export function connectionCreatedEvent(
   };
 }
 
-/** A wallet sign-in finishing. Clients poll `paymentWallet.status`, so it records the transition. */
 export function paymentWalletConnectedEvent(actor: {
   userId: string;
   spaceId: string;
@@ -136,7 +122,6 @@ export function paymentWalletConnectedEvent(actor: {
   };
 }
 
-/** The event for a procedure that just succeeded, or undefined when it is not audited. */
 export function procedureSecurityEvent(
   path: readonly string[],
   input: unknown,
@@ -176,12 +161,7 @@ const FAILED_CREDENTIAL_PATHS: Record<string, SecurityEventType> = {
 const RATE_LIMIT_EVENT_WINDOW_MS = 60_000;
 const RATE_LIMIT_KEYS_MAX = 10_000;
 
-/**
- * Failed credential attempts and rate-limit hits, read from the auth response. Rejections thrown
- * before Better Auth's own hooks run (closed registration, a rate limit) only show up here.
- */
 export function createAuthResponseAudit(now: () => number = Date.now) {
-  // A limited client can keep hammering; one row per address, path, and minute is the signal.
   const rateLimited = new Map<string, number>();
   return async (path: string, ip: string | undefined, response: Response): Promise<void> => {
     if (response.status === 429) {
