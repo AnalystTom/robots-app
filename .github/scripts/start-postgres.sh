@@ -26,7 +26,7 @@ printf 'postgres' > "$ROOT/password"
   --encoding=UTF8 --locale=C >/dev/null
 "$INSTALL/bin/postgres" --single -D "$DATA" postgres <<< "CREATE DATABASE robots;" >/dev/null 2>&1
 "$INSTALL/bin/pg_ctl" -D "$DATA" -l "$ROOT/postgres.log" -w -t 60 start -o \
-  "-h 127.0.0.1 -p $PORT -c unix_socket_directories= -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=500" ||
+  "-h 127.0.0.1 -p $PORT -c unix_socket_directories= -c timezone=UTC -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=500" ||
   { cat "$ROOT/postgres.log" >&2; exit 1; }
 
 echo "CI_POSTGRES_URL=postgres://postgres:postgres@127.0.0.1:$PORT/robots" >> "${GITHUB_ENV:-/dev/stdout}"
