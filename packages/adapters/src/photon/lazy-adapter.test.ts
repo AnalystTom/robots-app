@@ -2,12 +2,12 @@ import { createMemoryState } from "@chat-adapter/state-memory";
 import type { ChatInstance, WebhookOptions } from "chat";
 import { Chat, Message, parseMarkdown } from "chat";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { STREAM_INBOUND_RETRY_DELAYS_MS } from "../stream-inbound-retries.js";
 import {
   decodePhotonThreadId,
   encodePhotonThreadId,
   LazyPhotonAdapter,
   PHOTON_LISTEN_WINDOW_MS,
-  PHOTON_STREAM_RETRY_DELAYS_MS,
 } from "./lazy-adapter.js";
 
 const fake = vi.hoisted(() => ({
@@ -76,7 +76,6 @@ describe("LazyPhotonAdapter", () => {
     expect(fake.listens[0]!.durationMs).toBe(PHOTON_LISTEN_WINDOW_MS);
     await vi.advanceTimersByTimeAsync(PHOTON_LISTEN_WINDOW_MS);
     expect(fake.listens).toHaveLength(2);
-    // Each window has its own signal, so abort listeners never accumulate.
     expect(fake.listens[1]!.signal).not.toBe(fake.listens[0]!.signal);
 
     await adapter.stopPolling();
@@ -109,15 +108,14 @@ describe("LazyPhotonAdapter", () => {
       attachments: [],
       raw: {},
     });
-    // What Photon's adapter does for each message pulled from the stream.
     await fake
       .chat!.processMessage(adapter, threadId, message, fake.listens[0]!.options)
       .catch(() => undefined);
     expect(handler).toHaveBeenCalledTimes(1);
-    for (const delay of PHOTON_STREAM_RETRY_DELAYS_MS) await vi.advanceTimersByTimeAsync(delay);
-    expect(handler).toHaveBeenCalledTimes(1 + PHOTON_STREAM_RETRY_DELAYS_MS.length);
+    for (const delay of STREAM_INBOUND_RETRY_DELAYS_MS) await vi.advanceTimersByTimeAsync(delay);
+    expect(handler).toHaveBeenCalledTimes(1 + STREAM_INBOUND_RETRY_DELAYS_MS.length);
     await vi.advanceTimersByTimeAsync(10 * 60_000);
-    expect(handler).toHaveBeenCalledTimes(1 + PHOTON_STREAM_RETRY_DELAYS_MS.length);
+    expect(handler).toHaveBeenCalledTimes(1 + STREAM_INBOUND_RETRY_DELAYS_MS.length);
     await adapter.stopPolling();
   });
 
