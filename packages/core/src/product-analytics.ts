@@ -1,4 +1,5 @@
 import type { AnalyticsScreen } from "@robots/contracts";
+import { WORKSPACE_PAGES } from "@robots/contracts";
 
 export function analyticsScreen(pathname: string): AnalyticsScreen | undefined {
   if (pathname === "/" || pathname === "/app") return "home";
@@ -9,7 +10,7 @@ export function analyticsScreen(pathname: string): AnalyticsScreen | undefined {
   )
     return "artifacts";
   if (pathname === "/app/board" || pathname === "/app/tasks") return "board";
-  if (["/app/today", "/app/email", "/app/docs"].includes(pathname)) return undefined;
+  if (WORKSPACE_PAGES.some((page) => page.path === pathname)) return undefined;
   if (/^\/app\/(?:g\/)?[^/]+$/.test(pathname) || ["/thread", "/group-thread"].includes(pathname))
     return "chat";
   if (pathname === "/computer") return "computer";

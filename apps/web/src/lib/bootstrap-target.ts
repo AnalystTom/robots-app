@@ -1,4 +1,5 @@
 import type { AppBootstrap } from "@robots/contracts";
+import { WORKSPACE_PAGES } from "@robots/contracts";
 
 export function initialBootstrapTarget(path: string, desktop: boolean) {
   const pathname = path.split(/[?#]/)[0] ?? "";
@@ -10,12 +11,17 @@ export function initialBootstrapTarget(path: string, desktop: boolean) {
   };
 }
 
+const RESERVED_SEGMENTS: readonly string[] = [
+  "g",
+  "artifacts",
+  "board",
+  "x",
+  ...WORKSPACE_PAGES.map((page) => page.id),
+];
+
 function botIdFromPath(pathname: string) {
   const segments = pathname.split("/");
-  if (
-    ["g", "artifacts", "board", "tasks", "today", "email", "docs", "x"].includes(segments[2] ?? "")
-  )
-    return undefined;
+  if (RESERVED_SEGMENTS.includes(segments[2] ?? "")) return undefined;
   return decoded(segments[2]);
 }
 

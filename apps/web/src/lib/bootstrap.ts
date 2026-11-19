@@ -1,6 +1,7 @@
 import type { AppBootstrap, LabFeature } from "@robots/contracts";
 import { ATTACHMENT_MAX_BYTES, attachmentMaxBytes, parseLabs } from "@robots/contracts";
 import { displayIdentityResult } from "@robots/core";
+import { useSyncExternalStore } from "react";
 import { initialBootstrapTarget } from "./bootstrap-target";
 import { identityLabels } from "./identity-display";
 import { markOnce } from "./performance";
@@ -15,7 +16,6 @@ const capabilityListeners = new Set<() => void>();
 export function getLabs() {
   return labs;
 }
-/** Applies a saved Labs list at once, so routes and menus follow without a reload. */
 export function setLabs(next: readonly LabFeature[]) {
   labs = next;
   for (const listener of capabilityListeners) listener();
@@ -26,14 +26,15 @@ export function subscribeLabs(listener: () => void) {
     capabilityListeners.delete(listener);
   };
 }
+export function useLabs(): readonly LabFeature[] {
+  return useSyncExternalStore(subscribeLabs, getLabs, getLabs);
+}
 
 let primedBootstrap: {
   botId?: string;
-  /** The linked group the first load asked the server to place; a switch already knows the Space. */
   groupId?: string;
   spaceId?: string;
   promise: Promise<AppBootstrap>;
-  /** What this space showed last time, painted while the fresh bootstrap loads. */
   seed?: AppBootstrap;
 } | null = null;
 
@@ -44,27 +45,21 @@ const initialTarget = initialBootstrapTarget(
 if (initialTarget) {
   const { botId, groupId } = initialTarget;
   const promise = requestBootstrap(botId, undefined, groupId);
-  // Authentication can redirect before Shell consumes this speculative request.
-  // Register a rejection handler immediately while preserving rejection for a consumer.
   void promise.catch(() => undefined);
   primedBootstrap = { botId, groupId, promise };
 }
 
-/** The speculative first-load bootstrap, left in place for the shell to take. */
 export function peekInitialBootstrap(): Promise<AppBootstrap> | undefined {
-  // Only the speculative first load may be shared with the subscription gate.
   return primedBootstrap?.spaceId === undefined ? primedBootstrap?.promise : undefined;
 }
 
 function primedFor(botId: string | undefined, groupId?: string) {
   const primed = primedBootstrap;
   if (!primed || primed.botId !== botId) return null;
-  // The first load also says which Space holds a linked group, so it must have asked about this one.
   if (primed.spaceId === undefined) return primed.groupId === groupId ? primed : null;
   return primed.spaceId === selectedSpaceId() ? primed : null;
 }
 
-/** The cached bootstrap a revisited space opens with, if the switch had one. */
 export function peekBootstrapSeed(botId?: string): AppBootstrap | undefined {
   return primedFor(botId)?.seed;
 }
@@ -100,7 +95,6 @@ export function primeSpaceBootstrap(
   return promise;
 }
 
-/** Drops a primed bootstrap nobody will take, so a later shell cannot take another space's. */
 export function discardPrimedBootstrap(promise: Promise<AppBootstrap>): void {
   if (primedBootstrap?.promise === promise) primedBootstrap = null;
 }

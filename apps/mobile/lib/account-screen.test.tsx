@@ -888,11 +888,11 @@ it("shows the Board shortcut only to accounts that turned it on in Labs", async 
   account.me = { ...account.me, labs: [] };
   const off = await renderAccount();
   expect(titles(off)).toContain("Labs");
-  expect(titles(off)).not.toContain("Board");
+  expect(titles(off)).not.toContain("Tasks");
   act(() => root?.unmount());
 
   account.me = { ...account.me, labs: ["board"] };
-  expect(titles(await renderAccount())).toContain("Board");
+  expect(titles(await renderAccount())).toContain("Tasks");
 });
 
 it("hides Labs when the server turns every feature on for everyone", async () => {
@@ -900,7 +900,7 @@ it("hides Labs when the server turns every feature on for everyone", async () =>
   const view = await renderAccount();
   const titles = Array.from(view.screen.querySelectorAll("[data-row]"), (row) => row.textContent);
   expect(titles).not.toContain("Labs");
-  expect(titles).toContain("Board");
+  expect(titles).toContain("Tasks");
 });
 
 it("saves a Labs switch at once and turns it back off when the save fails", async () => {

@@ -13,6 +13,13 @@ import { createSettingsPageStyles } from "../../lib/settings-page-styles";
 import { useSideInsets } from "../../lib/side-insets";
 import { errorText } from "../../lib/user-error";
 
+const MOBILE_LABS = ["board"] as const satisfies readonly LabFeature[];
+type MobileLab = (typeof MOBILE_LABS)[number];
+
+function isMobileLab(feature: LabFeature): feature is MobileLab {
+  return (MOBILE_LABS as readonly LabFeature[]).includes(feature);
+}
+
 export default function Labs() {
   const sideInsets = useSideInsets();
   const { t } = useLingui();
@@ -21,11 +28,8 @@ export default function Labs() {
   const [labs, setLabs] = useState<MobileMe["labs"] | null>(null);
   const [available, setAvailable] = useState<MobileMe["labsAvailable"]>([]);
   const saveRequest = useRef(0);
-  const copy: Record<LabFeature, { title: string; detail: string }> = {
+  const copy: Record<MobileLab, { title: string; detail: string }> = {
     board: { title: t`Tasks`, detail: t`A kanban board of tasks your bots can work on` },
-    today: { title: t`Today`, detail: t`A summary of what your bots did today and what needs you` },
-    email: { title: t`Email`, detail: t`Read the mail your bots' email addresses receive` },
-    docs: { title: t`Docs`, detail: t`Shared notes and documents your bots read and write` },
   };
 
   useFocusEffect(
@@ -70,7 +74,7 @@ export default function Labs() {
       >
         {labs ? (
           <SettingsGroup>
-            {available.map((feature) => (
+            {available.filter(isMobileLab).map((feature) => (
               <SettingsSwitch
                 key={feature}
                 label={copy[feature].title}

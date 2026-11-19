@@ -107,7 +107,6 @@ import { startUnsentSends } from "../lib/unsent-sends";
 import { startWorkActivities } from "../lib/work-activity";
 import { InboxPane } from "./index";
 
-// Before anything renders: text grows with the iOS text size only up to a fixed maximum.
 capTextScaling();
 configureForegroundNotifications();
 registerSessionDiskCache(clearSavedChats);
@@ -118,21 +117,17 @@ registerSessionDiskCache((sameAccount) => {
 });
 installClientUpdates();
 registerSessionDiskCache(() => void clearAppBadge());
-// Keep the splash up until the saved appearance applies, so the first frame isn't in the OS scheme.
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 const DIVIDER_GRAB_WIDTH = 24;
-// Screens that take the whole window even when it is wide enough for the chat list beside them.
 const FULL_WINDOW_ROUTES = new Set(["/sign-in", "/server", "/image", "/computer", "/share"]);
 
-/** On a wide window the chat list stays on the left and the stack shows the open chat beside it. */
 function SplitFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const params = useGlobalSearchParams();
   const routeKey = JSON.stringify([pathname, params]);
   const paneSpace = useRef<string | null>(null);
-  // Capture the space when any route opens, including another entity on the same route.
   useEffect(() => {
     paneSpace.current = pathname === "/" ? null : selectedSpaceId();
   }, [routeKey]);
@@ -143,7 +138,6 @@ function SplitFrame({ children }: { children: ReactNode }) {
     if (home) setInboxHidden(false);
   }, [home]);
   const showsInbox = split && (home || inboxShown) && !FULL_WINDOW_ROUTES.has(pathname);
-  // Dragging resizes the list natively; the width is kept when the finger lifts.
   const paneWidth = useSharedValue(inboxWidth);
   const dragStart = useRef(inboxWidth);
   useEffect(() => {
@@ -282,7 +276,6 @@ function LayoutContent() {
   const call = useCallActive();
   const { t } = useLingui();
   const insets = useSafeAreaInsets();
-  // Beside the list a chat swaps in place, the way it does when picked from a sidebar.
   const { split, inboxHidden, foldActive } = useSplitView();
   const canInvite = Boolean(useReferral());
   const chatAnimation = split ? "none" : undefined;
@@ -345,7 +338,6 @@ function LayoutContent() {
 
   useEffect(() => {
     if (!ready) return;
-    // A session revoked or expired on the server ends here, from whichever screen noticed it.
     return subscribeSessionRejected(() => replaceWithSignIn());
   }, [ready]);
 
@@ -354,7 +346,6 @@ function LayoutContent() {
     return startUnsentSends();
   }, [ready]);
 
-  // Only once the saved server is restored: the card's check sends the session to it.
   useEffect(() => {
     if (!ready) return;
     return startWorkActivities();
@@ -378,9 +369,6 @@ function LayoutContent() {
       trackMobileStartup("language", bootstrapI18n()).catch(() => undefined),
     ])
       .then(() => {
-        // The native poller stores the locale its notification copy uses, so the
-        // restart waits for the language to load rather than saving the default.
-        // Notification restoration must not keep the native splash visible.
         void loadSessionToken()
           .then((token) =>
             resumeLiveNotifications(currentApiBase(), token, selectedSpaceId() ?? ""),
@@ -454,8 +442,6 @@ function LayoutContent() {
                         name="(settings)"
                         options={{
                           headerShown: false,
-                          // One stack of settings pages in a sheet over the screen that opened it.
-                          // Android keeps pushed pages: it has no nested stack inside a formSheet.
                           presentation: Platform.OS === "ios" ? "formSheet" : "card",
                           sheetAllowedDetents: [0.95],
                           sheetGrabberVisible: false,
@@ -467,7 +453,6 @@ function LayoutContent() {
                         name="server"
                         options={{
                           title: t`Server`,
-                          // Android formSheet hides the header Save action.
                           presentation: Platform.OS === "ios" ? "formSheet" : "card",
                           sheetAllowedDetents: [0.6, 1],
                           sheetGrabberVisible: true,
@@ -534,7 +519,6 @@ function LayoutContent() {
                         name="page"
                         options={{
                           headerShown: false,
-                          // An iPad shows a page as a sheet over the chat; a phone shows it whole.
                           presentation:
                             Platform.OS === "ios" && Platform.isPad
                               ? "pageSheet"
@@ -583,7 +567,7 @@ function LayoutContent() {
                         name="routine-runs"
                         options={glassHeaderOptions(t`Run history`)}
                       />
-                      <Stack.Screen name="board" options={glassHeaderOptions(t`Board`)} />
+                      <Stack.Screen name="board" options={glassHeaderOptions(t`Tasks`)} />
                       <Stack.Screen name="computer" options={{ title: t`Computer` }} />
                       <Stack.Screen
                         name="image"

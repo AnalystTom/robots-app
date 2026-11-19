@@ -1,13 +1,6 @@
 import type { LabFeature } from "@robots/contracts";
-import { useSyncExternalStore } from "react";
-import { getLabs, subscribeLabs } from "../../lib/bootstrap";
-
-export const WORKSPACE_PAGES = [
-  { id: "today", lab: "today", path: "/app/today" },
-  { id: "tasks", lab: "board", path: "/app/tasks" },
-  { id: "email", lab: "email", path: "/app/email" },
-  { id: "docs", lab: "docs", path: "/app/docs" },
-] as const satisfies ReadonlyArray<{ id: string; lab: LabFeature; path: string }>;
+import { WORKSPACE_PAGES } from "@robots/contracts";
+import { useLabs } from "../../lib/bootstrap";
 
 export type WorkspacePage = (typeof WORKSPACE_PAGES)[number];
 export type WorkspacePageId = WorkspacePage["id"];
@@ -17,10 +10,5 @@ export function workspacePagesFor(labs: readonly LabFeature[]): WorkspacePage[] 
 }
 
 export function useWorkspacePages(): WorkspacePage[] {
-  const labs = useSyncExternalStore(
-    subscribeLabs,
-    () => getLabs().join(","),
-    () => "",
-  );
-  return workspacePagesFor(labs.split(",") as LabFeature[]);
+  return workspacePagesFor(useLabs());
 }

@@ -26,3 +26,10 @@ export function withLab(
 ): LabFeature[] {
   return LAB_FEATURES.filter((lab) => (lab === feature ? enabled : hasLab(stored, lab)));
 }
+
+export const WORKSPACE_PAGES = [
+  { id: "today", lab: "today", path: "/app/today" },
+  { id: "tasks", lab: "board", path: "/app/tasks" },
+  { id: "email", lab: "email", path: "/app/email" },
+  { id: "docs", lab: "docs", path: "/app/docs" },
+] as const satisfies ReadonlyArray<{ id: string; lab: LabFeature; path: string }>;

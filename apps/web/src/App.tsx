@@ -1,17 +1,9 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { LinkFavicons } from "@robots/chat-ui/web";
 import { LinkFaviconsContext, RemoteImagesContext } from "@robots/chat-ui/web";
-import type { LabFeature } from "@robots/contracts";
 import { analyticsScreen } from "@robots/core";
 import { Button } from "@robots/ui-web";
-import {
-  Suspense,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Navigate, Outlet, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { LoadingState } from "./components/ai/primitives";
 import { CallLayout } from "./components/call/CallLayout";
@@ -20,7 +12,7 @@ import { MarkdownLinkPrompt } from "./components/markdown-link-prompt";
 import { PageLoading } from "./components/PageLoading";
 import { SubscriptionGate } from "./components/SubscriptionGate";
 import { authClient } from "./lib/auth";
-import { getLabs, subscribeLabs } from "./lib/bootstrap";
+import { useLabs } from "./lib/bootstrap";
 import { syncCallIdentity } from "./lib/call-session";
 import { desktopBridge } from "./lib/desktop";
 import { syncWebLogoAvatarIdentity } from "./lib/logo-avatar-activity";
@@ -122,11 +114,7 @@ export function App() {
 function SessionApp() {
   const [searchParams] = useSearchParams();
   const next = signInNext(searchParams.get("next"));
-  const labs = useSyncExternalStore(
-    subscribeLabs,
-    () => getLabs().join(","),
-    () => "",
-  ).split(",") as LabFeature[];
+  const labs = useLabs();
   const boardEnabled = labs.includes("board");
   const session = authClient.useSession();
   const { pathname, search } = useLocation();
