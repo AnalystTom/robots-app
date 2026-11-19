@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { BOT_COLOR_LIST, PAIR_PAGE_PATH, signInProviders } from "@robots/contracts";
+import { PAIR_PAGE_PATH, signInProviders } from "@robots/contracts";
 import {
   credentialIssue,
   MAX_PASSWORD_LENGTH,
@@ -7,19 +7,12 @@ import {
   signupRequiresEmailVerification,
   suggestEmailCorrection,
 } from "@robots/core";
-import {
-  Button,
-  Input,
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-  Label,
-  LogoAvatar,
-} from "@robots/ui-web";
+import { Button, Input, InputOTP, InputOTPGroup, InputOTPSlot, Label } from "@robots/ui-web";
 import { ChevronLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { PasskeySignIn, usePasskeySignIn } from "../components/PasskeySignIn";
+import { RobotsMark } from "../components/RobotsMark";
 import { SocialSignInButtons } from "../components/SocialSignInButtons";
 import { authClient } from "../lib/auth";
 import type { AuthCapabilities } from "../lib/auth-capabilities";
@@ -662,11 +655,7 @@ export function AuthFrame({
         >
           {leading ? <div className="mb-4 self-start">{leading}</div> : null}
           <div className={surface ? "flex w-full flex-col items-center" : "contents"}>
-            <LogoAvatar
-              size={74}
-              avatarValue={BOT_COLOR_LIST.find((color) => color.id === "orange")?.hex}
-              motion={false}
-            />
+            <RobotsMark />
             <h1
               aria-live="polite"
               className={
