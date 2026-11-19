@@ -86,7 +86,6 @@ function SsoCallbackPage() {
   return null;
 }
 
-// Link icons come from our API, which fetches and caches them; the browser never asks the site.
 const linkFavicons: LinkFavicons = {
   load: (origin) => rpc.links.favicon({ origin }),
 };
@@ -124,7 +123,6 @@ function SessionApp() {
   const analyticsUserId = session.data?.user.id;
   const lastScreen = useRef<string | undefined>(undefined);
   useEffect(() => {
-    // A pending session is not a sign-out; startup already tagged the signed-in user.
     if (session.isPending) return;
     void identifyMonitoringUser(Boolean(analyticsUserId));
   }, [analyticsUserId, session.isPending]);
@@ -274,7 +272,7 @@ function SessionApp() {
                   user ? (
                     <InvitePage />
                   ) : (
-                    <Navigate to={`/sign-in?next=${encodeURIComponent(pathname)}`} replace />
+                    <Navigate to={`/sign-up?next=${encodeURIComponent(pathname)}`} replace />
                   )
                 }
               />
@@ -291,7 +289,10 @@ function SessionApp() {
                       <Outlet />
                     </SubscriptionGate>
                   ) : (
-                    <Navigate to="/sign-in" replace />
+                    <Navigate
+                      to={`/sign-in?next=${encodeURIComponent(pathname + search)}`}
+                      replace
+                    />
                   )
                 }
               >
@@ -315,11 +316,6 @@ function SessionApp() {
   );
 }
 
-/**
- * A session lookup that never reached the server is not a sign-out, so the app
- * waits and retries here instead of routing to sign-in and stranding a signed-in
- * user. Better Auth only polls once a session exists, so the retry lives here.
- */
 function SessionUnavailable({ refetch }: { refetch: () => Promise<void> }) {
   const { t } = useLingui();
   const [attempt, setAttempt] = useState(0);
@@ -367,7 +363,6 @@ function SessionUnavailable({ refetch }: { refetch: () => Promise<void> }) {
   );
 }
 
-/** Last resort for a render failure no inner boundary caught: offer a reload instead of a blank page. */
 function AppFailed() {
   return (
     <div

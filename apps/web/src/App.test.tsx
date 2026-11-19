@@ -2,7 +2,7 @@
 import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { expect, it, vi } from "vitest";
 
 interface SessionState {
@@ -150,7 +150,6 @@ it("keeps the sign-in page mounted while a signed-out session refetches", async 
     capability.authMounts = 0;
     await render({ isPending: false, data: null, error: null });
     expect(container.textContent).toBe("Auth in");
-    // Better Auth refetches a null session when the tab regains focus.
     await render({ isPending: true, data: null, error: null });
     expect(container.textContent).toBe("Auth in");
     await render({ isPending: false, data: null, error: null });
@@ -216,6 +215,59 @@ it("tells the call session who is signed in, without counting an unreachable loo
     expect(capability.syncCallIdentity).toHaveBeenLastCalledWith(null);
   } finally {
     capability.session = null;
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
+  }
+});
+
+function Location() {
+  const { pathname, search } = useLocation();
+  return <output>{pathname + search}</output>;
+}
+
+it.each([
+  ["/app/today?thread=t-1", "/sign-in?next=%2Fapp%2Ftoday%3Fthread%3Dt-1", "Auth in"],
+  ["/invite/token-1", "/sign-up?next=%2Finvite%2Ftoken-1", "Auth up"],
+])("sends a signed-out visit to %s through auth with its destination", async (path, auth, page) => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  capability.session = { isPending: false, data: null, error: null };
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  try {
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={[path]}>
+          <App />
+          <Location />
+        </MemoryRouter>,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(container.querySelector("output")?.textContent).toBe(auth);
+    expect(container.textContent).toBe(`${page}${auth}`);
+  } finally {
+    capability.session = null;
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
+  }
+});
+
+it("returns a signed-in visit to sign-in to the app page it came from", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  try {
+    await act(async () =>
+      root.render(
+        <MemoryRouter initialEntries={["/sign-in?next=%2Fapp%2Ftoday%3Fthread%3Dt-1"]}>
+          <App />
+          <Location />
+        </MemoryRouter>,
+      ),
+    );
+    expect(container.querySelector("output")?.textContent).toBe("/app/today?thread=t-1");
+    expect(container.textContent).toBe("Shell/app/today?thread=t-1");
+  } finally {
     await act(async () => root.unmount());
     vi.unstubAllGlobals();
   }
