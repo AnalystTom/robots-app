@@ -1,4 +1,4 @@
-# Ticket board
+# Tasks
 
 > [!NOTE]
 > The ticket board is a Labs feature. Each account turns it on in **Settings → Labs**, or a
