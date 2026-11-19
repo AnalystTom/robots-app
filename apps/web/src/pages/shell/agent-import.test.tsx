@@ -264,7 +264,6 @@ afterEach(() => {
   container = null;
 });
 
-/** What the server returns for a document with a pasted key in its memory. */
 const plan: AgentImportPlan = {
   source: "document",
   suggestedName: "Pebble",
@@ -329,7 +328,6 @@ describe("an item whose text looks like it contains a key", () => {
     const memory = container.querySelector('[data-testid="agent-import-memory"]')!;
     expect(memory.textContent).toContain("Looks like it contains a key");
     expect(box("notes").getAttribute("aria-checked")).toBe("false");
-    // Everything else keeps its usual default.
     expect(box("Instructions").getAttribute("aria-checked")).toBe("true");
 
     await act(async () => box("notes").click());
@@ -337,7 +335,6 @@ describe("an item whose text looks like it contains a key", () => {
   });
 
   it("never shows a key as a title: a key-looking heading or skill name gets a plain label", async () => {
-    // Synthetic, built from parts so no scanner mistakes it for a leak.
     const key = ["sk", "-proj-", "Ab3dE5gH7jK9mN1pQ2rS4tU6vW8xY0zA12345678"].join("");
     importPreview.mockResolvedValue({
       ...plan,
@@ -458,7 +455,6 @@ describe("creating a bot", () => {
       value: { writeText: () => new Promise<void>((_, reject) => (refuse = reject)) },
       configurable: true,
     });
-    // The selection fallback fails too, so the attempt settles as a failure.
     document.execCommand = vi.fn(() => false);
     onTestFinished(() => {
       Reflect.deleteProperty(document, "execCommand");

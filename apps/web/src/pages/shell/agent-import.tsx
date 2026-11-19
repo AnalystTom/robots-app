@@ -9,10 +9,6 @@ import { rpc } from "../../lib/rpc";
 import { AgentImportPlanReview, headingClass, sectionClass } from "./agent-import-plan";
 import { useAgentImportSource } from "./use-agent-import-source";
 
-/**
- * An assistant with no export: copy a prompt to send it, then paste its reply or choose the
- * file it made. The reply is held by the form so it survives a trip to the preview and back.
- */
 function PromptReplySection({
   testId,
   fileTestId,
@@ -44,7 +40,6 @@ function PromptReplySection({
 }) {
   const { t } = useLingui();
   const fileInput = useRef<HTMLInputElement>(null);
-  // Unmounted while the preview is open, so a copy that fails then never greets the return.
   const [copied, copy, copyFailed, resetCopy] = useCopyText();
   return (
     <section className={sectionClass} data-testid={testId}>

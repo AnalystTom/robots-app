@@ -50,7 +50,6 @@ export function ComputerModePicker({
   );
 }
 
-/** `plain` drops the card for a section whose single control already draws its own frame. */
 function BotPanelGroup({
   label,
   plain = false,
@@ -112,7 +111,6 @@ export function NotificationsSection({
   );
 }
 
-/** The model picker and, when the model offers levels, its thinking level. */
 export function ModelSection({
   ids,
   containerRef,
@@ -398,7 +396,6 @@ export function DescriptionGroup({
   ids: string;
   description: string;
   onDescriptionChange: (description: string) => void;
-  /** Saves the description when the field loses focus. */
   onCommit: () => void;
 }) {
   const { t } = useLingui();

@@ -46,7 +46,6 @@ export function pluginSelection(entry: PluginMarketplaceEntry): PluginSelection 
   };
 }
 
-/** GitHub homepages would give every plugin the same mark, so they never stand in for a site. */
 function pluginSite(entry: Pick<PluginMarketplaceEntry, "homepage" | "domains">): string | null {
   const domain = entry.domains[0]?.replace(/^https?:\/\//, "");
   if (domain) return `https://${domain}`;
@@ -93,14 +92,11 @@ export function PluginLogo({
   );
 }
 
-/** A list row: icon, text and trailing actions on one line. */
 export const ROW_SHELL = "flex min-w-0 items-center gap-3 rounded-xl px-2.5 py-2";
 
-/** The row's main button, which fills the row up to its trailing actions. */
 export const ROW_BUTTON =
   "flex min-w-0 flex-1 items-center gap-3 text-start focus-visible:outline-none";
 
-/** The whole row highlights, including for keyboard focus on its main button. */
 export const ROW_HOVER = "hover:bg-accent/60 has-[button:focus-visible]:bg-accent/60";
 
 export function PluginRow({
@@ -143,7 +139,6 @@ function sourceHref(source: string, sha: string | undefined) {
 
 const SKILLS_SHOWN = 5;
 
-/** The managed app a plugin page connects instead of the plugin's own connector. */
 export type ManagedAppLink = {
   name: string;
   logo: string | null;
@@ -170,7 +165,6 @@ export function PluginDetail({
   assigned: Set<string>;
   activeBotId?: string;
   managed?: ManagedAppLink;
-  /** Opened from Skills: only the plugin's skills are added here; its connector belongs to Integrations. */
   skillsOnly?: boolean;
   onBack: () => void;
   onChanged: () => Promise<unknown>;
@@ -195,7 +189,6 @@ export function PluginDetail({
     };
   }, []);
 
-  // A pasted URL can differ from the normalized source the install is saved under.
   const install = installs.find(
     (row) =>
       row.kind === "plugin" &&
@@ -244,7 +237,6 @@ export function PluginDetail({
     }
   }
 
-  /** The first part installs the plugin; later changes keep its pinned version. */
   const setParts = (key: string, next: PluginPart[], failure: string, acceptRisk = false) =>
     run(
       key,
@@ -308,9 +300,7 @@ export function PluginDetail({
       t`Could not enable tools`,
     );
 
-  // A plugin connector already installed stays manageable here until it is removed.
   const managed = parts.includes("connector") ? undefined : managedApp;
-  // Installed plugin skills are read-only, so their saved instructions open in place.
   async function toggleRecipe(name: string) {
     if (recipe?.name === name) return setRecipe(null);
     setRecipe({ name, content: null });
@@ -330,8 +320,6 @@ export function PluginDetail({
     }
   }
 
-  // An ignored manifest field loses nothing, so it isn't reported. A skill left out for repeating
-  // a built-in one says why, since the user still has that skill.
   const notAdded = [
     ...(detail?.skipped ?? [])
       .filter((entry) => entry.kind !== "unsupported_field")
@@ -342,7 +330,6 @@ export function PluginDetail({
   const skills = detail?.skills ?? [];
   const shownSkills = allSkills ? skills : skills.slice(0, SKILLS_SHOWN);
   const connectorCount = detail?.mcpServers.length ?? 0;
-  // Without a connector there is nothing to connect, so the page adds the skills instead.
   const skillPack = skillsOnly || (!managed && !connectorCount && Boolean(detail));
   const headerPart: PluginPart = skillPack ? "skills" : "connector";
   const headerOn = parts.includes(headerPart);

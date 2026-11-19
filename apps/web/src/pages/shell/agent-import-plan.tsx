@@ -24,7 +24,6 @@ import { ComputerModePicker } from "./bot-settings-sections";
 import { useImportStatusText } from "./import-status";
 import type { AgentImportSource } from "./use-agent-import-source";
 
-/** Warnings the status label already says. */
 const STATUS_WARNINGS: ReadonlySet<AgentImportWarning> = new Set([
   "needs_setup",
   "unsupported_command",
@@ -35,7 +34,6 @@ const STATUS_WARNINGS: ReadonlySet<AgentImportWarning> = new Set([
 export const sectionClass = "mt-6";
 export const headingClass = "text-body text-foreground";
 
-/** What a read source would import, with a box per item, then the new bot's name and Create. */
 export function AgentImportPlanReview({
   ids,
   plan,
@@ -123,9 +121,7 @@ export function AgentImportPlanReview({
   );
 
   const defaultNote = plan.source === "hermes" ? t`Default from Hermes` : t`Default from OpenClaw`;
-  // Never the matched text: the expanded item shows the user's own text, unchanged.
   const keyNote = t`Looks like it contains a key`;
-  // A label that itself looks like a key is replaced by its kind and position.
   const safeLabel = (label: string, containsKey: boolean | undefined, fallback: string) =>
     containsKey && looksLikeCredential(label) ? fallback : label;
   const skillLabel = (index: number) => {
@@ -157,7 +153,6 @@ export function AgentImportPlanReview({
         !STATUS_WARNINGS.has(warning) &&
         !(warning === "runs_code" && status.kind === "needs_review"),
     );
-    // Ready is what a ticked box already says: only exceptions get a label.
     const label = [
       status.kind === "ready" ? null : statusText.status(status),
       ...others.map(warningText),
@@ -166,7 +161,6 @@ export function AgentImportPlanReview({
       .join(", ");
     return label ? note(label) : undefined;
   };
-  // Its own line under the name, so a long status never cuts the name short.
   const note = (text: string) => (
     <span className="ms-7 -mt-1 mb-1 basis-full text-body-sm text-muted-foreground" dir="auto">
       {text}

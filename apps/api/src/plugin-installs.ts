@@ -37,11 +37,6 @@ type PreparedServer = {
   index: number;
 };
 
-/**
- * The caller named the address, so failing to reach or read it is their answer, not a server
- * error; this returns for the caller to give it. A cancelled request and a fault in our own
- * code are rethrown.
- */
 export function rethrowUnlessPluginSourceFailed(error: unknown, signal?: AbortSignal): void {
   if (signal?.aborted || isPluginLoadFault(error)) throw error;
   getLogger().warn("plugin source not loaded", { error });
@@ -70,15 +65,12 @@ async function loadPlugin(
   return plugin;
 }
 
-/** Parts the plugin actually has, out of the ones asked for. */
 function availableParts(plugin: LoadedPlugin, wanted: readonly PluginPart[]): PluginPart[] {
   return wanted.filter((part) =>
     part === "connector" ? plugin.mcpServers.length > 0 : plugin.skills.length > 0,
   );
 }
 
-/** Network validation and encryption run before the transaction; written secrets are
- * cleaned up if the transaction never references them. */
 function withPreparedServers<T>(
   deps: PluginInstallDeps,
   actor: Actor,
@@ -109,7 +101,6 @@ function withPreparedServers<T>(
   return prepare(0);
 }
 
-/** Where an install's skills and connectors live: wherever the install itself is available. */
 type InstallPlacement = {
   id: string;
   spaceId: string;
@@ -146,8 +137,6 @@ function extraSpaces(install: InstallPlacement) {
     .filter((spaceId) => spaceId !== install.spaceId);
 }
 
-// Parts may be added from another space the install is available in, so they are written in
-// the install's own space; the caller checked the install is the actor's.
 async function addSkills(
   tx: Prisma.TransactionClient,
   install: InstallPlacement,
@@ -182,7 +171,6 @@ async function addServers(
   plugin: LoadedPlugin,
   prepared: PreparedServer[],
 ) {
-  // Secrets of a connector available beyond one space are the account's, so each space reads them.
   const shared = install.allSpaces || extraSpaces(install).length > 0;
   await runAsSystemInTransaction(tx, "add a plugin's connectors where it is installed", () =>
     addServerRows(tx, install, plugin, prepared, shared),
@@ -208,7 +196,6 @@ async function addServerRows(
           ciphertext: stored.ciphertext,
         },
       });
-    // Stable, bounded and collision-resistant; no slug allocation loops.
     const suffix = createHash("sha256").update(`${installId}:${index}`).digest("hex").slice(0, 12);
     const row = await tx.mcpServer.create({
       data: {
@@ -239,9 +226,6 @@ async function addServerRows(
 }
 
 export function lockPluginInstalls(tx: Prisma.TransactionClient, actor: Actor) {
-  // Serialize installs for this actor, including same-source duplicates. A
-  // transaction-scoped advisory lock avoids an extra global uniqueness policy
-  // on capability_installs (other kinds deliberately allow multiple sources).
   return lockOwner(tx, actor.userId, "plugin");
 }
 
@@ -310,7 +294,6 @@ export async function installPlugin(
     try {
       const row = await deps.prisma.$transaction(async (tx) => {
         await lockPluginInstalls(tx, actor);
-        // One install per plugin and account, since it is available in all the user's spaces.
         const installed = await runAsSystemInTransaction(
           tx,
           "owner's plugin installs across their spaces",
@@ -356,17 +339,11 @@ export async function installPlugin(
   });
 }
 
-/** The pinned commit an install was made from, so a later part comes from the same content. */
 function pinnedSource(install: { source: string; version: string | null }): string {
   const [repo, subdir] = install.source.split("#");
   return `${repo}@${install.version}${subdir ? `#${subdir}` : ""}`;
 }
 
-/**
- * Adds or removes a plugin's connector or skills. Added parts are read again at the
- * install's pinned commit and must match its digest. Returns null when no part is left,
- * in which case the caller removes the install.
- */
 export async function setPluginParts(
   deps: PluginInstallDeps & {
     removeServer: (
@@ -407,7 +384,6 @@ export async function setPluginParts(
         });
         if (!install) throw new ORPCError("NOT_FOUND", { message: "Plugin is not installed" });
         const owned = { userId: actor.userId, installId: install.id };
-        // The plan above was made from an unlocked read; another change since then invalidates it.
         const locked = installedPluginParts(install.config as Record<string, unknown>);
         if (locked.length !== current.length || locked.some((part) => !current.includes(part)))
           throw new ORPCError("CONFLICT", { message: "Plugin changed. Reload and try again" });
@@ -429,7 +405,6 @@ export async function setPluginParts(
           data: {
             config: {
               ...(install.config as Record<string, unknown>),
-              // Re-read at the pinned commit, so the saved preview matches what is installed now.
               ...(plugin ? pluginPreviewDto(plugin) : {}),
               parts,
             } as Prisma.InputJsonValue,

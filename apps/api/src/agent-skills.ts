@@ -255,7 +255,6 @@ export function createAgentSkillsService(prisma: PrismaClient) {
       ) {
         throw new ORPCError("CONFLICT", { message: "A skill with that name already exists." });
       }
-      // Mutate only owner-scoped user rows (never builtin/plugin), even if source was tampered.
       try {
         const updated = await prisma.$transaction(async (tx) => {
           if (renamed)

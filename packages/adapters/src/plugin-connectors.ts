@@ -1,5 +1,3 @@
-/** Portable plugin parsing plus a bounded, public-GitHub acquisition adapter.
- * No repository code is executed and no files are written to the host. */
 import { createHash } from "node:crypto";
 import type { PluginPreview } from "@robots/contracts";
 import { McpServerConfigInput } from "@robots/contracts";
@@ -19,7 +17,6 @@ export type PluginSkillEntry = {
   name: string;
   description: string;
   content: string;
-  /** Text files beside SKILL.md, keyed by their path relative to the skill folder. */
   files?: Record<string, string>;
 };
 export type PluginMcpServerEntry = {
@@ -54,11 +51,9 @@ export type ParsedPlugin = {
   skills: PluginSkillEntry[];
   mcpServers: PluginMcpServerEntry[];
   skipped: PluginSkippedEntry[];
-  /** Skills left out because a built-in skill has the same name. */
   builtinNames: string[];
 };
 
-/** Fetched component files; other paths are only listed. */
 const MAX_FILES = 200;
 const MAX_TREE_ENTRIES = 5000;
 const FETCH_CONCURRENCY = 8;
@@ -70,22 +65,17 @@ const SCHEMAS = new Set([
   "https://agent-plugins.org/schemas/1.1.0/plugin.schema.json",
 ]);
 const MANIFESTS = ["plugin.json", ".cursor-plugin/plugin.json", ".grok-plugin/plugin.json"];
-/** Parts that only run inside an editor or execute the plugin's own code on the host. */
 const UNSUPPORTED_DIRS = new Set(["rules", "hooks", "automations"]);
 const UNSUPPORTED_FILES = new Set([".lsp.json"]);
 const AGENT_FILE = /^agents\/([^/]+)\.md$/;
 const SKILL_COMPANION = /^skills\/[^/]+\/(?!SKILL\.md$).+/;
-/** Reference docs a skill points to; scripts and binaries are not installed. */
 const SKILL_TEXT_FILE = /\.(md|mdx|txt|json|ya?ml|csv)$/i;
 export const MAX_SKILL_FILES = 40;
 const OVERSIZED_FILE = "\u0000";
-/** A link or submodule is never followed; a skill that contains one does not install. */
 const UNREADABLE_FILE = "\u0001";
-/** A whole component (skill folder, agent, command, MCP config or manifest) that is a link. */
 const UNREADABLE_COMPONENT =
   /^(skills\/[^/]+|agents\/[^/]+|commands\/[^/]+|\.?mcp\.json|plugin\.json|\.[a-z-]+-plugin(\/plugin\.json)?)$/;
 export const MAX_SKILL_FILES_BYTES = 400_000;
-// Underscore files beside commands are shared notes, not commands of their own.
 const COMMAND_FILE = /^commands\/([^/_][^/]*)\.md$/;
 const manifestSchema = z.object({
   name: z
@@ -128,8 +118,6 @@ function safePath(path: string): string {
   return path;
 }
 
-/** URL syntax: https://host/owner/repo[.git][@ref][#subdir].
- * GitHub's /tree/ref/subdir form is accepted for single-segment refs. */
 export function parsePluginSource(source: string): PluginSourceRef {
   const input = source.trim();
   if (!input || input.length > 2048) throw new Error("Plugin source must be an HTTPS git URL");
@@ -181,8 +169,6 @@ export function parsePluginSource(source: string): PluginSourceRef {
   return { gitUrl: url.toString().replace(/\/$/, ""), ref, subdir };
 }
 
-/** Provider seam for deterministic tests. The default always uses the DNS-pinned,
- * redirect-checked web fetch with per-response byte limits. */
 export type PluginTextReader = (
   url: string,
   maxBytes: number,
@@ -243,12 +229,10 @@ export async function fetchGitHubRepo(
   const wanted: string[] = [];
   for (const entry of entries) {
     const path = entry.path.slice(prefix.length);
-    // Fetch only component text. Other paths are retained for skipped-part reporting.
     if (!isFetchedComponent(path)) {
       files.push({ path: entry.path, content: "" });
       continue;
     }
-    // An oversized reference refuses only its own skill, not the whole plugin.
     if (SKILL_COMPANION.test(path) && (entry.size ?? 0) > MAX_FILE_BYTES) {
       files.push({ path: entry.path, content: OVERSIZED_FILE });
       continue;
@@ -272,7 +256,6 @@ export async function fetchGitHubRepo(
       }
     }),
   );
-  // Parallel downloads finish in any order; parsing must not depend on it.
   files.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   return { files, resolvedSha: sha };
 }
@@ -312,7 +295,6 @@ function collectSkills(
     const folder = `skills/${match[1]}/`;
     const companions = [...files].filter(([p]) => p.startsWith(folder) && p !== path);
     const refusal = companionRefusal(companions.map(([p, text]) => [p.slice(folder.length), text]));
-    // A recipe whose scripts would be missing must not install half-working.
     if (refusal) {
       skipped.push({ kind: "skill_invalid", name: parsed.name, reason: refusal });
       continue;
@@ -334,8 +316,6 @@ function collectSkills(
   return skills;
 }
 
-/** A sub-agent becomes a skill that hands its task to `run_subagent` with the agent's
- * own instructions, so the plugin's skills can still delegate to it by name. */
 function collectAgents(
   files: Map<string, string>,
   skipped: PluginSkippedEntry[],
@@ -364,7 +344,6 @@ function collectAgents(
   return out;
 }
 
-/** Slash commands are prompt templates, which is what a skill invoked with /name already is. */
 function collectCommands(
   files: Map<string, string>,
   names: Set<string>,
@@ -373,7 +352,6 @@ function collectCommands(
   const out: PluginSkillEntry[] = [];
   for (const [path, content] of files) {
     const name = COMMAND_FILE.exec(path)?.[1];
-    // A command named like one of the plugin's skills repeats it.
     if (!name || names.has(name.toLowerCase())) continue;
     const front = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(content);
     const parsed = front
@@ -409,14 +387,9 @@ function collectCommands(
   return out;
 }
 
-/** Domains of the apps that publish plugin catalogs. Their relays authorize only their own
- * app's accounts and OAuth clients, as do headers named for them. */
 const CATALOG_VENDOR_DOMAINS = ["cursor.com", "cursor.sh", "grok.com", "x.ai"];
 const CATALOG_VENDOR_HEADER = /^x-(cursor|grok|xai)-/i;
 
-/** A server on a catalog vendor's domain, or one that sends that vendor's headers. An `auth`
- * block (handled by the caller) pins an OAuth client registered to the vendor's app, whose
- * redirect URIs are that app's. */
 function catalogVendorOnly(endpoint: string, headers: Record<string, string>): boolean {
   const host = new URL(endpoint).hostname.replace(/\.$/, "");
   return (
@@ -480,8 +453,6 @@ function collectMcpServers(
       endpoint: entry.url,
       headers: entry.headers ?? {},
     });
-    // Variables in remote config are not part of Agent Plugins core. Legacy
-    // prompting is a later slice; never install unresolved credential templates.
     if (
       !config.success ||
       !("endpoint" in config.data) ||
@@ -518,7 +489,6 @@ function collectMcpServers(
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Pure parser; inputs are regular-file content already constrained by acquisition. */
 export function parsePluginDirectory(input: {
   files: PluginRepoFile[];
   resolvedSha: string;
@@ -581,7 +551,6 @@ export function parsePluginDirectory(input: {
     ...collectAgents(files, skipped, names),
     ...collectCommands(files, names, skipped),
   ]) {
-    // A skill named like a built-in one repeats it; every user already has the built-in.
     if (findSkillByName(BUILTIN_AGENT_SKILLS, skill.name)) builtinNames.push(skill.name);
     else skills.push(skill);
   }
@@ -618,10 +587,6 @@ function unsupportedParts(paths: string[]): string[] {
 
 export type PluginCompleteness = { hasConnector: boolean; skillCount: number };
 
-/** Decide from a plugin directory's file list (and its MCP config, when it has one)
- * whether every part installs. Null means it cannot be told without the file. */
-/** `sizes` (bytes by path, when known) applies the same reference-file limits an install does. */
-/** The files a preview downloads; everything else is only listed. */
 function isFetchedComponent(path: string): boolean {
   return (
     MANIFESTS.includes(path) ||
@@ -639,7 +604,6 @@ export function classifyPluginFiles(
   sizes?: ReadonlyMap<string, number>,
 ): PluginCompleteness | "incomplete" | null {
   if (unsupportedParts(paths).length) return "incomplete";
-  // The same totals a preview enforces, so browse never offers a plugin it would refuse.
   const fetched = paths.filter(isFetchedComponent);
   if (
     paths.length > MAX_TREE_ENTRIES ||
@@ -701,7 +665,6 @@ export async function previewPluginInstall(options: {
   return { ...parsePluginDirectory({ files, resolvedSha: repo.resolvedSha }), source };
 }
 
-/** Public preview deliberately excludes skill bodies and all header values. */
 export function pluginPreviewDto(plugin: ParsedPlugin): PluginPreview {
   return {
     format: plugin.format,
@@ -732,7 +695,6 @@ export function pluginPreviewDto(plugin: ParsedPlugin): PluginPreview {
   };
 }
 
-/** Timeouts, aborts, rate limits and server errors say nothing about the plugin itself. */
 export function isTransientFetchError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   if (error.name === "AbortError" || error.name === "TimeoutError") return true;
@@ -741,11 +703,6 @@ export function isTransientFetchError(error: unknown): boolean {
   );
 }
 
-/**
- * Whether a failed plugin load is a fault in our own code. Loading parses the address, fetches
- * it and parses what came back, and reads no store, so any other failure is about the source.
- * The fetch client reports a network failure as a TypeError too, with the cause attached.
- */
 export function isPluginLoadFault(error: unknown): boolean {
   if (error instanceof TypeError) return error.cause === undefined;
   return error instanceof ReferenceError || error instanceof RangeError;

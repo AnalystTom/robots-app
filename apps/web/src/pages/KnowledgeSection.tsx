@@ -30,10 +30,6 @@ function rowClass(open: boolean): string {
   return `h-auto w-full justify-start whitespace-normal px-2.5 py-2.5 text-start ${open ? "bg-muted" : ""}`;
 }
 
-/**
- * Bot memory. Skills belong to the person in a space, not to one bot, so they live in
- * the Skills dialog; memory shared across bots lives in the Memory settings overlay.
- */
 export function KnowledgeSection({ botId }: { botId: string }) {
   return (
     <MemoryDocumentList
@@ -45,7 +41,6 @@ export function KnowledgeSection({ botId }: { botId: string }) {
   );
 }
 
-/** The space's shared memory documents, mounted in the Memory settings overlay. */
 export function SpaceMemorySection() {
   return (
     <section
@@ -79,7 +74,6 @@ function MemoryDocumentList({
   const queries = useSpaceQueries();
   const queryClient = useQueryClient();
   const list = queries.memory.list.queryOptions({ input });
-  // Bots write memory as they run, so every open refreshes behind the cached list.
   const listQuery = useQuery({ ...list, refetchOnMount: "always" });
   const docs = listQuery.data ?? NO_DOCS;
   const loading = listQuery.isPending;
@@ -97,7 +91,6 @@ function MemoryDocumentList({
     : 0;
   const kb = Math.ceil(bytesLeftOut / 1024);
   const [showAll, setShowAll] = useState(false);
-  // Once shown, memory stays visible while the panel is open, even if emptied.
   const [memoryShown, setMemoryShown] = useState(false);
   const memoryVisible = memoryShown || docs.some((doc) => !isEmptyBotMemory(doc));
   if (memoryVisible && !memoryShown) setMemoryShown(true);
@@ -168,9 +161,7 @@ function MemoryDocumentList({
         setConflicted(true);
         try {
           await fetchFresh(queryClient, list);
-        } catch {
-          // Keep the draft and conflict state even if refreshing fails.
-        }
+        } catch {}
       } else {
         setError(t`Could not save`);
       }
@@ -339,13 +330,11 @@ description: What this skill does and when the agent should use it.
 Steps the agent should follow.
 `;
 
-/** Your own skills in this space, plus the built-in ones; plugin skills are listed by plugin. */
 export function AgentSkills() {
   const rpc = useSpaceRpc();
   const { t } = useLingui();
   const queries = useSpaceQueries();
   const queryClient = useQueryClient();
-  // The same list the composer offers as skill mentions, so a change here shows there at once.
   const list = queries.agentSkills.list.queryOptions();
   const listQuery = useQuery({ ...list, refetchOnMount: "always" });
   const skills = (listQuery.data ?? NO_SKILLS).filter((skill) => skill.source !== "plugin");
@@ -380,7 +369,6 @@ export function AgentSkills() {
     setError(null);
     try {
       const skill = await rpc.agentSkills.get({ skillId: entry.id });
-      // A slower response must not clobber a newer selection or a fresh draft.
       if (current !== selection.current) return;
       setOpen(skill);
       setDraft(skill.content);
@@ -501,9 +489,7 @@ export function AgentSkills() {
                     id={open.id}
                     availability={open.availability}
                     onChanged={async () => {
-                      // Another skill may have been opened while this was saving; leave it alone.
                       const opened = selection.current;
-                      // Narrowed away from this space, the skill can no longer be read here.
                       const here = (await refresh()).some((entry) => entry.id === open.id);
                       if (selection.current !== opened) return;
                       if (!here) {

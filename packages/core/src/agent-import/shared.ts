@@ -10,7 +10,6 @@ import { parse as parseYaml } from "yaml";
 import { parseSkillMd } from "../agent-skill.js";
 import { scanSkillSafety } from "../skill-safety.js";
 
-/** Names of the other files in each skill's folder, by SKILL.md path. */
 export type SkillFiles = Readonly<Record<string, readonly string[]>>;
 
 export type AgentImportParse = Omit<
@@ -21,7 +20,6 @@ export type AgentImportParse = Omit<
 const SKILL_CONTENT_MAX_LENGTH = 100_000;
 const SKILL_FILE = /^(?:\.agents\/)?skills\/(?:[^/]+\/){1,4}SKILL\.md$/;
 
-/** Folders that hold sessions, logs, schedules or credentials. Never read. */
 const PRIVATE_FOLDERS = new Set(["sessions", "logs", "cron", "credentials"]);
 
 export function isPrivatePath(path: string): boolean {
@@ -32,7 +30,6 @@ export function isSkillPath(path: string): boolean {
   return SKILL_FILE.test(path);
 }
 
-/** Code-unit order, so plans do not depend on the upload order or locale. */
 export function byPath(left: { path: string }, right: { path: string }): number {
   return left.path < right.path ? -1 : left.path > right.path ? 1 : 0;
 }
@@ -82,10 +79,6 @@ export function skillItems(
   return { skills, skipped };
 }
 
-/**
- * Keeps the SKILL.md bytes exactly as written (BOM, CRLF): the frontmatter parser is minimal
- * and would flatten nested metadata, so it only checks a normalised copy.
- */
 export function skillItem(
   id: string,
   markdown: string,
@@ -109,7 +102,6 @@ function normalise(markdown: string): string {
   return markdown.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
 }
 
-/** Rewrites only the value of the frontmatter `name:` entry, keeping every other byte. */
 export function renameSkillMd(content: string, name: string): string {
   const match = /^(\uFEFF?---\r?\n)([\s\S]*?)(\r?\n---)(?=\r?\n|$)/.exec(content);
   if (!match) return content;
@@ -121,7 +113,6 @@ export function renameSkillMd(content: string, name: string): string {
   const start = line.index + line[0].indexOf(":") + 1;
   let end = line.index + line[0].length - line[2]!.length;
   let replacement = ` ${yamlScalar(name)}`;
-  // A block scalar name continues on indented lines; replace those lines too.
   if (/^[|>]/.test(value)) {
     const rest = body.slice(line.index + line[0].length);
     const continuation = /^(?:\r?\n(?:[ \t]+.*|[ \t]*)(?=\r?\n|$))*/.exec(rest)?.[0] ?? "";
@@ -140,7 +131,6 @@ function yamlScalar(value: string): string {
   return plain ? value : JSON.stringify(value);
 }
 
-/** Fenced blocks in a language a shell or interpreter runs, or a shebang line. */
 const RUNNABLE_CODE =
   /^\s*(?:`{3,}|~{3,})\s*(?:bash|sh|shell|zsh|fish|console|powershell|pwsh|ps1|cmd|bat|python3?|py|javascript|js|node|typescript|ts|ruby|rb|perl|php|applescript|osascript|lua|go|rust)\b|^#!/im;
 const BUNDLED_REFERENCE = /\{baseDir\}|(?:^|[\s(`'"/])(?:scripts|references|templates|assets)\//m;
@@ -153,8 +143,6 @@ function skillWarnings(
   const warnings: AgentImportSkill["warnings"] = [];
   const requirements = skillRequirements(frontmatter(content));
   if (requirements.names.length || requirements.otherPlatform) warnings.push("needs_setup");
-  // A reference to files next to SKILL.md is a need on its own: a document export or an
-  // incomplete backup has no sibling list at all. Listed siblings only add detail below.
   const bundled = BUNDLED_REFERENCE.test(body);
   if (bundled) warnings.push("bundled_files");
   const runsBundledScript = bundled && siblings.some((name) => name.startsWith("scripts/"));
@@ -174,7 +162,6 @@ function frontmatter(content: string): Record<string, unknown> {
   }
 }
 
-/** One status for the UI; the warnings keep the same facts for the server's checks. */
 function skillAssessment(
   content: string,
   body: string,
@@ -195,11 +182,6 @@ function skillAssessment(
   return { warnings, status };
 }
 
-/**
- * OpenClaw `metadata.openclaw.requires`/`os`; Hermes `platforms`, `prerequisites`,
- * `required_environment_variables`, `metadata.hermes.requires_toolsets`. RoBots runs skills
- * on Linux, so a platform list without it is another platform.
- */
 function skillRequirements(front: Record<string, unknown>): {
   names: string[];
   otherPlatform: boolean;
@@ -247,7 +229,6 @@ function skillRequirements(front: Record<string, unknown>): {
 
 const NAME_MAX_LENGTH = 80;
 
-/** `value`, or `value-2`, `value-3`… before `extension`; adds the result to `used` (lowercase). */
 export function freeName(value: string, used: Set<string>, extension: string): string {
   const hasExtension = extension && value.toLowerCase().endsWith(extension);
   const base = hasExtension ? value.slice(0, -extension.length) : value;
@@ -261,7 +242,6 @@ export function freeName(value: string, used: Set<string>, extension: string): s
   return candidate;
 }
 
-/** A chosen folder or opened backup: its paths, and its files read on demand. */
 export type AgentImportReader = {
   paths: string[];
   read: (path: string) => Promise<string> | string;

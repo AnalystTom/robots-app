@@ -14,15 +14,9 @@ import { SpaceAvailabilitySchema } from "./space-availability.js";
 
 export const MemoryScopeSchema = z.enum(["isolated", "shared"]);
 
-/**
- * Deprecated account-level setting. Per-bot rendering uses avatarSet. Kept for older
- * app versions; the legacy settings endpoint still always reports "organic".
- */
 export const AvatarStyleSchema = z.enum(["robot", "organic"]);
 
-/** True for an IANA timezone this runtime can format in, such as "Pacific/Auckland". */
 export function isValidTimeZone(value: string): boolean {
-  // Intl also accepts fixed offsets, which are not IANA timezone names.
   if (/^[+-]/.test(value)) return false;
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: value });
@@ -38,7 +32,6 @@ export const TimeZoneSchema = z
   .max(64)
   .refine(isValidTimeZone, { message: "Unknown timezone" });
 
-/** An app language code, such as "es", "pt-BR" or "zh-TW". */
 export const AppLocaleSchema = z.enum([
   "en",
   "de",
@@ -83,7 +76,6 @@ export const BotSchema = z.object({
   id: Id,
   spaceId: Id,
   name: z.string(),
-  /** Always empty; installed mobile apps still read it. */
   title: z.string(),
   description: z.string(),
   instructions: z.string(),
@@ -95,7 +87,6 @@ export const BotSchema = z.object({
   sectionId: Id.nullable(),
   archivedAt: z.string().nullable(),
   unread: z.boolean(),
-  /** Hidden from the viewer's chat list until then; past, the chat has just woken. */
   snoozedUntil: z.string().nullable().optional(),
   parentBotId: Id.nullable(),
   memoryScope: MemoryScopeSchema.nullable(),
@@ -120,9 +111,7 @@ export const BotSchema = z.object({
   replyMode: ReplyModeSchema.default("chat"),
   disabledBuiltinTools: z.array(z.string()).default([]),
   webhookConfigured: z.boolean(),
-  /** Present when created with an idempotency key (e.g. onboarding:first). */
   spawnKey: z.string().nullable(),
-  /** The bot is ringing the user right now. */
   incomingCall: z
     .object({
       callId: z.string(),
@@ -135,7 +124,6 @@ export const BotSchema = z.object({
 });
 export type Bot = z.infer<typeof BotSchema>;
 
-/** The caller identity and request needed by every incoming-call surface. */
 export const IncomingBotCallSchema = BotSchema.pick({
   id: true,
   spaceId: true,
@@ -147,7 +135,6 @@ export const IncomingBotCallSchema = BotSchema.pick({
 });
 export type IncomingBotCall = z.infer<typeof IncomingBotCallSchema>;
 
-/** A run alert the server also pushes to phones, already filtered by the chat's mute settings. */
 export const ChatAlertSchema = z.object({
   kind: z.enum(["completion", "failure", "help", "takeover"]),
   title: z.string(),
@@ -176,16 +163,10 @@ export const GroupMemberSchema = z.object({
 });
 export type GroupMember = z.infer<typeof GroupMemberSchema>;
 
-/** Selected-text excerpt carried by a reply; capped so a quote stays a quote. */
 export const REPLY_QUOTE_MAX_LENGTH = 2_000;
 
-/**
- * One chat message's text. Far above anything the composer produces, but bounded so one
- * oversized send cannot dominate persistence and every viewer's markdown processing.
- */
 export const THREAD_MESSAGE_TEXT_MAX_LENGTH = 100_000;
 
-/** Cap an excerpt at the quote limit without splitting a surrogate pair. */
 export function truncateReplyQuote(value: string): string {
   const truncated = value.slice(0, REPLY_QUOTE_MAX_LENGTH);
   const last = truncated.charCodeAt(truncated.length - 1);
@@ -196,7 +177,6 @@ export const GROUP_MEMBER_MIN = 2;
 export const GROUP_MEMBER_MAX = 10;
 export const GROUP_NAME_MAX_LENGTH = 80;
 
-/** Preserve pick order and the group name limit without splitting a surrogate pair. */
 export function defaultGroupName(names: readonly string[]): string {
   const value = names.join(", ").trim().slice(0, GROUP_NAME_MAX_LENGTH);
   const last = value.charCodeAt(value.length - 1);
@@ -214,7 +194,6 @@ export const GroupSchema = z.object({
   threadId: Id,
   preview: z.string(),
   unread: z.boolean(),
-  /** Hidden from the viewer's chat list until then; past, the chat has just woken. */
   snoozedUntil: z.string().nullable().optional(),
   updatedAt: z.string(),
   createdAt: z.string(),
@@ -237,7 +216,6 @@ export const UpdateGroupInput = z.object({
   groupId: Id,
   name: z.string().trim().min(1).max(GROUP_NAME_MAX_LENGTH).optional(),
   botIds: GroupBotIds.optional(),
-  /** Reject a membership replacement when another client changed the active roster. */
   expectedBotIds: z.array(Id).max(GROUP_MEMBER_MAX).optional(),
   pinned: z.boolean().optional(),
   sectionId: Id.nullable().optional(),
@@ -259,11 +237,6 @@ export const BotSectionSchema = z.object({
 });
 export type BotSection = z.infer<typeof BotSectionSchema>;
 
-/**
- * A space is a real privacy boundary, not just sidebar organization.
- * Bots are included so clients can keep every space visible without granting
- * those bots access to the currently active space.
- */
 export const SpaceBotSchema = BotSchema.pick({
   id: true,
   spaceId: true,
@@ -369,15 +342,10 @@ export const SpaceSchema = z.object({
   id: Id,
   name: z.string(),
   isDefault: z.boolean(),
-  /** True when the space has any bot or group, including archived. */
   hasContent: z.boolean(),
-  /** True only when the current member owns the space and may rename it. */
   canRename: z.boolean().optional(),
-  /** True only when the current member may delete this non-default space. */
   canDelete: z.boolean().optional(),
-  /** True when more than one person belongs to the space. */
   shared: z.boolean().optional(),
-  /** Every bot deleting the space removes, archived and other members' included. */
   botCount: z.number().int().nonnegative().optional(),
   bots: z.array(SpaceBotSchema),
   groups: z.array(SpaceGroupSchema),
@@ -400,9 +368,7 @@ export type SpaceMember = z.infer<typeof SpaceMemberSchema>;
 export const SpaceMembersSchema = z.object({
   spaceName: z.string(),
   members: z.array(SpaceMemberSchema),
-  /** True when the current member owns the space and may invite or remove people. */
   canManage: z.boolean(),
-  /** For the owner: links created but not yet used or expired. */
   openInvites: z.number().int().nonnegative().optional(),
 });
 export type SpaceMembers = z.infer<typeof SpaceMembersSchema>;
@@ -416,7 +382,6 @@ export const SpaceInvitePreviewSchema = z.object({
   spaceId: Id,
   spaceName: z.string(),
   inviterName: z.string(),
-  /** True when the signed-in person already belongs to the space. */
   alreadyMember: z.boolean(),
 });
 export type SpaceInvitePreview = z.infer<typeof SpaceInvitePreviewSchema>;
@@ -438,11 +403,9 @@ export const BOT_NAME_MAX_LENGTH = 80;
 export const BOT_DESCRIPTION_MAX_LENGTH = 4000;
 export const BOT_INSTRUCTIONS_MAX_LENGTH = 20000;
 
-/** The Space's RoBot, its primary Bot: created with this spawn key, so a rename keeps it primary. */
 export const PRIMARY_BOT_SPAWN_KEY = "primary";
 
 export const CreateBotInput = z.object({
-  /** Optional reserved identity so a creation preview uses the final bot seed. */
   id: z
     .string()
     .regex(/^c[a-z0-9]{24}$/)
@@ -454,13 +417,9 @@ export const CreateBotInput = z.object({
   dailyCheckIns: z.boolean().optional(),
   fleetManagement: z.boolean().optional(),
   color: BotAvatarValueSchema.optional(),
-  /** Ignored: a new bot takes its owner's set. Older apps still send one. */
   avatarSet: BotAvatarSetSchema.optional(),
-  /** Organic body family (0-9); the server picks a matching id unless one is reserved. */
   avatarFamily: z.number().int().min(0).max(9).optional(),
-  /** Unset follows the deployment's default computer. */
   computerMode: ComputerModeSchema.optional(),
-  /** Idempotency key within a space (unique with spaceId). */
   spawnKey: z.string().trim().min(1).max(120).optional(),
 });
 export type CreateBotInput = z.infer<typeof CreateBotInput>;
@@ -472,7 +431,6 @@ export const UpdateBotInput = z
     description: z.string().trim().max(BOT_DESCRIPTION_MAX_LENGTH).optional(),
     instructions: z.string().trim().max(BOT_INSTRUCTIONS_MAX_LENGTH).optional(),
     expectedInstructions: z.string().max(BOT_INSTRUCTIONS_MAX_LENGTH).optional(),
-    /** Ignored; installed mobile apps may still send it. */
     selfUpdateInstructions: z.boolean().optional(),
     notifyOnFinish: z.boolean().optional(),
     color: BotAvatarValueSchema.optional(),
@@ -492,15 +450,12 @@ export const UpdateBotInput = z
     fleetManagement: z.boolean().optional(),
     replyMode: ReplyModeSchema.optional(),
     disabledBuiltinTools: DisabledBuiltinToolsSchema.optional(),
-    /** Write only while these settings still hold, as an undo does. */
     expectedSettings: BotSettingsValuesSchema.optional(),
   })
   .superRefine((value, ctx) => {
     const providerProvided = value.modelProvider !== undefined;
     const modelProvided = value.modelId !== undefined;
     if (!providerProvided && !modelProvided) return;
-    // Reject partial shapes like `{ modelId: null }` (provider omitted) so a
-    // clear cannot succeed without updating both persisted fields.
     if (providerProvided !== modelProvided) {
       ctx.addIssue({
         code: "custom",
@@ -521,10 +476,6 @@ export const UpdateBotInput = z
   });
 export type UpdateBotInput = z.infer<typeof UpdateBotInput>;
 
-/**
- * A routine's model is optional, but provider and id only mean something together,
- * and a thinking level belongs to a model this routine actually names.
- */
 export function routineModelIssues(
   value: {
     modelProvider?: string | null;
@@ -557,7 +508,6 @@ export const ROUTINE_MENTION_BATCH_MAX = 100;
 export const ROUTINE_TRIGGER_REQUIRED =
   "Add a schedule, webhook, GitHub, message, email, or change trigger";
 
-/** Whose authenticated mail starts an email routine: the bot owner, or anyone at the owner's domain. */
 export const RoutineEmailSendersSchema = z.enum(["owner", "domain"]);
 export type RoutineEmailSenders = z.infer<typeof RoutineEmailSendersSchema>;
 
@@ -578,21 +528,16 @@ export const RoutineSchema = z.object({
     .max(50)
     .regex(/^[a-z0-9._-]+$/i)
     .nullable(),
-  /** Null unless mail to the bot's address starts this routine. Absent on older servers. */
   emailSenders: RoutineEmailSendersSchema.nullable().default(null),
-  /** Null runs this routine on its bot's model. */
   modelProvider: z.string().nullable(),
   modelId: z.string().nullable(),
   thinkingLevel: ThinkingLevelSchema.nullable(),
-  /** Null unless the routine starts when something changes. */
   watch: RoutineWatchSchema.nullable(),
   watchState: RoutineWatchStateSchema.nullable(),
   lastRunAt: z.string().nullable(),
   nextRunAt: z.string().nullable(),
-  /** Computed by the server; absent on older servers. Not a worker-health diagnosis. */
   scheduleDelayed: z.boolean().optional(),
   createdAt: z.string(),
-  /** Older servers send false for another member's routine; any member can now change it. */
   editable: z.boolean().optional(),
 });
 export type Routine = z.infer<typeof RoutineSchema>;
@@ -730,7 +675,6 @@ export type AgentSkillSource = z.infer<typeof AgentSkillSourceSchema>;
 export const AvailabilityKindSchema = z.enum(["skill", "mcpServer", "install"]);
 export type AvailabilityKind = z.infer<typeof AvailabilityKindSchema>;
 
-/** One of the user's own items, across all their spaces, for choosing what a space can use. */
 export const AccountItemSchema = z.object({
   kind: AvailabilityKindSchema,
   id: Id,
@@ -746,7 +690,6 @@ export const AgentSkillSchema = z.object({
   content: z.string(),
   source: AgentSkillSourceSchema,
   readOnly: z.boolean(),
-  /** Absent for built-in skills, which every space has. */
   availability: SpaceAvailabilitySchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -817,7 +760,6 @@ export const MemoryDocumentSchema = z.object({
 });
 export type MemoryDocument = z.infer<typeof MemoryDocumentSchema>;
 
-/** Which of a bot's memory documents reach the prompt, and what did not fit. */
 export const MemoryPromptDocumentUseSchema = z.object({
   scope: MemoryScope,
   path: z.string(),
@@ -836,9 +778,7 @@ export const MemoryPromptBudgetSchema = z.object({
 });
 export type MemoryPromptBudget = z.infer<typeof MemoryPromptBudgetSchema>;
 
-/** Every bot and Space keeps its MEMORY.md index; other memory documents can be deleted. */
 export const MEMORY_INDEX_PATH = "MEMORY.md";
-/** What a bot may write to its memory. People can still write more by hand. */
 export const BOT_MEMORY_MAX_BYTES = 4 * 1024;
 export function isDeletableMemoryDocument(path: string): boolean {
   return path !== MEMORY_INDEX_PATH;
@@ -874,13 +814,11 @@ export const ActionApprovalRuleSchema = z.object({
 });
 export type ActionApprovalRule = z.infer<typeof ActionApprovalRuleSchema>;
 
-/** How much a space asks before acting; see VISION.md. */
 export const ApprovalModeSchema = z.enum(["never", "auto", "ask"]);
 export type ApprovalMode = z.infer<typeof ApprovalModeSchema>;
 
 export const ActionAutoReviewSettingsSchema = z.object({
   mode: ApprovalModeSchema,
-  /** The stored form of `mode`, kept for clients that predate it. */
   enabled: z.boolean(),
   checkerAvailable: z.boolean(),
   skipApprovals: z.boolean(),
@@ -904,7 +842,6 @@ export type CapabilityInstall = z.infer<typeof CapabilityInstallSchema>;
 export const PluginPreviewSkillSchema = z.object({
   name: z.string(),
   description: z.string(),
-  /** Paths of the reference files that install with the skill. */
   files: z.array(z.string()).optional(),
   safety: z.array(SkillSafetyFindingSchema).optional(),
 });
@@ -937,20 +874,16 @@ export const PluginPreviewSchema = z.object({
   license: z.string().nullable(),
   keywords: z.array(z.string()),
   resolvedSha: z.string().regex(/^[a-f0-9]{40}$/),
-  /** Immutable source for confirming this preview, present on new API responses. */
   pinnedSource: z.string().optional(),
-  /** The source an install of this preview is saved under. */
   installedSource: z.string().optional(),
   digest: z.string().regex(/^sha256:[a-f0-9]{64}$/),
   skills: z.array(PluginPreviewSkillSchema),
   mcpServers: z.array(PluginPreviewMcpServerSchema),
   skipped: z.array(PluginPreviewSkippedSchema),
-  /** Skills left out because a built-in skill has the same name; clients released before it ignore it. */
   builtinNames: z.array(z.string()).optional(),
 });
 export type PluginPreview = z.infer<typeof PluginPreviewSchema>;
 
-/** A plugin installs as up to two independent parts: its MCP connector and its skills. */
 export const PluginPartSchema = z.enum(["connector", "skills"]);
 export type PluginPart = z.infer<typeof PluginPartSchema>;
 
@@ -967,9 +900,7 @@ export const PluginMarketplaceEntrySchema = z.object({
   registry: z.string(),
   source: z.string(),
   installedSource: z.string(),
-  /** Whether installing adds a remote MCP connector; plugins without one are skill packs. */
   hasConnector: z.boolean(),
-  /** Skills, sub-agents and commands, which all install as skills. */
   skillCount: z.number().int().nonnegative(),
 });
 export type PluginMarketplaceEntry = z.infer<typeof PluginMarketplaceEntrySchema>;
@@ -981,14 +912,11 @@ export const PluginMarketplaceCatalogSchema = z.object({
 export type PluginMarketplaceCatalog = z.infer<typeof PluginMarketplaceCatalogSchema>;
 
 export const PLUGIN_SUBMISSIONS_PATH = "/api/v1/plugin-submissions";
-/** Approved claims, public so the marketing site can show each owner's page at build time. */
 export const INTEGRATION_CLAIMS_PATH = "/api/v1/integration-claims";
-/** Opened from the email that proves a claimant reads mail at the app's domain. */
 export const INTEGRATION_CLAIM_CONFIRM_PATH = "/api/v1/integration-claims/confirm";
 export const SUBMIT_PLUGIN_URL = "https://tryrobots.app/";
 export const integrationPageUrl = (_slug: string) => "https://tryrobots.app/#integrations";
 
-/** People type a bare domain like `acme.com`, so a URL without a scheme gets `https://`. */
 const HttpsUrlSchema = z
   .string()
   .trim()
@@ -1012,9 +940,7 @@ export const PluginSubmissionInputSchema = z.object({
   tested: z.literal(true),
 });
 
-/** An app's owner claiming its integration page so it links to their site. */
 export const IntegrationClaimInputSchema = z.object({
-  /** The page's URL slug, as in `integrationPageUrl`. */
   claim: z
     .string()
     .max(100)
@@ -1039,9 +965,7 @@ export const PluginSubmissionSchema = PluginSubmissionInputSchema.omit({ tested:
   logo: z.string().nullable(),
   source: z.string().nullable(),
   testing: z.string().nullable(),
-  /** Empty for a claim, which only links the page. */
   description: z.string(),
-  /** The integration page URL slug a claim is for; null for plugins. */
   claim: z.string().nullable(),
   status: PluginSubmissionStatusSchema,
   reason: z.string().nullable(),
@@ -1093,7 +1017,6 @@ export const IntegrationCatalogSurfaceSchema = z.object({
 });
 export type IntegrationCatalogSurface = z.infer<typeof IntegrationCatalogSurfaceSchema>;
 
-/** The longest query the integration catalog search accepts. */
 export const CATALOG_SEARCH_QUERY_MAX_LENGTH = 253;
 
 export const IntegrationCatalogResultSchema = z.object({
@@ -1159,7 +1082,6 @@ export const UsageRecordSchema = z.object({
   createdAt: z.string(),
 });
 
-/** Token and cost totals are null when any counted call lacks that figure. */
 const UsageTotalsSchema = z.object({
   inputTokens: z.number().nullable(),
   outputTokens: z.number().nullable(),
@@ -1175,28 +1097,20 @@ export const UsageSummarySchema = UsageTotalsSchema.extend({
 });
 export type UsageSummary = z.infer<typeof UsageSummarySchema>;
 
-/** One rolling allowance of a model subscription the member signed in with. */
 export const PlanLimitWindowSchema = z.object({
   period: z.enum(["session", "week", "month"]),
   usedPercent: z.number().min(0).max(100),
   resetsAt: z.string().nullable(),
 });
 export type PlanLimitWindow = z.infer<typeof PlanLimitWindowSchema>;
-/** A subscription connection's allowances, as its provider last reported them. */
 export const PlanLimitsSchema = z.object({
   credentialId: z.string(),
-  /** The subscription's name. */
   name: z.string(),
-  /** The connection's own name, which tells two sign-ins to one subscription apart. */
   label: z.string(),
   windows: z.array(PlanLimitWindowSchema).min(1),
 });
 export type PlanLimits = z.infer<typeof PlanLimitsSchema>;
 
-/**
- * How used the subscription with the most room is. Each one is only as open as its fullest
- * allowance, so a nearly spent session on one plan does not read as the member being out.
- */
 export function planUsagePercent(plans: readonly PlanLimits[]): number | null {
   if (!plans.length) return null;
   return Math.min(
@@ -1222,7 +1136,6 @@ export const MessagingInstallationSummarySchema = z.object({
 export type MessagingInstallationSummary = z.infer<typeof MessagingInstallationSummarySchema>;
 export const MessagingInstallationsStatusSchema = z.object({
   available: z.boolean(),
-  /** A teammate's workspace in this space accepts the user's personal DM link. */
   personalLinkAvailable: z.boolean().optional(),
   installations: z.array(MessagingInstallationSummarySchema),
 });
@@ -1230,22 +1143,16 @@ export type MessagingInstallationsStatus = z.infer<typeof MessagingInstallations
 
 export const MessagingStatusSchema = z.object({
   enabled: z.boolean(),
-  /** Messaging platforms mounted on this deployment (sendblue, slack, …). */
   providers: z.array(z.string()),
-  /** Where to send a link code, by provider, for platforms reached through one line. */
   addresses: z.record(z.string(), z.string()).optional(),
-  /** True when unknown senders auto-provision their own accounts. */
   openSignup: z.boolean(),
-  /** The caller's linked chat apps, one entry per (provider, address). */
   identities: z.array(MessagingLinkedIdentitySchema),
 });
 export type MessagingStatus = z.infer<typeof MessagingStatusSchema>;
 
 export const MessagingChannelMembershipSchema = z.object({
-  /** One row per linked identity: the same group can hold two of the caller's. */
   id: Id,
   channelId: Id,
-  /** Which of the caller's linked chat apps this membership belongs to. */
   identityId: Id,
   provider: z.string(),
   name: z.string().nullable(),
@@ -1259,7 +1166,6 @@ export const MessagingAgentConnectionSchema = z.object({
   peerBotName: z.string(),
   peerOwnerLabel: z.string(),
   status: z.enum(["pending", "approved", "declined", "revoked"]),
-  /** true when the caller's bot is the target (only the target can respond). */
   incoming: z.boolean(),
 });
 export type MessagingAgentConnection = z.infer<typeof MessagingAgentConnectionSchema>;
@@ -1322,14 +1228,8 @@ export const VoiceCatalogEntrySchema = z.object({
   description: z.string(),
   transcribe: z.boolean(),
   keyless: z.boolean().optional(),
-  /** The connection takes an optional speech model id that overrides the provider default. */
   speechModel: z.boolean().optional(),
-  /**
-   * The account's model connection to this provider can authenticate voice, so the key is
-   * optional. Set only for an account that has one.
-   */
   modelConnection: z.boolean().optional(),
-  /** The provider can list its voices for one language, so the picker may offer a filter. */
   languages: z.boolean().optional(),
 });
 export type VoiceCatalogEntry = z.infer<typeof VoiceCatalogEntrySchema>;
@@ -1344,16 +1244,12 @@ export type VoiceInfo = z.infer<typeof VoiceInfoSchema>;
 export const VoiceCredentialSchema = z.object({
   id: Id,
   provider: z.string(),
-  /** False when the connection authenticates with the account's model connection instead. */
   hasKey: z.boolean(),
   isDefault: z.boolean(),
   voiceId: z.string(),
-  /** Fish speech-model override. Empty uses the deployment default. */
   speechModel: z.string(),
   transcribe: z.boolean(),
-  /** Self-hosted server base URL and model ids (never the key). Empty for hosted providers. */
   endpoint: z.string().default(""),
-  /** A separate self-hosted transcription server; empty when `endpoint` transcribes. */
   sttEndpoint: z.string().default(""),
   ttsModel: z.string().default(""),
   sttModel: z.string().default(""),
@@ -1395,18 +1291,10 @@ export const ServerUpdateStepSchema = z.object({
   output: z.string().max(8_001),
 });
 
-/** How an update reaches new code: published images, a build on the server, or a git checkout. */
 export const ServerUpdateStrategySchema = z.enum(["pull", "build", "checkout"]);
 
-/** `sidecar` is the Compose deployment; `checkout` is a supervised source install. */
 export const ServerUpdateModeSchema = z.enum(["sidecar", "checkout", "unavailable"]);
 
-/**
- * What Settings should render for a deployment owner.
- * `sidecar`: Check / Update / Rollback through the updater sidecar.
- * `compose`: Compose install without a reachable sidecar; show host pull/up commands.
- * `source`: git checkout / `pnpm dev`; show terminal commands, never a fake Apply.
- */
 export const ServerUpdateInstallKindSchema = z.enum(["sidecar", "compose", "source"]);
 
 export const ServerUpdateRunSchema = z.object({
@@ -1420,10 +1308,6 @@ export const ServerUpdateRunSchema = z.object({
   strategy: ServerUpdateStrategySchema.nullable(),
   repoUrl: z.string().max(400),
   branch: z.string().max(200),
-  /**
-   * `recreated` means the updater sidecar replaced the containers and no restart is owed.
-   * `supervised` means the process exited and its supervisor is bringing it back.
-   */
   restart: z.enum(["recreated", "supervised", "manual", "not-required"]),
   restartAdvice: z.string(),
   error: z.string().nullable(),
@@ -1435,7 +1319,6 @@ export const ServerUpdateStatusSchema = z.object({
   supported: z.boolean(),
   unsupportedReason: z.string().nullable(),
   installKind: ServerUpdateInstallKindSchema,
-  /** Host commands to run when `installKind` is not `sidecar`. Empty when the sidecar applies. */
   manualCommands: z.array(z.string()),
   mode: ServerUpdateModeSchema,
   strategy: ServerUpdateStrategySchema.nullable(),
@@ -1477,54 +1360,33 @@ export const ServerUpdateRequestSchema = z.object({
 export const MeSchema = z.object({
   maxUploadSizeBytes: z.number().int().positive().optional(),
   maxAttachmentsPerMessage: z.number().int().positive().optional(),
-  /** Labs features this account turned on. Absent from servers that predate Labs. */
   labs: z.array(LabFeatureSchema).default([]),
-  /** Labs features this account can switch; the deployment turns the rest on for everyone. */
   labsAvailable: z.array(LabFeatureSchema).default([]),
-  /** Deprecated: whether `labs` includes "board", kept for apps that predate Labs. */
   ticketBoardEnabled: z.boolean(),
   phoneCallsEnabled: z.boolean().default(false),
-  /** Operator-configured menu links. Absent from older servers. */
   navLinks: z.array(NavLinkSchema).default([]),
   userId: Id,
   email: z.string().email(),
   name: z.string(),
   spaceId: Id,
-  /** Deprecated: app accounts never have server administrator privileges. Always false. */
   isDeploymentOwner: z.boolean(),
-  /** Listed in ROBOTS_ADMIN_EMAILS with a verified email: reviews plugins, adds stdio MCP servers, grants access. */
   isAdmin: z.boolean().default(false),
   needsModel: z.boolean(),
   defaultProvider: z.string().nullable(),
   defaultModel: z.string().nullable(),
-  /** Provider the active default runs on with the server's own credentials, without a key. */
   hostCredentialProvider: z.string().nullable(),
-  /** Kind of those credentials, e.g. "AWS IAM"; set with hostCredentialProvider. */
   hostCredentialSource: z.string().nullable(),
   computerHost: z.enum(["docker", "this-mac"]).nullable(),
   canChooseHostComputer: z.boolean(),
   sandboxProvider: z.string(),
-  /** Whether Settings may choose where computers run. Absent from older servers. */
   computerSettingsEnabled: z.boolean().optional(),
-  /** Whether this account can add stdio MCP servers here. Absent from older servers. */
   mcpStdioEnabled: z.boolean().default(false),
   avatarStyle: AvatarStyleSchema,
-  /** The icon set new and unpinned bots wear. Absent from servers that predate it. */
   botAvatarSet: BotAvatarSetSchema.optional(),
-  /**
-   * The user's IANA timezone, or null when unset (bots then see UTC only).
-   * Absent from servers that predate it.
-   */
   timezone: z.string().nullable().optional(),
-  /**
-   * The app language last reported for the user, or null until an app reports it.
-   * Absent from servers that predate it.
-   */
   locale: z.string().nullable().optional(),
   billingEnabled: z.boolean(),
-  /** True until a user of a billing deployment answers or skips the signup survey. Absent from older servers. */
   needsSignupSurvey: z.boolean().optional(),
-  /** The wallet bots can spend from, when this deployment offers one. Absent from older servers. */
   paymentWalletProvider: z.object({ id: z.string(), name: z.string() }).nullable().optional(),
 });
 export type Me = z.infer<typeof MeSchema>;
@@ -1532,16 +1394,13 @@ export type Me = z.infer<typeof MeSchema>;
 export const SIGNUP_SURVEY_USES = ["personal", "work", "both"] as const;
 export const SIGNUP_SURVEY_TEAM_SIZES = ["1", "2-10", "11-50", "51-200", "201+"] as const;
 
-/** Team sizes as shown: en dashes for ranges, and the open-ended bucket as "200+". */
 export function signupSurveyTeamSizeLabel(size: (typeof SIGNUP_SURVEY_TEAM_SIZES)[number]): string {
   return size === "201+" ? "200+" : size.replace("-", "–");
 }
 
-/** Every answer is optional; an empty survey records that the user skipped it. */
 export const SignupSurveySchema = z.object({
   reason: z.string().trim().max(2000).optional(),
   use: z.enum(SIGNUP_SURVEY_USES).optional(),
-  /** Only kept when the survey asks it; see signupSurveyAsksTeamSize. */
   teamSize: z.enum(SIGNUP_SURVEY_TEAM_SIZES).optional(),
   source: z.string().trim().max(500).optional(),
 });
@@ -1561,9 +1420,7 @@ export const AppBootstrapSchema = z.object({
   thread: ThreadSnapshotSchema.nullable(),
   routines: z.array(RoutineSchema),
   spaces: z.array(SpaceSchema),
-  /** Set when the requested bot is the caller's but lives in another of their Spaces. */
   botSpaceId: Id.optional(),
-  /** Set when the requested group is one the caller can open in another of their Spaces. */
   groupSpaceId: Id.optional(),
 });
 export type AppBootstrap = z.infer<typeof AppBootstrapSchema>;

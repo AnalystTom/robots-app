@@ -18,7 +18,6 @@ export const SKILL_TOOL_NAMES = new Set([
   "skill_delete",
 ]);
 
-/** Match CreateAgentSkillInput / UpdateAgentSkillInput / parseSkillMd bounds. */
 const MAX_SKILL_CONTENT_CHARS = 100_000;
 const MAX_SKILL_NAME_CHARS = 80;
 const MAX_SKILL_DESCRIPTION_CHARS = 2000;
@@ -83,10 +82,6 @@ function rejectInvalidSkillFields(name: string, description: string): string | u
   return undefined;
 }
 
-/**
- * A bot changes only skills that live in its own space alone: writing this space's details into
- * a skill other spaces read would carry them across the boundary.
- */
 function onlyInSpace(owner: SkillOwner) {
   return {
     spaceId: owner.spaceId,
@@ -105,7 +100,6 @@ export async function listAgentSkillRecords(
 ): Promise<Array<SkillRecord & { id: string }>> {
   const rows = await prisma.agentSkill.findMany({
     where: availableInSpace(owner),
-    // Reference files are read one at a time through skill_read, never with the catalog.
     omit: { files: true },
     orderBy: [{ name: "asc" }, { id: "asc" }],
   });
@@ -125,7 +119,6 @@ async function findOwnedSkill(
   return null;
 }
 
-/** The text files stored beside a skill's SKILL.md, keyed by relative path. */
 export function skillFiles(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return Object.fromEntries(
@@ -152,7 +145,6 @@ export async function skillReadFromTool(
   const paths = Object.keys(files).sort();
   const wanted = input.file?.trim().replace(/^\.\//, "");
   if (wanted) {
-    // Only exact stored paths resolve, so no path can reach outside the skill.
     const text = files[wanted];
     if (text === undefined) return { error: `No file "${wanted}" in this skill.`, files: paths };
     return { name: skill.name, file: wanted, content: text };
@@ -260,7 +252,6 @@ export async function skillUpdateFromTool(
   } else {
     const prior = parseSkillMd(existing.content);
     if ("error" in prior) return { error: prior.error };
-    // `name` is only a lookup key (see findOwnedSkill above); renames require `newName`.
     nextName = String(input.newName ?? existing.name).trim() || existing.name;
     nextDescription =
       input.description !== undefined ? String(input.description).trim() : existing.description;
@@ -290,7 +281,6 @@ export async function skillUpdateFromTool(
   }
 
   try {
-    // Re-scope mutate to owner + user source so a stale id cannot cross tenants.
     const updated = await prisma.agentSkill.updateMany({
       where: { id: existing.id, ...onlyInSpace(owner), source: "user" },
       data: {

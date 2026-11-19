@@ -11,7 +11,6 @@ import {
   readGrokBotImportSettings,
 } from "./agent-import-settings.js";
 
-// Shaped like a real `~/.openclaw/openclaw.json` (JSON5: comments and trailing commas).
 const openclawJson = `{
   // written by onboarding
   agents: {
@@ -56,7 +55,6 @@ const openclawEnv = [
   "TELEGRAM_BOT_TOKEN=placeholder-telegram-token",
 ].join("\n");
 
-// Shaped like `openclaw cron list --json`, saved as cron/jobs.json.
 const openclawJobs = JSON.stringify({
   jobs: [
     {
@@ -293,7 +291,6 @@ describe("OpenClaw settings", () => {
         },
       ],
     ]);
-    // Where this deployment cannot run stdio servers, they are not supported here.
     expect(status(false).map(([title, value]) => [title, value])).toEqual([
       ["docs", { kind: "needs_setup", needs: [{ kind: "credentials", names: ["Authorization"] }] }],
       ["files", { kind: "unsupported", reason: "unsupported_command" }],
@@ -330,7 +327,6 @@ describe("OpenClaw settings", () => {
         prompt: "Check the inbox",
         crons: ["*/30 * * * *"],
         timezone: null,
-        // The interval's own start time is lost: it now runs on the half hour.
         warnings: ["changed_schedule"],
       },
       {
@@ -344,7 +340,6 @@ describe("OpenClaw settings", () => {
         name: "evening",
         prompt: "Wrap up",
         crons: ["0 18 * * *"],
-        // An unknown time zone falls back to the space's, and says so.
         timezone: null,
         warnings: ["changed_schedule"],
       },
@@ -703,7 +698,6 @@ describe("Grok Bot export", () => {
             { name: "Signed", mcp_url: "https://mcp.example.com/mcp?sig=abc123" },
             { name: "Keyed", mcp_url: "https://mcp.example.com/a1b2c3d4e5f6g7h8i9j0k1l2m3" },
             { name: "Gmail" },
-            // Built from parts so no scanner mistakes this file for a leak.
             { name: ["gh", "p_", "Ab3dE5gH7jK9mN1pQ2rS4tU6vW8xY0zAb3dE5"].join("") },
             {
               name: "Headed",

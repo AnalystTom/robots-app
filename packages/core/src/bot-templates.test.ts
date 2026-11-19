@@ -49,7 +49,6 @@ describe("bot templates", () => {
   });
 
   it("name apps the connection catalog knows", () => {
-    // Featured apps match by alias; the code host is matched by its own slug.
     for (const app of BOT_TEMPLATES.flatMap((template) => template.apps)) {
       expect(app === "github" || matchFeaturedConnectorId(app) !== null).toBe(true);
     }

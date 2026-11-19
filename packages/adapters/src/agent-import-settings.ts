@@ -24,12 +24,6 @@ import {
 } from "@robots/core";
 import { isCatalogProviderBaseUrl, listPiCatalog } from "./pi-models.js";
 
-/**
- * Translates OpenClaw and Hermes settings (model, MCP servers, scheduled jobs, API keys)
- * into RoBots's inputs. Mirrors what `hermes import-agent openclaw` and `openclaw migrate
- * hermes` carry over, plus scheduled jobs, which those tools only archive.
- */
-
 type Json = Record<string, unknown>;
 type Skipped = {
   path: string;
@@ -39,7 +33,6 @@ type Skipped = {
 export type ImportedModel = {
   title: string;
   provider: string;
-  /** The provider as model settings name it. */
   providerName: string;
   modelId: string;
   known: boolean;
@@ -59,7 +52,6 @@ export type ImportedRoutine = {
   name: string;
   prompt: string;
   crons: string[];
-  /** The job's own IANA timezone, when it has one. */
   timezone: string | null;
   warnings: AgentImportWarning[];
 };
@@ -78,10 +70,6 @@ const isObject = (value: unknown): value is Json =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
-/**
- * Reads the settings of an OpenClaw home or Hermes home. Key values are only read with
- * `includeSecrets`; they are returned separately and never put in a preview.
- */
 export function readAgentImportSettings(
   folder: { source: "openclaw" | "hermes"; root: string; files: Map<string, string> },
   options: {
@@ -121,7 +109,6 @@ export function readAgentImportSettings(
   const agentId = openClawAgentId(folder.root);
   for (const [index, job] of (Array.isArray(jobs) ? jobs : []).entries()) {
     if (!isObject(job)) continue;
-    // A job bound to another OpenClaw agent belongs to that agent's import.
     if (text(job.agentId) && text(job.agentId) !== agentId) continue;
     const result = folder.source === "hermes" ? hermesJob(job) : openClawJob(job);
     const label = `cron/jobs.json: ${text(job.name) || text(job.id) || index + 1}`;
@@ -134,8 +121,6 @@ export function readAgentImportSettings(
   if (options.includeSecrets) {
     const providers = new Map(listPiCatalog().map((entry) => [entry.provider, entry.providerName]));
     const configured = providerConfigs(folder.source, config);
-    // A key for a proxy or gateway must never be checked against, or sent to, the provider,
-    // wherever the key itself comes from.
     const proxied = new Set(
       configured.flatMap(([provider, { baseUrl }]) => {
         const id = normalizeImportProvider(provider);
@@ -158,7 +143,6 @@ export function readAgentImportSettings(
       const pool = isObject(auth.credential_pool) ? auth.credential_pool : {};
       for (const [provider, entries] of Object.entries(pool)) {
         for (const entry of Array.isArray(entries) ? entries : []) {
-          // OAuth grants are never imported; only keys the user entered by hand.
           if (isObject(entry) && entry.auth_type === "api_key" && entry.source === "manual") {
             offer(provider, entry.access_token, "auth.json");
           }
@@ -177,13 +161,8 @@ export function readAgentImportSettings(
   return { model, mcpServers, routines, apiKeys, skipped, keyValues };
 }
 
-/** A path segment this long and mixed reads as a key: the address would carry it. */
 const KEY_LIKE_SEGMENT = /^(?=.*\d)(?=.*[a-zA-Z])[A-Za-z0-9_-]{24,}$/;
 
-/**
- * A Grok Bot's routines and connected apps, from the export it wrote. It has no model to
- * choose and the export never holds keys. Routines on an event stay in its memory note.
- */
 export function readGrokBotImportSettings(
   bot: GrokBot,
 ): AgentImportSettings & { keyValues: Map<string, string> } {
@@ -194,7 +173,6 @@ export function readGrokBotImportSettings(
     const safeLabel = looksLikeCredential(source.name)
       ? String(index + 1)
       : source.name || String(index + 1);
-    // A routine the Bot could not read in full is named, so the user knows it was left behind.
     if (!source.instruction) {
       skipped.push({ path: `routines: ${safeLabel}`, reason: "unsupported" });
       continue;
@@ -226,7 +204,6 @@ export function readGrokBotImportSettings(
 
   const mcpServers: ImportedMcpServer[] = [];
   for (const [index, app] of bot.apps.entries()) {
-    // A name or header name with a key in it never becomes server settings or preview text.
     if ([app.name, ...app.headerNames].some(looksLikeCredential)) {
       skipped.push({ path: `apps: ${index + 1}`, reason: "unsupported" });
       continue;
@@ -248,7 +225,6 @@ export function readGrokBotImportSettings(
     } catch {
       url = null;
     }
-    // Only a remote address that carries no key can come over.
     const server =
       url?.protocol === "https:" &&
       ["", "sse", "http", "streamable_http", "streamable-http"].includes(app.transport) &&
@@ -274,10 +250,6 @@ export function readGrokBotImportSettings(
   return { model: null, mcpServers, routines, apiKeys: [], skipped, keyValues: new Map() };
 }
 
-/**
- * A credential value: a literal, `${VAR}` templates or an env SecretRef, all resolved against
- * the uploaded `.env` only. File, exec and store references cannot be read here.
- */
 function resolveSecret(value: unknown, env: Record<string, string>): string | null {
   if (isObject(value)) {
     return value.source === "env" && typeof value.id === "string" ? (env[value.id] ?? null) : null;
@@ -294,7 +266,6 @@ function resolveSecret(value: unknown, env: Record<string, string>): string | nu
 
 type ProviderKey = { key: unknown; baseUrl?: unknown };
 
-/** Every provider entry with a key or a base URL, in the order its keys are preferred. */
 function providerConfigs(source: "openclaw" | "hermes", config: Json): [string, ProviderKey][] {
   const entry = (provider: unknown, key: unknown, baseUrl: unknown): [string, ProviderKey][] =>
     text(provider) && (key !== undefined || text(baseUrl))
@@ -319,7 +290,6 @@ function providerConfigs(source: "openclaw" | "hermes", config: Json): [string, 
   ];
 }
 
-/** OpenClaw `env.vars` and plain string entries directly under `env`. */
 function openClawEnv(config: Json): Record<string, unknown> {
   const env = isObject(config.env) ? config.env : {};
   const vars = isObject(env.vars) ? env.vars : {};
@@ -335,7 +305,6 @@ function catalogModel(title: string, provider: string, modelId: string): Importe
   return { title, provider: id, providerName, modelId, known };
 }
 
-/** The chosen agent's model: its own entry overrides `agents.defaults.model`. */
 function openClawModel(config: Json, root: string): ImportedModel | null {
   const agents = isObject(config.agents) ? config.agents : {};
   const agentId = openClawAgentId(root);
@@ -387,7 +356,6 @@ function mcpServer(
 ): Omit<ImportedMcpServer, "id"> | null {
   if (!isObject(entry)) return null;
   if (entry.skipped !== undefined || !mcpServerImportable(entry)) return null;
-  // OAuth, client certificates and `$include` have no import equivalent.
   for (const key of ["auth", "oauth", "tls", "cert", "clientCert", "$include"]) {
     if (entry[key] !== undefined && entry[key] !== false) return null;
   }
@@ -396,12 +364,9 @@ function mcpServer(
     : isObject(entry.tools)
       ? entry.tools
       : {};
-  // RoBots only lists allowed tools; dropping an exclusion would grant more than the source.
   if (Array.isArray(filter.exclude) && filter.exclude.length > 0) return null;
   const warnings: AgentImportWarning[] = [];
-  // An approved server gets all its tools in RoBots, so a source tool limit would widen.
   if (Array.isArray(filter.include) && filter.include.length > 0) warnings.push("dropped_settings");
-  // MCP credentials are never imported: headers and env stay blank; only their names show.
   const names = (record: unknown) => (isObject(record) ? Object.keys(record) : []);
   const base = {
     slug: mcpSlug(name),
@@ -425,7 +390,6 @@ function mcpServer(
     const env: Record<string, string> = {};
     const args = Array.isArray(entry.args) ? entry.args.map(String) : [];
     if (!stdioAllowed(text(entry.command))) warnings.unshift("unsupported_command");
-    // RoBots runs servers on its computers: a working folder is dropped, local paths are absent.
     if (
       (entry.cwd !== undefined && entry.cwd !== "") ||
       [text(entry.command), ...args].some(isLocalPath)
@@ -485,11 +449,9 @@ type JobResult = Omit<ImportedRoutine, "id"> | { reason: Skipped["reason"] };
 function openClawJob(job: Json): JobResult {
   const payload = isObject(job.payload) ? job.payload : {};
   const message = text(payload.message);
-  // OpenClaw keeps its own heartbeat and memory jobs in the same list.
   if (job.declarationKey || payload.kind !== "agentTurn" || message.startsWith("__openclaw")) {
     return { reason: "builtin" };
   }
-  // Tool limits and a per-job model have no routine equivalent: dropping them widens the job.
   const tools = Array.isArray(payload.toolsAllow) ? payload.toolsAllow : [];
   const limited = tools.length > 0 && !tools.includes("*");
   const dropped = limited || Boolean(text(payload.model));
@@ -534,8 +496,6 @@ function routine(
   const crons = cron === null ? [] : typeof cron === "string" ? [cron] : [...cron];
   if (!prompt || !crons.length || !crons.every(validCron)) return { reason: "unsupported" };
   const timezone = tz && isValidTimeZone(tz) ? tz : null;
-  // An interval becomes clock-aligned cron (its start time is lost), and an unknown time
-  // zone falls back to the space's.
   const changed = interval || (tz !== "" && timezone === null);
   return {
     title: name,
@@ -551,7 +511,6 @@ function routine(
   };
 }
 
-/** Null unless a cron fires at exactly that interval. */
 export function intervalCron(minutes: number): string | null {
   if (!Number.isInteger(minutes) || minutes <= 0) return null;
   if (minutes < 60) return 60 % minutes === 0 ? `*/${minutes} * * * *` : null;

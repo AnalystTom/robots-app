@@ -43,10 +43,6 @@ import { errorText } from "../../lib/user-error";
 
 export type AgentImportSource = ReturnType<typeof useAgentImportSource>;
 
-/**
- * Reads a folder, backup, or agent document on this device, previews what it would import, and
- * holds the choices that preview starts with.
- */
 export function useAgentImportSource() {
   const { t } = useLingui();
   const [files, setFiles] = useState<AgentImportFile[]>([]);
@@ -56,9 +52,7 @@ export function useAgentImportSource() {
   );
   const [hasSecretFiles, setHasSecretFiles] = useState(false);
   const [includeSecrets, setIncludeSecrets] = useState(false);
-  // One key per import, so a retried create returns the bot the first one made.
   const importKey = useRef<string | null>(null);
-  // Names of the other files in each skill's folder; never their contents.
   const [skillFiles, setSkillFiles] = useState<Record<string, string[]>>({});
   const [plan, setPlan] = useState<AgentImportPlan | null>(null);
   const [unchecked, setUnchecked] = useState<Set<string>>(new Set());
@@ -70,9 +64,7 @@ export function useAgentImportSource() {
   const [busy, setBusy] = useState(false);
   const [look, setLook] = useState<{ color: string; avatarSet: BotAvatarSet } | null>(null);
   const [acceptedRisks, setAcceptedRisks] = useState<Set<string>>(new Set());
-  // Bots in one Grok Bot reply, while the user picks which to import.
   const [grokBots, setGrokBots] = useState<GrokBot[]>([]);
-  // Bumped by every new read, so a slower earlier one never lands over it.
   const latestRead = useRef(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,19 +102,15 @@ export function useAgentImportSource() {
       if (read !== latestRead.current) return;
       setFiles(next);
       setIncludeSecrets(secrets);
-      // Anything that runs or acts (skills, MCP servers, routines) starts unticked, as do
-      // untouched defaults the source wrote: the user ticks each one they want.
       const flagged = [
         ...found.skills,
         ...found.mcpServers,
         ...found.routines,
         ...found.instructions.filter((item) => item.stock),
         ...found.memory.filter((item) => item.stock),
-        // Key-looking text reaches a bot only when the user ticks it.
         ...[...found.instructions, ...found.memory].filter((item) => item.containsKey),
       ].map((item) => item.id);
       if (keepChoices && plan) {
-        // Turning the API key opt-in on or off keeps every choice; only new items get defaults.
         const known = new Set(
           [
             ...plan.instructions,
@@ -171,7 +159,6 @@ export function useAgentImportSource() {
     return t`Could not read these files`;
   }
 
-  /** Only the files an import uses leave the device; `.env`/`auth.json` are not read. */
   async function loadSource(next: AgentImportReader, read = ++latestRead.current) {
     setError(null);
     setGrokBots([]);
@@ -202,7 +189,6 @@ export function useAgentImportSource() {
     }
   }
 
-  /** The opt-in reads `.env`/`auth.json` now, and sends only their allowlisted entries. */
   async function toggleSecrets(checked: boolean) {
     if (!source) return;
     const read = ++latestRead.current;
@@ -241,10 +227,8 @@ export function useAgentImportSource() {
     });
   }
 
-  /** Unpacked on this device, one file at a time. */
   async function pickArchive(file: File | undefined) {
     const read = ++latestRead.current;
-    // Another source replaces any Bot choices an earlier reply left.
     setGrokBots([]);
     if (!file) {
       setBusy(false);
@@ -276,7 +260,6 @@ export function useAgentImportSource() {
   const secretsAvailable =
     hasSecretFiles || sourceFiles.some(({ home, content }) => hasAgentImportSecrets(home, content));
 
-  /** A pasted reply or one chosen file: no folder, so no secrets or skill siblings. */
   async function previewOne(
     read: number,
     file: AgentImportFile,
@@ -296,7 +279,6 @@ export function useAgentImportSource() {
     await previewOne(read, { path: "agent.md", content });
   }
 
-  /** One Bot previews at once; a reply with several asks which. */
   async function previewGrokReply(text: string, read = ++latestRead.current) {
     setError(null);
     setGrokBots([]);
@@ -427,7 +409,6 @@ export function useAgentImportSource() {
   const chosen = <T extends { id: string }>(items: T[] | undefined) =>
     (items ?? []).filter((item) => !unchecked.has(item.id));
   const keyedProviders = new Set(chosen(plan?.apiKeys).map((key) => key.provider));
-  // A model needs a connection now, or its provider's key in this import.
   const modelUsable =
     plan?.model?.status === "ready" ||
     (plan?.model?.status === "needs_key" && keyedProviders.has(plan.model.provider));

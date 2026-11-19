@@ -20,7 +20,6 @@ const memoryApi = vi.hoisted(() => ({
     omitted: [],
   })),
 }));
-// One space, so no "Available in" choice appears.
 vi.mock("../components/integrations/space-availability", () => ({
   AvailabilityControl: () => null,
   AvailabilityLabel: () => null,
@@ -191,7 +190,6 @@ it("badges built-in skills and leaves plugin skills to their plugin", async () =
   try {
     await show(root, <AgentSkills />);
     expect(button("Interrogate").textContent).toContain("Built-in");
-    // Plugin skills are listed by their plugin in the Skills dialog, not one by one here.
     expect(container.textContent).not.toContain("Triage mail");
     expect(button("greeting").textContent).not.toContain("Built-in");
     expect(button("greeting").textContent).not.toContain("Plugin");
