@@ -51,6 +51,8 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
+      - name: Provide dpkg for the apt security smokes
+        run: bash .github/scripts/provide-host-tool.sh dpkg
       - run: bash infra/compose/run-smokes.sh
 
   validate:
