@@ -7,8 +7,6 @@ export const include = ["{apps,packages}/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,pri
 
 export const exclude = [
   "packages/adapters/**",
-  // Marketing pages may name vendors.
-  "apps/www/**",
   "**/*.{test,spec}.*",
   "**/*test-support*",
   "**/e2e/**",

@@ -1,18 +1,4 @@
 #!/usr/bin/env bash
-# Prints which CI areas a pull request's merge commit can affect, as GitHub step outputs.
-# web: anything beyond the mobile app and agent notes. e2e: web, minus docs/ and the worker, which the E2E
-# server never loads (it imports the server adapters in-process). server (the Postgres journeys):
-# web, minus www, docs/, and the browser and desktop clients and their UI packages, which no
-# journey loads.
-# native: the desktop app, the computer, screen and sandbox adapters its native tests load, and
-# core's desktop runtime. compose: the Compose files the Postgres upgrade drill copies. CI itself,
-# the root manifest and the lockfile count for every area. Any other file, shared packages included, counts
-# for web, e2e and server. all_packages: a change outside the workspace packages (root config, CI,
-# scripts, infra, a package manifest) that typecheck and unit tests cannot trace through the package
-# graph, so they run for every package; docs, agent notes and root markdown do not count. Every
-# Dockerfile counts too: the host safeguard tests read all of them, so none may skip the gate.
-# So do the test setup and stub files the root Vitest config loads for every package.
-# Renames count both paths.
 set -euo pipefail
 
 files="$(git diff --no-renames --name-only HEAD^1 HEAD)"
@@ -56,7 +42,6 @@ while IFS= read -r file; do
   case "$file" in
     apps/*/package.json | packages/*/package.json) ;;
     .agents/* | .claude/* | apps/mobile/*) continue ;;
-    apps/www/*) web=true; e2e=true; continue ;;
     docs/*) web=true; continue ;;
     apps/web/* | apps/desktop/* | packages/ui-web/* | packages/chat-ui/*)
       web=true

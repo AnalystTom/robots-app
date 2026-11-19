@@ -2,7 +2,7 @@
 
 Run the API, worker, web app, database and bot computers on a machine you control.
 
-The signed-in product is a long-running API, a Graphile Worker, Postgres, and a computer provider (Docker supervisor, E2B, Daytona, CreateOS, or Boat). It is not a static site. The marketing site in `apps/www` can be hosted separately.
+The signed-in product is a long-running API, a Graphile Worker, Postgres, and a computer provider (Docker supervisor, E2B, Daytona, CreateOS, or Boat). It is not a static site.
 
 English | [简体中文](./zh-CN/self-host.md)
 

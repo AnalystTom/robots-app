@@ -79,7 +79,6 @@ class ChangedAreasTests(unittest.TestCase):
             (".agents/skills/x/SKILL.md", expect()),
             ("CHANGELOG.md", expect()),
             ("docs/getting-started.md", expect("web")),
-            ("apps/www/src/page.astro", expect("web", "e2e")),
             ("apps/worker/src/index.ts", expect("web", "server")),
             ("packages/adapters/src/slack.ts", expect("web", "e2e", "server")),
             ("packages/adapters/src/scripted-runtime.ts", expect("web", "e2e", "server")),

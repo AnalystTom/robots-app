@@ -137,7 +137,7 @@ describe("saved setup", () => {
     });
   });
 
-  it("saves Rakazo Cloud as an existing server under the exact origin setup matches", () => {
+  it("saves RoBots Cloud as an existing server under the exact origin setup matches", () => {
     // The setup window recognizes a saved Cloud choice by comparing against this constant.
     expect(normalizeServerUrl(ROBOTS_CLOUD_URL)).toBe(ROBOTS_CLOUD_URL);
     expect(parseSetupInput({ mode: "existing", serverUrl: ROBOTS_CLOUD_URL })).toEqual({

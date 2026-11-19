@@ -2,16 +2,11 @@
 
 <img src="./apps/web/public/icon-192.png" width="64" height="64" alt="">
 
-RoBots is a self-hosted workspace for persistent AI teammates (Bots), each with their own
-memory, routines, apps, and computer. Run it on your own machine, with your own model.
+RoBots is the central hub for persistent AI bots. Each bot (starting with RoBot) keeps its own
+memory, routines, apps, and computer, and works with you and with other bots in shared chats.
 
-RoBots is a rebranded fork of [Rakazo](https://github.com/elie222/rakazo) by the Rakazo
-contributors, used under the [Apache License 2.0](./LICENSE). See [NOTICE](./NOTICE) for
-attribution. The upstream project stays at the `upstream` git remote:
-`git fetch upstream && git merge upstream/main` pulls in new Rakazo work.
-
-Links to `tryrobots.app` (documentation, privacy, terms, Rakazo Cloud) still point to the upstream
-project's site, because RoBots has no hosted site or cloud of its own yet.
+Use the hosted app at [app.tryrobots.app](https://app.tryrobots.app), or run RoBots on your own
+machine with your own model. Learn more at [tryrobots.app](https://tryrobots.app).
 
 ## Features
 
@@ -301,9 +296,7 @@ Português (Brasil), 简体中文, 繁體中文, Español, Русский, Fran�
 **Account → Language**. A device language or
 `EXPO_PUBLIC_DEFAULT_UI_LOCALE` still selects the starting catalog before a saved choice.
 Native Electron setup and menus also support the web UI's languages, following the saved app
-choice or, on first launch, the system language. The marketing homepage (`apps/www`) offers all
-15 languages through footer links, including `/zh/` and `/zh-tw/`; other marketing pages remain
-primarily English.
+choice or, on first launch, the system language.
 
 ## Development
 
@@ -374,4 +367,6 @@ Contributions are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) befo
 request. For security vulnerabilities, follow [SECURITY.md](./SECURITY.md) instead of filing a public
 issue.
 
-RoBots is licensed under the [Apache License 2.0](./LICENSE).
+## License
+
+RoBots is based on Rakazo and distributed under the Apache License 2.0; see [LICENSE](./LICENSE) and [NOTICE](./NOTICE).

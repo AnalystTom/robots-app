@@ -23,7 +23,7 @@ const srcDir = import.meta.dirname;
 /** Product and vendor names the setup page shows as they are. */
 const UNTRANSLATED = new Set([
   "RoBots",
-  "Rakazo Cloud",
+  "RoBots Cloud",
   "Docker Desktop",
   "OrbStack",
   "Docker Engine",

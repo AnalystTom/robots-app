@@ -81,10 +81,9 @@ Keep message IDs, placeholders, JSX markers, and ICU plural branches intact; do 
 generated `*.js`/`*.mjs` catalog files or unrelated changes to existing catalogs.
 
 Update the shared and platform locale tests, including normalization and plural rules, and a
-UI E2E scenario for each supported surface. The marketing homepage in `apps/www` and the
-native Electron setup window and menus (`apps/desktop/src/i18n.ts` and `locales/`) have
-separate localization paths; scope and test those changes explicitly instead of assuming the
-web catalog covers them.
+UI E2E scenario for each supported surface. The native Electron setup window and menus
+(`apps/desktop/src/i18n.ts` and `locales/`) have a separate localization path; scope and
+test those changes explicitly instead of assuming the web catalog covers them.
 
 See [agent verification](docs/agent-verification.md) for the distinction between
 deterministic execution tests, computer replay, and real-model quality evals.
