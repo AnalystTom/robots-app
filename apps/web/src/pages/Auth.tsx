@@ -545,9 +545,9 @@ export function PasswordResetPage() {
   const [confirmation, setConfirmation] = useState("");
   const [pending, setPending] = useState(false);
   const [complete, setComplete] = useState(false);
-  const [error, setError] = useState<string | null>(
-    params.get("error") || !params.get("token") ? t`This reset link is invalid or expired` : null,
-  );
+  const [linkRefused, setLinkRefused] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const linkDead = linkRefused || Boolean(params.get("error")) || !params.get("token");
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -561,6 +561,10 @@ export function PasswordResetPage() {
     setError(null);
     try {
       const result = await authClient.resetPassword({ newPassword: password, token });
+      if (result.error?.code === "INVALID_TOKEN") {
+        setLinkRefused(true);
+        return;
+      }
       if (result.error) {
         setError(authErrorText(result.error, t`Could not reset password`));
         return;
@@ -584,6 +588,15 @@ export function PasswordResetPage() {
             <Trans>Sign in</Trans>
           </Link>
         </div>
+      ) : linkDead ? (
+        <div className="w-full text-center">
+          <p role="alert" className="text-body text-destructive">
+            <Trans>This reset link is invalid or expired</Trans>
+          </p>
+          <Link to="/forgot-password" className="mt-6 inline-block font-medium">
+            <Trans>Send a new link</Trans>
+          </Link>
+        </div>
       ) : (
         <>
           <PasswordField
@@ -604,12 +617,7 @@ export function PasswordResetPage() {
               {error}
             </p>
           ) : null}
-          <Button
-            type="submit"
-            size="lg"
-            disabled={pending || !params.get("token")}
-            className={submitClass}
-          >
+          <Button type="submit" size="lg" disabled={pending} className={submitClass}>
             {pending ? <Trans>Working…</Trans> : <Trans>Reset password</Trans>}
           </Button>
           <Link to="/sign-in" className="mt-6 font-medium">
