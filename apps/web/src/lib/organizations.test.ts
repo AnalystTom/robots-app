@@ -16,6 +16,7 @@ const personal = {
   defaultSpaceId: "home",
   spaceIds: ["home", "side"],
   canManage: true,
+  personal: false,
 };
 const work = {
   id: "org-work",
@@ -23,6 +24,7 @@ const work = {
   defaultSpaceId: "work-home",
   spaceIds: ["work-home"],
   canManage: true,
+  personal: false,
 };
 
 let items: Map<string, string>;

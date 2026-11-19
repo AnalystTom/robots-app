@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canDeleteOrganization,
+  marksPersonalOrganization,
   organizationLandingSpaceId,
   organizationOfSpace,
 } from "./organizations.js";
@@ -11,6 +12,7 @@ const work = {
   defaultSpaceId: "a1",
   spaceIds: ["a1", "a2"],
   canManage: true,
+  personal: false,
 };
 const home = {
   id: "org-home",
@@ -18,6 +20,7 @@ const home = {
   defaultSpaceId: "b1",
   spaceIds: ["b1", "b2"],
   canManage: true,
+  personal: true,
 };
 
 describe("organizationLandingSpaceId", () => {
@@ -42,5 +45,17 @@ describe("canDeleteOrganization", () => {
     expect(canDeleteOrganization([work, home], home)).toBe(true);
     expect(canDeleteOrganization([work, shared], work)).toBe(false);
     expect(canDeleteOrganization([work, home, shared], shared)).toBe(false);
+  });
+});
+
+describe("marksPersonalOrganization", () => {
+  it("marks the account's own organization once its name no longer says so", () => {
+    const personal = { ...home, name: "Personal" };
+    expect(marksPersonalOrganization([work, personal], personal)).toBe(false);
+    expect(marksPersonalOrganization([work, home], home)).toBe(true);
+    expect(marksPersonalOrganization([work, home], work)).toBe(false);
+    const twin = { ...work, name: "Personal" };
+    expect(marksPersonalOrganization([twin, personal], personal)).toBe(true);
+    expect(marksPersonalOrganization([twin, personal], twin)).toBe(false);
   });
 });

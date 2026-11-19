@@ -46,6 +46,7 @@ const work: Organization = {
   defaultSpaceId: "space-a1",
   spaceIds: ["space-a1", "space-a2"],
   canManage: true,
+  personal: false,
 };
 const home: Organization = {
   id: "org-home",
@@ -53,6 +54,7 @@ const home: Organization = {
   defaultSpaceId: "space-b1",
   spaceIds: ["space-b1", "space-b2"],
   canManage: true,
+  personal: false,
 };
 
 function seed(spaceId: string) {
@@ -116,6 +118,7 @@ describe("switchOrganization", () => {
       defaultSpaceId: "space-c1",
       spaceIds: ["space-c1"],
       canManage: true,
+      personal: false,
     };
     let finishFirst: (() => void) | undefined;
     state.selectSpace.mockImplementationOnce(
@@ -236,6 +239,17 @@ describe("organizationSwitchActions", () => {
       { id: "organization:org-work", title: "Work", state: "off" },
       { id: "organization:org-home", title: "Home", state: "on" },
     ]);
+  });
+
+  it("marks the personal workspace apart from an organization with the same name", () => {
+    const twin = { ...work, id: "org-twin", name: "Northwind", personal: false };
+    const personal = { ...home, id: "org-personal", name: "Northwind", personal: true };
+    expect(
+      organizationSwitchActions({
+        activeOrganizationId: twin.id,
+        organizations: [twin, personal],
+      }).map((action) => action.title),
+    ).toEqual(["Northwind", "Northwind (Personal)"]);
   });
 });
 

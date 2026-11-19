@@ -177,6 +177,7 @@ describePostgres("organizations (PostgreSQL)", () => {
           defaultSpaceId: ada.spaceId,
           spaceIds: [ada.spaceId],
           canManage: true,
+          personal: true,
         },
         {
           id: work.id,
@@ -184,6 +185,7 @@ describePostgres("organizations (PostgreSQL)", () => {
           defaultSpaceId: work.id,
           spaceIds: [work.id],
           canManage: true,
+          personal: false,
         },
       ],
     });
@@ -307,9 +309,11 @@ describePostgres("organizations (PostgreSQL)", () => {
     });
 
     const { organizations } = await client(ada).organizations.list();
-    expect(organizations.map(({ name, canManage }) => ({ name, canManage }))).toEqual([
-      { name: "Personal", canManage: true },
-      { name: "Team", canManage: false },
+    expect(
+      organizations.map(({ name, canManage, personal }) => ({ name, canManage, personal })),
+    ).toEqual([
+      { name: "Personal", canManage: true, personal: true },
+      { name: "Team", canManage: false, personal: false },
     ]);
     expect(organizations[1]?.spaceIds).toEqual([team.defaultSpaceId]);
     await expect(

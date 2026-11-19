@@ -307,6 +307,7 @@ export const OrganizationListSchema = z.object({
       spaceIds: z.array(Id),
       /** Whether the user owns it, so can rename or delete it. */
       canManage: z.boolean(),
+      personal: z.boolean(),
     }),
   ),
 });
