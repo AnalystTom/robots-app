@@ -29,9 +29,9 @@ test("board creates a ticket and opens it", async ({ page }, testInfo) => {
   await settings.getByRole("button", { name: "Close user settings" }).click();
   await expect(settings).toBeHidden();
 
-  await page.getByTestId("user-menu-trigger").click();
-  await page.getByRole("button", { name: "Board", exact: true }).click();
-  await expect(page).toHaveURL(/\/app\/board$/);
+  await expect(page.getByTestId("workspace-nav-today")).toHaveCount(0);
+  await page.getByTestId("workspace-nav-tasks").click();
+  await expect(page).toHaveURL(/\/app\/tasks$/);
   await expect(page.getByTestId("board-columns")).toBeVisible();
   await expect(page.getByText("No tickets yet", { exact: true })).toBeVisible();
   const board = page.getByTestId("board-columns");
