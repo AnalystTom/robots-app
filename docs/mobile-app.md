@@ -4,8 +4,8 @@ Chat with your bots, answer their questions, watch their computers and take call
 
 ## Install
 
-- iPhone, iPhone Duo and iPad: [App Store](https://apps.apple.com/app/robots/id6801531099).
-- Android: [Google Play](https://play.google.com/store/apps/details?id=com.analysttom.robotsapp).
+- Android: download the app from [tryrobots.app](https://tryrobots.app/#platforms).
+- iPhone and iPad: coming soon. Join the list on [tryrobots.app](https://tryrobots.app/#platforms).
 
 You can also choose **Get the mobile app** from the account menu in the web or desktop app.
 
