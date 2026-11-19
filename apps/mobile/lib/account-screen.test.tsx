@@ -62,7 +62,6 @@ const { element, account } = vi.hoisted(() => ({
 
 vi.mock("./side-insets", () => ({ useSideInsets: () => ({}) }));
 vi.mock("./unsent-sends", () => ({ unsentSendsRestored: vi.fn(async () => true) }));
-// The unsent-message warning reads this without a screen subscription; tests flip it per case.
 vi.mock("./thread-feedback", async (importOriginal) => ({
   ...(await importOriginal<typeof ThreadFeedback>()),
   hasUnsentSends: vi.fn(() => false),
@@ -70,7 +69,6 @@ vi.mock("./thread-feedback", async (importOriginal) => ({
 vi.mock("expo-notifications", () => ({
   getPermissionsAsync: vi.fn(async () => ({ status: "granted" })),
 }));
-// The real sign-out flow runs in one test; its store and caches need these.
 vi.mock("expo-secure-store", () => ({
   getItemAsync: vi.fn(),
   setItemAsync: vi.fn(),
@@ -502,12 +500,10 @@ it("navigates to sign-in while a silent server still owes the sign-out delivery"
     vi.useFakeTimers();
     await view.press("Sign out");
 
-    // The screen leaves before the request timeout fires; the device is signed out.
     expect(replaceWithSignIn).toHaveBeenCalled();
     expect(store.has("robots.session_token")).toBe(false);
     expect(JSON.parse(store.get("robots.pending_sign_out") ?? "[]")).toHaveLength(1);
 
-    // The delivery still runs: it times out and the record waits for retry.
     await vi.advanceTimersByTimeAsync(8_000);
     expect(fetch).toHaveBeenCalledWith(
       "http://127.0.0.1:3100/api/auth/sign-out",
@@ -706,7 +702,6 @@ it("refreshes an expired sign-in proof and keeps the deletion dialog open", asyn
   );
   const view = await renderAccount(Profile);
   await view.press("Delete account");
-  // The proof expires while the dialog is open.
   vi.mocked(fetchAccountSecurity).mockResolvedValue(
     security({
       hasPassword: false,
@@ -810,7 +805,6 @@ it.each([false, true])(
       expect(artifacts.getAttribute("role")).toBe("button");
       expect(artifacts.dataset.chevron).toBe("right");
 
-      // Artifacts lives on the root stack, so it closes the settings sheet first.
       await view.press("Artifacts");
       expect(events).toEqual(["close", "/artifacts"]);
       for (const [title, href] of [
@@ -827,7 +821,6 @@ it.each([false, true])(
         expect(events).toEqual([href]);
       }
 
-      // The links wait while signing out.
       vi.mocked(signOut).mockReturnValueOnce(new Promise(() => undefined));
       await view.press("Sign out");
       expect(view.button("Artifacts")!.disabled).toBe(true);
@@ -862,7 +855,6 @@ it("shows the approval mode as the Approvals row's value, with Rules only once t
   const approvals = view.button("Approvals")!;
   expect(approvals.dataset.value).toBe("Ask");
   expect(approvals.dataset.chevron).toBeUndefined();
-  // The mode opens a menu in place; there is no screen for it.
   await act(async () => approvals.click());
   expect(account.push).not.toHaveBeenCalled();
   expect(view.button("Rules")).toBeUndefined();
@@ -953,7 +945,6 @@ it("warns before sign-out deletes unsent messages and keeps them on cancel", asy
     const buttons = vi.mocked(Alert.alert).mock.calls[0]![2]!;
     expect(buttons[0]!.text).toBe("Cancel");
     expect(buttons[1]!.text).toBe("Sign out anyway");
-    // Nothing is cleared while the alert is open or after Cancel.
     expect(signOut).not.toHaveBeenCalled();
     await act(async () => buttons[0]!.onPress?.());
     expect(signOut).not.toHaveBeenCalled();

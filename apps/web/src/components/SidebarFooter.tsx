@@ -21,7 +21,6 @@ import {
   ScrollText,
   Settings,
   Smartphone,
-  SquareKanban,
   UserPlus,
   UserRound,
 } from "lucide-react";
@@ -42,12 +41,10 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   onIntegrations: () => void;
   onSkills: () => void;
-  onBoard?: () => void;
   links?: NavLink[];
   onLink?: (link: NavLink) => void;
   onArtifacts: () => void;
   onSettings: () => void;
-  /** How much of the member's allowance is used; the Usage row shows only with one. */
   usage?: string | null;
   onUsage?: () => void;
   onInvite?: () => void;
@@ -59,7 +56,6 @@ type Props = {
   onSwitchOrganization?: (organization: Organization) => void;
 };
 
-// Marks are 24px wide, overlap by 2px, and need 2px for the outer ring.
 export function sidebarMarkCount(availableWidth: number) {
   return Math.max(0, Math.min(3, Math.floor((availableWidth - 26) / 22) + 1));
 }
@@ -75,7 +71,6 @@ export function SidebarFooter({
   onOpenChange,
   onIntegrations,
   onSkills,
-  onBoard,
   links = [],
   onLink,
   onArtifacts,
@@ -224,16 +219,6 @@ export function SidebarFooter({
               <FolderOpen className="text-muted-foreground" strokeWidth={1.75} />
               <Trans>Artifacts</Trans>
             </Button>
-            {onBoard ? (
-              <Button
-                variant="ghost"
-                className="h-9 w-full justify-start gap-2.5 font-normal"
-                onClick={onBoard}
-              >
-                <SquareKanban className="text-muted-foreground" strokeWidth={1.75} />
-                <Trans>Board</Trans>
-              </Button>
-            ) : null}
             {links.map((link) => (
               <Button
                 key={link.id}

@@ -120,7 +120,6 @@ const NO_AGENT_SKILLS: AgentSkillCatalogEntry[] = [];
 const NO_PROVIDERS: string[] = [];
 
 export function ShellPage() {
-  // A new key per space switch, so nothing from the previous space survives it.
   const spaceEpoch = useSpaceEpoch();
   return <SpaceShell key={spaceEpoch} />;
 }
@@ -132,10 +131,7 @@ function SpaceShell() {
   const [rpc] = useState(() => createSpaceRpc(shellSpaceId));
   const session = authClient.useSession();
   const userId = session.data?.user.id;
-  // Held from the first render, so Cmd/Ctrl+N works before the sidebar has data.
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
-  // A revisited space, or the shell reopened from another page, starts from what it showed
-  // last time while its fresh bootstrap loads.
   const [{ seed, startChat }] = useState(() => {
     const primed = peekBootstrapSeed(botId);
     if (primed) return { seed: primed, startChat: undefined };
@@ -226,7 +222,6 @@ function SpaceShell() {
   const messagingSurfaceEnabled = messagingStatus?.enabled ?? false;
   const messagingProviders = messagingStatus?.providers ?? NO_PROVIDERS;
   const memoryConfigQuery = useQuery(queries.memory.providerConfig.queryOptions());
-  // Undefined while it first loads; null when the space has none or it could not be read.
   const memoryProviderConfig: SpaceMemoryConfig | null | undefined =
     memoryConfigQuery.data !== undefined
       ? memoryConfigQuery.data
@@ -234,7 +229,6 @@ function SpaceShell() {
         ? null
         : undefined;
   const call = useCallSession();
-  /** Calls a bot, or opens voice settings first when no voice is connected. */
   const callBot = (bot: Bot) => {
     if (!bootstrapMe?.phoneCallsEnabled) return;
     if (!voiceStatus?.ready) {
@@ -258,16 +252,13 @@ function SpaceShell() {
   const [botMenu, setBotMenu] = useState<ChatMenuTarget | null>(null);
   const closeBotMenu = useCallback(() => setBotMenu(null), []);
   const currentSpaceId = selectedSpaceId() ?? bootstrapMe?.spaceId ?? null;
-  // null: settings follow the space the app is showing.
   const settingsSpaceId = overlay?.kind === "settings" ? overlay.spaceId : null;
   const settingsSpace =
     spaces.find((space) => space.id === (settingsSpaceId ?? currentSpaceId)) ?? null;
-  // Never fall back to another space's settings when the edited space goes away.
   const settingsSpaceGone = initialBotsLoaded && settingsSpaceId !== null && !settingsSpace;
   useEffect(() => {
     if (settingsSpaceGone) setOverlay(null);
   }, [settingsSpaceGone]);
-  // The app menu owns Cmd+, because macOS takes it before the page sees a keydown.
   const openSettingsRef = useRef(openSettings);
   openSettingsRef.current = openSettings;
   useEffect(() => desktopBridge()?.settings?.onOpen(() => openSettingsRef.current("general")), []);
@@ -280,13 +271,11 @@ function SpaceShell() {
       panel === "pages" ||
       panel === "settings" ||
       panel === "routine";
-  // Until the route names the chat reopened from cache, that chat stands in for it.
   const routeChat = botId || groupId ? undefined : startChat;
   const active =
     inGroup || routeChat?.groupId
       ? undefined
       : (bots.find((b) => b.id === (botId ?? routeChat?.botId)) ??
-        // With no chat named, open one that's in the list, not a snoozed one.
         bots.find((b) => !chatSnoozed(b, snoozeNow)) ??
         bots[0]);
   const selectBot = useCallback(
@@ -332,7 +321,6 @@ function SpaceShell() {
   const [findOpen, setFindOpen] = useState(false);
   const findInputRef = useRef<HTMLInputElement>(null);
   const chatColumnRef = useRef<HTMLDivElement>(null);
-  // Matches belong to the chat they were found in.
   useEffect(() => setFindOpen(false), [botId, groupId]);
   useShellShortcuts({
     run: (shortcut) => {
@@ -351,7 +339,6 @@ function SpaceShell() {
           void navigate(shortcut.type === "back" ? -1 : 1);
           return true;
       }
-      // The full-screen computer covers the sidebar and takes the keyboard.
       if (computerOpen) return false;
       if (shortcut.type === "toggle-sidebar") {
         if (isMobileSidebar) setMobileSidebarOpen((open) => !open);
@@ -365,11 +352,9 @@ function SpaceShell() {
         focusSidebarSearch();
         return true;
       }
-      // The command menu picks its own Cmd/Ctrl+1–9 from what it lists.
       if (hasOpenDialog(document, true)) return false;
       switch (shortcut.type) {
         case "new-group":
-          // A space without bots has nobody to add, and the side panel needs a chat to open in.
           if (!active && !activeGroup) return false;
           setPanel("create-group");
           return true;
@@ -377,22 +362,18 @@ function SpaceShell() {
           setOverlay({ kind: "integrations" });
           return true;
         case "chat-panel":
-          // A form in the side panel (a new group, an import) keeps its unsaved input.
           if (panel && !chatPanelOpen) return false;
           return toggleChatPanel();
         case "focus-composer":
           return focusComposer();
         case "find":
           if (!active && !activeGroup) return false;
-          // On a narrow window the drawer makes the chat inert and a side panel covers it, so
-          // either would hide the bar. A panel holding a form keeps its input instead.
           if (isMobileSidebar && panel) {
             if (!chatPanelOpen) return false;
             setPanel(null);
           }
           setMobileSidebarOpen(false);
           setFindOpen(true);
-          // A bar already open may have lost focus; a new one focuses itself as it mounts.
           requestAnimationFrame(() => {
             findInputRef.current?.focus();
             findInputRef.current?.select();
@@ -424,7 +405,6 @@ function SpaceShell() {
     else if (inGroup) setPanel("group-settings");
     else if (active) {
       setPanel(lastBotTab.current);
-      // Refresh run/computer so Take control isn't stuck on a stale busyBotName.
       void refreshThread(active.id).catch(() => undefined);
     } else return false;
     return true;
@@ -469,7 +449,6 @@ function SpaceShell() {
     activeBotId,
   });
   const read = useChatRead({ rpc, active, groupId, activeGroup, setBots, setGroups });
-  // A chat that wakes while it is open is already seen: read it, which ends the snooze.
   const openChatWoke = active
     ? chatWoke(active, snoozeNow)
     : activeGroup
@@ -529,7 +508,6 @@ function SpaceShell() {
     setPanel,
     messageProviders: messagingProviders,
   });
-  // Until this visit's read lands, a bot shows the routines and skills it had last time.
   const cachedRoutines =
     inGroup || !active || thread.routinesBotId === active.id
       ? undefined
@@ -540,7 +518,6 @@ function SpaceShell() {
       : thread.routinesBotId === active.id
         ? thread.routines
         : (cachedRoutines ?? []);
-  // A bot opened for the first time has no routines to show yet, which is not the same as none.
   const routinesLoaded =
     !active || inGroup || thread.routinesBotId === active.id || cachedRoutines !== undefined;
   const activeTaughtSkills = !active
@@ -584,7 +561,6 @@ function SpaceShell() {
       ),
     [sidebarSpaces, search.query, miniSidebar, t, snoozeNow],
   );
-  // The Dock badge ignores the roster search box: a filter must not hide unread chats.
   const unreadChatCount = useMemo(
     () => countUnreadChats(sidebarGroupsForSpaces(sidebarSpaces, "", undefined, snoozeNow)),
     [sidebarSpaces, snoozeNow],
@@ -787,7 +763,6 @@ function SpaceShell() {
   });
 
   const openBot = useCallback((id: string) => navigate(`/app/${id}`), [navigate]);
-  // An import's setup checklist re-checks on each thread refresh, so refresh once setup closes.
   const importSetupOpen = useRef(false);
   useEffect(() => {
     if (!importSetupOpen.current || overlay || searchParams.has("routine")) return;
@@ -860,8 +835,6 @@ function SpaceShell() {
     setOverlay({ kind: "settings", section, spaceId });
   }
 
-  // Space-scoped sections bind their own rpc client to this space, so another
-  // space's settings open in place without switching the app or reloading.
   function openSpaceSettings(spaceId: string) {
     openSettings("space", spaceId);
   }
@@ -933,7 +906,6 @@ function SpaceShell() {
     menu: botMenu,
     setMenu: setBotMenu,
     content: botMenuContent,
-    // Search can list a chat the roster doesn't hold; it has no menu to show.
     has: (target) =>
       target.kind === "bot"
         ? bots.some((bot) => bot.id === target.id)
@@ -1046,14 +1018,12 @@ function SpaceShell() {
         openSpaceChat={openSpaceChat}
       />
 
-      {/* Keep the composer's z-index inside the chat so phone overlays like the side panel cover it. */}
       <main
         data-space-switch="main"
         aria-hidden={mobileSidebarOpen || undefined}
         inert={mobileSidebarOpen}
         className="isolate flex min-w-0 flex-1 flex-col bg-background"
       >
-        {/* Inside main so the composer and its menus stay above it. */}
         {!mobileSidebarOpen ? (
           <div
             data-testid="mobile-sidebar-swipe-edge"
@@ -1062,9 +1032,7 @@ function SpaceShell() {
           />
         ) : null}
         <CallReturnBar />
-        {/* The header floats so the transcript scrolls under its buttons. */}
         <div ref={chatColumnRef} className="relative flex min-h-0 flex-1 flex-col">
-          {/* Only the pills take input; the gaps pass clicks and scrolling to the transcript. */}
           <div aria-hidden="true" className="app-drag absolute inset-x-0 top-0 z-10 h-3" />
           {findOpen ? (
             <div className="absolute end-3 top-14 z-20">
@@ -1156,7 +1124,6 @@ function SpaceShell() {
           )}
         </div>
         {active || activeGroup ? (
-          // Let messages continue behind the composer's rounded top corners.
           <div className="pointer-events-none relative z-30 -mt-7">
             {recordingSkill ? (
               <div className="pointer-events-auto bg-background px-6 pb-2 text-center text-body-sm text-destructive">
@@ -1177,7 +1144,6 @@ function SpaceShell() {
               imageConfirmation={composer.imageConfirmation}
               onDraftEdited={composer.clearImageConfirmation}
               onOpenModels={() => {
-                // A group's failed run belongs to one member; change that bot's model.
                 const failedBotId =
                   inGroup && composer.displayedRunError ? activeSnapshot?.run?.botId : null;
                 if (active && !inGroup) {
@@ -1291,7 +1257,6 @@ function SpaceShell() {
                     text: t`Your computer's disk is nearly full. Free up space by removing build output and caches you no longer need.`,
                   })
                   .then(async () => {
-                    // The refresh must read the dismissal, or it would paint the warning again.
                     await dismissDiskWarning(botId);
                     void refreshThread(botId);
                   })
@@ -1428,7 +1393,6 @@ function SpaceShell() {
     </BotsSidebarLayout>
   );
 
-  // Empty chrome until the first bot list lands would flash "Select a bot" before the chat.
   return (
     <SpaceRpcProvider spaceId={shellSpaceId}>
       {initialBotsLoaded || initialLoadFailed ? (

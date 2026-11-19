@@ -56,11 +56,6 @@ import { spaceChangesFor } from "../space-change-procedures.js";
 import { createTaughtSkillsService } from "../taught-skills.js";
 import { meDto } from "./shared.js";
 
-/**
- * Runs an authenticated procedure with row-level security scoped to the actor's
- * Space. A streamed result is read after the procedure returns, so each step of
- * its iterator re-enters the same scope.
- */
 export async function asTenant<T extends { output: unknown }>(
   actor: Actor,
   next: () => T | PromiseLike<T>,
@@ -85,10 +80,8 @@ export async function asTenant<T extends { output: unknown }>(
 export function createRouterContext(deps: RouterDeps) {
   const os = implement(appContract).$context<{
     actor: Actor | null;
-    /** The signed-in session, so a push token ends with the session that registered it. */
     sessionId?: string;
     signal?: AbortSignal;
-    /** Re-runs the request's auth so a long-lived stream notices sign-out and revocation. */
     stillAuthorized?: () => Promise<boolean>;
   }>();
   const repos = createRepos(deps.prisma, {
@@ -139,8 +132,6 @@ export function createRouterContext(deps: RouterDeps) {
     insertMcpServer,
     announceRoutine,
   });
-  // The scripted fixture only exists to drive the scripted runtime; a real runtime
-  // cannot execute it, so it stays out of the user-facing catalog otherwise.
   const chatCatalog = async (actor: Actor) => {
     const catalog = await catalogForSpace(actor);
     return deps.env.agentRuntime === "scripted" ? [...catalog, scriptedCatalogEntry] : catalog;
@@ -155,8 +146,6 @@ export function createRouterContext(deps: RouterDeps) {
     const available = listAvailablePiCatalog(auth.byProvider, auth.byModel);
     const [live, providerLive] = await Promise.all([
       codexLiveCatalogsForSpace(deps.prisma, deps.secrets, actor, auth, codexCatalog, {
-        // An expired bearer yields no catalog this round; kick the runtime's
-        // locked refresh so the next read can see the account's real list.
         onExpiredToken: (secretId) =>
           refreshExpiredCredential(actor, secretId, CHATGPT_OAUTH_PROVIDER),
       }),
@@ -176,7 +165,6 @@ export function createRouterContext(deps: RouterDeps) {
       auth,
       applyProviderLiveCatalog(codexMerged, auth, providerLive, selected),
     );
-    // A connected provider's saved choice stays listed after new users stop being offered it.
     if (
       !selected &&
       merged.some(
@@ -188,7 +176,6 @@ export function createRouterContext(deps: RouterDeps) {
       )
     )
       selected = await savedCatalogSelections(deps.prisma, actor.userId);
-    // A saved choice stays listed so its role can still be edited; its runs ask for a key.
     return offeredCatalog(merged, selected)
       .filter(
         (entry) =>
@@ -205,7 +192,6 @@ export function createRouterContext(deps: RouterDeps) {
       );
   };
 
-  // Shown where a member chose no model, so the list names what actually runs.
   const withDeploymentDefault = async (
     role: ModelRole,
     settings: ModelRoleSettings,
@@ -214,7 +200,6 @@ export function createRouterContext(deps: RouterDeps) {
       role === "main"
         ? {
             settings: await deps.prisma.deploymentSettings.findUnique({ where: { id: "default" } }),
-            // Only a model the deployment can run stands in for the member's choice.
             deployment: deps.env.deploymentModelConfigured
               ? { provider: deps.env.defaultProvider, model: deps.env.defaultModel }
               : null,
@@ -222,10 +207,6 @@ export function createRouterContext(deps: RouterDeps) {
         : { env: process.env };
     return { ...settings, deploymentPrimary: deploymentModelRole(role, defaults).primary };
   };
-  /**
-   * The main role also says whether its model reads images where runs use it, so settings
-   * offer a computer-use model when screen work needs one. Left out when it cannot be told.
-   */
   const withImageInput = async (
     actor: Actor,
     role: ModelRole,
@@ -235,7 +216,6 @@ export function createRouterContext(deps: RouterDeps) {
     if (!choice) return view;
     try {
       const [credential, catalog] = await Promise.all([
-        // The deployment's model runs on the deployment's key, never a member's connection.
         view.primary
           ? findConnectedModelCredential(
               deps.prisma,
@@ -246,7 +226,6 @@ export function createRouterContext(deps: RouterDeps) {
               { credentialId: choice.credentialId },
             )
           : null,
-        // Only an account-listed model needs the live catalog; the rest are known offline.
         canonicalPiProviderId(choice.provider) === CHATGPT_OAUTH_PROVIDER ? chatCatalog(actor) : [],
       ]);
       const entry = catalog.find(
@@ -280,11 +259,6 @@ export function createRouterContext(deps: RouterDeps) {
       ].filter((entry) => modelSupportsRole(entry, role)),
     );
   };
-  /**
-   * The space's catalog merges what any of a provider's connections can run. Where two
-   * accounts differ (one ChatGPT plan lists a model the other does not), each entry names
-   * the connections that can run it.
-   */
   const withServingConnections = async (
     actor: Actor,
     catalog: ModelCatalogEntry[],
@@ -293,7 +267,6 @@ export function createRouterContext(deps: RouterDeps) {
       where: { userId: actor.userId },
       select: { id: true, provider: true, secretId: true },
     });
-    // Every entry checks the same connections, so their rows are read once for the whole list.
     const requestServingDeps = { ...servingDeps, reads: new Map() };
     const byProvider = new Map<string, typeof connections>();
     for (const connection of connections) {
@@ -303,8 +276,6 @@ export function createRouterContext(deps: RouterDeps) {
     return Promise.all(
       catalog.map(async (entry) => {
         const owners = byProvider.get(canonicalPiProviderId(entry.provider)) ?? [];
-        // Funded models run on the deployment's key, whichever connection is chosen, and
-        // decision models run through the provider's decisions API on any of its keys.
         if (
           owners.length < 2 ||
           entry.placeholder ||
@@ -329,7 +300,6 @@ export function createRouterContext(deps: RouterDeps) {
     );
   };
   const servingDeps = { prisma: deps.prisma, secretStore: deps.secrets, codexCatalog };
-  /** The connection serving each choice (null when deployment-managed), the one runs use. */
   const validateRoleChoices = async (
     actor: Actor,
     role: ModelRole,
@@ -342,7 +312,6 @@ export function createRouterContext(deps: RouterDeps) {
         (entry) =>
           entry.provider === canonicalPiProviderId(choice.provider) && entry.id === choice.modelId,
       );
-      // A row pinned to a connection runs only there, never on the deployment's.
       const resolution = { credentialId: choice.credentialId };
       const credential = await findConnectedModelCredential(
         deps.prisma,
@@ -352,7 +321,6 @@ export function createRouterContext(deps: RouterDeps) {
         choice.modelId,
         resolution,
       );
-      // Computer mode runs only on the member's own connections.
       if (
         !credential &&
         (role === "computer" ||
@@ -360,8 +328,6 @@ export function createRouterContext(deps: RouterDeps) {
           !(entry && "managed" in entry && entry.managed))
       )
         throw new ORPCError("BAD_REQUEST", { message: "Connect that model provider first" });
-      // Another account of the provider listing the model does not make it run on this one;
-      // the catalog names the connections that can, as the picker shows.
       if (
         credential &&
         choice.credentialId &&
@@ -445,7 +411,6 @@ export function createRouterContext(deps: RouterDeps) {
     return next();
   });
 
-  /** Hides a Labs procedure from accounts that haven't turned the feature on. */
   const labEnabled = (feature: LabFeature) =>
     authed.use(async ({ context, next }) => {
       if (deps.env?.deploymentLabs?.includes(feature)) return next();
@@ -457,9 +422,6 @@ export function createRouterContext(deps: RouterDeps) {
       return next();
     });
   const boardEnabled = labEnabled("board");
-  const todayEnabled = labEnabled("today");
-  const emailEnabled = labEnabled("email");
-  const docsEnabled = labEnabled("docs");
   const ticketDeps = {
     prisma: deps.prisma,
     onTicketChange: deps.ticketChanges,
@@ -470,9 +432,6 @@ export function createRouterContext(deps: RouterDeps) {
     os,
     repos,
     onboardingDeps,
-    todayEnabled,
-    emailEnabled,
-    docsEnabled,
     mcpOAuth,
     mcpAwaitsOAuth,
     probeMcpServer,

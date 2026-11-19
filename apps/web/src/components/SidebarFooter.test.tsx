@@ -32,7 +32,6 @@ async function render(
   name = "Demo User",
   image?: string,
   onIntegrations = vi.fn(),
-  onBoard?: () => void,
   logos?: Array<{ name: string; logo?: string }>,
 ) {
   const email = "account@robots.test";
@@ -54,7 +53,6 @@ async function render(
           onOpenChange={() => {}}
           onIntegrations={onIntegrations}
           onSkills={vi.fn()}
-          onBoard={onBoard}
           onArtifacts={() => {}}
           onSettings={() => {}}
           onLogOut={() => {}}
@@ -132,7 +130,7 @@ it("shows the account image and falls back to the initial after a load error", a
 
 it("opens integrations and keeps the existing account actions and links", async () => {
   const onIntegrations = vi.fn();
-  await render("Demo User", undefined, onIntegrations, vi.fn());
+  await render("Demo User", undefined, onIntegrations);
   const connect = [...host.querySelectorAll("button")].find((button) =>
     button.textContent?.includes("Connect apps"),
   )!;
@@ -143,7 +141,6 @@ it("opens integrations and keeps the existing account actions and links", async 
     "Settings",
     "Skills",
     "Artifacts",
-    "Board",
     "Get the mobile app",
     "Docs",
     "Log out",
@@ -152,13 +149,6 @@ it("opens integrations and keeps the existing account actions and links", async 
     "Account menu for Demo User",
   );
 });
-it("omits Board when unavailable", async () => {
-  await render();
-  expect(document.querySelector('[data-slot="popover-content"]')?.textContent).not.toContain(
-    "Board",
-  );
-});
-
 it("offers Google Play on Android", async () => {
   vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Android");
   await render();
@@ -171,7 +161,7 @@ it("offers Google Play on Android", async () => {
 });
 
 it("falls back when app artwork fails and accepts replacement artwork", async () => {
-  await render("Demo User", undefined, undefined, undefined, [
+  await render("Demo User", undefined, undefined, [
     { name: "Slack", logo: "https://example.test/slack.svg" },
   ]);
   const pill = [...host.querySelectorAll("button")].find((button) =>
@@ -180,7 +170,7 @@ it("falls back when app artwork fails and accepts replacement artwork", async ()
   await act(async () => pill.querySelector("img")!.dispatchEvent(new Event("error")));
   expect(pill.querySelector("img")).toBeNull();
   expect(pill.textContent).toContain("S");
-  await render("Demo User", undefined, undefined, undefined, [
+  await render("Demo User", undefined, undefined, [
     { name: "Slack", logo: "https://example.test/new-slack.svg" },
   ]);
   expect(pill.querySelector("img")?.src).toBe("https://example.test/new-slack.svg");
@@ -197,7 +187,6 @@ it.each(["throw", "state"] as const)(
         message: "Update could not be installed",
       });
     await render();
-    // The notice is a toast, which mounts and leaves on the toaster's own timers.
     const notice = () => document.querySelector('[aria-label="Desktop update"]');
     const later = () =>
       [...notice()!.querySelectorAll("button")].find((button) => button.textContent === "Later")!;
@@ -234,7 +223,7 @@ it.each([
 });
 
 it("keeps at most three marks with the same tile and a missing-logo fallback", async () => {
-  await render("Demo User", undefined, undefined, undefined, [
+  await render("Demo User", undefined, undefined, [
     { name: "Gmail", logo: "https://example.test/gmail.svg" },
     { name: "Notion" },
     { name: "GitHub", logo: "https://example.test/github.svg" },

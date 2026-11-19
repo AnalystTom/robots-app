@@ -1,6 +1,5 @@
 import type { AnalyticsScreen } from "@robots/contracts";
 
-/** Convert navigation to a fixed vocabulary; never return paths, entity ids or search parameters. */
 export function analyticsScreen(pathname: string): AnalyticsScreen | undefined {
   if (pathname === "/" || pathname === "/app") return "home";
   if (pathname === "/onboarding") return "onboarding";
@@ -10,7 +9,6 @@ export function analyticsScreen(pathname: string): AnalyticsScreen | undefined {
   )
     return "artifacts";
   if (pathname === "/app/board" || pathname === "/app/tasks") return "board";
-  // Workspace pages have no screen name yet; they must not count as chats.
   if (["/app/today", "/app/email", "/app/docs"].includes(pathname)) return undefined;
   if (/^\/app\/(?:g\/)?[^/]+$/.test(pathname) || ["/thread", "/group-thread"].includes(pathname))
     return "chat";

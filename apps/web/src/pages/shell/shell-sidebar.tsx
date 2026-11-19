@@ -32,7 +32,6 @@ import type { ChatMenuState } from "./chat-context-menu";
 import { SidebarHeader } from "./sidebar-header";
 import type { SidebarSearch } from "./use-sidebar-search";
 
-/** Focuses the search box once it renders, its text selected so typing replaces it. */
 export function focusSidebarSearch() {
   requestAnimationFrame(() => {
     const input = document.querySelector<HTMLInputElement>('input[name="sidebar-search"]');
@@ -41,10 +40,6 @@ export function focusSidebarSearch() {
   });
 }
 
-/**
- * Chromium keeps the top fade drawn when collapsing sections shrinks a scrolled list until it no
- * longer scrolls; replaying the fade's scroll-driven animations lets it settle at the top.
- */
 function resetFadeWhenUnscrollable(event: UIEvent<HTMLDivElement>) {
   const list = event.currentTarget;
   if (list.scrollHeight > list.clientHeight) return;
@@ -56,7 +51,6 @@ function resetFadeWhenUnscrollable(event: UIEvent<HTMLDivElement>) {
 
 type User = { name?: string | null; email?: string; image?: string | null };
 
-/** The bots sidebar: a drawer on phones, collapsible to icons elsewhere. */
 export function ShellSidebar({
   isMobile,
   mobileOpen,
@@ -306,7 +300,6 @@ export function ShellSidebar({
             roster
           )}
         </div>
-        {/* One height limit for every shelf, so open shelves never squeeze out the chat list. */}
         <div
           className={
             mini || activityMode
@@ -375,7 +368,6 @@ function ShellSidebarFooter({
   const referral = billing?.referral;
   const [logOutError, setLogOutError] = useState<string | null>(null);
   const { signingOut, logOut } = useSignOut("/sign-in", (message) => {
-    // A failed sign-out reloads the page: reopen the menu so its error shows.
     setMenuOpen(true);
     setLogOutError(message);
   });

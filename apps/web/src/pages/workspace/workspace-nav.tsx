@@ -18,7 +18,6 @@ export function useWorkspacePageLabels(): Record<WorkspacePageId, string> {
   return { today: t`Today`, tasks: t`Tasks`, email: t`Email`, docs: t`Docs` };
 }
 
-/** Today, Tasks, Email and Docs rows for the sidebar and the workspace page rail. */
 export function WorkspaceNav({
   pages,
   current,
@@ -27,7 +26,6 @@ export function WorkspaceNav({
 }: {
   pages: readonly WorkspacePage[];
   current?: WorkspacePageId;
-  /** Icons only, for the collapsed sidebar. */
   mini?: boolean;
   onOpen: (page: WorkspacePage) => void;
 }) {

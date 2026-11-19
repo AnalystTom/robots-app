@@ -122,7 +122,6 @@ export function App() {
 function SessionApp() {
   const [searchParams] = useSearchParams();
   const next = signInNext(searchParams.get("next"));
-  // A joined string, so a fresh but equal list never re-renders the routes.
   const labs = useSyncExternalStore(
     subscribeLabs,
     () => getLabs().join(","),

@@ -8,7 +8,6 @@ import { WorkspaceNav } from "./workspace-nav";
 import type { WorkspacePageId } from "./workspace-pages";
 import { useWorkspacePages } from "./workspace-pages";
 
-/** A workspace page: a rail of the other pages beside a titled main area. */
 export function WorkspaceLayout({
   page,
   title,

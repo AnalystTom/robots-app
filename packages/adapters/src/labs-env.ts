@@ -6,7 +6,6 @@ const TODAY_ENV = "TODAY_PAGE_ENABLED";
 const EMAIL_ENV = "EMAIL_PAGE_ENABLED";
 const DOCS_ENV = "DOCS_PAGE_ENABLED";
 
-/** The setting that turns each Labs feature on for every account; Labs then hides it. */
 const DEPLOYMENT_LAB_ENV: Record<LabFeature, string> = {
   board: BOARD_ENV,
   today: TODAY_ENV,

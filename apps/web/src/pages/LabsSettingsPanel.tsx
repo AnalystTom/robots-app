@@ -12,7 +12,6 @@ export function LabsSettingsPanel({
 }: {
   labs: readonly LabFeature[];
   available: readonly LabFeature[];
-  /** Saves the whole list; rejects after rolling back. */
   onLabsChange: (labs: LabFeature[]) => Promise<void>;
 }) {
   const { t } = useLingui();

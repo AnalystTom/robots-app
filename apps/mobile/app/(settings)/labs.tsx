@@ -48,7 +48,6 @@ export default function Labs() {
     if (!labs) return;
     const previous = labs;
     const next = withLab(previous, feature, enabled);
-    // Only the latest tap's reply may land, so a slower earlier save can't undo it.
     const request = ++saveRequest.current;
     setLabs(next);
     rpc("preferences/update", { labs: next })
