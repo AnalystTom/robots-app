@@ -1,7 +1,7 @@
 # Tasks
 
 > [!NOTE]
-> The ticket board is a Labs feature. Each account turns it on in **Settings → Labs**, or a
+> Tasks is a Labs feature. Each account turns it on in **Settings → Labs**, or a
 > self-hosted server turns it on for everyone with `TICKET_BOARD_ENABLED=true` on the API and
 > worker. See [Configuration](./self-host-configuration.md).
 
