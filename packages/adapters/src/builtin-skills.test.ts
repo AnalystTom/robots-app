@@ -14,9 +14,9 @@ describe("RoBots skill", () => {
     expect(urls).toEqual(ROBOTS_DOCS_URLS);
     for (const url of urls) {
       const slug =
-        url === "https://rakazo.com/docs.md"
+        url === "https://tryrobots.app/docs/getting-started.md"
           ? publishedSlugs[0]
-          : /^https:\/\/rakazo\.com\/docs\/([\w-]+)\.md$/.exec(url)?.[1];
+          : /^https:\/\/tryrobots\.app\/docs\/([\w-]+)\.md$/.exec(url)?.[1];
       expect(publishedSlugs, url).toContain(slug);
       expect(existsSync(repoFile(`docs/${slug}.md`)), url).toBe(true);
     }

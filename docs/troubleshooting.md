@@ -10,7 +10,7 @@ applying the instructions to your setup. Copy this prompt and fill in the placeh
 
 ```text
 Help me troubleshoot RoBots using this guide:
-https://rakazo.com/docs/troubleshooting/
+https://tryrobots.app/docs/troubleshooting.md
 
 Error code: <code from the relevant section below>
 App version: <version>

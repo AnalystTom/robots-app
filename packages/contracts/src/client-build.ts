@@ -16,11 +16,10 @@ export const CLIENT_KINDS = ["web", "mobile"] as const;
 export type ClientKind = (typeof CLIENT_KINDS)[number];
 export type MinimumClientBuilds = Partial<Record<ClientKind, string>>;
 
-export const IOS_APP_STORE_URL = "https://apps.apple.com/app/robots/id6801531099";
-export const ANDROID_APK_URL =
-  "https://github.com/AnalystTom/robots-app/releases/download/android/robots.apk";
-export const ANDROID_APP_STORE_URL =
-  "https://play.google.com/store/apps/details?id=com.analysttom.robotsapp";
+export const ROBOTS_DOWNLOADS_URL = "https://tryrobots.app/#platforms";
+export const IOS_APP_STORE_URL = ROBOTS_DOWNLOADS_URL;
+export const ANDROID_APK_URL = ROBOTS_DOWNLOADS_URL;
+export const ANDROID_APP_STORE_URL = ROBOTS_DOWNLOADS_URL;
 
 const BUILD_ID = /^\d{14}$/;
 

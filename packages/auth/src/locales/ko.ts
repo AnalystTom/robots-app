@@ -24,20 +24,11 @@ export const KO_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "본인임을 확인하려면 RoBots에서 이 코드를 입력하세요:",
   "Welcome to RoBots": "RoBots에 오신 것을 환영합니다",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "RoBots에 오신 것을 환영합니다. RoBots를 가장 잘 활용하는 사람들은 세 가지를 합니다.",
   "Get the apps": "앱 받기",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots는 {platforms}에서 실행되므로 봇이 어디서든 연락할 수 있습니다.",
-  "Join the community": "커뮤니티 참여하기",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "{discord}에서 다른 사람들이 만드는 것을 보고, 빠르게 도움을 받고, 다음에 만들 것을 알려 주세요.",
-  "Star us on GitHub": "GitHub에서 스타 누르기",
-  "RoBots is open source. {star} helps more people find it.":
-    "RoBots는 오픈 소스입니다. {star}는 더 많은 사람이 RoBots를 찾는 데 도움이 됩니다.",
-  "A star on GitHub": "GitHub 스타",
-  "Questions? Just reply. I read every one.":
-    "질문이 있으신가요? 답장만 보내 주세요. 모두 읽습니다.",
+  "Questions? Just reply.": "궁금한 점이 있으면 답장만 보내 주세요.",
+  "The RoBots team": "RoBots 팀",
   Unsubscribe: "수신 거부",
   "Invite a friend": "친구 초대",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

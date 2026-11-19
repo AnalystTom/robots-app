@@ -25,20 +25,11 @@ export const JA_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "ご本人であることを確認するには、RoBotsで次のコードを入力してください:",
   "Welcome to RoBots": "RoBotsへようこそ",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "RoBots へようこそ。RoBots を最大限に活用している人は、次の 3 つをしています。",
   "Get the apps": "アプリを入手する",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots は {platforms} で使えるので、ボットはどこにいてもあなたに連絡できます。",
-  "Join the community": "コミュニティに参加する",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "{discord} で、ほかの人が作っているものを見たり、すぐに助けを得たり、次に作ってほしいものを教えてください。",
-  "Star us on GitHub": "GitHub でスターを付ける",
-  "RoBots is open source. {star} helps more people find it.":
-    "RoBots はオープンソースです。{star} は、より多くの人が RoBots を見つける助けになります。",
-  "A star on GitHub": "GitHub のスター",
-  "Questions? Just reply. I read every one.":
-    "質問があれば、このメールに返信してください。すべて読んでいます。",
+  "Questions? Just reply.": "ご質問は、このメールに返信するだけでどうぞ。",
+  "The RoBots team": "RoBots チーム",
   Unsubscribe: "配信停止",
   "Invite a friend": "友だちを招待",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

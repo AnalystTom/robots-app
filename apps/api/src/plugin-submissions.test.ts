@@ -439,9 +439,7 @@ describe("integration page claims", () => {
 
     const opened = await open(confirmLink(confirm!));
     expect(opened.status).toBe(303);
-    expect(opened.headers.get("location")).toBe(
-      "https://rakazo.com/integrations/acme-tickets/claim/?confirmed",
-    );
+    expect(opened.headers.get("location")).toBe("https://tryrobots.app/#integrations");
     expect(rows[0]).toMatchObject({ status: "pending", confirmToken: null });
     await vi.waitFor(() => expect(email.sent).toHaveLength(2));
     expect(email.sent[1]).toMatchObject({
@@ -462,9 +460,7 @@ describe("integration page claims", () => {
     await vi.waitFor(() => expect(email.sent).toHaveLength(1));
     rows[0]!.confirmExpiresAt = new Date(Date.now() - 1);
     const opened = await open(confirmLink(email.sent[0]!));
-    expect(opened.headers.get("location")).toBe(
-      "https://rakazo.com/integrations/acme-tickets/claim/?expired",
-    );
+    expect(opened.headers.get("location")).toBe("https://tryrobots.app/#integrations");
     expect(rows[0]!.status).toBe("unconfirmed");
   });
 

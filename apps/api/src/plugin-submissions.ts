@@ -221,14 +221,14 @@ export function pluginSubmissionRoutes(
       return c.text("This link was already used or is invalid.", 404);
     }
     if (row.confirmExpiresAt.getTime() < Date.now()) {
-      return c.redirect(`${integrationPageUrl(row.claim)}claim/?expired`, 303);
+      return c.redirect(integrationPageUrl(row.claim), 303);
     }
     const confirmed = await deps.prisma.pluginSubmission.updateMany({
       where: { id: row.id, status: "unconfirmed", confirmToken: row.confirmToken },
       data: { status: "pending", confirmToken: null, confirmExpiresAt: null },
     });
     if (confirmed.count > 0) notifyAdmins(row);
-    return c.redirect(`${integrationPageUrl(row.claim)}claim/?confirmed`, 303);
+    return c.redirect(integrationPageUrl(row.claim), 303);
   });
 
   // The marketing site reads this when it builds; a few minutes of staleness is fine.

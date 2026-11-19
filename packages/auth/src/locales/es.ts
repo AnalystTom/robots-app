@@ -24,19 +24,11 @@ export const ES_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "Introduce este código en RoBots para confirmar que eres tú:",
   "Welcome to RoBots": "Te damos la bienvenida a RoBots",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "Te damos la bienvenida a RoBots. Quienes más partido le sacan hacen tres cosas:",
   "Get the apps": "Descarga las apps",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots funciona en {platforms}, para que tus bots puedan contactarte estés donde estés.",
-  "Join the community": "Únete a la comunidad",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "Mira lo que crean otros, consigue ayuda rápido y cuéntanos qué crear después en {discord}.",
-  "Star us on GitHub": "Danos una estrella en GitHub",
-  "RoBots is open source. {star} helps more people find it.":
-    "RoBots es de código abierto. {star} ayuda a que más gente lo encuentre.",
-  "A star on GitHub": "Una estrella en GitHub",
-  "Questions? Just reply. I read every one.": "¿Preguntas? Responde a este correo. Leo todos.",
+  "Questions? Just reply.": "¿Preguntas? Solo responde.",
+  "The RoBots team": "El equipo de RoBots",
   Unsubscribe: "Cancelar suscripción",
   "Invite a friend": "Invita a un amigo",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

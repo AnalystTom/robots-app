@@ -24,20 +24,11 @@ export const TR_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "Siz olduğunuzu onaylamak için bu kodu RoBots’ya girin:",
   "Welcome to RoBots": "RoBots’ya hoş geldiniz",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "RoBots'ya hoş geldiniz. RoBots'dan en çok verimi alanlar üç şey yapıyor:",
   "Get the apps": "Uygulamaları indirin",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots {platforms} üzerinde çalışır; böylece botlarınız size her yerde ulaşabilir.",
-  "Join the community": "Topluluğa katılın",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "Başkalarının neler yaptığını görün, hızlıca yardım alın ve sırada ne yapmamız gerektiğini {discord} üzerinden bize söyleyin.",
-  "Star us on GitHub": "GitHub'da bize yıldız verin",
-  "RoBots is open source. {star} helps more people find it.":
-    "RoBots açık kaynaklıdır. {star} daha fazla kişinin onu bulmasına yardımcı olur.",
-  "A star on GitHub": "GitHub'da bir yıldız",
-  "Questions? Just reply. I read every one.":
-    "Sorunuz mu var? Yanıtlamanız yeterli. Her birini okuyorum.",
+  "Questions? Just reply.": "Sorunuz mu var? Yanıtlamanız yeterli.",
+  "The RoBots team": "RoBots ekibi",
   Unsubscribe: "Abonelikten çık",
   "Invite a friend": "Bir arkadaşını davet et",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

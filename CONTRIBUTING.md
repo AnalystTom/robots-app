@@ -132,6 +132,6 @@ capability config, fixtures, logs, or snapshots; use the encrypted secret store 
 
 | Address                                           | Use for                                               |
 | ------------------------------------------------- | ----------------------------------------------------- |
-| [security@rakazo.com](mailto:security@rakazo.com) | Vulnerabilities only — see [SECURITY.md](SECURITY.md) |
-| [support@rakazo.com](mailto:support@rakazo.com)   | User and support questions                            |
-| [elie@rakazo.com](mailto:elie@rakazo.com)         | Maintainer                                            |
+| [hello@tryrobots.app](mailto:hello@tryrobots.app) | Vulnerabilities only — see [SECURITY.md](SECURITY.md) |
+| [hello@tryrobots.app](mailto:hello@tryrobots.app)   | User and support questions                            |
+| [hello@tryrobots.app](mailto:hello@tryrobots.app)         | Maintainer                                            |
