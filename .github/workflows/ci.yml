@@ -76,15 +76,12 @@ jobs:
         with:
           path: .turbo/cache
           key: turbo-build-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+      - name: Provide xvfb-run
+        run: bash .github/scripts/provide-host-tool.sh xvfb-run
       - name: Electron smoke
         env:
           electron_config_cache: ${{ runner.temp }}/electron-cache
-        run: |
-          if ! command -v xvfb-run >/dev/null; then
-            echo "::error::xvfb-run is not installed on this runner."
-            exit 1
-          fi
-          xvfb-run --auto-servernum pnpm --filter @robots/desktop exec playwright test --config e2e/playwright.config.ts
+        run: xvfb-run --auto-servernum pnpm --filter @robots/desktop exec playwright test --config e2e/playwright.config.ts
       - name: Upload desktop setup screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -199,6 +196,8 @@ jobs:
           echo "cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP" age/age age/age-keygen
           echo "$RUNNER_TEMP/age" >> "$GITHUB_PATH"
+      - name: Provide dpkg for the apt security smokes
+        run: bash .github/scripts/provide-host-tool.sh dpkg
       - name: Unit tests
         if: steps.areas.outputs.all_packages != 'false'
         run: pnpm run test --shard=${{ matrix.shard }}/6
@@ -301,44 +300,17 @@ jobs:
       - id: areas
         if: github.event_name == 'pull_request'
         run: bash .github/scripts/changed-areas.sh >> "$GITHUB_OUTPUT"
-      - name: Postgres cache week
-        if: steps.areas.outputs.server != 'false'
-        id: postgres-cache-week
-        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
-      - name: Restore Postgres image cache
+      - name: Restore Postgres binaries cache
         if: steps.areas.outputs.server != 'false'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
-          path: ${{ runner.temp }}/docker-postgres-cache
-          key: docker-postgres-18-alpine-v2-${{ steps.postgres-cache-week.outputs.week }}
-      - name: Load or pull Postgres image
-        if: steps.areas.outputs.server != 'false'
-        run: bash .github/scripts/restore-postgres-image.sh
+          path: ${{ runner.temp }}/postgres-binaries-cache
+          key: postgres-binaries-${{ hashFiles('.github/scripts/start-postgres.sh') }}
       - name: Start Postgres
         if: steps.areas.outputs.server != 'false'
-        run: |
-          docker run -d --name ci-postgres \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=robots \
-            -p 5432:5432 \
-            mirror.gcr.io/library/postgres:18-alpine \
-            postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=500
-          echo "CI_POSTGRES_URL=postgres://postgres:postgres@127.0.0.1:5432/robots" >> "$GITHUB_ENV"
+        run: bash .github/scripts/start-postgres.sh
       - uses: ./.github/actions/setup-workspace
         if: steps.areas.outputs.server != 'false'
-      - name: Wait for Postgres
-        if: steps.areas.outputs.server != 'false'
-        run: |
-          for i in $(seq 1 30); do
-            if docker exec ci-postgres pg_isready -U postgres -d robots; then
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "Postgres did not become ready" >&2
-          docker logs ci-postgres >&2 || true
-          exit 1
       - run: pnpm test:integration --shard=${{ matrix.shard }}/6
         if: steps.areas.outputs.server != 'false'
 

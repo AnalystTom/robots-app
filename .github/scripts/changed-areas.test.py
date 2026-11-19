@@ -117,7 +117,7 @@ class ChangedAreasTests(unittest.TestCase):
             (".github/workflows/playwright.yml", expect(*AREAS)),
             (".github/actions/setup-workspace/action.yml", expect(*AREAS)),
             (".github/actions/setup-pnpm/action.yml", expect(*AREAS)),
-            (".github/scripts/restore-postgres-image.sh", expect(*AREAS)),
+            (".github/scripts/start-postgres.sh", expect(*AREAS)),
         ]
         for path, expected in cases:
             with self.subTest(path=path):
