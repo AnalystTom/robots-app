@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
 import { agentImportErrorReason } from "@robots/contracts";
-import type { GrokBotExportErrorCode } from "@robots/core";
+import type { BotPackageErrorCode, GrokBotExportErrorCode } from "@robots/core";
 import { translateRunError } from "@robots/i18n/run-error";
 
 function errorProvider(error: unknown): string {
@@ -51,5 +51,20 @@ export function grokBotErrorText(code: GrokBotExportErrorCode): string {
       return t`This export is too large to import.`;
     case "newer_version":
       return t`This export is newer than RoBots can read. Update RoBots and try again.`;
+  }
+}
+
+export function botPackageErrorText(code: BotPackageErrorCode): string {
+  switch (code) {
+    case "not_package":
+      return t`This file is not a RoBots bot package.`;
+    case "too_large":
+      return t`This bot package is too large to import.`;
+    case "unknown_version":
+      return t`This bot package has an unknown format version.`;
+    case "newer_version":
+      return t`This bot package needs a newer version of RoBots. Update RoBots and try again.`;
+    case "invalid":
+      return t`This bot package is damaged or incomplete.`;
   }
 }

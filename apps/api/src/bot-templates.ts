@@ -22,6 +22,7 @@ import {
   findBotTemplate,
   renameRoutineSkillMentions,
   renameSkillMd,
+  scanSkillSafety,
 } from "@robots/core";
 import { availableInSpace, Prisma } from "@robots/db";
 import type { AgentImportServices, Built } from "./agent-import.js";
@@ -93,15 +94,19 @@ export function templatePlan(template: BotTemplate, timezone: string): Built {
       },
     ],
     memory: [],
-    skills: template.skills.map((skill) => ({
-      id: skill.name,
-      title: skill.name,
-      name: skill.name,
-      description: skill.description,
-      content: buildSkillMd(skill),
-      warnings: [],
-      status: { kind: "ready" },
-    })),
+    skills: template.skills.map((skill) => {
+      const content = buildSkillMd(skill);
+      return {
+        id: skill.name,
+        title: skill.name,
+        name: skill.name,
+        description: skill.description,
+        content,
+        warnings: [],
+        status: { kind: "ready" as const },
+        safety: scanSkillSafety(content),
+      };
+    }),
     model: null,
     mcpServers: [],
     routines,
@@ -157,6 +162,7 @@ export async function createBotFromTemplate<PreparedKey>(
       mcpServers: [],
       routines: template.routines.map((_, index) => `routine-${index}`),
       apiKeys: [],
+      acceptedRisks: [],
     },
     build: async () => {
       if (template.version !== input.version) {

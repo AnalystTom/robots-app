@@ -43,6 +43,7 @@ import {
   ToolsGroup,
   VoiceGroup,
 } from "./bot-settings-sections";
+import { ExportBotDialog } from "./export-bot-dialog";
 
 const ScratchpadSection = lazyComponent(() =>
   import("../ScratchpadSection").then((module) => module.ScratchpadSection),
@@ -207,6 +208,7 @@ export function BotSettings({
     advancedSnapshot !== savedAdvanced ||
     description.trim() !== savedDescriptionRef.current;
   const [error, setError] = useState<string | null>(null);
+  const [exportingBot, setExportingBot] = useState(false);
   const saveQueueRef = useRef(Promise.resolve());
   const executeSaveRef = useRef<
     (
@@ -652,6 +654,7 @@ export function BotSettings({
               }}
             />
             <ExportAndClear
+              onExportBot={() => setExportingBot(true)}
               onExport={() => {
                 setError(null);
                 onExport().catch((err: unknown) => setError(errorText(err)));
@@ -678,6 +681,9 @@ export function BotSettings({
         </TabsContent>
       </Tabs>
       {error ? <p className="mt-2 text-body-sm text-destructive">{error}</p> : null}
+      {exportingBot ? (
+        <ExportBotDialog bot={{ id: bot.id, name }} onClose={() => setExportingBot(false)} />
+      ) : null}
     </div>
   );
 }

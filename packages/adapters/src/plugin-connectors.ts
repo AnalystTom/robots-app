@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import type { PluginPreview } from "@robots/contracts";
 import { McpServerConfigInput } from "@robots/contracts";
-import { buildSkillMd, findSkillByName, parseSkillMd } from "@robots/core";
+import { buildSkillMd, findSkillByName, parseSkillMd, scanSkillSafety } from "@robots/core";
 import { z } from "zod";
 import { BUILTIN_AGENT_SKILLS } from "./builtin-skills.js";
 import { assertNoSensitiveQuery } from "./connector-http.js";
@@ -717,10 +717,11 @@ export function pluginPreviewDto(plugin: ParsedPlugin): PluginPreview {
     digest: plugin.digest,
     skipped: plugin.skipped,
     builtinNames: plugin.builtinNames,
-    skills: plugin.skills.map(({ name, description, files }) => ({
+    skills: plugin.skills.map(({ name, description, content, files }) => ({
       name,
       description,
       ...(files ? { files: Object.keys(files).sort() } : {}),
+      safety: scanSkillSafety(content),
     })),
     mcpServers: plugin.mcpServers.map(({ name, transport, endpoint, headers }) => ({
       name,

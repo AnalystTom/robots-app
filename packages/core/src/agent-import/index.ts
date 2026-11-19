@@ -8,8 +8,10 @@ import {
   AGENT_IMPORT_MAX_FILE_LENGTH,
   AGENT_IMPORT_MAX_FILES,
   AGENT_IMPORT_MAX_TOTAL_LENGTH,
+  BOT_PACKAGE_PATH,
   GROK_BOT_EXPORT_PATH,
 } from "@robots/contracts";
+import { BotPackageError, importBotPackage } from "../bot-package.js";
 import { AgentImportArchiveError } from "./archive.js";
 import {
   AGENT_IMPORT_CONFIG_FILES,
@@ -34,6 +36,7 @@ import {
   OPENCLAW_RUNTIME_FILES,
   parseOpenClaw,
 } from "./openclaw.js";
+import { parseRobotsPackage } from "./robots-package.js";
 import type { AgentImportParse, SkillFiles } from "./shared.js";
 import { freeName, isPrivatePath, isSkillPath, renameSkillMd } from "./shared.js";
 
@@ -56,7 +59,7 @@ export {
   readAgentImportConfig,
   stripAgentImportSecrets,
 } from "./config.js";
-export { looksLikeCredential } from "./credentials.js";
+export { looksLikeCredential, REDACTED_CREDENTIAL, redactCredentials } from "./credentials.js";
 export { AGENT_IMPORT_PROMPT } from "./document.js";
 export type { GrokBot, GrokBotExportErrorCode } from "./grok-bot.js";
 export {
@@ -207,7 +210,7 @@ export function readAgentImportFolder(
   files: AgentImportFile[],
   options: { includeSecrets: boolean },
 ): {
-  source: Exclude<AgentImportSource, "document" | "template" | "grok_bot">;
+  source: Exclude<AgentImportSource, "document" | "template" | "grok_bot" | "robots_package">;
   root: string;
   files: Map<string, string>;
 } | null {
@@ -302,6 +305,14 @@ export function parseAgentImport(
   skillFiles: SkillFiles = {},
 ): AgentImportPlan | { error: string } {
   const only = files.length === 1 ? files[0] : undefined;
+  if (only?.path === BOT_PACKAGE_PATH) {
+    try {
+      return plan("robots_package", parseRobotsPackage(importBotPackage(only.content)));
+    } catch (error) {
+      if (error instanceof BotPackageError) return { error: error.message };
+      throw error;
+    }
+  }
   if (only?.path === GROK_BOT_EXPORT_PATH) {
     let bots: GrokBot[];
     try {
@@ -374,7 +385,7 @@ function plan(source: AgentImportSource, parsed: AgentImportParse): AgentImportP
 function detectSource(
   paths: Set<string>,
   root: string,
-): Exclude<AgentImportSource, "document" | "template" | "grok_bot"> | null {
+): Exclude<AgentImportSource, "document" | "template" | "grok_bot" | "robots_package"> | null {
   const has = (path: string) => paths.has(path);
   if (
     root === ".hermes" ||

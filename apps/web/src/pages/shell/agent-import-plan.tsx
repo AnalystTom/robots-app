@@ -8,7 +8,7 @@ import type {
   ComputerMode,
 } from "@robots/contracts";
 import { BOT_DESCRIPTION_MAX_LENGTH, BOT_NAME_MAX_LENGTH } from "@robots/contracts";
-import { looksLikeCredential } from "@robots/core";
+import { looksLikeCredential, skillSafetyBlocks } from "@robots/core";
 import { Button, Checkbox, Input, Label, NativeSelect, NativeSelectOption } from "@robots/ui-web";
 import {
   Collapsible,
@@ -17,6 +17,9 @@ import {
 } from "@robots/ui-web/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
+import { useState } from "react";
+import type { RiskySkill } from "../../components/skill-safety";
+import { SkillRiskDialog, SkillSafetyList } from "../../components/skill-safety";
 import { ComputerModePicker } from "./bot-settings-sections";
 import { useImportStatusText } from "./import-status";
 import type { AgentImportSource } from "./use-agent-import-source";
@@ -66,7 +69,10 @@ export function AgentImportPlanReview({
     modelUsable,
     tooLong,
     ready,
+    acceptedRisks,
+    acceptRisk,
   } = source;
+  const [confirming, setConfirming] = useState<(RiskySkill & { id: string }) | null>(null);
 
   const item = (
     id: string,
@@ -75,6 +81,7 @@ export function AgentImportPlanReview({
     extra?: ReactNode,
     description?: string,
     disabled = false,
+    onCheckedChange: (checked: boolean) => void = (checked) => toggle(id, checked),
   ) => (
     <li key={id} className="py-1">
       <Collapsible>
@@ -83,7 +90,7 @@ export function AgentImportPlanReview({
             aria-label={title}
             checked={!disabled && !unchecked.has(id)}
             disabled={disabled}
-            onCheckedChange={(checked) => toggle(id, checked)}
+            onCheckedChange={onCheckedChange}
           />
           <CollapsibleTrigger className="group flex min-w-0 flex-1 cursor-pointer items-center gap-1 rounded-sm text-start text-body text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
             <span className="truncate" dir="auto">
@@ -262,7 +269,17 @@ export function AgentImportPlanReview({
           <ul className="mt-2">
             {plan.skills.map(
               (
-                { id, title, name: savedAs, content, description, warnings, status, containsKey },
+                {
+                  id,
+                  title,
+                  name: savedAs,
+                  content,
+                  description,
+                  warnings,
+                  status,
+                  containsKey,
+                  safety,
+                },
                 index,
               ) =>
                 item(
@@ -276,9 +293,17 @@ export function AgentImportPlanReview({
                   <>
                     {containsKey ? note(keyNote) : null}
                     {statusNote(status, warnings)}
+                    <SkillSafetyList findings={safety} className="ms-7 mb-1 basis-full" />
                   </>,
                   description,
                   status.kind === "unsupported",
+                  (checked) => {
+                    if (checked && skillSafetyBlocks(safety) && !acceptedRisks.has(id)) {
+                      setConfirming({ id, name: savedAs, findings: safety });
+                      return;
+                    }
+                    toggle(id, checked);
+                  },
                 ),
             )}
           </ul>
@@ -417,6 +442,17 @@ export function AgentImportPlanReview({
         </label>
       ) : null}
       <ComputerModePicker value={computerMode} onChange={onComputerModeChange} />
+      {confirming ? (
+        <SkillRiskDialog
+          skills={[confirming]}
+          onCancel={() => setConfirming(null)}
+          onConfirm={() => {
+            acceptRisk(confirming.id);
+            toggle(confirming.id, true);
+            setConfirming(null);
+          }}
+        />
+      ) : null}
       <div className="mt-5">
         <Button disabled={!ready || busy} onClick={onCreate}>
           {busy ? <Trans>Creating…</Trans> : <Trans>Create</Trans>}

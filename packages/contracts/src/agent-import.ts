@@ -1,9 +1,11 @@
 import * as z from "zod";
 import { AgentImportStatusSchema } from "./agent-import-setup.js";
 import { BotAvatarSetSchema, BotAvatarValueSchema } from "./bot-avatar.js";
+import { BOT_PACKAGE_MAX_LENGTH, BOT_PACKAGE_PATH } from "./bot-package.js";
 import { BOT_TEMPLATE_IMPORT_KEY_PREFIX } from "./bot-template.js";
 import { ComputerModeSchema } from "./computer.js";
 import { BOT_DESCRIPTION_MAX_LENGTH, BOT_NAME_MAX_LENGTH } from "./domain.js";
+import { SkillSafetyFindingSchema } from "./skill-safety.js";
 
 export const AGENT_IMPORT_MAX_FILES = 500;
 export const AGENT_IMPORT_MAX_FILE_LENGTH = 100_000;
@@ -14,13 +16,18 @@ export const GROK_BOT_EXPORT_PATH = "grok-bot-export.json";
 /** A Bot with many full-text skills writes more than one Markdown file may hold. */
 export const GROK_BOT_EXPORT_MAX_LENGTH = 1_000_000;
 
+const SINGLE_FILE_LIMITS: ReadonlyMap<string, number> = new Map([
+  [GROK_BOT_EXPORT_PATH, GROK_BOT_EXPORT_MAX_LENGTH],
+  [BOT_PACKAGE_PATH, BOT_PACKAGE_MAX_LENGTH],
+]);
+
 /** The only non-Markdown files an import may send, optionally under the chosen folder's name. */
 const AGENT_IMPORT_CONFIG_PATH =
   /^(?:[^/]+\/)?(?:openclaw\.json|\.env|config\.yaml|auth\.json|cron\/jobs\.json|skills\/\.bundled_manifest)$/;
 
 /** A relative Markdown or settings path: no absolute paths, no `..`, no empty segments. */
 export function isAgentImportPath(path: string): boolean {
-  if (path === GROK_BOT_EXPORT_PATH) return true;
+  if (SINGLE_FILE_LIMITS.has(path)) return true;
   if (!path.toLowerCase().endsWith(".md") && !AGENT_IMPORT_CONFIG_PATH.test(path)) return false;
   if (path.startsWith("/") || path.includes("\\") || path.includes("\0")) return false;
   if (/^[A-Za-z]:/.test(path)) return false;
@@ -37,10 +44,10 @@ export const AgentImportFileSchema = z
         isAgentImportPath,
         "Only relative Markdown and agent settings files can be imported.",
       ),
-    content: z.string().max(GROK_BOT_EXPORT_MAX_LENGTH),
+    content: z.string().max(Math.max(...SINGLE_FILE_LIMITS.values())),
   })
   .superRefine((file, ctx) => {
-    if (file.path !== GROK_BOT_EXPORT_PATH && file.content.length > AGENT_IMPORT_MAX_FILE_LENGTH) {
+    if (file.content.length > (SINGLE_FILE_LIMITS.get(file.path) ?? AGENT_IMPORT_MAX_FILE_LENGTH)) {
       ctx.addIssue({
         code: "custom",
         path: ["content"],
@@ -70,6 +77,7 @@ export const AgentImportSourceSchema = z.enum([
   "document",
   "template",
   "grok_bot",
+  "robots_package",
 ]);
 export type AgentImportSource = z.infer<typeof AgentImportSourceSchema>;
 
@@ -136,6 +144,7 @@ export const AgentImportSkillSchema = z.object({
   warnings,
   status,
   containsKey,
+  safety: z.array(SkillSafetyFindingSchema).default([]),
 });
 export type AgentImportSkill = z.infer<typeof AgentImportSkillSchema>;
 
@@ -227,6 +236,7 @@ export const AgentImportSelectionSchema = z.strictObject({
   mcpServers: selectedIds.max(AGENT_IMPORT_MAX_FILES).default([]),
   routines: selectedIds.max(AGENT_IMPORT_MAX_FILES).default([]),
   apiKeys: selectedIds.max(AGENT_IMPORT_MAX_FILES).default([]),
+  acceptedRisks: selectedIds.max(AGENT_IMPORT_MAX_FILES).default([]),
 });
 
 /** API keys and credential values are read only when the user opted in. */

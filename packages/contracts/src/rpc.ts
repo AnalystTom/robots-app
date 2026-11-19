@@ -42,6 +42,7 @@ import {
 } from "./board.js";
 import { BotAvatarSetSchema } from "./bot-avatar.js";
 import { BotEmailAddressesSchema, BotEmailAddressSchema, BotEmailNameSchema } from "./bot-email.js";
+import { BotPackageSchema, ExportBotPackageInput } from "./bot-package.js";
 import {
   BotSecretMetadata,
   BotSecretPutInput,
@@ -639,6 +640,7 @@ export const appContract = {
     importSetupState: oc.input(AgentImportSetupStateInput).output(AgentImportSetupStateSchema),
     templates: oc.output(z.array(BotTemplateListingSchema)),
     createFromTemplate: oc.input(CreateBotFromTemplateInput).output(CreateBotFromTemplateOutput),
+    exportPackage: oc.input(ExportBotPackageInput).output(BotPackageSchema),
     duplicate: oc.input(botId).output(BotSchema),
     reorder: oc.input(ReorderBotsInput).output(z.object({ ok: z.literal(true) })),
     update: oc.input(UpdateBotInput).output(BotSchema),
@@ -1203,12 +1205,19 @@ export const appContract = {
             .optional(),
           /** Plugins only: which parts to add; all supported parts when omitted. */
           pluginParts: z.array(PluginPartSchema).min(1).max(2).optional(),
+          acceptRisk: z.boolean().default(false),
         }),
       )
       .output(CapabilityInstallSchema),
     /** Add or remove parts of an installed plugin at its pinned version; no parts removes it. */
     pluginParts: oc
-      .input(z.object({ id: Id, parts: z.array(PluginPartSchema).max(2) }))
+      .input(
+        z.object({
+          id: Id,
+          parts: z.array(PluginPartSchema).max(2),
+          acceptRisk: z.boolean().default(false),
+        }),
+      )
       .output(z.object({ install: CapabilityInstallSchema.nullable() })),
     /** Fetch and parse a plugin repo without installing: shows the skills,
      * MCP endpoints, variables, and skipped parts before confirmation. */

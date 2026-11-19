@@ -18,6 +18,7 @@ import {
   spaceAvailability,
 } from "@robots/db";
 import { assertNameFreeWhereAvailable, userAddedAvailability } from "./availability.js";
+import { assertSkillsInstallable } from "./skill-safety.js";
 
 type AgentSkillRow = {
   id: string;
@@ -187,9 +188,16 @@ export function createAgentSkillsService(prisma: PrismaClient) {
 
     async create(
       actor: Actor,
-      input: { content?: string; name?: string; description?: string; body?: string },
+      input: {
+        content?: string;
+        name?: string;
+        description?: string;
+        body?: string;
+        acceptRisk?: boolean;
+      },
     ): Promise<AgentSkill> {
       const resolved = resolveSkillContent(input);
+      assertSkillsInstallable([{ ...resolved, acceptRisk: input.acceptRisk === true }]);
       if (builtinCatalog().some((s) => s.name.toLowerCase() === resolved.name.toLowerCase())) {
         throw new ORPCError("CONFLICT", { message: "A skill with that name already exists." });
       }
@@ -231,6 +239,7 @@ export function createAgentSkillsService(prisma: PrismaClient) {
         name?: string;
         description?: string;
         body?: string;
+        acceptRisk?: boolean;
       },
     ): Promise<AgentSkill> {
       const existing = await owned(actor, input.skillId);
@@ -238,6 +247,7 @@ export function createAgentSkillsService(prisma: PrismaClient) {
         throw new ORPCError("BAD_REQUEST", { message: "Builtin and plugin skills are read-only." });
       }
       const resolved = resolveSkillContent({ ...input, prior: existing });
+      assertSkillsInstallable([{ ...resolved, acceptRisk: input.acceptRisk === true }]);
       const renamed = !findSkillByName([existing], resolved.name);
       if (
         renamed &&

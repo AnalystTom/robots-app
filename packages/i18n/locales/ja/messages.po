@@ -2969,10 +2969,26 @@ msgstr "連絡先"
 msgid "Contacts"
 msgstr "連絡先"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Contains a long encoded blob"
+msgstr "長いエンコード済みデータが含まれています"
+
 #: apps/web/src/pages/shell/agent-import-plan.tsx
 #: apps/web/src/pages/shell/import-status.ts
 msgid "Contains code to run"
 msgstr "実行するコードを含みます"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Contains invisible characters that can hide text"
+msgstr "テキストを隠せる不可視文字が含まれています"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Contains invisible characters that reorder text"
+msgstr "テキストの順序を入れ替える不可視文字が含まれています"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Contains zero-width characters"
+msgstr "ゼロ幅文字が含まれています"
 
 #: apps/mobile/app/(settings)/model-settings.tsx
 #: apps/web/src/pages/model-settings/model-settings-panel.tsx
@@ -3431,6 +3447,10 @@ msgstr "{name}をダウンロードできませんでした。もう一度お試
 #: apps/web/src/components/integrations/plugin-marketplace.tsx
 msgid "Could not enable tools"
 msgstr "ツールを有効にできませんでした"
+
+#: apps/web/src/pages/shell/export-bot-dialog.tsx
+msgid "Could not export bot"
+msgstr "ボットをエクスポートできませんでした"
 
 #: apps/mobile/lib/use-subscription-sign-in.ts
 msgid "Could not finish sign-in"
@@ -4432,6 +4452,10 @@ msgstr "日"
 msgid "Decline"
 msgstr "拒否"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Decodes hidden content and runs it"
+msgstr "隠された内容をデコードして実行します"
+
 #: apps/mobile/app/bot-settings.tsx
 #: apps/mobile/components/bot-look-picker.tsx
 #: apps/mobile/components/model-role-settings.tsx
@@ -4602,6 +4626,10 @@ msgstr "このスペースの認証情報を削除しますか？"
 #: apps/mobile/components/account-deletion.tsx
 msgid "Delete your account?"
 msgstr "アカウントを削除しますか？"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Deletes a whole disk or home folder"
+msgstr "ディスク全体またはホームフォルダを削除します"
 
 #: apps/mobile/components/bot-profile-menu.tsx
 #: apps/mobile/lib/inbox-swipe.ts
@@ -4892,6 +4920,10 @@ msgstr "PDF をダウンロード"
 #: apps/web/src/components/DesktopUpdates.tsx
 msgid "Downloading…"
 msgstr "ダウンロード中…"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Downloads a script and runs it"
+msgstr "スクリプトをダウンロードして実行します"
 
 #: apps/web/src/components/teach/SkillDraftCard.tsx
 msgid "Draft skill"
@@ -5224,8 +5256,14 @@ msgstr "有効期限"
 #: apps/mobile/app/bot-settings.tsx
 #: apps/web/src/components/AccountDataSettings.tsx
 #: apps/web/src/pages/shell/bot-settings-sections.tsx
+#: apps/web/src/pages/shell/export-bot-dialog.tsx
 msgid "Export"
 msgstr "エクスポート"
+
+#: apps/web/src/pages/shell/bot-settings-sections.tsx
+#: apps/web/src/pages/shell/export-bot-dialog.tsx
+msgid "Export bot"
+msgstr "ボットをエクスポート"
 
 #: apps/web/src/components/AccountDataSettings.tsx
 msgid "Export data"
@@ -5618,6 +5656,10 @@ msgstr "通話を終了してから、画面に表示されたコードを入力
 msgid "Haptics"
 msgstr "触覚フィードバック"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Has instructions in a hidden comment"
+msgstr "隠しコメントに指示があります"
+
 #: apps/web/src/pages/routine-editor/trigger-cards.tsx
 msgid "Header"
 msgstr "ヘッダー"
@@ -5796,6 +5838,14 @@ msgstr "https://example.com/mcp"
 #: apps/mobile/components/add-custom-integration.tsx
 msgid "https://example.com/openapi.json"
 msgstr "https://example.com/openapi.json"
+
+#: apps/web/src/pages/shell/export-bot-dialog.tsx
+msgid "Include memory notes"
+msgstr "メモリのメモを含める"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Install anyway"
+msgstr "それでもインストール"
 
 #: apps/mobile/app/computer.tsx
 #: apps/mobile/components/ComputerCard.tsx
@@ -6192,6 +6242,10 @@ msgstr "ライト"
 #: apps/mobile/components/run-error-sheet.tsx
 msgid "Limit"
 msgstr "上限"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Line {line}: {reason}"
+msgstr "{line}行目: {reason}"
 
 #: apps/mobile/lib/search-sheet.ts
 #: apps/web/src/pages/SpaceSearch.tsx
@@ -8152,6 +8206,14 @@ msgstr "待機中"
 msgid "Quote"
 msgstr "引用"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Reads credential files"
+msgstr "認証情報ファイルを読み取ります"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Risky content found"
+msgstr "危険な内容が見つかりました"
+
 #: apps/mobile/app/(settings)/ai-data-sharing.tsx
 #: apps/mobile/app/(settings)/general.tsx
 #: apps/mobile/app/bot-settings.tsx
@@ -8164,6 +8226,10 @@ msgstr "RoBots"
 #: apps/web/src/pages/onboarding/use-onboarding-model.ts
 msgid "RoBots credits"
 msgstr "RoBotsクレジット"
+
+#: apps/web/src/pages/shell/agent-import.tsx
+msgid "RoBots package"
+msgstr "RoBotsパッケージ"
 
 #: apps/web/src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "robots-shared and IDs starting with bot- are reserved for RoBots."
@@ -9332,6 +9398,10 @@ msgstr "Enterで送信"
 msgid "Sending…"
 msgstr "送信中…"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Sends credential files over the network"
+msgstr "認証情報ファイルをネットワーク経由で送信します"
+
 #: apps/mobile/components/thread/ask-block.tsx
 #: apps/web/src/components/AskCard.tsx
 #: apps/web/src/components/SecretAskCard.tsx
@@ -10208,6 +10278,10 @@ msgstr "Teamsメッセージ"
 msgid "Technical details"
 msgstr "技術的な詳細"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Tells the bot to ignore instructions or keep things from you"
+msgstr "ボットに指示を無視させたり、あなたに隠し事をさせたりします"
+
 #: apps/web/src/components/ComputerProviderSettings.tsx
 msgid "Template"
 msgstr "テンプレート"
@@ -10465,6 +10539,22 @@ msgstr "このボット"
 msgid "This bot can't use this item. Change it in the Vault, or dismiss the request."
 msgstr "このボットはこの項目を使用できません。保管庫で変更するか、リクエストを閉じてください。"
 
+#: apps/web/src/lib/agent-import-errors.ts
+msgid "This bot package has an unknown format version."
+msgstr "このボットパッケージの形式バージョンが不明です。"
+
+#: apps/web/src/lib/agent-import-errors.ts
+msgid "This bot package is damaged or incomplete."
+msgstr "このボットパッケージは破損しているか、不完全です。"
+
+#: apps/web/src/lib/agent-import-errors.ts
+msgid "This bot package is too large to import."
+msgstr "このボットパッケージは大きすぎてインポートできません。"
+
+#: apps/web/src/lib/agent-import-errors.ts
+msgid "This bot package needs a newer version of RoBots. Update RoBots and try again."
+msgstr "このボットパッケージには新しいバージョンのRoBotsが必要です。RoBotsを更新してもう一度お試しください。"
+
 #: apps/web/src/pages/shell/computer-view.tsx
 msgid "This bot runs on this computer, not a Linux desktop. Shell and files use your home folder."
 msgstr "このボットはLinuxデスクトップではなく、このコンピューター上で動作します。シェルとファイルはホームフォルダーを使用します。"
@@ -10557,6 +10647,10 @@ msgstr "このエクスポートは大きすぎてインポートできません
 #: packages/i18n/src/vault.ts
 msgid "This file can't be read as CSV."
 msgstr "このファイルはCSVとして読み込めません。"
+
+#: apps/web/src/lib/agent-import-errors.ts
+msgid "This file is not a RoBots bot package."
+msgstr "このファイルはRoBotsのボットパッケージではありません。"
 
 #: apps/web/src/components/ArtifactFileCard.tsx
 msgid "This file is not valid UTF-8 text."

@@ -7,7 +7,12 @@ import type {
   PluginPart,
   PluginPreview,
 } from "@robots/contracts";
-import { mcpServerConnection, mcpServerNeedsSignIn, PluginPreviewSchema } from "@robots/contracts";
+import {
+  mcpServerConnection,
+  mcpServerNeedsSignIn,
+  PluginPreviewSchema,
+  skillSafetyBlock,
+} from "@robots/contracts";
 import { installedPluginParts } from "@robots/core";
 import { Button, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, Check, ChevronLeft, FileText, Plug } from "lucide-react";
@@ -17,6 +22,8 @@ import { rpc } from "../../lib/rpc";
 import type { ErrorDetails } from "../../lib/user-error";
 import { errorDetails } from "../../lib/user-error";
 import { ErrorNotice } from "../ErrorNotice";
+import type { RiskySkill } from "../skill-safety";
+import { SkillRiskDialog, SkillSafetyList } from "../skill-safety";
 import { AvailabilityControl, reachesOtherSpaces, useOwnSpaces } from "./space-availability";
 
 export type PluginSelection = {
@@ -172,6 +179,7 @@ export function PluginDetail({
   const [preview, setPreview] = useState<PluginPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
+  const [risky, setRisky] = useState<{ skills: RiskySkill[]; retry: () => void } | null>(null);
   const [error, setError] = useState<ErrorDetails | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [recipe, setRecipe] = useState<{ name: string; content: string | null } | null>(null);
@@ -237,20 +245,34 @@ export function PluginDetail({
   }
 
   /** The first part installs the plugin; later changes keep its pinned version. */
-  const setParts = (key: string, next: PluginPart[], failure: string) =>
+  const setParts = (key: string, next: PluginPart[], failure: string, acceptRisk = false) =>
     run(
       key,
       async () => {
-        if (install) await rpc.capabilities.pluginParts({ id: install.id, parts: next });
-        else if (preview)
-          await rpc.capabilities.install({
-            kind: "plugin",
-            name: preview.name,
-            source: preview.pinnedSource ?? selection.source,
-            pluginDigest: preview.digest,
-            config: {},
-            pluginParts: next,
-          });
+        const risk = acceptRisk ? { acceptRisk } : {};
+        try {
+          if (install) await rpc.capabilities.pluginParts({ id: install.id, parts: next, ...risk });
+          else if (preview)
+            await rpc.capabilities.install({
+              kind: "plugin",
+              name: preview.name,
+              source: preview.pinnedSource ?? selection.source,
+              pluginDigest: preview.digest,
+              config: {},
+              pluginParts: next,
+              ...risk,
+            });
+        } catch (err) {
+          const blocked = skillSafetyBlock(err);
+          if (!blocked) throw err;
+          if (live.current) {
+            setRisky({
+              skills: blocked.skills,
+              retry: () => void setParts(key, next, failure, true),
+            });
+          }
+          return;
+        }
         setConfirmRemove(false);
         await onChanged();
       },
@@ -625,6 +647,7 @@ export function PluginDetail({
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3">{row}</div>
                   )}
+                  <SkillSafetyList findings={skill.safety ?? []} className="px-4 pb-3 ps-11" />
                   {recipe?.name === skill.name ? (
                     <pre
                       data-testid="plugin-skill-recipe"
@@ -652,6 +675,17 @@ export function PluginDetail({
         <p className="px-1 text-body-sm text-muted-foreground">
           <Trans>Not added: {notAdded.join(", ")}</Trans>
         </p>
+      ) : null}
+      {risky ? (
+        <SkillRiskDialog
+          skills={risky.skills}
+          busy={busy}
+          onCancel={() => setRisky(null)}
+          onConfirm={() => {
+            setRisky(null);
+            risky.retry();
+          }}
+        />
       ) : null}
     </div>
   );

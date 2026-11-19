@@ -1,10 +1,11 @@
 import { BotTemplateSchema, parseRobotCharacter } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import { looksLikeCredential } from "./agent-import/index.js";
-import { extractRoutineSkillMentions } from "./agent-skill.js";
+import { buildSkillMd, extractRoutineSkillMentions } from "./agent-skill.js";
 import { BOT_TEMPLATES, botTemplateLook, findBotTemplate } from "./bot-templates.js";
 import { presetFromCron } from "./cron.js";
 import { matchFeaturedConnectorId } from "./featured-connectors.js";
+import { scanSkillSafety } from "./skill-safety.js";
 
 describe("bot templates", () => {
   it("each validates strictly and has a unique id", () => {
@@ -63,6 +64,14 @@ describe("bot templates", () => {
     for (const template of BOT_TEMPLATES) {
       const look = botTemplateLook(template.id);
       if (look) expect(parseRobotCharacter(look)).not.toBeNull();
+    }
+  });
+
+  it("has skills the safety check passes", () => {
+    for (const template of BOT_TEMPLATES) {
+      for (const skill of template.skills) {
+        expect(scanSkillSafety(buildSkillMd(skill)), `${template.id}/${skill.name}`).toEqual([]);
+      }
     }
   });
 });

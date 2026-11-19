@@ -351,6 +351,7 @@ describe("an item whose text looks like it contains a key", () => {
           content: `---\nname: ${key}\n---\nShip it.\n`,
           warnings: [],
           status: { kind: "ready" },
+          safety: [],
           containsKey: true,
         },
       ],

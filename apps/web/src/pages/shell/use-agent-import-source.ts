@@ -3,9 +3,12 @@ import type {
   AgentImportFile,
   AgentImportMemoryDestination,
   AgentImportPlan,
+  BotAvatarSet,
 } from "@robots/contracts";
 import {
   BOT_INSTRUCTIONS_MAX_LENGTH,
+  BOT_PACKAGE_MAX_LENGTH,
+  BOT_PACKAGE_PATH,
   GROK_BOT_EXPORT_MAX_LENGTH,
   GROK_BOT_EXPORT_PATH,
 } from "@robots/contracts";
@@ -16,19 +19,25 @@ import {
   AgentImportArchiveError,
   agentImportSkillFiles,
   agentImportUpload,
+  BotPackageError,
   chooseAgentImportFiles,
   combineImportedInstructions,
   GROK_BOT_REPLY_MAX_LENGTH,
   GrokBotExportError,
   grokBotExportJson,
   hasAgentImportSecrets,
+  importBotPackage,
   newClientId,
   openAgentImportArchive,
   parseGrokBotExport,
 } from "@robots/core";
 import { useEffect, useRef, useState } from "react";
 import { readAgentDocument } from "../../lib/agent-document";
-import { agentImportErrorText, grokBotErrorText } from "../../lib/agent-import-errors";
+import {
+  agentImportErrorText,
+  botPackageErrorText,
+  grokBotErrorText,
+} from "../../lib/agent-import-errors";
 import { rpc } from "../../lib/rpc";
 import { errorText } from "../../lib/user-error";
 
@@ -59,6 +68,8 @@ export function useAgentImportSource() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
+  const [look, setLook] = useState<{ color: string; avatarSet: BotAvatarSet } | null>(null);
+  const [acceptedRisks, setAcceptedRisks] = useState<Set<string>>(new Set());
   // Bots in one Grok Bot reply, while the user picks which to import.
   const [grokBots, setGrokBots] = useState<GrokBot[]>([]);
   // Bumped by every new read, so a slower earlier one never lands over it.
@@ -130,6 +141,7 @@ export function useAgentImportSource() {
         });
       } else {
         setUnchecked(new Set(flagged));
+        setAcceptedRisks(new Set());
         setDestinations({});
         setName(found.suggestedName);
         setDescription(found.suggestedDescription);
@@ -175,6 +187,7 @@ export function useAgentImportSource() {
         new Map(chosen.entries.map((entry) => [entry.path, entry.home])),
       );
       setSource(next);
+      setLook(null);
       setSourceFiles(chosen.entries);
       setHasSecretFiles(chosen.hasSecretFiles);
       setSkillFiles(siblings);
@@ -264,8 +277,13 @@ export function useAgentImportSource() {
     hasSecretFiles || sourceFiles.some(({ home, content }) => hasAgentImportSecrets(home, content));
 
   /** A pasted reply or one chosen file: no folder, so no secrets or skill siblings. */
-  async function previewOne(read: number, file: AgentImportFile) {
+  async function previewOne(
+    read: number,
+    file: AgentImportFile,
+    nextLook: { color: string; avatarSet: BotAvatarSet } | null = null,
+  ) {
     setGrokBots([]);
+    setLook(nextLook);
     setSource(null);
     setSourceFiles([]);
     setHasSecretFiles(false);
@@ -359,6 +377,37 @@ export function useAgentImportSource() {
     }
   }
 
+  async function pickBotPackage(list: FileList | null) {
+    const read = ++latestRead.current;
+    setGrokBots([]);
+    const file = list?.[0];
+    if (!file) {
+      setBusy(false);
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      if (file.size > BOT_PACKAGE_MAX_LENGTH * 4) throw new BotPackageError("too_large", "");
+      const text = await file.text();
+      if (read !== latestRead.current) return;
+      const pkg = importBotPackage(text);
+      await previewOne(
+        read,
+        { path: BOT_PACKAGE_PATH, content: JSON.stringify(pkg) },
+        { color: pkg.bot.color, avatarSet: pkg.bot.avatarSet },
+      );
+    } catch (err) {
+      if (read !== latestRead.current) return;
+      setError(err instanceof BotPackageError ? botPackageErrorText(err.code) : readError(err));
+      setBusy(false);
+    }
+  }
+
+  function acceptRisk(id: string) {
+    setAcceptedRisks((current) => new Set([...current, id]));
+  }
+
   function stopReading() {
     ++latestRead.current;
     setGrokBots([]);
@@ -417,6 +466,10 @@ export function useAgentImportSource() {
     previewGrokReply,
     previewGrokBot,
     pickGrokFiles,
+    pickBotPackage,
+    look,
+    acceptedRisks,
+    acceptRisk,
     stopReading,
     selectedInstructions,
     chosen,

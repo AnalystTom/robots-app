@@ -2969,10 +2969,26 @@ msgstr "Контакт"
 msgid "Contacts"
 msgstr "Контакты"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Contains a long encoded blob"
+msgstr "Содержит длинный закодированный блок"
+
 #: apps/web/src/pages/shell/agent-import-plan.tsx
 #: apps/web/src/pages/shell/import-status.ts
 msgid "Contains code to run"
 msgstr "Содержит исполняемый код"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Contains invisible characters that can hide text"
+msgstr "Содержит невидимые символы, которые могут скрывать текст"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Contains invisible characters that reorder text"
+msgstr "Содержит невидимые символы, меняющие порядок текста"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Contains zero-width characters"
+msgstr "Содержит символы нулевой ширины"
 
 #: apps/mobile/app/(settings)/model-settings.tsx
 #: apps/web/src/pages/model-settings/model-settings-panel.tsx
@@ -3431,6 +3447,10 @@ msgstr "Не удалось загрузить {name}. Попробуйте ещ
 #: apps/web/src/components/integrations/plugin-marketplace.tsx
 msgid "Could not enable tools"
 msgstr "Не удалось включить инструменты"
+
+#: apps/web/src/pages/shell/export-bot-dialog.tsx
+msgid "Could not export bot"
+msgstr "Не удалось экспортировать бота"
 
 #: apps/mobile/lib/use-subscription-sign-in.ts
 msgid "Could not finish sign-in"
@@ -4432,6 +4452,10 @@ msgstr "дни"
 msgid "Decline"
 msgstr "Отклонить"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Decodes hidden content and runs it"
+msgstr "Декодирует скрытое содержимое и запускает его"
+
 #: apps/mobile/app/bot-settings.tsx
 #: apps/mobile/components/bot-look-picker.tsx
 #: apps/mobile/components/model-role-settings.tsx
@@ -4602,6 +4626,10 @@ msgstr "Удалить учётные данные этого пространс
 #: apps/mobile/components/account-deletion.tsx
 msgid "Delete your account?"
 msgstr "Удалить аккаунт?"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Deletes a whole disk or home folder"
+msgstr "Удаляет весь диск или домашнюю папку"
 
 #: apps/mobile/components/bot-profile-menu.tsx
 #: apps/mobile/lib/inbox-swipe.ts
@@ -4892,6 +4920,10 @@ msgstr "Скачать PDF"
 #: apps/web/src/components/DesktopUpdates.tsx
 msgid "Downloading…"
 msgstr "Скачивание…"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Downloads a script and runs it"
+msgstr "Скачивает скрипт и запускает его"
 
 #: apps/web/src/components/teach/SkillDraftCard.tsx
 msgid "Draft skill"
@@ -5224,8 +5256,14 @@ msgstr "Срок действия"
 #: apps/mobile/app/bot-settings.tsx
 #: apps/web/src/components/AccountDataSettings.tsx
 #: apps/web/src/pages/shell/bot-settings-sections.tsx
+#: apps/web/src/pages/shell/export-bot-dialog.tsx
 msgid "Export"
 msgstr "Экспорт"
+
+#: apps/web/src/pages/shell/bot-settings-sections.tsx
+#: apps/web/src/pages/shell/export-bot-dialog.tsx
+msgid "Export bot"
+msgstr "Экспортировать бота"
 
 #: apps/web/src/components/AccountDataSettings.tsx
 msgid "Export data"
@@ -5618,6 +5656,10 @@ msgstr "Повесьте трубку, затем введите код на э�
 msgid "Haptics"
 msgstr "Тактильный отклик"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Has instructions in a hidden comment"
+msgstr "Содержит инструкции в скрытом комментарии"
+
 #: apps/web/src/pages/routine-editor/trigger-cards.tsx
 msgid "Header"
 msgstr "Header"
@@ -5796,6 +5838,14 @@ msgstr "https://example.com/mcp"
 #: apps/mobile/components/add-custom-integration.tsx
 msgid "https://example.com/openapi.json"
 msgstr "https://example.com/openapi.json"
+
+#: apps/web/src/pages/shell/export-bot-dialog.tsx
+msgid "Include memory notes"
+msgstr "Включить заметки памяти"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Install anyway"
+msgstr "Всё равно установить"
 
 #: apps/mobile/app/computer.tsx
 #: apps/mobile/components/ComputerCard.tsx
@@ -6192,6 +6242,10 @@ msgstr "Светлая"
 #: apps/mobile/components/run-error-sheet.tsx
 msgid "Limit"
 msgstr "Лимит"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Line {line}: {reason}"
+msgstr "Строка {line}: {reason}"
 
 #: apps/mobile/lib/search-sheet.ts
 #: apps/web/src/pages/SpaceSearch.tsx
@@ -8152,6 +8206,14 @@ msgstr "В очереди"
 msgid "Quote"
 msgstr "Цитировать"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Reads credential files"
+msgstr "Читает файлы с учётными данными"
+
+#: apps/web/src/components/skill-safety.tsx
+msgid "Risky content found"
+msgstr "Найдено рискованное содержимое"
+
 #: apps/mobile/app/(settings)/ai-data-sharing.tsx
 #: apps/mobile/app/(settings)/general.tsx
 #: apps/mobile/app/bot-settings.tsx
@@ -8164,6 +8226,10 @@ msgstr "RoBots"
 #: apps/web/src/pages/onboarding/use-onboarding-model.ts
 msgid "RoBots credits"
 msgstr "Кредиты RoBots"
+
+#: apps/web/src/pages/shell/agent-import.tsx
+msgid "RoBots package"
+msgstr "Пакет RoBots"
 
 #: apps/web/src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "robots-shared and IDs starting with bot- are reserved for RoBots."
@@ -9332,6 +9398,10 @@ msgstr "Отправлять по Enter"
 msgid "Sending…"
 msgstr "Отправка…"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Sends credential files over the network"
+msgstr "Отправляет файлы с учётными данными по сети"
+
 #: apps/mobile/components/thread/ask-block.tsx
 #: apps/web/src/components/AskCard.tsx
 #: apps/web/src/components/SecretAskCard.tsx
@@ -10208,6 +10278,10 @@ msgstr "Сообщение Teams"
 msgid "Technical details"
 msgstr "Технические сведения"
 
+#: apps/web/src/components/skill-safety.tsx
+msgid "Tells the bot to ignore instructions or keep things from you"
+msgstr "Велит боту игнорировать инструкции или скрывать что-то от вас"
+
 #: apps/web/src/components/ComputerProviderSettings.tsx
 msgid "Template"
 msgstr "Шаблон"
@@ -10465,6 +10539,22 @@ msgstr "Этот бот"
 msgid "This bot can't use this item. Change it in the Vault, or dismiss the request."
 msgstr "Этот бот не может использовать этот элемент. Измените это в Хранилище или отклоните запрос."
 
+#: apps/web/src/lib/agent-import-errors.ts
+msgid "This bot package has an unknown format version."
+msgstr "У этого пакета бота неизвестная версия формата."
+
+#: apps/web/src/lib/agent-import-errors.ts
+msgid "This bot package is damaged or incomplete."
+msgstr "Этот пакет бота повреждён или неполон."
+
+#: apps/web/src/lib/agent-import-errors.ts
+msgid "This bot package is too large to import."
+msgstr "Этот пакет бота слишком большой для импорта."
+
+#: apps/web/src/lib/agent-import-errors.ts
+msgid "This bot package needs a newer version of RoBots. Update RoBots and try again."
+msgstr "Для этого пакета бота нужна более новая версия RoBots. Обновите RoBots и попробуйте ещё раз."
+
 #: apps/web/src/pages/shell/computer-view.tsx
 msgid "This bot runs on this computer, not a Linux desktop. Shell and files use your home folder."
 msgstr "Этот бот работает на этом компьютере, а не на рабочем столе Linux. Оболочка и файлы используют вашу домашнюю папку."
@@ -10557,6 +10647,10 @@ msgstr "Этот экспорт слишком большой для импор�
 #: packages/i18n/src/vault.ts
 msgid "This file can't be read as CSV."
 msgstr "Не удаётся прочитать этот файл как CSV."
+
+#: apps/web/src/lib/agent-import-errors.ts
+msgid "This file is not a RoBots bot package."
+msgstr "Этот файл не является пакетом бота RoBots."
 
 #: apps/web/src/components/ArtifactFileCard.tsx
 msgid "This file is not valid UTF-8 text."

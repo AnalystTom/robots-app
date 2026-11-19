@@ -42,3 +42,21 @@ export function looksLikeCredential(text: string): boolean {
   }
   return false;
 }
+
+export const REDACTED_CREDENTIAL = "[removed]";
+
+const PRIVATE_KEY_BLOCK =
+  /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z0-9 ]*PRIVATE KEY-----|$)/g;
+
+export function redactCredentials(text: string): string {
+  let result = text.replace(PRIVATE_KEY_BLOCK, REDACTED_CREDENTIAL);
+  for (const { pattern, random: needsRandom } of SHAPES) {
+    pattern.lastIndex = 0;
+    result = result.replace(pattern, (match, group: unknown) =>
+      !needsRandom || random(typeof group === "string" ? group : match)
+        ? REDACTED_CREDENTIAL
+        : match,
+    );
+  }
+  return result;
+}

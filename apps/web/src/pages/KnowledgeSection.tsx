@@ -1,7 +1,8 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { ORPCError } from "@orpc/client";
 import type { AgentSkill, AgentSkillCatalogEntry, MemoryDocument } from "@robots/contracts";
-import { isDeletableMemoryDocument, isEmptyBotMemory } from "@robots/contracts";
+import { isDeletableMemoryDocument, isEmptyBotMemory, skillSafetyBlock } from "@robots/contracts";
+import { parseSkillMd, scanSkillSafety, skillSafetyBlocks } from "@robots/core";
 import { fetchFresh, writeSaved } from "@robots/core/query";
 import { Badge, Button, SectionHeading, Skeleton, Textarea } from "@robots/ui-web";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@robots/ui-web/components/ui/tooltip";
@@ -14,6 +15,8 @@ import {
   reachesOtherSpaces,
   useOwnSpaces,
 } from "../components/integrations/space-availability";
+import type { RiskySkill } from "../components/skill-safety";
+import { SkillRiskDialog, SkillSafetyList } from "../components/skill-safety";
 import { downloadArtifactBytes } from "../lib/artifact-open";
 import { useSpaceQueries } from "../lib/query";
 import { useSpaceRpc } from "../lib/space-rpc";
@@ -354,6 +357,7 @@ export function AgentSkills() {
   const [actionError, setError] = useState<string | null>(null);
   const error = actionError ?? (listQuery.isError ? t`Could not load` : null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [risky, setRisky] = useState<RiskySkill[] | null>(null);
   const selection = useRef(0);
   const spaceCount = useOwnSpaces().length;
 
@@ -386,15 +390,21 @@ export function AgentSkills() {
     }
   }
 
-  async function save() {
+  async function save(acceptRisk = false) {
     if (busy || !draft.trim()) return;
+    if (!acceptRisk && skillSafetyBlocks(findings)) {
+      const parsed = parseSkillMd(draft);
+      setRisky([{ name: "error" in parsed ? (open?.name ?? "") : parsed.name, findings }]);
+      return;
+    }
+    setRisky(null);
     setBusy(true);
     setError(null);
     try {
       if (creating) {
-        await rpc.agentSkills.create({ content: draft });
+        await rpc.agentSkills.create({ content: draft, acceptRisk });
       } else if (open) {
-        await rpc.agentSkills.update({ skillId: open.id, content: draft });
+        await rpc.agentSkills.update({ skillId: open.id, content: draft, acceptRisk });
       }
       setOpen(null);
       setCreating(false);
@@ -404,8 +414,10 @@ export function AgentSkills() {
       } catch {
         setError(t`Could not load`);
       }
-    } catch {
-      setError(t`Could not save skill`);
+    } catch (err) {
+      const blocked = skillSafetyBlock(err);
+      if (blocked) setRisky(blocked.skills);
+      else setError(t`Could not save skill`);
     } finally {
       setBusy(false);
     }
@@ -439,6 +451,7 @@ export function AgentSkills() {
   }
 
   const editorOpen = creating || open;
+  const findings = editorOpen && !open?.readOnly ? scanSkillSafety(draft) : [];
   return (
     <div data-testid="bot-knowledge-skills">
       {error ? <div className="px-2.5 pb-2 text-body-sm text-destructive">{error}</div> : null}
@@ -516,6 +529,7 @@ export function AgentSkills() {
             className={fieldClass}
             dir="auto"
           />
+          <SkillSafetyList findings={findings} className="mt-2" />
           <div className="mt-2 flex items-center gap-2">
             {!open?.readOnly ? (
               <Button
@@ -572,6 +586,7 @@ export function AgentSkills() {
           disabled={busy}
           onClick={() => {
             selection.current += 1;
+            setRisky(null);
             setOpen(null);
             setCreating(true);
             setConfirmingDelete(false);
@@ -584,6 +599,14 @@ export function AgentSkills() {
           <Plus aria-hidden="true" className="size-4 text-muted-foreground" />
         </Button>
       )}
+      {risky ? (
+        <SkillRiskDialog
+          skills={risky}
+          busy={busy}
+          onCancel={() => setRisky(null)}
+          onConfirm={() => void save(true)}
+        />
+      ) : null}
     </div>
   );
 }

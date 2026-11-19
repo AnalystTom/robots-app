@@ -6,6 +6,7 @@ import {
   BUILTIN_AGENT_SKILLS,
   isCatalogModelChoice,
   readAgentImportSettings,
+  readBotPackageImportSettings,
   readGrokBotImportSettings,
 } from "@robots/adapters";
 import type {
@@ -33,6 +34,7 @@ import {
 import type { SkillFiles } from "@robots/core";
 import {
   combineImportedInstructions,
+  importBotPackage,
   parseAgentImport,
   readAgentImportFolder,
   readGrokBotExportJson,
@@ -47,6 +49,7 @@ import {
   isUniqueViolation,
 } from "@robots/db";
 import { getLogger } from "@robots/logging";
+import { assertSkillsInstallable } from "./skill-safety.js";
 
 type Reader = Pick<Prisma.TransactionClient, "memoryDocument" | "agentSkill" | "mcpServer">;
 type Stored = Awaited<ReturnType<SecretStore["put"]>> | null;
@@ -185,8 +188,9 @@ async function buildPlan(
   const mcpConfigs = new Map<string, ImportedMcpServer & { slug: string }>();
   const connectedKeyIds = new Set<string>();
   let settings: Built["settings"];
-  if (base.source === "grok_bot") {
-    // parsePlan has checked that this file holds exactly one Bot.
+  if (base.source === "robots_package") {
+    settings = readBotPackageImportSettings(importBotPackage(files[0]?.content ?? ""));
+  } else if (base.source === "grok_bot") {
     const [bot] = readGrokBotExportJson(files[0]?.content ?? "");
     settings = bot ? readGrokBotImportSettings(bot) : null;
   } else {
@@ -250,12 +254,15 @@ async function buildPlan(
       botId: "pending",
       name: routine.name,
       prompt: routine.prompt,
-      crons: [routine.cron],
+      crons: routine.crons,
       timezone,
       active: false,
     });
     if (!parsed.success) {
-      const file = base.source === "grok_bot" ? "routines" : "cron/jobs.json";
+      const file =
+        base.source === "grok_bot" || base.source === "robots_package"
+          ? "routines"
+          : "cron/jobs.json";
       skipped.push({ path: `${file}: ${routine.title}`, reason: "unsupported" });
       return [];
     }
@@ -264,7 +271,7 @@ async function buildPlan(
       {
         id: routine.id,
         title: routine.title,
-        content: `${routine.cron} (${timezone})\n\n${renameRoutineSkillMentions(routine.prompt, previewSkillNames)}`,
+        content: `${routine.crons.join(", ")} (${timezone})\n\n${renameRoutineSkillMentions(routine.prompt, previewSkillNames)}`,
         warnings: routine.warnings,
         status: { kind: "needs_setup" as const, needs: [{ kind: "turn_on" as const }] },
       },
@@ -398,7 +405,16 @@ export async function writeImportedBot<PreparedKey>(
     plan.memory,
     input.selection.memory.map((choice) => choice.id),
   ).map((item) => item.id);
-  const skillIds = selected(plan.skills, input.selection.skills).map((item) => item.id);
+  const chosenSkills = selected(plan.skills, input.selection.skills);
+  const skillIds = chosenSkills.map((item) => item.id);
+  const acceptedRisks = new Set(input.selection.acceptedRisks);
+  assertSkillsInstallable(
+    chosenSkills.map((item) => ({
+      name: item.name,
+      content: item.content,
+      acceptRisk: acceptedRisks.has(item.id),
+    })),
+  );
   const servers = selected(plan.mcpServers, input.selection.mcpServers).map(
     (item) => mcpConfigs.get(item.id)!,
   );

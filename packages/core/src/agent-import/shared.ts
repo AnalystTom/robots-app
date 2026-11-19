@@ -8,6 +8,7 @@ import type {
 } from "@robots/contracts";
 import { parse as parseYaml } from "yaml";
 import { parseSkillMd } from "../agent-skill.js";
+import { scanSkillSafety } from "../skill-safety.js";
 
 /** Names of the other files in each skill's folder, by SKILL.md path. */
 export type SkillFiles = Readonly<Record<string, readonly string[]>>;
@@ -100,6 +101,7 @@ export function skillItem(
     description: parsed.description,
     content: markdown,
     ...skillAssessment(view, parsed.body, siblings),
+    safety: scanSkillSafety(markdown),
   };
 }
 

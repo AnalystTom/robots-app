@@ -5,6 +5,7 @@ import {
   isSkillReadOnly,
   mergeBuiltinSkills,
   parseSkillMd,
+  unacceptedRiskySkills,
 } from "@robots/core";
 import type { PrismaClient } from "@robots/db";
 import { availableInSpace } from "@robots/db";
@@ -196,6 +197,8 @@ export async function skillCreateFromTool(
 
   const oversized = rejectOversizedContent(content);
   if (oversized) return { error: oversized };
+  const risky = rejectRiskySkill(name, content);
+  if (risky) return risky;
 
   const existing = await findOwnedSkill(prisma, owner, { name });
   if (existing) return { error: `A skill named "${existing.name}" already exists.` };
@@ -276,6 +279,8 @@ export async function skillUpdateFromTool(
   if (invalid) return { error: invalid };
   const oversized = rejectOversizedContent(nextContent);
   if (oversized) return { error: oversized };
+  const risky = rejectRiskySkill(nextName, nextContent);
+  if (risky) return risky;
 
   if (nextName.toLowerCase() !== existing.name.toLowerCase()) {
     const clash = await findOwnedSkill(prisma, owner, { name: nextName });
@@ -316,4 +321,14 @@ export async function skillDeleteFromTool(
   });
   if (deleted.count !== 1) return { error: SHARED_SKILL_ERROR };
   return { ok: true, name: existing.name };
+}
+
+function rejectRiskySkill(name: string, content: string): Record<string, unknown> | null {
+  const [blocked] = unacceptedRiskySkills([{ name, content, acceptRisk: false }]);
+  if (!blocked) return null;
+  return {
+    error:
+      "The skill was not saved: it contains risky content. Remove it, or ask the user to add the skill in Skills, where they can review it.",
+    findings: blocked.findings,
+  };
 }

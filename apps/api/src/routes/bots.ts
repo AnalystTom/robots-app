@@ -74,6 +74,7 @@ import type { AgentImportServices } from "../agent-import.js";
 import { agentImportSetupState, createImportedBot, previewAgentImport } from "../agent-import.js";
 import { deleteAgentSecret, listAgentSecrets, putAgentSecret } from "../agent-secrets.js";
 import { botEmailAddress, botEmailAddresses, claimBotEmailAddress } from "../bot-email-address.js";
+import { exportBotPackageFor } from "../bot-package-export.js";
 import { loadBotForRemoval } from "../bot-removal.js";
 import { changedBotSettings } from "../bot-setting-analytics.js";
 import { createBotFromTemplate, listBotTemplates } from "../bot-templates.js";
@@ -484,6 +485,9 @@ export function botsRoutes(ctx: RouterContext) {
       }),
       importSetupState: authed.bots.importSetupState.handler(async ({ context, input }) =>
         agentImportSetupState(agentImportServices as AgentImportServices, context.actor, input),
+      ),
+      exportPackage: authed.bots.exportPackage.handler(async ({ context, input }) =>
+        exportBotPackageFor(deps.prisma, context.actor, input),
       ),
       templates: authed.bots.templates.handler(async ({ context }) =>
         listBotTemplates(agentImportServices, context.actor),

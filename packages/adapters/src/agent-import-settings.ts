@@ -2,6 +2,7 @@ import type {
   AgentImportNeed,
   AgentImportStatus,
   AgentImportWarning,
+  BotPackage,
   McpServerConfigInput,
 } from "@robots/contracts";
 import {
@@ -57,7 +58,7 @@ export type ImportedRoutine = {
   content: string;
   name: string;
   prompt: string;
-  cron: string;
+  crons: string[];
   /** The job's own IANA timezone, when it has one. */
   timezone: string | null;
   warnings: AgentImportWarning[];
@@ -524,13 +525,14 @@ function hermesJob(job: Json): JobResult {
 function routine(
   job: Json,
   prompt: string,
-  cron: string | null,
+  cron: string | readonly string[] | null,
   tz: string,
   droppedSettings: boolean,
   interval: boolean,
 ): JobResult {
   const name = (text(job.name) || text(job.displayName) || "Routine").slice(0, 80);
-  if (!prompt || !cron || !validCron(cron)) return { reason: "unsupported" };
+  const crons = cron === null ? [] : typeof cron === "string" ? [cron] : [...cron];
+  if (!prompt || !crons.length || !crons.every(validCron)) return { reason: "unsupported" };
   const timezone = tz && isValidTimeZone(tz) ? tz : null;
   // An interval becomes clock-aligned cron (its start time is lost), and an unknown time
   // zone falls back to the space's.
@@ -539,13 +541,13 @@ function routine(
     title: name,
     name,
     prompt,
-    cron,
+    crons,
     timezone,
     warnings: [
       ...(droppedSettings ? (["dropped_settings"] as const) : []),
       ...(changed ? (["changed_schedule"] as const) : []),
     ],
-    content: `${cron}${timezone ? ` (${timezone})` : ""}\n\n${prompt}`,
+    content: `${crons.join(", ")}${timezone ? ` (${timezone})` : ""}\n\n${prompt}`,
   };
 }
 
@@ -565,4 +567,32 @@ function validCron(cron: string): boolean {
   } catch {
     return false;
   }
+}
+
+export function readBotPackageImportSettings(
+  pkg: BotPackage,
+): AgentImportSettings & { keyValues: Map<string, string> } {
+  const skipped: Skipped[] = [];
+  const routines: ImportedRoutine[] = [];
+  for (const [index, source] of pkg.routines.entries()) {
+    const result = routine(
+      { name: source.name },
+      source.prompt,
+      source.crons,
+      source.timezone,
+      false,
+      false,
+    );
+    if ("reason" in result)
+      skipped.push({ path: `routines: ${source.name}`, reason: result.reason });
+    else routines.push({ ...result, id: `routine:${index}` });
+  }
+  const model = pkg.bot.model
+    ? catalogModel(
+        `${pkg.bot.model.provider}/${pkg.bot.model.modelId}`,
+        pkg.bot.model.provider,
+        pkg.bot.model.modelId,
+      )
+    : null;
+  return { model, mcpServers: [], routines, apiKeys: [], skipped, keyValues: new Map() };
 }

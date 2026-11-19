@@ -21,6 +21,7 @@ import {
 } from "@robots/db";
 import { getLogger } from "@robots/logging";
 import { assertNameFreeWhereAvailable, lockOwner } from "./availability.js";
+import { assertSkillsInstallable } from "./skill-safety.js";
 
 export type PluginInstallDeps = {
   prisma: PrismaClient;
@@ -280,6 +281,7 @@ export async function installPlugin(
     credential?: string;
     pluginDigest?: string;
     pluginParts?: PluginPart[];
+    acceptRisk?: boolean;
   },
   signal?: AbortSignal,
 ): Promise<CapabilityInstall> {
@@ -295,6 +297,7 @@ export async function installPlugin(
   }
   const plugin = await loadPlugin(deps, input.source, input.pluginDigest, signal);
   const parts = availableParts(plugin, input.pluginParts ?? ["connector", "skills"]);
+  if (parts.includes("skills")) assertPluginSkillsInstallable(plugin, input.acceptRisk === true);
   if (!parts.length) {
     throw new ORPCError("BAD_REQUEST", {
       message: "Plugin has no supported skills or MCP servers",
@@ -372,7 +375,7 @@ export async function setPluginParts(
     ) => Promise<unknown>;
   },
   actor: Actor,
-  input: { id: string; parts: PluginPart[] },
+  input: { id: string; parts: PluginPart[]; acceptRisk?: boolean },
   signal?: AbortSignal,
 ): Promise<CapabilityInstall | null> {
   const existing = await deps.prisma.capabilityInstall.findFirst({
@@ -388,6 +391,9 @@ export async function setPluginParts(
     ? await loadPlugin(deps, pinnedSource(existing), existing.digest, signal)
     : null;
   const added = plugin ? availableParts(plugin, adding) : [];
+  if (plugin && added.includes("skills")) {
+    assertPluginSkillsInstallable(plugin, input.acceptRisk === true);
+  }
   const parts = [...current.filter((part) => !removing.includes(part)), ...added];
   if (!parts.length) return null;
   const servers = plugin && added.includes("connector") ? plugin.mcpServers : [];
@@ -439,4 +445,10 @@ export async function setPluginParts(
       throw error;
     }
   });
+}
+
+function assertPluginSkillsInstallable(plugin: LoadedPlugin, acceptRisk: boolean) {
+  assertSkillsInstallable(
+    plugin.skills.map((skill) => ({ name: skill.name, content: skill.content, acceptRisk })),
+  );
 }

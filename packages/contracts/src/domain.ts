@@ -9,6 +9,7 @@ import { LabFeatureSchema } from "./labs.js";
 import { NavLinkSchema } from "./nav-links.js";
 import { RoutineWatchSchema, RoutineWatchStateSchema } from "./routine-watch.js";
 import { RunTriggerSchema } from "./runs.js";
+import { SkillSafetyFindingSchema } from "./skill-safety.js";
 import { SpaceAvailabilitySchema } from "./space-availability.js";
 
 export const MemoryScopeSchema = z.enum(["isolated", "shared"]);
@@ -768,6 +769,7 @@ export const CreateAgentSkillInput = z
     name: z.string().min(1).max(80).optional(),
     description: z.string().min(1).max(2000).optional(),
     body: z.string().max(100_000).optional(),
+    acceptRisk: z.boolean().default(false),
   })
   .superRefine((input, ctx) => {
     if (input.content?.trim()) return;
@@ -787,6 +789,7 @@ export const UpdateAgentSkillInput = z
     name: z.string().min(1).max(80).optional(),
     description: z.string().min(1).max(2000).optional(),
     body: z.string().max(100_000).optional(),
+    acceptRisk: z.boolean().default(false),
   })
   .superRefine((input, ctx) => {
     if (
@@ -903,6 +906,7 @@ export const PluginPreviewSkillSchema = z.object({
   description: z.string(),
   /** Paths of the reference files that install with the skill. */
   files: z.array(z.string()).optional(),
+  safety: z.array(SkillSafetyFindingSchema).optional(),
 });
 export const PluginPreviewMcpServerSchema = z.object({
   name: z.string(),
