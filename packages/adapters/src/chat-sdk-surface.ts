@@ -18,25 +18,17 @@ import type {
 import { getLogger } from "@robots/logging";
 import type { Adapter, Message, PostableMarkdown, Root, Thread } from "chat";
 import { Chat, isLinkNode, paragraph, parseMarkdown, root, text, toPlainText, walkAst } from "chat";
+import { DISCORD_UPLOAD_MAX_BYTES } from "./discord/adapter.js";
 import { getLarkTextParts } from "./lark/text-parts.js";
 
-/**
- * Per-webhook drain of Chat SDK waitUntil work, plus the Chat dedupe keys of
- * messages the inbound sink failed on.
- */
 const webhookDrain = new AsyncLocalStorage<{
   pending: Promise<unknown>[];
   failedKeys: string[];
   markdownChars: number;
 }>();
 
-/**
- * Markdown parsing is superlinear on hostile text (unmatched emphasis, deep
- * quotes), so past this many characters in one webhook the text stays literal.
- */
 export const INBOUND_MARKDOWN_MAX_CHARS = 8_000;
 
-/** Bound the adapter's inbound text-to-markdown parsing per webhook; sends are untouched. */
 export function boundInboundMarkdown(adapter: Adapter): void {
   const converter = (adapter as unknown as { formatConverter: { toAst(value: string): Root } })
     .formatConverter;
@@ -48,120 +40,57 @@ export function boundInboundMarkdown(adapter: Adapter): void {
     if (drain.markdownChars <= INBOUND_MARKDOWN_MAX_CHARS) {
       try {
         return toAst(value);
-      } catch {
-        // Deep nesting overflows the parser's stack.
-      }
+      } catch {}
     }
     return root([paragraph([text(value)])]);
   };
 }
 
-/** Inbound webhook bodies larger than this are rejected before parsing. */
 export const MESSAGING_WEBHOOK_MAX_BODY_BYTES = 256 * 1024;
 
-/** Telegram Bot API limits: photos up to 10 MB, any upload up to 50 MB. */
 const TELEGRAM_PHOTO_MAX_BYTES = 10_000_000;
 const TELEGRAM_UPLOAD_MAX_BYTES = 50_000_000;
 const TELEGRAM_PHOTO_TYPES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp"]);
 
-/**
- * One messaging platform mounted on the surface. The Chat SDK adapter owns
- * webhook verification, payload translation, and platform API calls; the
- * extra hooks cover the few per-platform facts the SDK does not surface.
- */
+const UPLOAD_LIMITS: Record<string, { maxBytes: number; app: string }> = {
+  telegram: { maxBytes: TELEGRAM_UPLOAD_MAX_BYTES, app: "Telegram" },
+  discord: { maxBytes: DISCORD_UPLOAD_MAX_BYTES, app: "Discord" },
+};
+
 export interface MessagingPlatform {
   provider: string;
   capabilities: MessagingCapabilities;
   adapter: Adapter;
-  /**
-   * The adapter's own thread-id prefix when it differs from `provider`, so
-   * one adapter type can mount more than once (one Telegram bot per space:
-   * "telegram-work"). RoBots only ever sees `provider`-prefixed thread ids;
-   * the adapter keeps its native ones. Defaults to `provider`.
-   */
   adapterName?: string;
-  /** The line people message to reach this deployment (a phone number), when it has one. */
   address?: string;
-  /** Deterministic 1:1 thread id for platforms without openDM (sendblue). */
   directThreadId?: (address: string) => string;
-  /** Delivery-status events the Chat SDK drops (sendblue is_outbound posts, WhatsApp statuses). */
   peekStatuses?: (payload: unknown) => MessagingOutboundStatus[];
-  /**
-   * State keys the adapter writes to drop vendor redeliveries of a webhook
-   * (Slack's per-event marker). Cleared when the inbound sink fails so the
-   * vendor's retry is processed instead of acknowledged and dropped.
-   */
   redeliveryKeys?: (payload: unknown) => string[];
-  /** Send errors that retrying cannot fix (unknown channel, blocked bot, revoked token). */
   isPermanentSendError?: (error: unknown) => boolean;
-  /**
-   * Posts with a key the vendor deduplicates on, for platforms whose API takes one, so a send
-   * repeated after a lost answer arrives once. `threadId` is the adapter's own.
-   */
   postOnce?: (
     threadId: string,
     message: string | PostableMarkdown,
     idempotencyKey: string,
   ) => Promise<{ id: string }>;
-  /** Group roster addresses from the raw inbound payload, excluding our line. */
   participants?: (raw: unknown) => string[];
-  /**
-   * When the raw payload says its roster was current, when the platform reports
-   * a time for the event; null when it reports none, so no comparison happens.
-   */
   rosterAt?: (raw: unknown) => Date | null;
-  /**
-   * Member departures one raw payload reports, for platforms that send
-   * per-event leave notices instead of a roster (Telegram service messages).
-   * `botLeft` marks our own bot leaving the conversation; undefined when the
-   * payload reports no departure.
-   */
   departures?: (raw: unknown) => { addresses: string[]; botLeft: boolean } | undefined;
   channelName?: (raw: unknown) => string | null;
-  /**
-   * Group-shaped raw payloads this platform still refuses (Telegram broadcast
-   * channel posts, which are not group conversations). Omitted by platforms
-   * that take every group message.
-   */
   acceptsGroup?: (raw: unknown) => boolean;
-  /**
-   * Rewrites the adapter's native thread id for RoBots thread identity when
-   * the SDK's granularity differs from the platform's conversations: Telegram
-   * marks a non-forum reply with the reply root as its message thread id,
-   * which is still the group's own conversation.
-   */
   normalizeThreadId?: (threadId: string, raw: unknown) => string;
-  /** User-facing transport carried by the raw message when it differs from the provider. */
   transport?: (raw: unknown) => string | null;
-  /**
-   * Optional team-room enrichment (workspace id, mention/ambient kind, bot
-   * sender, reply thread) derived from the raw platform payload.
-   */
   enrichTeamRoom?: (
     raw: unknown,
     base: MessagingInboundMessage,
   ) => Partial<MessagingInboundMessage>;
 }
 
-/** One mounted platform with its own Chat SDK instance. */
 interface MountedPlatform {
   platform: MessagingPlatform;
-  /** The adapter's native thread-id prefix (see MessagingPlatform.adapterName). */
   adapterName: string;
   chat: Chat<Record<string, Adapter>>;
 }
 
-/**
- * MessagingSurface over the Chat SDK (github.com/vercel/chat): one bot
- * presence per mounted platform. Orchestration stays upstream — this class
- * only translates between Chat SDK events/calls and the provider-neutral
- * contract.
- *
- * Each platform gets its own Chat instance: the SDK routes thread ids by
- * their adapter-name prefix, so two adapters of the same type (two Telegram
- * bots, both minting "telegram:<chatId>") cannot share one instance. The
- * surface rewrites that prefix to the platform's provider at the boundary.
- */
 export class ChatSdkMessagingSurface implements MessagingSurface {
   private readonly byProvider = new Map<string, MountedPlatform>();
   private sink: ((event: MessagingInboundEvent) => Promise<void>) | undefined;
@@ -178,13 +107,6 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
         userName: options.userName ?? "robots",
         adapters: { [adapterName]: platform.adapter },
         state: createMemoryState(),
-        // The SDK default ("drop") takes a per-conversation lock and discards
-        // any message that arrives while it is held — and the LockError is
-        // swallowed into waitUntil, so the webhook still ACKs 200 and the
-        // vendor never retries. Two texts in quick succession would lose the
-        // second. Each inbound message already runs inside its own webhook's
-        // waitUntil task, so process them independently and let the per-message
-        // client nonce downstream handle replay.
         concurrency: "concurrent",
       });
       const mounted: MountedPlatform = { platform, adapterName, chat };
@@ -204,12 +126,8 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
             if (!fetched || inboundAttachments(fetched).length === 0) {
               throw new Error("Slack mention attachments are not available from message history");
             }
-            // Preserve app_mention-only routing metadata while replacing the
-            // incomplete file stubs with Slack's authenticated history objects.
             message.attachments = fetched.attachments;
           } catch {
-            // Missing scopes, deleted files, or unavailable history must not
-            // prevent the mention text and original file URLs from arriving.
             getLogger().warn(
               "Slack mention attachment hydration failed; delivering original message",
             );
@@ -220,17 +138,10 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
         try {
           await this.sink?.(event);
         } catch (error) {
-          // processMessage hands waitUntil a swallowed promise, so track
-          // sink failures here, turn them into HTTP 5xx, and
-          // clear the SDK dedupe key so Slack's retry can process the message.
           webhookDrain.getStore()?.failedKeys.push(chatDedupeKey(platform.adapter, message.id));
           throw error;
         }
       };
-      // Priority routing makes these disjoint: DMs, then @-mentions in
-      // unsubscribed threads, then the catch-all pattern for everything else.
-      // Subscribed threads skip the catch-all and only fire onSubscribedMessage
-      // (chat SDK docs / dispatchToHandlersWithSignal); register deliver there too.
       chat.onDirectMessage(deliver);
       chat.onNewMention(deliver);
       chat.onSubscribedMessage(deliver);
@@ -265,10 +176,6 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
     return this.dispatchWebhook(mounted, request);
   }
 
-  /**
-   * No Chat SDK adapter's post takes an abort signal, so a post that has started runs to its end
-   * (Slack and Sendblue clients bound it themselves). The signal stops a post that has not.
-   */
   async sendToThread(
     request: MessagingSendRequest,
     context: AdapterContext,
@@ -276,20 +183,17 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
     const mounted = this.mountedForThread(request.threadId);
     await this.ensureInitialized();
     context.signal.throwIfAborted();
-    // Telegram converts Markdown and retries parse errors as plain text;
-    // WhatsApp renders it as its own formatting and Lark posts it as an md
-    // block; Photon's iMessage adapter renders it as native styled text. Keep
-    // the other adapters' plain payloads (Slack markdown_text has a lower
-    // limit, Sendblue's iMessage has no markup).
     const telegram = mounted.adapterName === "telegram";
     const markdown =
       telegram ||
       mounted.adapterName === "whatsapp" ||
       mounted.adapterName === "lark" ||
-      mounted.adapterName === "imessage";
+      mounted.adapterName === "imessage" ||
+      mounted.adapterName === "discord";
     const { attachment } = request;
-    if (telegram && attachment && attachment.data.byteLength > TELEGRAM_UPLOAD_MAX_BYTES) {
-      throw new MessagingSendError(new Error("File is larger than Telegram accepts"), {
+    const uploadLimit = UPLOAD_LIMITS[mounted.adapterName];
+    if (uploadLimit && attachment && attachment.data.byteLength > uploadLimit.maxBytes) {
+      throw new MessagingSendError(new Error(`File is larger than ${uploadLimit.app} accepts`), {
         permanent: true,
         retryAfterMs: null,
       });
@@ -348,8 +252,6 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
       typing: () => platform.adapter.startTyping(adapterThreadId),
       reaction: () => platform.adapter.addReaction(adapterThreadId, handle, "eyes"),
     };
-    // The Chat SDK adapter API takes no abort signal, so the underlying
-    // request cannot be cancelled — but the caller's wait is still bounded.
     await raceWithSignal(sends[receipt](), context.signal);
   }
 
@@ -378,22 +280,10 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
       .flatMap((message) => this.toInbound(mounted, adapterThreadId, isDirect, message) ?? []);
   }
 
-  /**
-   * Proactively start the underlying Chat SDK instance. Webhook handling
-   * and outbound sends already trigger this lazily (see ensureInitialized
-   * below), but a polling-mode adapter (Telegram in "auto" mode with no
-   * public webhook URL registered) needs its pull loop running before the
-   * first inbound message can ever arrive, so long-running hosts call this
-   * explicitly at startup instead of waiting on the first send.
-   */
   async initialize(): Promise<void> {
     await this.ensureInitialized();
   }
 
-  /**
-   * Stop Telegram getUpdates before exit. Chat.shutdown() only calls
-   * adapter.disconnect(), which Telegram does not implement.
-   */
   async shutdown(): Promise<void> {
     const pending = this.initialized;
     this.initialized = undefined;
@@ -403,17 +293,12 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
   }
 
   private ensureInitialized(): Promise<void> {
-    // Webhook handling initializes lazily inside the Chat SDK; proactive
-    // sends from job runners need the explicit call. Chat keeps a rejected
-    // initPromise until shutdown(), so clear that before allowing a retry.
     if (!this.initialized) {
       const chats = [...this.byProvider.values()].map(({ chat }) => chat.initialize());
       this.initialized = Promise.all(chats).then(
         () => undefined,
         async (error: unknown) => {
           try {
-            // Telegram may already be polling if another platform's
-            // initialize failed after Telegram's started getUpdates.
             await Promise.allSettled(chats);
             await this.stopPollingAdapters();
             await this.shutdownChats();
@@ -436,7 +321,6 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
 
   private async shutdownChats(): Promise<void> {
     for (const { chat } of this.byProvider.values()) {
-      // Best-effort: also resets Chat's cached init failure.
       await (chat as { shutdown?: () => Promise<void> }).shutdown?.().catch(() => undefined);
     }
   }
@@ -461,10 +345,6 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
     const forwarded = hasBody
       ? new Request(request.url, { method: request.method, headers: request.headers, body })
       : request;
-    // Real Chat SDK adapters fire processMessage without awaiting it; they
-    // only register the work via waitUntil. Drain that work before ACKing so
-    // a vendor 200 cannot race ahead of provision/enqueue, and surface sink
-    // failures as 5xx so the vendor retries.
     const drain = {
       pending: [] as Promise<unknown>[],
       failedKeys: [] as string[],
@@ -481,17 +361,11 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
     });
     const payload = parseJson(body);
     if (drain.failedKeys.length > 0) {
-      // Chat marks a message seen before our handler runs (and Slack marks the
-      // event delivered), so the vendor's retry would be acknowledged and
-      // dropped. Forget the failed deliveries; the sink's per-message client
-      // nonce still dedupes anything that partly succeeded.
       const state = chat.getState();
       const keys = [...drain.failedKeys, ...(platform.redeliveryKeys?.(payload) ?? [])];
       await Promise.all(keys.map((key) => state.delete(key)));
       return new Response("Inbound processing failed", { status: 500 });
     }
-    // Status peeking runs only after the adapter verified and accepted the
-    // request — a forged webhook must not be able to flip outbox rows.
     if (platform.peekStatuses && response.status < 300) {
       for (const status of platform.peekStatuses(payload)) await this.sink?.(status);
     }
@@ -548,10 +422,6 @@ export class ChatSdkMessagingSurface implements MessagingSurface {
   }
 }
 
-/**
- * One file as its own message. Telegram shows common image formats under its
- * photo limit inline; everything else is uploaded as a document.
- */
 function attachmentMessage(
   telegram: boolean,
   body: string,
@@ -586,10 +456,6 @@ function inboundAttachments(message: Message): MessagingInboundAttachment[] {
   });
 }
 
-/**
- * The SDK's message.text keeps only a link's label, so a Slack link labelled
- * `example.com/projects/…` reaches the model without its target.
- */
 function plainTextWithLinks(message: Message, lark: boolean): string {
   const parts = lark ? getLarkTextParts(message.formatted) : undefined;
   if (parts) {
@@ -607,12 +473,8 @@ function plainTextWithLinks(message: Message, lark: boolean): string {
       const sameLine = previous?.literal && !previous.text.endsWith("\n") && !prefix.includes("\n");
       const leading = sameLine ? prefix : prefix.replace(/[^\r\n]/g, "");
       let trailing = value.slice(end);
-      // Markdown drops spaces at a fragment boundary; preserve them when the
-      // next structured item is on the same row.
       if (last?.type === "paragraph" && !trailing && parts[index + 1]?.literal)
         trailing = value.match(/[ \t]+$/)?.[0] ?? "";
-      // A heading followed by a code row has the same paragraph separation as
-      // a heading followed by ordinary text in the SDK's plain-text renderer.
       const headingBreak =
         parts[index + 1]?.literal &&
         result.ast.children.at(-1)?.type === "heading" &&
@@ -654,11 +516,9 @@ function renderLinks(formatted: Message["formatted"]): {
 }
 
 export function providerOfThreadId(threadId: string): string {
-  // Installed surfaces reserve ~ for the installation namespace.
   return threadId.split(":", 1)[0]?.split("~", 1)[0] ?? "";
 }
 
-/** Adapter-native thread id ("telegram:42") → RoBots thread id ("telegram-work:42"). */
 function toProviderThreadId(mounted: MountedPlatform, threadId: string): string {
   const { provider } = mounted.platform;
   if (mounted.adapterName === provider) return threadId;
@@ -666,7 +526,6 @@ function toProviderThreadId(mounted: MountedPlatform, threadId: string): string 
   return threadId.startsWith(prefix) ? `${provider}:${threadId.slice(prefix.length)}` : threadId;
 }
 
-/** RoBots thread id → the id the platform's adapter and Chat instance expect. */
 function toAdapterThreadId(mounted: MountedPlatform, threadId: string): string {
   const { provider } = mounted.platform;
   if (mounted.adapterName === provider) return threadId;
@@ -683,7 +542,6 @@ function raceWithSignal<T>(promise: Promise<T>, signal: AbortSignal): Promise<T>
   }
   return new Promise<T>((resolve, reject) => {
     const onAbort = () => {
-      // The abandoned branch must not surface as an unhandled rejection.
       promise.catch(() => undefined);
       reject(signal.reason ?? new Error("Aborted"));
     };
@@ -692,11 +550,6 @@ function raceWithSignal<T>(promise: Promise<T>, signal: AbortSignal): Promise<T>
   });
 }
 
-/**
- * Read the body incrementally so an unauthenticated chunked request (no
- * trustworthy Content-Length) is cut off at the cap instead of being
- * buffered whole. Returns null once the cap is exceeded.
- */
 export async function readBoundedText(request: Request, maxBytes: number): Promise<string | null> {
   const reader = request.body?.getReader();
   if (!reader) return "";
@@ -723,20 +576,12 @@ function parseJson(body: string): unknown {
   }
 }
 
-/**
- * The key Chat.routeIncomingMessage marks a message seen under (chat@4.43,
- * private concurrencyKey). The replay tests fail if an SDK upgrade moves it.
- */
 function chatDedupeKey(adapter: Adapter, messageId: string): string {
   const key = `dedupe:${adapter.name}:${messageId}`;
   const scope = adapter.getConcurrencyScope?.();
   return scope === undefined ? key : `concurrency:${JSON.stringify([adapter.name, scope, key])}`;
 }
 
-/**
- * A failed platform send, classified for the outbox: give up when
- * `permanent`, otherwise retry no sooner than `retryAfterMs` when set.
- */
 export class MessagingSendError extends Error {
   override readonly name = "MessagingSendError";
   readonly permanent: boolean;
@@ -750,7 +595,6 @@ export class MessagingSendError extends Error {
 }
 
 function sendError(platform: MessagingPlatform, error: unknown): MessagingSendError {
-  // Chat SDK AdapterRateLimitError and Slack's rate-limited error both carry seconds.
   const seconds = (error as { retryAfter?: unknown } | null)?.retryAfter;
   return new MessagingSendError(error, {
     permanent: platform.isPermanentSendError?.(error) ?? false,
