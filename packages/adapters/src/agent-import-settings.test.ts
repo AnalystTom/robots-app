@@ -1,3 +1,5 @@
+import type { BotPackage } from "@robots/contracts";
+import { BotPackageSchema } from "@robots/contracts";
 import { agentImportUpload, parseGrokBotExport, readAgentImportFolder } from "@robots/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -5,10 +7,10 @@ import {
   normalizeImportProvider,
   parseDotEnv,
   readAgentImportSettings,
+  readBotPackageImportSettings,
   readGrokBotImportSettings,
 } from "./agent-import-settings.js";
 
-// Shaped like a real `~/.openclaw/openclaw.json` (JSON5: comments and trailing commas).
 const openclawJson = `{
   // written by onboarding
   agents: {
@@ -53,7 +55,6 @@ const openclawEnv = [
   "TELEGRAM_BOT_TOKEN=placeholder-telegram-token",
 ].join("\n");
 
-// Shaped like `openclaw cron list --json`, saved as cron/jobs.json.
 const openclawJobs = JSON.stringify({
   jobs: [
     {
@@ -290,7 +291,6 @@ describe("OpenClaw settings", () => {
         },
       ],
     ]);
-    // Where this deployment cannot run stdio servers, they are not supported here.
     expect(status(false).map(([title, value]) => [title, value])).toEqual([
       ["docs", { kind: "needs_setup", needs: [{ kind: "credentials", names: ["Authorization"] }] }],
       ["files", { kind: "unsupported", reason: "unsupported_command" }],
@@ -314,10 +314,10 @@ describe("OpenClaw settings", () => {
   it("turns user jobs into routines and skips OpenClaw's own jobs", () => {
     const settings = openclaw(false);
     expect(
-      settings.routines.map(({ name, prompt, cron, timezone, warnings }) => ({
+      settings.routines.map(({ name, prompt, crons, timezone, warnings }) => ({
         name,
         prompt,
-        cron,
+        crons,
         timezone,
         warnings,
       })),
@@ -325,23 +325,21 @@ describe("OpenClaw settings", () => {
       {
         name: "check",
         prompt: "Check the inbox",
-        cron: "*/30 * * * *",
+        crons: ["*/30 * * * *"],
         timezone: null,
-        // The interval's own start time is lost: it now runs on the half hour.
         warnings: ["changed_schedule"],
       },
       {
         name: "morning",
         prompt: "Summarise my day",
-        cron: "0 9 * * *",
+        crons: ["0 9 * * *"],
         timezone: "Asia/Kolkata",
         warnings: ["dropped_settings"],
       },
       {
         name: "evening",
         prompt: "Wrap up",
-        cron: "0 18 * * *",
-        // An unknown time zone falls back to the space's, and says so.
+        crons: ["0 18 * * *"],
         timezone: null,
         warnings: ["changed_schedule"],
       },
@@ -390,7 +388,7 @@ describe("Hermes settings", () => {
     });
     expect(settings.mcpServers.map((server) => server.config.slug)).toEqual(["docs", "files"]);
     expect(settings.mcpServers[1]!.warnings).toEqual(["dropped_settings", "local_path"]);
-    expect(settings.routines.map((routine) => [routine.name, routine.cron])).toEqual([
+    expect(settings.routines.map((routine) => [routine.name, routine.crons[0]])).toEqual([
       ["morning", "0 9 * * *"],
       ["check", "0 */2 * * *"],
     ]);
@@ -700,7 +698,6 @@ describe("Grok Bot export", () => {
             { name: "Signed", mcp_url: "https://mcp.example.com/mcp?sig=abc123" },
             { name: "Keyed", mcp_url: "https://mcp.example.com/a1b2c3d4e5f6g7h8i9j0k1l2m3" },
             { name: "Gmail" },
-            // Built from parts so no scanner mistakes this file for a leak.
             { name: ["gh", "p_", "Ab3dE5gH7jK9mN1pQ2rS4tU6vW8xY0zAb3dE5"].join("") },
             {
               name: "Headed",
@@ -719,7 +716,7 @@ describe("Grok Bot export", () => {
       {
         id: "routine:0",
         name: "Monday review",
-        cron: "0 8 * * 1-5",
+        crons: ["0 8 * * 1-5"],
         timezone: "America/New_York",
         prompt: "Run the weekly account review.\n\nUse these skills: @weekly-account-health.",
         warnings: [],
@@ -778,4 +775,59 @@ it("keeps scheduled routine conditions and refuses oversized prompts", () => {
   );
   expect(read("x".repeat(100001)).routines).toEqual([]);
   expect(read("x".repeat(100001)).skipped).toHaveLength(1);
+});
+
+describe("RoBots bot package", () => {
+  const pkg = (routines: BotPackage["routines"], model: BotPackage["bot"]["model"] = null) =>
+    BotPackageSchema.parse({
+      format: "robots.bot-package",
+      version: 1,
+      exportedAt: "2026-11-19T10:00:00.000Z",
+      bot: {
+        name: "Pebble",
+        description: "",
+        instructions: "",
+        color: "#15788a",
+        avatarSet: "organic",
+        model,
+      },
+      skills: [],
+      routines,
+      memory: [],
+    });
+
+  it("brings every schedule and the time zone, and leaves an unreadable one behind", () => {
+    const settings = readBotPackageImportSettings(
+      pkg([
+        {
+          name: "Twice",
+          prompt: "Check",
+          crons: ["0 8 * * *", "0 18 * * *"],
+          timezone: "Asia/Tokyo",
+        },
+        { name: "Broken", prompt: "Never", crons: ["not a cron"], timezone: "UTC" },
+      ]),
+    );
+    expect(settings.routines).toEqual([
+      expect.objectContaining({
+        id: "routine:0",
+        name: "Twice",
+        crons: ["0 8 * * *", "0 18 * * *"],
+        timezone: "Asia/Tokyo",
+        warnings: [],
+      }),
+    ]);
+    expect(settings.skipped).toEqual([{ path: "routines: Broken", reason: "unsupported" }]);
+    expect([settings.apiKeys, settings.mcpServers, settings.keyValues.size]).toEqual([[], [], 0]);
+  });
+
+  it("offers the model as a hint", () => {
+    const settings = readBotPackageImportSettings(
+      pkg([], { provider: "openrouter", modelId: "anthropic/claude-sonnet-4.6" }),
+    );
+    expect(settings.model).toMatchObject({
+      provider: "openrouter",
+      modelId: "anthropic/claude-sonnet-4.6",
+    });
+  });
 });

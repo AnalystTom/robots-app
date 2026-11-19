@@ -43,6 +43,7 @@ import {
   ToolsGroup,
   VoiceGroup,
 } from "./bot-settings-sections";
+import { ExportBotDialog } from "./export-bot-dialog";
 
 const ScratchpadSection = lazyComponent(() =>
   import("../ScratchpadSection").then((module) => module.ScratchpadSection),
@@ -52,7 +53,6 @@ const KnowledgeSection = lazyComponent(() =>
   import("../KnowledgeSection").then((module) => module.KnowledgeSection),
 );
 
-/** The advanced fields one Save sends, in the order their saved snapshot keeps them. */
 function advancedValues(bot: Bot) {
   return [
     bot.modelProvider && bot.modelId ? modelOptionKey(bot.modelProvider, bot.modelId) : "",
@@ -66,7 +66,6 @@ function advancedValues(bot: Bot) {
 
 export type BotPanelTab = "computer" | "routines" | "pages" | "settings";
 
-/** A bot's profile above its Computer, Routines, Pages and Advanced tabs. */
 export function BotSettings({
   bot,
   tab = "settings",
@@ -89,7 +88,6 @@ export function BotSettings({
   routines?: ReactNode;
   focusModel?: number;
   onOpenConnections?: () => void;
-  /** Unused: the skill sections read and save the shared cached skill list. */
   onSkillsChange?: (skills: AgentSkillCatalogEntry[]) => void;
   memoryProviderConfigured: boolean;
   onSave: (patch: {
@@ -127,10 +125,6 @@ export function BotSettings({
   const [name, setName] = useState(bot.name);
   const savedNameRef = useRef(bot.name);
   const [description, setDescription] = useState(bot.description);
-  // A roster refresh can skip replacing bots while a reorder is in flight, so
-  // this prop keeps the description from when the panel opened. Later saves
-  // compare against the description last saved here; otherwise a model or
-  // voice change treats that stale text as an edit and overwrites instructions.
   const savedDescriptionRef = useRef(bot.description ?? "");
   const [color, setColor] = useState(bot.color);
   const [avatarSet, setAvatarSet] = useState(() => resolveBotAvatarSet(bot.avatarSet));
@@ -165,8 +159,6 @@ export function BotSettings({
   const [disabledBuiltinTools, setDisabledBuiltinTools] = useState<string[]>(
     bot.disabledBuiltinTools ?? [],
   );
-  // The list on screen is updated before the save returns. This stays on the
-  // last list the server accepted so a rejection can undo that preview.
   const persistedDisabledToolsRef = useRef(disabledBuiltinTools);
   const serverDisabledToolsRef = useRef(disabledBuiltinTools);
   const pendingSavesRef = useRef(0);
@@ -177,7 +169,6 @@ export function BotSettings({
     persistedDisabledToolsRef.current = next;
     if (pendingSavesRef.current === 0) setDisabledBuiltinTools(next);
   }, [bot.disabledBuiltinTools]);
-  // Shared with the model and voice settings, so a revisit paints at once and refreshes behind.
   const queries = useSpaceQueries();
   const refresh = { refetchOnMount: "always" } as const;
   const voices = useQuery({ ...queries.voice.voices.queryOptions({ input: {} }), ...refresh }).data;
@@ -187,7 +178,6 @@ export function BotSettings({
   const credentials = credentialsQuery.data ?? NO_CREDENTIALS;
   const catalog = catalogQuery.data ?? NO_CATALOG;
   const me = meQuery.data ?? null;
-  // A failed catalog load must not clear an existing thinkingLevel override on save.
   const modelMetaReady =
     credentialsQuery.data !== undefined &&
     catalogQuery.data !== undefined &&
@@ -207,6 +197,7 @@ export function BotSettings({
     advancedSnapshot !== savedAdvanced ||
     description.trim() !== savedDescriptionRef.current;
   const [error, setError] = useState<string | null>(null);
+  const [exportingBot, setExportingBot] = useState(false);
   const saveQueueRef = useRef(Promise.resolve());
   const executeSaveRef = useRef<
     (
@@ -226,9 +217,6 @@ export function BotSettings({
       revisions?: { color: number; avatarSet: number; notifyOnFinish: number },
     ) => Promise<void>
   >(async () => undefined);
-  // The panel can open on a cached bot. When a newer copy arrives, every field not edited since
-  // follows it, so a later save does not send the cached values back over it. A copy that is not
-  // newer (a roster read from before a save) is ignored.
   const shownBotRef = useRef(bot);
   useEffect(() => {
     if (bot.updatedAt <= shownBotRef.current.updatedAt) return;
@@ -350,9 +338,7 @@ export function BotSettings({
       setDescription(nextDescription);
       const patch = {
         ...(nextName && nextName !== savedNameRef.current.trim() ? { name: nextName } : {}),
-        // Keep untouched profile fields off the wire.
         ...botProfilePatch(savedDescriptionRef.current, nextDescription),
-        // Unchanged color stays off the wire so a legacy named value cannot fail a name save.
         ...(nextColor !== acceptedAutomatic.current.color ? { color: nextColor } : {}),
         ...(patchOverrides?.avatarSet !== undefined ||
         nextAvatarSet !== acceptedAutomatic.current.avatarSet
@@ -378,8 +364,6 @@ export function BotSettings({
       };
       const requestedTools = patchOverrides?.disabledBuiltinTools;
       const baseTools = patchOverrides?.baseDisabledBuiltinTools ?? [];
-      // Preserve this edit's additions/removals against any refreshed server list.
-      // Retry if a refresh arrives while the request is in flight.
       for (;;) {
         const serverTools = serverDisabledToolsRef.current;
         const nextTools =
@@ -394,7 +378,6 @@ export function BotSettings({
                     !baseTools.includes(name) && !persistedDisabledToolsRef.current.includes(name),
                 ),
               ];
-        // Unrelated saves omit the list, preserving changes from other sessions.
         await onSave({
           ...patch,
           ...(nextTools !== undefined ? { disabledBuiltinTools: nextTools } : {}),
@@ -475,9 +458,6 @@ export function BotSettings({
     dailyCheckIns?: boolean;
     disabledBuiltinTools?: string[];
   }) {
-    // Serialize full-object auto-saves so an older in-flight request cannot
-    // finish after a newer one and clobber fields. Always call through a ref so
-    // queued work reads the latest field values, not a stale render closure.
     pendingSavesRef.current += 1;
     if (patchOverrides?.color !== undefined) automaticRevision.current.color += 1;
     if (patchOverrides?.avatarSet !== undefined) automaticRevision.current.avatarSet += 1;
@@ -554,7 +534,6 @@ export function BotSettings({
         <TabsContent value="pages" className="pt-4">
           {tab === "pages" ? <PagesList botId={bot.id} /> : null}
         </TabsContent>
-        {/* Stays mounted so scratchpad and knowledge drafts survive a tab switch. */}
         <TabsContent value="settings" keepMounted data-testid="bot-settings-advanced">
           <NotificationsSection
             ids={ids}
@@ -652,6 +631,7 @@ export function BotSettings({
               }}
             />
             <ExportAndClear
+              onExportBot={() => setExportingBot(true)}
               onExport={() => {
                 setError(null);
                 onExport().catch((err: unknown) => setError(errorText(err)));
@@ -678,6 +658,9 @@ export function BotSettings({
         </TabsContent>
       </Tabs>
       {error ? <p className="mt-2 text-body-sm text-destructive">{error}</p> : null}
+      {exportingBot ? (
+        <ExportBotDialog bot={{ id: bot.id, name }} onClose={() => setExportingBot(false)} />
+      ) : null}
     </div>
   );
 }
@@ -761,7 +744,6 @@ function InlineProfileField({
   );
 }
 
-/** The bot's address under its name; on a server that receives email, offered until claimed. */
 function BotEmail({ bot }: { bot: { id: string; name: string } }) {
   const queries = useSpaceQueries();
   const email = useQuery(queries.bots.emailAddress.queryOptions({ input: { botId: bot.id } })).data;

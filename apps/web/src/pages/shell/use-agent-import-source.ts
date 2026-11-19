@@ -3,9 +3,12 @@ import type {
   AgentImportFile,
   AgentImportMemoryDestination,
   AgentImportPlan,
+  BotAvatarSet,
 } from "@robots/contracts";
 import {
   BOT_INSTRUCTIONS_MAX_LENGTH,
+  BOT_PACKAGE_MAX_LENGTH,
+  BOT_PACKAGE_PATH,
   GROK_BOT_EXPORT_MAX_LENGTH,
   GROK_BOT_EXPORT_PATH,
 } from "@robots/contracts";
@@ -16,28 +19,30 @@ import {
   AgentImportArchiveError,
   agentImportSkillFiles,
   agentImportUpload,
+  BotPackageError,
   chooseAgentImportFiles,
   combineImportedInstructions,
   GROK_BOT_REPLY_MAX_LENGTH,
   GrokBotExportError,
   grokBotExportJson,
   hasAgentImportSecrets,
+  importBotPackage,
   newClientId,
   openAgentImportArchive,
   parseGrokBotExport,
 } from "@robots/core";
 import { useEffect, useRef, useState } from "react";
 import { readAgentDocument } from "../../lib/agent-document";
-import { agentImportErrorText, grokBotErrorText } from "../../lib/agent-import-errors";
+import {
+  agentImportErrorText,
+  botPackageErrorText,
+  grokBotErrorText,
+} from "../../lib/agent-import-errors";
 import { rpc } from "../../lib/rpc";
 import { errorText } from "../../lib/user-error";
 
 export type AgentImportSource = ReturnType<typeof useAgentImportSource>;
 
-/**
- * Reads a folder, backup, or agent document on this device, previews what it would import, and
- * holds the choices that preview starts with.
- */
 export function useAgentImportSource() {
   const { t } = useLingui();
   const [files, setFiles] = useState<AgentImportFile[]>([]);
@@ -47,9 +52,7 @@ export function useAgentImportSource() {
   );
   const [hasSecretFiles, setHasSecretFiles] = useState(false);
   const [includeSecrets, setIncludeSecrets] = useState(false);
-  // One key per import, so a retried create returns the bot the first one made.
   const importKey = useRef<string | null>(null);
-  // Names of the other files in each skill's folder; never their contents.
   const [skillFiles, setSkillFiles] = useState<Record<string, string[]>>({});
   const [plan, setPlan] = useState<AgentImportPlan | null>(null);
   const [unchecked, setUnchecked] = useState<Set<string>>(new Set());
@@ -59,9 +62,9 @@ export function useAgentImportSource() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
-  // Bots in one Grok Bot reply, while the user picks which to import.
+  const [look, setLook] = useState<{ color: string; avatarSet: BotAvatarSet } | null>(null);
+  const [acceptedRisks, setAcceptedRisks] = useState<Set<string>>(new Set());
   const [grokBots, setGrokBots] = useState<GrokBot[]>([]);
-  // Bumped by every new read, so a slower earlier one never lands over it.
   const latestRead = useRef(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,19 +102,15 @@ export function useAgentImportSource() {
       if (read !== latestRead.current) return;
       setFiles(next);
       setIncludeSecrets(secrets);
-      // Anything that runs or acts (skills, MCP servers, routines) starts unticked, as do
-      // untouched defaults the source wrote: the user ticks each one they want.
       const flagged = [
         ...found.skills,
         ...found.mcpServers,
         ...found.routines,
         ...found.instructions.filter((item) => item.stock),
         ...found.memory.filter((item) => item.stock),
-        // Key-looking text reaches a bot only when the user ticks it.
         ...[...found.instructions, ...found.memory].filter((item) => item.containsKey),
       ].map((item) => item.id);
       if (keepChoices && plan) {
-        // Turning the API key opt-in on or off keeps every choice; only new items get defaults.
         const known = new Set(
           [
             ...plan.instructions,
@@ -130,6 +129,7 @@ export function useAgentImportSource() {
         });
       } else {
         setUnchecked(new Set(flagged));
+        setAcceptedRisks(new Set());
         setDestinations({});
         setName(found.suggestedName);
         setDescription(found.suggestedDescription);
@@ -159,7 +159,6 @@ export function useAgentImportSource() {
     return t`Could not read these files`;
   }
 
-  /** Only the files an import uses leave the device; `.env`/`auth.json` are not read. */
   async function loadSource(next: AgentImportReader, read = ++latestRead.current) {
     setError(null);
     setGrokBots([]);
@@ -175,6 +174,7 @@ export function useAgentImportSource() {
         new Map(chosen.entries.map((entry) => [entry.path, entry.home])),
       );
       setSource(next);
+      setLook(null);
       setSourceFiles(chosen.entries);
       setHasSecretFiles(chosen.hasSecretFiles);
       setSkillFiles(siblings);
@@ -189,7 +189,6 @@ export function useAgentImportSource() {
     }
   }
 
-  /** The opt-in reads `.env`/`auth.json` now, and sends only their allowlisted entries. */
   async function toggleSecrets(checked: boolean) {
     if (!source) return;
     const read = ++latestRead.current;
@@ -228,10 +227,8 @@ export function useAgentImportSource() {
     });
   }
 
-  /** Unpacked on this device, one file at a time. */
   async function pickArchive(file: File | undefined) {
     const read = ++latestRead.current;
-    // Another source replaces any Bot choices an earlier reply left.
     setGrokBots([]);
     if (!file) {
       setBusy(false);
@@ -263,9 +260,13 @@ export function useAgentImportSource() {
   const secretsAvailable =
     hasSecretFiles || sourceFiles.some(({ home, content }) => hasAgentImportSecrets(home, content));
 
-  /** A pasted reply or one chosen file: no folder, so no secrets or skill siblings. */
-  async function previewOne(read: number, file: AgentImportFile) {
+  async function previewOne(
+    read: number,
+    file: AgentImportFile,
+    nextLook: { color: string; avatarSet: BotAvatarSet } | null = null,
+  ) {
     setGrokBots([]);
+    setLook(nextLook);
     setSource(null);
     setSourceFiles([]);
     setHasSecretFiles(false);
@@ -278,7 +279,6 @@ export function useAgentImportSource() {
     await previewOne(read, { path: "agent.md", content });
   }
 
-  /** One Bot previews at once; a reply with several asks which. */
   async function previewGrokReply(text: string, read = ++latestRead.current) {
     setError(null);
     setGrokBots([]);
@@ -359,6 +359,37 @@ export function useAgentImportSource() {
     }
   }
 
+  async function pickBotPackage(list: FileList | null) {
+    const read = ++latestRead.current;
+    setGrokBots([]);
+    const file = list?.[0];
+    if (!file) {
+      setBusy(false);
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      if (file.size > BOT_PACKAGE_MAX_LENGTH * 4) throw new BotPackageError("too_large", "");
+      const text = await file.text();
+      if (read !== latestRead.current) return;
+      const pkg = importBotPackage(text);
+      await previewOne(
+        read,
+        { path: BOT_PACKAGE_PATH, content: JSON.stringify(pkg) },
+        { color: pkg.bot.color, avatarSet: pkg.bot.avatarSet },
+      );
+    } catch (err) {
+      if (read !== latestRead.current) return;
+      setError(err instanceof BotPackageError ? botPackageErrorText(err.code) : readError(err));
+      setBusy(false);
+    }
+  }
+
+  function acceptRisk(id: string) {
+    setAcceptedRisks((current) => new Set([...current, id]));
+  }
+
   function stopReading() {
     ++latestRead.current;
     setGrokBots([]);
@@ -378,7 +409,6 @@ export function useAgentImportSource() {
   const chosen = <T extends { id: string }>(items: T[] | undefined) =>
     (items ?? []).filter((item) => !unchecked.has(item.id));
   const keyedProviders = new Set(chosen(plan?.apiKeys).map((key) => key.provider));
-  // A model needs a connection now, or its provider's key in this import.
   const modelUsable =
     plan?.model?.status === "ready" ||
     (plan?.model?.status === "needs_key" && keyedProviders.has(plan.model.provider));
@@ -417,6 +447,10 @@ export function useAgentImportSource() {
     previewGrokReply,
     previewGrokBot,
     pickGrokFiles,
+    pickBotPackage,
+    look,
+    acceptedRisks,
+    acceptRisk,
     stopReading,
     selectedInstructions,
     chosen,

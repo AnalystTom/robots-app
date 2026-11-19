@@ -14,7 +14,6 @@ const api = vi.hoisted(() => ({
   skills: vi.fn(),
   skill: vi.fn(),
 }));
-// One space, so no "Available in" choice appears.
 vi.mock("./space-availability", () => ({
   AvailabilityControl: () => null,
   AvailabilityLabel: () => null,
@@ -55,6 +54,18 @@ vi.mock("@robots/ui-web", () => {
       size: _size,
       ...props
     }: ComponentProps<"button"> & { variant?: string; size?: string }) => <button {...props} />,
+    AlertDialog: ({ open, children }: { open?: boolean; children?: ReactNode }) =>
+      open ? <div role="alertdialog">{children}</div> : null,
+    AlertDialogContent: Container,
+    AlertDialogHeader: Container,
+    AlertDialogFooter: Container,
+    AlertDialogTitle: Container,
+    AlertDialogDescription: Container,
+    AlertDialogAction: ({
+      variant: _variant,
+      ...props
+    }: ComponentProps<"button"> & { variant?: string }) => <button {...props} />,
+    AlertDialogCancel: (props: ComponentProps<"button">) => <button {...props} />,
   };
 });
 
@@ -238,6 +249,36 @@ describe("plugin detail", () => {
     await click("Add skills");
     expect(api.install).toHaveBeenCalledWith(expect.objectContaining({ pluginParts: ["skills"] }));
     expect(onChanged).toHaveBeenCalled();
+  });
+
+  it("lists each skill's findings and adds risky skills only after Install anyway", async () => {
+    const finding = {
+      rule: "download_and_run" as const,
+      severity: "high" as const,
+      line: 6,
+      reason: "Downloads a script and runs it in a shell.",
+    };
+    api.preview.mockResolvedValue({
+      ...preview,
+      skills: [{ name: "setup", description: "Sets up", safety: [finding] }],
+    });
+    api.install.mockRejectedValueOnce(
+      Object.assign(new Error("Risky content found in setup."), {
+        data: { reason: "skill_unsafe", skills: [{ name: "setup", findings: [finding] }] },
+      }),
+    );
+    await render();
+    expect(container.querySelector('[data-testid="skill-safety-findings"]')?.textContent).toBe(
+      "Line 6: Downloads a script and runs it",
+    );
+    await click("Add skills");
+    expect(container.querySelector('[data-testid="skill-risk-dialog"]')).not.toBeNull();
+    expect(container.querySelector("[role=alert]")).toBeNull();
+    await click("Install anyway");
+    expect(api.install).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pluginParts: ["skills"], acceptRisk: true }),
+    );
+    expect(container.querySelector('[data-testid="skill-risk-dialog"]')).toBeNull();
   });
 
   it("adds a skill pack with one action and names parts it could not add", async () => {
