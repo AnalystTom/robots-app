@@ -40,7 +40,6 @@ export async function subscribeThread(
   onEvent: (event: ThreadEvent) => void,
   signal: AbortSignal,
   requestContext?: ApiRequestContext,
-  onOpen: () => void = () => {},
 ) {
   const context = requestContext ?? (await captureApiRequestContext());
   syncMobileAvatarSession(currentApiBase(), currentSessionGeneration());
@@ -64,7 +63,6 @@ export async function subscribeThread(
     signal,
     context,
     () => mobileLogoAvatarActivity.resetSource(activityFeed.source),
-    onOpen,
   );
 }
 export async function subscribeIncomingCallEvents(
@@ -109,7 +107,6 @@ async function subscribeRpcEvents(
   signal: AbortSignal,
   context: ApiRequestContext,
   onClose: () => void = () => {},
-  onOpen: () => void = () => {},
 ) {
   const current = () =>
     context.apiBase === currentApiBase() &&
@@ -143,7 +140,6 @@ async function subscribeRpcEvents(
     cancelResponseBody(res);
     throw httpError(`rpc ${procedure} failed (${res.status})`, res);
   }
-  onOpen();
   const reader = res.body.getReader();
   let finished = false;
   try {

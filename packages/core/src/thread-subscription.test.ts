@@ -699,6 +699,24 @@ describe("thread subscription recovery", () => {
     expect(callbacks.subscribe).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps growing the reconnect wait when a stream opens and closes without delivering", async () => {
+    vi.useFakeTimers();
+    const { abort, callbacks } = setup();
+    callbacks.random = () => 1;
+    callbacks.subscribe.mockImplementation(async () => (async function* () {})());
+    const running = runThreadSubscription(callbacks);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(callbacks.subscribe).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(6_000);
+    expect(callbacks.subscribe).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(6_999);
+    expect(callbacks.subscribe).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(callbacks.subscribe).toHaveBeenCalledTimes(3);
+    abort.abort();
+    await running;
+  });
+
   it("keeps receipt handling before applying events and effects afterward", async () => {
     vi.useFakeTimers();
     const { abort, channel, callbacks } = setup();

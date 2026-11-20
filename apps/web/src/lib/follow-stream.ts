@@ -33,9 +33,9 @@ export function followStream<T>(
       try {
         const stream = await open(controller.signal);
         opened = true;
-        retry = 0;
         for await (const frame of stream) {
           if (!active) return;
+          retry = 0;
           await onFrame(frame);
         }
       } catch (cause) {

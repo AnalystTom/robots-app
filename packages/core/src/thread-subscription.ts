@@ -137,7 +137,6 @@ export async function runThreadSubscription(options: {
         );
         if (events === stopped || isStopped() || generation !== attemptGeneration) continue;
         opened = true;
-        streamRetry = 0;
         const iterator = events[Symbol.asyncIterator]();
         try {
           let pending: Promise<IteratorResult<ProductEvent>> | undefined;
@@ -163,6 +162,7 @@ export async function runThreadSubscription(options: {
               break;
             pending = undefined;
             const event = next.value;
+            streamRetry = 0;
             if (event.type === "heartbeat") continue;
             cursor = Math.max(cursor, event.seq);
             const replay = recovery.current.phase === "replay" ? recovery.current : null;
