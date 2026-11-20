@@ -292,3 +292,19 @@ it("opens both Unicode fallback screenshot targets through browse and manage", a
     host.querySelector('[data-testid="connection-detail"] .place-items-center')?.textContent,
   ).toBe("𠮷");
 });
+
+it("opens RoBot templates from beside the search field", async () => {
+  const onOpenTemplates = vi.fn();
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={client}>
+        <PluginsOverlay onClose={() => {}} onOpenTemplates={onOpenTemplates} />
+      </QueryClientProvider>,
+    ),
+  );
+  await vi.waitFor(() => expect(searchBox().disabled).toBe(false));
+  const templates = searchBox().nextElementSibling as HTMLButtonElement;
+  expect(templates.textContent).toBe("RoBot templates");
+  await act(async () => templates.click());
+  expect(onOpenTemplates).toHaveBeenCalledOnce();
+});

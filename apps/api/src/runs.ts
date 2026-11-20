@@ -1,5 +1,5 @@
-import type { Actor, RunActivityRow, TodayRunsOutput } from "@robots/contracts";
-import { MessageBlock, TODAY_RUNS_LIMIT } from "@robots/contracts";
+import type { Actor, RunActivityRow } from "@robots/contracts";
+import { MessageBlock } from "@robots/contracts";
 import {
   ACTIVE_RUN_STATUSES,
   BACKGROUND_HELPER_TRIGGER,
@@ -121,31 +121,6 @@ export async function listSpaceRuns(
         : [{ completedAt: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
   });
   return rows.map((row) => activityRow(row, filter === "recent"));
-}
-
-/** Runs the activity list would show that ended since `since`, newest first, and how many completed. */
-export async function listRunsEndedSince(
-  prisma: PrismaClient,
-  actor: Actor,
-  since: Date,
-): Promise<TodayRunsOutput> {
-  const where = {
-    spaceId: actor.spaceId,
-    bot: { archivedAt: null },
-    trigger: { notIn: [...ACTIVITY_HIDDEN_TRIGGERS] },
-    status: { in: [...TERMINAL_STATUSES] },
-    completedAt: { gte: since },
-  };
-  const [rows, finished] = await Promise.all([
-    prisma.run.findMany({
-      where,
-      include: ACTIVITY_ROW_INCLUDE,
-      orderBy: [{ completedAt: "desc" }, { id: "desc" }],
-      take: TODAY_RUNS_LIMIT,
-    }),
-    prisma.run.count({ where: { ...where, status: "completed" } }),
-  ]);
-  return { runs: rows.map((row) => activityRow(row, true)), finished };
 }
 
 /** Recent lists chats keyed like `activitySections`, so one busy chat must not push the others out of the limit. */

@@ -457,7 +457,6 @@ export function createRouterContext(deps: RouterDeps) {
       return next();
     });
   const boardEnabled = labEnabled("board");
-  const todayEnabled = labEnabled("today");
   const emailEnabled = labEnabled("email");
   const docsEnabled = labEnabled("docs");
   const ticketDeps = {
@@ -470,7 +469,6 @@ export function createRouterContext(deps: RouterDeps) {
     os,
     repos,
     onboardingDeps,
-    todayEnabled,
     emailEnabled,
     docsEnabled,
     mcpOAuth,

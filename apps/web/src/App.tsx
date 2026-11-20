@@ -72,9 +72,6 @@ const BoardPage = lazyComponent(() => import("./pages/Board").then((module) => m
 const TasksPage = lazyComponent(() =>
   import("./pages/workspace/TasksPage").then((module) => module.TasksPage),
 );
-const TodayPage = lazyComponent(() =>
-  import("./pages/workspace/TodayPage").then((module) => module.TodayPage),
-);
 const EmailPage = lazyComponent(() =>
   import("./pages/workspace/EmailPage").then((module) => module.EmailPage),
 );
@@ -332,7 +329,7 @@ function SessionApp() {
                   <Route path="/app/artifacts/:artifactId" element={<ArtifactsPage />} />
                   <Route path="/app/board" element={lab("board", <BoardPage />)} />
                   <Route path="/app/tasks" element={lab("board", <TasksPage />)} />
-                  <Route path="/app/today" element={lab("today", <TodayPage />)} />
+                  <Route path="/app/today" element={<Navigate to="/app" replace />} />
                   <Route path="/app/email" element={lab("email", <EmailPage />)} />
                   <Route path="/app/docs" element={lab("docs", <DocsPage />)} />
                   <Route path="/app/x/:linkId" element={<NavLinkPage />} />

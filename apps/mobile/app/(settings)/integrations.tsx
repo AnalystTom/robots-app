@@ -1098,7 +1098,7 @@ export default function Integrations() {
                 style={({ pressed }) => [styles.row, pressed && styles.pressed]}
               >
                 <BotTemplateIcon size={LOGO_SIZE} />
-                <Text style={[styles.title, styles.grow]}>{t`Templates`}</Text>
+                <Text style={[styles.title, styles.grow]}>{t`RoBot templates`}</Text>
                 <Chevron />
               </Pressable>
             ) : null}

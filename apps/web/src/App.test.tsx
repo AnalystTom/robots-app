@@ -222,3 +222,22 @@ it("tells the call session who is signed in, without counting an unreachable loo
     vi.unstubAllGlobals();
   }
 });
+
+it("sends an old Today link to the home view", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  try {
+    await act(async () =>
+      root.render(
+        <MemoryRouter initialEntries={["/app/today"]}>
+          <App />
+        </MemoryRouter>,
+      ),
+    );
+    expect(container.textContent).toBe("Shell");
+  } finally {
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
+  }
+});

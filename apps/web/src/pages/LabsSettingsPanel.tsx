@@ -21,10 +21,6 @@ export function LabsSettingsPanel({
   const [error, setError] = useState<string | null>(null);
   const copy: Record<LabFeature, { title: string; description: string }> = {
     board: { title: t`Tasks`, description: t`A kanban board of tasks your bots can work on` },
-    today: {
-      title: t`Today`,
-      description: t`A summary of what your bots did today and what needs you`,
-    },
     email: { title: t`Email`, description: t`Read the mail your bots' email addresses receive` },
     docs: { title: t`Docs`, description: t`Shared notes and documents your bots read and write` },
   };

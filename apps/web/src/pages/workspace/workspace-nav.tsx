@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { FileText, Mail, SquareKanban, Sun } from "lucide-react";
+import { FileText, Mail, SquareKanban } from "lucide-react";
 import type { ComponentType } from "react";
 import type { WorkspacePage, WorkspacePageId } from "./workspace-pages";
 
@@ -7,7 +7,6 @@ const ICONS: Record<
   WorkspacePageId,
   ComponentType<{ className?: string; strokeWidth?: number }>
 > = {
-  today: Sun,
   tasks: SquareKanban,
   email: Mail,
   docs: FileText,
@@ -15,10 +14,9 @@ const ICONS: Record<
 
 export function useWorkspacePageLabels(): Record<WorkspacePageId, string> {
   const { t } = useLingui();
-  return { today: t`Today`, tasks: t`Tasks`, email: t`Email`, docs: t`Docs` };
+  return { tasks: t`Tasks`, email: t`Email`, docs: t`Docs` };
 }
 
-/** Today, Tasks, Email and Docs rows for the sidebar and the workspace page rail. */
 export function WorkspaceNav({
   pages,
   current,
@@ -27,7 +25,6 @@ export function WorkspaceNav({
 }: {
   pages: readonly WorkspacePage[];
   current?: WorkspacePageId;
-  /** Icons only, for the collapsed sidebar. */
   mini?: boolean;
   onOpen: (page: WorkspacePage) => void;
 }) {

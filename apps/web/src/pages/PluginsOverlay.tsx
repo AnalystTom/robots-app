@@ -28,7 +28,7 @@ import {
   Input,
   Spinner,
 } from "@robots/ui-web";
-import { ChevronDown, ChevronRight, LayoutTemplate, X } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronRight, LayoutTemplate, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { IntegrationSetup } from "../components/integrations/IntegrationSetup";
 import type {
@@ -421,17 +421,6 @@ export function PluginsOverlay({
                 <ChevronRight />
               </Button>
             ) : null}
-            {browsing && onOpenTemplates ? (
-              <Button
-                variant="ghost"
-                className="-my-1 h-9 gap-2 px-2.5 text-body text-muted-foreground"
-                data-testid="open-bot-templates"
-                onClick={onOpenTemplates}
-              >
-                <LayoutTemplate />
-                <Trans>Templates</Trans>
-              </Button>
-            ) : null}
             {browsing || view === "manage" ? (
               <AddMenu
                 presets={sourcePresets}
@@ -455,17 +444,36 @@ export function PluginsOverlay({
 
         {browsing ? (
           <div className="space-y-4 px-8 pt-4">
-            <Input
-              disabled={loading}
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setVisibleCount(CONNECTION_CATALOG_PAGE_SIZE);
-              }}
-              aria-label={t`Search apps`}
-              placeholder={t`Search apps`}
-              className="h-11 rounded-xl px-4 md:text-body-lg"
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                disabled={loading}
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setVisibleCount(CONNECTION_CATALOG_PAGE_SIZE);
+                }}
+                aria-label={t`Search apps`}
+                placeholder={t`Search apps`}
+                className="h-11 min-w-0 flex-1 rounded-xl px-4 md:text-body-lg"
+              />
+              {onOpenTemplates ? (
+                <Button
+                  variant="outline"
+                  className="h-11 shrink-0 gap-2.5 rounded-full ps-2.5 pe-4 text-body md:text-body-lg"
+                  data-testid="open-bot-templates"
+                  onClick={onOpenTemplates}
+                >
+                  <span
+                    aria-hidden
+                    className="grid size-6 place-items-center rounded-full bg-foreground text-background"
+                  >
+                    <LayoutTemplate className="size-3.5" />
+                  </span>
+                  <Trans>RoBot templates</Trans>
+                  <ArrowUpRight className="text-muted-foreground" />
+                </Button>
+              ) : null}
+            </div>
             {categories.length >= 2 || category ? (
               <div className="flex flex-wrap gap-2" data-testid="integration-categories">
                 {[null, ...categories.slice(0, CHIP_COUNT)].map((name) => (

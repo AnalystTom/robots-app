@@ -218,8 +218,6 @@ import {
   RoutineHistorySchema,
   RoutineRunCursorSchema,
   RunsListOutputSchema,
-  TodayRunsInputSchema,
-  TodayRunsOutputSchema,
 } from "./runs.js";
 import { SearchQueryOutputSchema } from "./search.js";
 import { SecurityEventListInputSchema, SecurityEventSchema } from "./security-events.js";
@@ -1496,9 +1494,6 @@ export const appContract = {
   },
   runs: {
     list: oc.input(z.object({ filter: z.enum(["active", "recent"]) })).output(RunsListOutputSchema),
-  },
-  today: {
-    runs: oc.input(TodayRunsInputSchema).output(TodayRunsOutputSchema),
   },
   spendingLimit: {
     get: oc.output(SpendingStatusSchema),

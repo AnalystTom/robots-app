@@ -64,7 +64,7 @@ export function usePaletteActions({
     },
     {
       id: "bot-templates",
-      label: t`Bot templates`,
+      label: t`RoBot templates`,
       icon: LayoutTemplate,
       onSelect: () => setOverlay({ kind: "templates" }),
     },

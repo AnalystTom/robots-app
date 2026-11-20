@@ -23,7 +23,6 @@ export default function Labs() {
   const saveRequest = useRef(0);
   const copy: Record<LabFeature, { title: string; detail: string }> = {
     board: { title: t`Tasks`, detail: t`A kanban board of tasks your bots can work on` },
-    today: { title: t`Today`, detail: t`A summary of what your bots did today and what needs you` },
     email: { title: t`Email`, detail: t`Read the mail your bots' email addresses receive` },
     docs: { title: t`Docs`, detail: t`Shared notes and documents your bots read and write` },
   };

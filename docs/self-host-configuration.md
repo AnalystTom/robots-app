@@ -114,7 +114,6 @@ network and pairing devices with a one-time code.
 | Variable               | Default         | Effect                                                                                                                                                  |
 | ---------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `TICKET_BOARD_ENABLED` | `false`         | Turns the ticket board on for every account. Otherwise each person turns it on in **Settings → Labs**. Set it on the API and worker.                    |
-| `TODAY_PAGE_ENABLED`   | `false`         | Turns the Today page on for every account, the same way. Set it on the API and worker.                                                                  |
 | `EMAIL_PAGE_ENABLED`   | `false`         | Turns the Email page on for every account, the same way. Set it on the API and worker.                                                                  |
 | `DOCS_PAGE_ENABLED`    | `false`         | Turns the Docs page on for every account, the same way. Set it on the API and worker.                                                                   |
 | `USER_DEVICES_ENABLED` | on              | `false` stops signed-in desktop apps from letting bots run commands on the user's own computer. Set it on the API and worker.                           |

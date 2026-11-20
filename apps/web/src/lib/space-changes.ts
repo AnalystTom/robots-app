@@ -11,7 +11,6 @@ type Procedure = {
 const READS: Record<ReadChangeKind, readonly Procedure[]> = {
   runs: [
     ["runs", "list"],
-    ["today", "runs"],
     ["routines", "history"],
   ],
   routines: [["routines", "list"]],

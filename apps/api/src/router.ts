@@ -63,7 +63,6 @@ import { routinesRoutes } from "./routes/routines.js";
 import { spacesRoutes } from "./routes/spaces.js";
 import { spendingLimitRoutes } from "./routes/spending-limit.js";
 import { threadsRoutes } from "./routes/threads.js";
-import { todayRoutes } from "./routes/today.js";
 import type { VoiceDeps } from "./voice.js";
 
 export { nextConnectionLabel } from "./model-credentials.js";
@@ -197,6 +196,5 @@ export function createRouter(deps: RouterDeps) {
     ...paymentWalletRoutes(ctx),
     ...spendingLimitRoutes(ctx),
     ...devicePairingRoutes(ctx),
-    ...todayRoutes(ctx),
   });
 }

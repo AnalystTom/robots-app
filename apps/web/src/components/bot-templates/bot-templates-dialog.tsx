@@ -157,10 +157,10 @@ export function BotTemplatesDialog({
       >
         <DialogHeader className="flex-row items-start justify-between px-8 pt-7">
           <DialogTitle className="text-heading2 text-foreground">
-            <Trans>Bot templates</Trans>
+            <Trans>RoBot templates</Trans>
           </DialogTitle>
           <DialogClose
-            render={<Button variant="ghost" size="icon-sm" aria-label={t`Close bot templates`} />}
+            render={<Button variant="ghost" size="icon-sm" aria-label={t`Close RoBot templates`} />}
           >
             <X />
           </DialogClose>
