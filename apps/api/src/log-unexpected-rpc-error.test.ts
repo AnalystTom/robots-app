@@ -8,7 +8,7 @@ import {
   SandboxUnresponsiveError,
   VoiceAccountError,
 } from "@robots/adapter-kit";
-import { ThreadMessagePageSchema } from "@robots/contracts";
+import { COMPUTER_DID_NOT_START_ERROR, ThreadMessagePageSchema } from "@robots/contracts";
 import { MODEL_IMAGE_INPUT_ERROR } from "@robots/core";
 import { IsolationError, SpaceDeletionInProgressError } from "@robots/db";
 import { createLogger, createTestSink, installLogger } from "@robots/logging";
@@ -274,6 +274,26 @@ describe("logUnexpectedRpcError", () => {
         reason: "sandbox did not become ready",
       }),
     ]);
+  });
+
+  it("keeps a supervisor's failure detail out of the client's 503 but logs it", () => {
+    const sink = createTestSink();
+    installLogger(createLogger({ service: "robots-api", sinks: [sink] }));
+    const detail = "sandbox provision failed: 500 docker socket refused";
+    const error = new SandboxUnavailableError({ cause: new Error(detail), detail });
+
+    let thrown: unknown;
+    try {
+      handleRpcError(error, ["computer", "boot"]);
+    } catch (failure) {
+      thrown = failure;
+    }
+
+    expect(thrown).toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      message: COMPUTER_DID_NOT_START_ERROR,
+    });
+    expect(sink.events).toEqual([expect.objectContaining({ level: "warn", reason: detail })]);
   });
 
   it("returns an unreachable computer provider as a retryable 503 without an error report", () => {
