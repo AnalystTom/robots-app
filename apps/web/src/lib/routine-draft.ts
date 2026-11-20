@@ -26,24 +26,18 @@ export type RoutineDraftState = RoutineDraft & {
   githubEnabled: boolean;
   messageProvider: string | null;
   runAtLocal: string;
-  /** Empty runs this routine on the bot's model. */
   modelKey: string;
   thinkingLevel: string;
-  /** Null unless the routine starts when something changes. */
   watch: RoutineWatchDraft | null;
 };
 
-/** The change trigger as the editor holds it: free text until saved. */
 export type RoutineWatchDraft = {
   kind: RoutineWatch["kind"];
-  /** One path per line. */
   paths: string;
   command: string;
   url: string;
   tool: string;
-  /** JSON object of arguments for the tool. */
   args: string;
-  /** Comma-separated field names; see RoutineWatch.track. */
   track: string;
   everyMinutes: number;
   loud: boolean;
@@ -78,7 +72,6 @@ function watchDraftFromRoutine(watch: RoutineWatch | null): RoutineWatchDraft | 
   };
 }
 
-/** The draft as the api takes it, or the reason it cannot be saved. */
 export function watchFromDraft(
   draft: RoutineWatchDraft,
 ): { watch: RoutineWatchInput } | { error: string } {
@@ -118,6 +111,17 @@ export function watchFromDraft(
   return {
     watch: { ...base, tool: draft.tool.trim(), args: args as Record<string, unknown>, ...track },
   };
+}
+
+export function routineDraftHasTrigger(draft: RoutineDraftState): boolean {
+  return (
+    draft.schedules.length > 0 ||
+    draft.webhookEnabled ||
+    draft.githubEnabled ||
+    Boolean(draft.messageProvider) ||
+    Boolean(draft.emailSenders) ||
+    Boolean(draft.watch)
+  );
 }
 
 export function emptyRoutineDraftState(): RoutineDraftState {

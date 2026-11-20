@@ -1,19 +1,23 @@
 import type { Routine, RoutineEmailSenders } from "@robots/contracts";
 import type { CronPreset } from "./cron.js";
-import { presetFromCron } from "./cron.js";
+import { defaultCronPreset, presetFromCron } from "./cron.js";
 
-/** The fields every routine editor changes; an editor that offers more triggers adds its own. */
 export type RoutineDraft = {
   name: string;
   prompt: string;
   schedules: CronPreset[];
-  /** Whose mail starts the routine; null without an email trigger. */
   emailSenders: RoutineEmailSenders | null;
   active: boolean;
 };
 
 export function emptyRoutineDraft(): RoutineDraft {
-  return { name: "", prompt: "", schedules: [], emailSenders: null, active: true };
+  return {
+    name: "",
+    prompt: "",
+    schedules: [defaultCronPreset()],
+    emailSenders: null,
+    active: true,
+  };
 }
 
 export function draftFromRoutine(

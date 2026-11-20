@@ -47,8 +47,15 @@ describe("routineSaveRequest", () => {
     });
   });
 
+  it("creates a new routine on the default daily schedule from a name and an instruction", () => {
+    const draft = { ...emptyRoutineDraft(), name: "Inbox", prompt: "Summarize." };
+    expect(routineSaveRequest(draft, null, "bot-1", "UTC")).toMatchObject({
+      create: { name: "Inbox", prompt: "Summarize.", crons: ["0 9 * * *"] },
+    });
+  });
+
   it("asks for a name, an instruction and a trigger before saving", () => {
-    const named = { ...emptyRoutineDraft(), name: "Inbox" };
+    const named = { ...emptyRoutineDraft(), name: "Inbox", schedules: [] };
     expect(routineSaveRequest(emptyRoutineDraft(), null, "bot-1", "UTC")).toEqual({
       error: "name",
     });
@@ -85,6 +92,7 @@ describe("routineSaveRequest", () => {
       ...emptyRoutineDraft(),
       name: "Mail",
       prompt: "File it.",
+      schedules: [],
       emailSenders: "owner" as const,
     };
     expect(routineSaveRequest(draft, null, "bot-1", "UTC")).toMatchObject({
@@ -150,5 +158,6 @@ describe("routineDraftChanged", () => {
   it("counts a new routine as changed once anything is filled in", () => {
     expect(routineDraftChanged(emptyRoutineDraft(), null)).toBe(false);
     expect(routineDraftChanged({ ...emptyRoutineDraft(), prompt: "Go." }, null)).toBe(true);
+    expect(routineDraftChanged({ ...emptyRoutineDraft(), schedules: [] }, null)).toBe(true);
   });
 });

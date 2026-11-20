@@ -37,7 +37,6 @@ name: Bots
 - extendedWaitUntil:
     visible: "Add schedule"
     timeout: 15000
-- tapOn: "Add schedule"
 - extendedWaitUntil:
     visible: ".*How often.*"
     timeout: 5000

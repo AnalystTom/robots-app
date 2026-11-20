@@ -105,9 +105,7 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
   await page
     .locator("label:has-text('Instruction') textarea")
     .fill("write a file in your home called notes/result.txt that says routine-ok");
-  await page.getByRole("button", { name: "Add trigger" }).click();
-  await page.getByRole("menuitem", { name: "On a schedule" }).hover();
-  await page.getByRole("menuitem", { name: "Every day", exact: true }).click();
+  await expect(page.getByLabel("How often")).toHaveValue("Every day");
   const savedRoutine = page.waitForResponse(
     (response) => response.url().includes("/rpc/routines/create") && response.ok(),
   );

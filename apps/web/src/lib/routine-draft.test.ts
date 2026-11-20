@@ -4,7 +4,26 @@ vi.mock("@lingui/core/macro", () => ({
   t: (strings: TemplateStringsArray) => strings.join(""),
 }));
 
-import { emptyWatchDraft, watchFromDraft } from "./routine-draft";
+import {
+  emptyRoutineDraftState,
+  emptyWatchDraft,
+  routineDraftHasTrigger,
+  watchFromDraft,
+} from "./routine-draft";
+
+describe("routineDraftHasTrigger", () => {
+  it("lets a new routine save once it has a name and an instruction", () => {
+    const draft = { ...emptyRoutineDraftState(), name: "Inbox", prompt: "Summarize." };
+    expect(routineDraftHasTrigger(draft)).toBe(true);
+  });
+
+  it("needs a trigger once the last one is removed", () => {
+    const draft = { ...emptyRoutineDraftState(), schedules: [] };
+    expect(routineDraftHasTrigger(draft)).toBe(false);
+    expect(routineDraftHasTrigger({ ...draft, webhookEnabled: true })).toBe(true);
+    expect(routineDraftHasTrigger({ ...draft, watch: emptyWatchDraft() })).toBe(true);
+  });
+});
 
 describe("watchFromDraft", () => {
   it("splits paths by line and drops blanks", () => {
