@@ -62,7 +62,7 @@ export class SandboxProviderAccountError extends SandboxUnresponsiveError {
   }
 }
 
-/** The provider accepted the start but did not bring the computer up in time; a retry may work. */
+/** The provider could not start the computer, or could not be reached to start it; a retry may work. */
 export class SandboxUnavailableError extends Error {
   readonly code = "SANDBOX_UNAVAILABLE";
   constructor(options?: { cause?: unknown; detail?: string }) {
