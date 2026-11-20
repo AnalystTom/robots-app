@@ -186,8 +186,7 @@ export class DockerSandboxProvider implements SandboxProvider {
         throw new Error(limitError);
       }
       const failure = new Error(`sandbox provision failed: ${res.status} ${detail}`.trim());
-      if (res.status >= 500) throw new SandboxUnavailableError({ cause: failure });
-      throw failure;
+      throw new SandboxUnavailableError({ cause: failure });
     }
     const body = await readSandboxJson<{ id: string; resumed?: boolean; started?: boolean }>(
       res,

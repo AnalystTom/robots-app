@@ -644,25 +644,32 @@ describe("Docker sandbox", () => {
     ).rejects.toThrow("Computer limit reached for space (max: 5)");
   });
 
-  it("reports a supervisor failure to start the computer as the computer being unavailable", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => Response.json({ error: "docker socket refused" }, { status: 500 })),
-    );
-    const provider = new DockerSandboxProvider("http://supervisor.test", "test-token");
+  it.each([
+    { status: 500, body: { error: "docker socket refused" } },
+    { status: 400, body: { error: "invalid computer request" } },
+    { status: 404, body: { error: "computer image not found" } },
+  ])(
+    "reports a supervisor $status failure to start the computer as the computer being unavailable",
+    async ({ status, body }) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => Response.json(body, { status })),
+      );
+      const provider = new DockerSandboxProvider("http://supervisor.test", "test-token");
 
-    const failure = await provider
-      .provision({ botId: "bot", homePath: "/tmp/bot" }, context)
-      .catch((error: unknown) => error);
+      const failure = await provider
+        .provision({ botId: "bot", homePath: "/tmp/bot" }, context)
+        .catch((error: unknown) => error);
 
-    expect(failure).toBeInstanceOf(SandboxUnavailableError);
-    expect((failure as Error).cause).toMatchObject({
-      message: expect.stringMatching(/^sandbox provision failed: 500 /),
-    });
-    expect(normalizeRunError(userRunError(failure)).summary).toBe(
-      "The computer did not start. Try again.",
-    );
-  });
+      expect(failure).toBeInstanceOf(SandboxUnavailableError);
+      expect((failure as Error).cause).toMatchObject({
+        message: expect.stringMatching(new RegExp(`^sandbox provision failed: ${status} `)),
+      });
+      expect(normalizeRunError(userRunError(failure)).summary).toBe(
+        "The computer did not start. Try again.",
+      );
+    },
+  );
 
   it("stops a streamed file response at the caller-derived encoded limit", async () => {
     const cancel = vi.fn();
