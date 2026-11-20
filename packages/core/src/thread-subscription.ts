@@ -74,13 +74,12 @@ export async function runThreadSubscription(options: {
     if (isStopped()) return;
     let initial = await untilAborted(options.loadInitial().catch(noteFailure), signal);
     if (initial === stopped || isStopped()) return;
-    let headRetryMs = 250;
+    let headRetry = 0;
     while (!initial && !isStopped()) {
       initial = await untilAborted(options.loadHead().catch(noteFailure), signal);
       if (initial === stopped || isStopped()) return;
       if (initial) break;
-      if (!(await wait(retryDelayMs(lastFailure, headRetryMs, random), signal))) return;
-      headRetryMs = Math.min(headRetryMs * 2, 5_000);
+      if (!(await wait(streamRetryDelayMs(lastFailure, headRetry++, random), signal))) return;
     }
     if (!initial || isStopped()) return;
     const head = initial;
@@ -110,16 +109,18 @@ export async function runThreadSubscription(options: {
     };
     if (recovery.current.phase === "snapshot") {
       snapshotTask = (async () => {
-        let snapshotRetryMs = 250;
+        let snapshotRetry = 0;
         while (!snapshotAbort.signal.aborted) {
           if (
-            !(await wait(retryDelayMs(lastFailure, snapshotRetryMs, random), snapshotAbort.signal))
+            !(await wait(
+              streamRetryDelayMs(lastFailure, snapshotRetry++, random),
+              snapshotAbort.signal,
+            ))
           )
             return;
           await untilAborted(options.refresh().catch(noteFailure), snapshotAbort.signal);
           if (snapshotAbort.signal.aborted) return;
           commitRecovery();
-          snapshotRetryMs = Math.min(snapshotRetryMs * 2, 5_000);
         }
       })();
     }

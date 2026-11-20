@@ -2,7 +2,6 @@ import { t } from "@lingui/core/macro";
 import type { IncomingBotCall, SpaceBot, SpaceNavigation } from "@robots/contracts";
 import type { ringingCall } from "@robots/core";
 import {
-  abortableDelay,
   callIsRinging,
   isRetryableError,
   nextIncomingCall,
@@ -47,6 +46,7 @@ const listeners = new Set<() => void>();
 let calls: IncomingBotCall[] = [];
 let roster = new Map<string, SpaceBot>();
 let feed: AbortController | undefined;
+let wakeFollow: (() => void) | undefined;
 let handled = new Set<string>();
 let expiry: ReturnType<typeof setTimeout> | undefined;
 let snapshot: IncomingBotCall | null = null;
@@ -153,10 +153,22 @@ async function follow(controller: AbortController) {
       if (controller.signal.aborted || !isRetryableError(error)) return;
       failure = error;
     }
-    await abortableDelay(
-      opened ? reconnectDelayMs(failure) : streamRetryDelayMs(failure, retry++),
-      controller.signal,
-    ).catch(() => undefined);
+    const delay = opened ? reconnectDelayMs(failure) : streamRetryDelayMs(failure, retry++);
+    await new Promise<void>((resolve) => {
+      const finish = () => {
+        clearTimeout(timer);
+        controller.signal.removeEventListener("abort", finish);
+        wakeFollow = undefined;
+        resolve();
+      };
+      const timer = setTimeout(finish, delay);
+      wakeFollow = () => {
+        retry = 0;
+        finish();
+      };
+      controller.signal.addEventListener("abort", finish);
+      if (controller.signal.aborted) finish();
+    });
   }
 }
 
@@ -458,6 +470,7 @@ export function startIncomingCalls() {
     if (state === "active") {
       if (Platform.OS === "android")
         for (const call of calls) void native?.endIncomingCall(call.incomingCall.callId);
+      wakeFollow?.();
       refresh();
     } else for (const call of calls) reportNativeCall(call);
   });

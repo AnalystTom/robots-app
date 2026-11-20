@@ -33,7 +33,6 @@ type ThreadEvent = {
   threadId?: string;
   payload?: Record<string, unknown>;
 };
-/** No frame at all for this long means the stream is half-open; the server beats far faster. */
 export const IDLE_TIMEOUT_MS = 45_000;
 export async function subscribeThread(
   target: { botId: string } | { groupId: string },
@@ -85,10 +84,6 @@ export async function subscribeIncomingCallEvents(
     context,
   );
 }
-/**
- * Calls `onSignal` for each roster signal and `onSpaceChange` for each Space change signal: each
- * kind once when the stream opens, then once per change. Kinds this build does not know are skipped.
- */
 export async function subscribeRosterSignals(
   onSignal: () => void,
   signal: AbortSignal,
@@ -180,7 +175,6 @@ async function subscribeRpcEvents(
       if (!data || data === "[DONE]") return;
       try {
         const parsed = JSON.parse(data) as { json?: ThreadEvent; error?: { message?: string } };
-        // Heartbeats prove liveness only; forwarding one would advance the caller's cursor.
         if (parsed.json?.type && parsed.json.type !== "heartbeat") {
           if (!current()) {
             onClose();
@@ -189,12 +183,9 @@ async function subscribeRpcEvents(
           const event = parsed.json;
           onEvent(event);
         }
-      } catch {
-        // Malformed frames and callback errors do not interrupt the subscription.
-      }
+      } catch {}
     };
     while (!signal.aborted) {
-      // A half-open socket never reports done, so let the caller reconnect after silence.
       let timer: ReturnType<typeof setTimeout> | undefined;
       let onAbort: (() => void) | undefined;
       const read = await Promise.race([
@@ -246,9 +237,7 @@ async function subscribeRpcEvents(
     if (!finished) {
       try {
         void Promise.resolve(reader.cancel()).catch(() => undefined);
-      } catch {
-        // Cancellation is best-effort and must not delay releasing the reader.
-      }
+      } catch {}
     }
     reader.releaseLock();
   }

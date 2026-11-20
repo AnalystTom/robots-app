@@ -8,7 +8,6 @@ import {
   reconnectDelayMs,
   reduceThreadSnapshot,
   rememberTerminalRun,
-  retryDelayMs,
   streamRetryDelayMs,
 } from "@robots/core";
 import type { RefObject } from "react";
@@ -112,7 +111,7 @@ export function useThreadLiveSubscription({
       feedbackBoundary.current === boundary &&
       visible.current;
     void (async () => {
-      let backoff = 250;
+      let retry = 0;
       let firstAttempt = true;
       while (current() && getHapticsEnabled()) {
         let failure: unknown;
@@ -136,8 +135,7 @@ export function useThreadLiveSubscription({
           firstAttempt = false;
         }
         if (!current() || !isRetryableError(failure)) break;
-        await abortableDelay(retryDelayMs(failure, backoff), abort.signal);
-        backoff = Math.min(backoff * 2, 5_000);
+        await abortableDelay(streamRetryDelayMs(failure, retry++), abort.signal);
       }
       boundary.pending.clear();
       if (feedbackBoundary.current === boundary) feedbackBoundary.current = null;
