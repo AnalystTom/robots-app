@@ -472,6 +472,17 @@ describe("plugin logos", () => {
     expect(listed).toHaveBeenCalledTimes(1);
     expect(read).not.toHaveBeenCalled();
   });
+  it("keeps a cached logo when many unlisted keys are requested", async () => {
+    const { marketplace } = logoRegistry(listedMail);
+    const { entries } = await marketplace.catalog("");
+    const file = entries[0]!.logo!.split("/").pop()!;
+    const read = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read, listed: marketplace.listedLogoUrl });
+    await logos.logo("Cursor", file);
+    for (let i = 0; i < 2_100; i++) await logos.logo("Cursor", logoKey(`unlisted/${i}.svg`));
+    expect(await logos.logo("Cursor", file)).not.toBeNull();
+    expect(read).toHaveBeenCalledTimes(1);
+  });
   it("draws raster and SVG logos and rejects anything else", async () => {
     const fromSvg = await pluginLogoPng(svgLogo);
     expect(fromSvg).not.toBeNull();

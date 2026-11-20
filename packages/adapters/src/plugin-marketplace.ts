@@ -419,6 +419,7 @@ const LOGO_MAX_INPUT_PIXELS = 4096 * 4096;
 const LOGO_FOUND_TTL_MS = 24 * 60 * 60_000;
 const LOGO_FAILED_TTL_MS = 5 * 60_000;
 const MAX_CACHED_LOGOS = 2_000;
+const MAX_MISSING_LOGOS = 2_000;
 const MAX_CACHED_LOGO_BYTES = 32 * 1024 * 1024;
 
 export type PluginBytesReader = (
@@ -453,32 +454,39 @@ export function createPluginLogos({
     if (source) return source(key);
     return listed(registryName, Buffer.from(key, "base64url").toString());
   };
-  const cache = new Map<string, { expires: number; png: Uint8Array<ArrayBuffer> | null }>();
+  const cache = new Map<string, { expires: number; png: Uint8Array<ArrayBuffer> }>();
+  const missing = new Map<string, number>();
   const pending = new Map<string, Promise<Uint8Array<ArrayBuffer> | null>>();
   let cachedBytes = 0;
   const forget = (id: string) => {
-    cachedBytes -= cache.get(id)?.png?.byteLength ?? 0;
+    cachedBytes -= cache.get(id)?.png.byteLength ?? 0;
     cache.delete(id);
   };
-  const remember = (id: string, png: Uint8Array<ArrayBuffer> | null) => {
+  const remember = (id: string, png: Uint8Array<ArrayBuffer>) => {
     forget(id);
-    cache.set(id, { png, expires: now() + (png ? LOGO_FOUND_TTL_MS : LOGO_FAILED_TTL_MS) });
-    cachedBytes += png?.byteLength ?? 0;
+    cache.set(id, { png, expires: now() + LOGO_FOUND_TTL_MS });
+    cachedBytes += png.byteLength;
     while (cache.size > MAX_CACHED_LOGOS || cachedBytes > MAX_CACHED_LOGO_BYTES)
       forget(cache.keys().next().value!);
+  };
+  const rememberMissing = (id: string) => {
+    missing.delete(id);
+    missing.set(id, now() + LOGO_FAILED_TTL_MS);
+    while (missing.size > MAX_MISSING_LOGOS) missing.delete(missing.keys().next().value!);
   };
   const load = async (id: string, registryName: string, file: string) => {
     const url = await upstream(registryName, file.slice(0, -".png".length));
     if (!url) {
-      remember(id, null);
+      rememberMissing(id);
       return null;
     }
     try {
       const png = await pluginLogoPng(await read(url, LOGO_MAX_BYTES, AbortSignal.timeout(15_000)));
-      remember(id, png);
+      if (png) remember(id, png);
+      else rememberMissing(id);
       return png;
     } catch {
-      remember(id, null);
+      rememberMissing(id);
       return null;
     }
   };
@@ -488,6 +496,7 @@ export function createPluginLogos({
       const id = `${registryName}/${file}`;
       const cached = cache.get(id);
       if (cached && cached.expires > now()) return cached.png;
+      if ((missing.get(id) ?? 0) > now()) return null;
       const active = pending.get(id);
       if (active) return active;
       const request = load(id, registryName, file).finally(() => pending.delete(id));
