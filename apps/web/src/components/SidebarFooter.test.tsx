@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { DesktopUpdateState } from "@robots/contracts";
-import { MOBILE_APP_LINKS } from "@robots/contracts";
+import type * as MobileAppLinks from "../../../../packages/contracts/src/mobile-app-links.js";
 import { Toaster } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { act } from "react";
@@ -8,6 +8,13 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { DesktopUpdatesProvider } from "./DesktopUpdates";
 import { SidebarFooter, sidebarMarkCount } from "./SidebarFooter";
+
+const mobileLinks = vi.hoisted((): { ios?: string; android?: string } => ({}));
+
+vi.mock("../../../../packages/contracts/src/mobile-app-links.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof MobileAppLinks>()),
+  MOBILE_APP_LINKS: mobileLinks,
+}));
 
 vi.mock("@lingui/react/macro", () => ({
   useLingui: () => ({
@@ -24,6 +31,8 @@ beforeEach(() => {
   root = createRoot(host);
 });
 afterEach(async () => {
+  delete mobileLinks.ios;
+  delete mobileLinks.android;
   await act(async () => root.unmount());
   host.remove();
   delete window.robotsDesktop;
@@ -162,14 +171,30 @@ it("omits Board when unavailable", async () => {
 it.each(["Android", "iPhone", "Macintosh"])(
   "offers no mobile app on %s while RoBots has no store listing",
   async (userAgent) => {
-    expect(MOBILE_APP_LINKS).toEqual({});
     vi.spyOn(navigator, "userAgent", "get").mockReturnValue(userAgent);
     await render();
     const menu = document.querySelector('[data-slot="popover-content"]')!;
-    expect(menu.textContent).not.toContain("mobile app");
-    expect(menu.querySelector('a[href*="apps.apple.com"], a[href*="play.google.com"]')).toBeNull();
+    expect(menu.textContent).not.toContain("Get the mobile app");
   },
 );
+
+it("offers the visitor's own store listing when RoBots has one", async () => {
+  mobileLinks.ios = "https://apps.example/ios-robots";
+  vi.spyOn(navigator, "userAgent", "get").mockReturnValue("iPhone");
+  await render();
+  const link = [...document.querySelectorAll('[data-slot="popover-content"] a')].find((a) =>
+    a.textContent?.includes("Get the mobile app"),
+  );
+  expect(link?.getAttribute("href")).toBe("https://apps.example/ios-robots");
+});
+
+it("hides a store listing from the other platform", async () => {
+  mobileLinks.ios = "https://apps.example/ios-robots";
+  vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Linux; Android 15");
+  await render();
+  const menu = document.querySelector('[data-slot="popover-content"]')!;
+  expect(menu.textContent).not.toContain("Get the mobile app");
+});
 
 it("falls back when app artwork fails and accepts replacement artwork", async () => {
   await render("Demo User", undefined, undefined, undefined, [

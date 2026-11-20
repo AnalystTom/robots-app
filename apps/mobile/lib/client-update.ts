@@ -40,11 +40,14 @@ function storeListing(): string | undefined {
   return MOBILE_APP_LINKS[Platform.OS === "ios" ? "ios" : "android"];
 }
 
+async function downloadAndReload(): Promise<boolean> {
+  if (!(await downloadUpdate())) return false;
+  await Updates.reloadAsync();
+  return true;
+}
+
 export async function applyRequiredUpdate(): Promise<void> {
-  if (await bestEffort("download required update", downloadUpdate())) {
-    await bestEffort("reload after update", Updates.reloadAsync());
-    return;
-  }
+  if (await bestEffort("apply required update", downloadAndReload())) return;
   await bestEffort("open store or web app", Linking.openURL(storeListing() ?? currentApiBase()));
 }
 
@@ -53,14 +56,15 @@ let prompting = false;
 export function noteClientUpdateRequired(): void {
   if (prompting) return;
   prompting = true;
+  const listing = storeListing();
   Alert.alert(
     t`Update required`,
-    storeListing()
+    listing
       ? undefined
       : t`This version of RoBots is no longer supported, and an update is not in the app store yet.`,
     [
       {
-        text: t`Update`,
+        text: listing ? t`Update` : t`Open on the web`,
         onPress: () => {
           void applyRequiredUpdate().finally(() => {
             prompting = false;
