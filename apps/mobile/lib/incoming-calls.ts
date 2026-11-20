@@ -129,6 +129,7 @@ async function follow(controller: AbortController) {
       await subscribeIncomingCallEvents((incoming) => {
         if (controller.signal.aborted || feed !== controller) return;
         opened = true;
+        retry = 0;
         const listed = new Map(
           incoming.map((call) => [
             call.incomingCall.callId,
@@ -147,7 +148,6 @@ async function follow(controller: AbortController) {
         }
         for (const call of incoming) update(call, call.incomingCall);
       }, controller.signal);
-      retry = 0;
       failure = undefined;
     } catch (error) {
       if (controller.signal.aborted || !isRetryableError(error)) return;
