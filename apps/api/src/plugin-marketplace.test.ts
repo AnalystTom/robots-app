@@ -1,6 +1,6 @@
 import { createRouterClient } from "@orpc/server";
-import { createPluginMarketplace } from "@robots/adapters";
 import type { PluginRepoFetcher } from "@robots/adapters";
+import { createPluginMarketplace } from "@robots/adapters";
 import type { Actor } from "@robots/contracts";
 import { describe, expect, it, vi } from "vitest";
 import type { RouterDeps } from "./router.js";
