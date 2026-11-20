@@ -36,7 +36,6 @@ import { errorText } from "../../lib/user-error";
 type Icon = Pick<ComponentProps<typeof NativeSymbol>, "ios" | "android">;
 type SettingsLink = { title: string; href: Href; icon: Icon };
 
-/** The settings hub: the account, then shortcuts, settings and admin, each one row deep. */
 export default function Account() {
   const sideInsets = useSideInsets();
   const { t } = useLingui();
@@ -47,14 +46,11 @@ export default function Account() {
   const [me, setMe] = useState<MobileMe | null>(null);
   const account = accountDisplay(me ?? {}, t`Your account`);
   const [signingOut, setSigningOut] = useState(false);
-  // Held from the tap, so a second tap while the unsent-message check runs starts nothing.
   const signOutStarted = useRef(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
-  // Subscription allowances and a credit balance show only for members who have them.
   const [plans, setPlans] = useState<PlanLimits[]>([]);
   const [creditsUsd, setCreditsUsd] = useState<number | null>(null);
-  // Messaging appears only on servers that have a chat app connected, as on web.
   const [messagingEnabled, setMessagingEnabled] = useState(false);
   const stacked = useStackedSettings();
   const styles = useThemedStyles(createAccountStyles);
@@ -76,7 +72,6 @@ export default function Account() {
       chevron="right"
       disabled={signingOut}
       leading={icon(glyph)}
-      // Artifacts, Board and Members live on the root stack, so they close the sheet first.
       onPress={() =>
         typeof href === "string" && isSettingsLink(href)
           ? router.push(href)
@@ -86,7 +81,6 @@ export default function Account() {
     />
   );
 
-  // Read on every visit, so a name changed on the Account page shows on return.
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -113,7 +107,6 @@ export default function Account() {
       .catch(() => undefined);
   }, []);
 
-  // Checked on every visit, so a failed check never hides Messaging for good.
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -207,7 +200,6 @@ export default function Account() {
     setSigningOut(true);
     setSignOutError(null);
     try {
-      // Hang up while the session still exists, so the server records the call's end.
       await endCallBeforeSessionEnd();
       await signOut();
       replaceWithSignIn();
@@ -237,7 +229,7 @@ export default function Account() {
     ...(hasLab(me?.labs, "board")
       ? [
           {
-            title: t`Board`,
+            title: t`Tasks`,
             href: "/board",
             icon: { ios: "rectangle.split.3x1", android: "grid-outline" },
           } as const,
@@ -380,7 +372,6 @@ export default function Account() {
           {me
             ? settingsLink({
                 title: t`Members`,
-                // The space header holds Members too, but a single space has no header.
                 href: {
                   pathname: "/space-members",
                   params: { spaceId: selectedSpaceId() ?? me.spaceId },

@@ -1,6 +1,6 @@
 import type { AnalyticsScreen } from "@robots/contracts";
+import { WORKSPACE_PAGES } from "@robots/contracts";
 
-/** Convert navigation to a fixed vocabulary; never return paths, entity ids or search parameters. */
 export function analyticsScreen(pathname: string): AnalyticsScreen | undefined {
   if (pathname === "/" || pathname === "/app") return "home";
   if (pathname === "/onboarding") return "onboarding";
@@ -9,7 +9,8 @@ export function analyticsScreen(pathname: string): AnalyticsScreen | undefined {
     ["/artifacts", "/artifact", "/image"].includes(pathname)
   )
     return "artifacts";
-  if (pathname === "/app/board") return "board";
+  if (pathname === "/app/board" || pathname === "/app/tasks") return "board";
+  if (WORKSPACE_PAGES.some((page) => page.path === pathname)) return undefined;
   if (/^\/app\/(?:g\/)?[^/]+$/.test(pathname) || ["/thread", "/group-thread"].includes(pathname))
     return "chat";
   if (pathname === "/computer") return "computer";

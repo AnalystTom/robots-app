@@ -26,11 +26,12 @@ import { useSignOut } from "../../lib/sign-out";
 import { ActivityList } from "../ActivityList";
 import { SpaceSearchResults } from "../SpaceSearch";
 import type { SettingsSection } from "../shell-overlay";
+import { WorkspaceNav } from "../workspace/workspace-nav";
+import { useWorkspacePages } from "../workspace/workspace-pages";
 import type { ChatMenuState } from "./chat-context-menu";
 import { SidebarHeader } from "./sidebar-header";
 import type { SidebarSearch } from "./use-sidebar-search";
 
-/** Focuses the search box once it renders, its text selected so typing replaces it. */
 export function focusSidebarSearch() {
   requestAnimationFrame(() => {
     const input = document.querySelector<HTMLInputElement>('input[name="sidebar-search"]');
@@ -39,10 +40,6 @@ export function focusSidebarSearch() {
   });
 }
 
-/**
- * Chromium keeps the top fade drawn when collapsing sections shrinks a scrolled list until it no
- * longer scrolls; replaying the fade's scroll-driven animations lets it settle at the top.
- */
 function resetFadeWhenUnscrollable(event: UIEvent<HTMLDivElement>) {
   const list = event.currentTarget;
   if (list.scrollHeight > list.clientHeight) return;
@@ -54,7 +51,6 @@ function resetFadeWhenUnscrollable(event: UIEvent<HTMLDivElement>) {
 
 type User = { name?: string | null; email?: string; image?: string | null };
 
-/** The bots sidebar: a drawer on phones, collapsible to icons elsewhere. */
 export function ShellSidebar({
   isMobile,
   mobileOpen,
@@ -79,7 +75,6 @@ export function ShellSidebar({
   archived,
   footerLogos,
   user,
-  boardEnabled,
   navLinks,
   openSettings,
   openIntegrations,
@@ -109,7 +104,6 @@ export function ShellSidebar({
   archived: ReactNode;
   footerLogos: Array<{ name: string; logo?: string | null }>;
   user: User | undefined;
-  boardEnabled: boolean;
   navLinks: NavLink[];
   openSettings: (section: SettingsSection) => void;
   openIntegrations: () => void;
@@ -117,6 +111,7 @@ export function ShellSidebar({
   openSpaceChat: (spaceId: string, path: string) => void;
 }) {
   const { t } = useLingui();
+  const workspacePages = useWorkspacePages();
   const {
     query,
     setQuery,
@@ -252,6 +247,18 @@ export function ShellSidebar({
             ) : null}
           </InputGroup>
         )}
+        {activityMode || showSpaceSearch ? null : (
+          <div className="shrink-0 px-2.5 pb-2">
+            <WorkspaceNav
+              pages={workspacePages}
+              mini={mini}
+              onOpen={(page) => {
+                setMobileOpen(false);
+                navigate(page.path);
+              }}
+            />
+          </div>
+        )}
         <div
           onScroll={resetFadeWhenUnscrollable}
           className="rk-scroll scroll-fade-y scroll-fade-12 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2.5 pb-2.5"
@@ -293,7 +300,6 @@ export function ShellSidebar({
             roster
           )}
         </div>
-        {/* One height limit for every shelf, so open shelves never squeeze out the chat list. */}
         <div
           className={
             mini || activityMode
@@ -310,7 +316,6 @@ export function ShellSidebar({
           mini={mini}
           logos={footerLogos}
           user={user}
-          boardEnabled={boardEnabled}
           navLinks={navLinks}
           closeMobileSidebar={() => setMobileOpen(false)}
           navigate={navigate}
@@ -328,7 +333,6 @@ function ShellSidebarFooter({
   mini,
   logos,
   user,
-  boardEnabled,
   navLinks,
   closeMobileSidebar,
   navigate,
@@ -340,7 +344,6 @@ function ShellSidebarFooter({
   mini: boolean;
   logos: Array<{ name: string; logo?: string | null }>;
   user: User | undefined;
-  boardEnabled: boolean;
   navLinks: NavLink[];
   closeMobileSidebar: () => void;
   navigate: (path: string) => void;
@@ -365,7 +368,6 @@ function ShellSidebarFooter({
   const referral = billing?.referral;
   const [logOutError, setLogOutError] = useState<string | null>(null);
   const { signingOut, logOut } = useSignOut("/sign-in", (message) => {
-    // A failed sign-out reloads the page: reopen the menu so its error shows.
     setMenuOpen(true);
     setLogOutError(message);
   });
@@ -405,15 +407,6 @@ function ShellSidebarFooter({
           setMenuOpen(false);
           openSkills();
         }}
-        onBoard={
-          boardEnabled
-            ? () => {
-                setMenuOpen(false);
-                closeMobileSidebar();
-                navigate("/app/board");
-              }
-            : undefined
-        }
         links={navLinks}
         onLink={(link) => {
           setMenuOpen(false);

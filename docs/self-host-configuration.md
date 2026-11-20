@@ -112,7 +112,10 @@ callbacks.
 
 | Variable               | Default         | Effect                                                                                                                                                  |
 | ---------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TICKET_BOARD_ENABLED` | `false`         | Turns the ticket board on for every account. Otherwise each person turns it on in **Settings → Labs**. Set it on the API and worker.                    |
+| `TICKET_BOARD_ENABLED` | `false`         | Turns Tasks on for every account. Otherwise each person turns it on in **Settings → Labs**. Set it on the API and worker.                               |
+| `TODAY_PAGE_ENABLED`   | `false`         | Turns the Today page on for every account, the same way. Set it on the API and worker.                                                                  |
+| `EMAIL_PAGE_ENABLED`   | `false`         | Turns the Email page on for every account, the same way. Set it on the API and worker.                                                                  |
+| `DOCS_PAGE_ENABLED`    | `false`         | Turns the Docs page on for every account, the same way. Set it on the API and worker.                                                                   |
 | `USER_DEVICES_ENABLED` | on              | `false` stops signed-in desktop apps from letting bots run commands on the user's own computer. Set it on the API and worker.                           |
 | `PI_SESSION_RECORDING` | off             | `true` records agent sessions as JSONL under `DATA_DIR/pi-sessions`. The files are not encrypted, so do not use it on a shared or multi-tenant install. |
 | `PRIVACY_POLICY_URL`   | RoBots's policy | The privacy policy linked from the AI data-sharing notice. Set it on the API.                                                                           |

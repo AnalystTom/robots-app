@@ -1,4 +1,5 @@
 import type { AppBootstrap } from "@robots/contracts";
+import { WORKSPACE_PAGES } from "@robots/contracts";
 
 export function initialBootstrapTarget(path: string, desktop: boolean) {
   const pathname = path.split(/[?#]/)[0] ?? "";
@@ -10,9 +11,17 @@ export function initialBootstrapTarget(path: string, desktop: boolean) {
   };
 }
 
+const RESERVED_SEGMENTS: readonly string[] = [
+  "g",
+  "artifacts",
+  "board",
+  "x",
+  ...WORKSPACE_PAGES.map((page) => page.id),
+];
+
 function botIdFromPath(pathname: string) {
   const segments = pathname.split("/");
-  if (["g", "artifacts", "board", "x"].includes(segments[2] ?? "")) return undefined;
+  if (RESERVED_SEGMENTS.includes(segments[2] ?? "")) return undefined;
   return decoded(segments[2]);
 }
 
@@ -30,10 +39,6 @@ function decoded(segment: string | undefined) {
   }
 }
 
-/**
- * Where to open a linked bot that is the user's but not in the Space just loaded. The link's
- * query (a message to jump to, a routine) comes along.
- */
 export function linkedBotRoute(
   bootstrap: Pick<AppBootstrap, "botSpaceId" | "bots" | "me">,
   botId: string | undefined,
@@ -45,7 +50,6 @@ export function linkedBotRoute(
   return { spaceId: bootstrap.botSpaceId, path: `/app/${encodeURIComponent(botId)}${search}` };
 }
 
-/** Where to open a linked group that the user can open, but not in the Space just loaded. */
 export function linkedGroupRoute(
   bootstrap: Pick<AppBootstrap, "groupSpaceId" | "groups" | "me">,
   groupId: string | undefined,

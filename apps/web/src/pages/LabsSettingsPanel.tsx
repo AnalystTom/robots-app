@@ -12,7 +12,6 @@ export function LabsSettingsPanel({
 }: {
   labs: readonly LabFeature[];
   available: readonly LabFeature[];
-  /** Saves the whole list; rejects after rolling back. */
   onLabsChange: (labs: LabFeature[]) => Promise<void>;
 }) {
   const { t } = useLingui();
@@ -20,7 +19,13 @@ export function LabsSettingsPanel({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const copy: Record<LabFeature, { title: string; description: string }> = {
-    board: { title: t`Board`, description: t`A kanban board of tickets your bots can work on` },
+    board: { title: t`Tasks`, description: t`A kanban board of tasks your bots can work on` },
+    today: {
+      title: t`Today`,
+      description: t`A summary of what your bots did today and what needs you`,
+    },
+    email: { title: t`Email`, description: t`Read the mail your bots' email addresses receive` },
+    docs: { title: t`Docs`, description: t`Shared notes and documents your bots read and write` },
   };
 
   async function toggle(feature: LabFeature, enabled: boolean) {

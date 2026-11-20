@@ -122,7 +122,7 @@ export function BoardPage() {
           <ChevronLeft />
         </Link>
         <h1 className="flex-1 font-medium">
-          <Trans>Board</Trans>
+          <Trans>Tasks</Trans>
         </h1>
         <Button onClick={() => setSelected("new")} disabled={bots.length === 0}>
           <Trans>New ticket</Trans>

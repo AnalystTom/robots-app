@@ -22,7 +22,10 @@ export default function Labs() {
   const [available, setAvailable] = useState<MobileMe["labsAvailable"]>([]);
   const saveRequest = useRef(0);
   const copy: Record<LabFeature, { title: string; detail: string }> = {
-    board: { title: t`Board`, detail: t`A kanban board of tickets your bots can work on` },
+    board: { title: t`Tasks`, detail: t`A kanban board of tasks your bots can work on` },
+    today: { title: t`Today`, detail: t`A summary of what your bots did today and what needs you` },
+    email: { title: t`Email`, detail: t`Read the mail your bots' email addresses receive` },
+    docs: { title: t`Docs`, detail: t`Shared notes and documents your bots read and write` },
   };
 
   useFocusEffect(
@@ -45,7 +48,6 @@ export default function Labs() {
     if (!labs) return;
     const previous = labs;
     const next = withLab(previous, feature, enabled);
-    // Only the latest tap's reply may land, so a slower earlier save can't undo it.
     const request = ++saveRequest.current;
     setLabs(next);
     rpc("preferences/update", { labs: next })
@@ -68,15 +70,17 @@ export default function Labs() {
       >
         {labs ? (
           <SettingsGroup>
-            {available.map((feature) => (
-              <SettingsSwitch
-                key={feature}
-                label={copy[feature].title}
-                detail={copy[feature].detail}
-                value={labs.includes(feature)}
-                onChange={(enabled) => toggle(feature, enabled)}
-              />
-            ))}
+            {available
+              .filter((feature) => feature === "board")
+              .map((feature) => (
+                <SettingsSwitch
+                  key={feature}
+                  label={copy[feature].title}
+                  detail={copy[feature].detail}
+                  value={labs.includes(feature)}
+                  onChange={(enabled) => toggle(feature, enabled)}
+                />
+              ))}
           </SettingsGroup>
         ) : null}
       </ScrollView>

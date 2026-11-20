@@ -61,8 +61,7 @@ vi.mock("./lib/auth", () => ({
   },
 }));
 vi.mock("./lib/bootstrap", () => ({
-  getLabs: () => [],
-  subscribeLabs: () => () => {},
+  useLabs: () => [],
 }));
 vi.mock("./lib/rpc", () => {
   const client = {
