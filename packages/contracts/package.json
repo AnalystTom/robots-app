@@ -15,6 +15,11 @@
       "development": "./src/client-build.ts",
       "default": "./src/client-build.ts"
     },
+    "./mobile-app-links": {
+      "types": "./src/mobile-app-links.ts",
+      "development": "./src/mobile-app-links.ts",
+      "default": "./src/mobile-app-links.ts"
+    },
     "./mobile-app": {
       "types": "./src/mobile-app.ts",
       "development": "./src/mobile-app.ts",
