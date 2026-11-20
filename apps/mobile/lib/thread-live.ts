@@ -211,7 +211,6 @@ export function useThreadLiveSubscription({
               if (abort.signal.aborted || sessionGeneration !== currentSessionGeneration()) return;
               const newEvent = (event.seq ?? -1) > cursor;
               cursor = Math.max(cursor, event.seq ?? -1);
-              streamRetry = 0;
               liveCursor.current = cursor;
               rememberTerminalRun(terminalRunIds.current, event);
               if (
@@ -264,6 +263,10 @@ export function useThreadLiveSubscription({
               }
             },
             abort.signal,
+            undefined,
+            () => {
+              streamRetry = 0;
+            },
           );
         } catch (error) {
           failure = error;

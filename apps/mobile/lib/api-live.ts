@@ -40,6 +40,7 @@ export async function subscribeThread(
   onEvent: (event: ThreadEvent) => void,
   signal: AbortSignal,
   requestContext?: ApiRequestContext,
+  onFrame: () => void = () => {},
 ) {
   const context = requestContext ?? (await captureApiRequestContext());
   syncMobileAvatarSession(currentApiBase(), currentSessionGeneration());
@@ -63,6 +64,7 @@ export async function subscribeThread(
     signal,
     context,
     () => mobileLogoAvatarActivity.resetSource(activityFeed.source),
+    onFrame,
   );
 }
 export async function subscribeIncomingCallEvents(
@@ -107,6 +109,7 @@ async function subscribeRpcEvents(
   signal: AbortSignal,
   context: ApiRequestContext,
   onClose: () => void = () => {},
+  onFrame: () => void = () => {},
 ) {
   const current = () =>
     context.apiBase === currentApiBase() &&
@@ -171,13 +174,15 @@ async function subscribeRpcEvents(
       if (!data || data === "[DONE]") return;
       try {
         const parsed = JSON.parse(data) as { json?: ThreadEvent; error?: { message?: string } };
-        if (parsed.json?.type && parsed.json.type !== "heartbeat") {
-          if (!current()) {
-            onClose();
-            return;
+        if (parsed.json?.type) {
+          onFrame();
+          if (parsed.json.type !== "heartbeat") {
+            if (!current()) {
+              onClose();
+              return;
+            }
+            onEvent(parsed.json);
           }
-          const event = parsed.json;
-          onEvent(event);
         }
       } catch {}
     };
