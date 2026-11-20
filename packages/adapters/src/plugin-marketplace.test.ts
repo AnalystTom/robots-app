@@ -451,6 +451,36 @@ describe("plugin logos", () => {
     expect(logos).toHaveBeenCalledTimes(1);
     expect(read).toHaveBeenCalledTimes(1);
   });
+  it("gives a submission approved after a miss its logo once the approved map refreshes", async () => {
+    let clock = 0;
+    const approved = new Map<string, string>();
+    const logos = vi.fn(async () => new Map(approved));
+    const read = vi.fn(async () => svgLogo);
+    const service = createPluginLogos({
+      read,
+      listed: async () => null,
+      now: () => clock,
+      submitted: { registry: "RoBots", logos },
+    });
+    expect(await service.logo("RoBots", "sub-1.png")).toBeNull();
+    approved.set("sub-1", "https://cdn.example.test/logo.svg");
+    clock = 61_000;
+    expect(await service.logo("RoBots", "sub-1.png")).not.toBeNull();
+    expect(logos).toHaveBeenCalledTimes(2);
+  });
+  it("does not read a failing registry catalog again for each logo key", async () => {
+    const read = vi.fn(async () => {
+      throw new Error("Request failed: HTTP 500");
+    });
+    const marketplace = createPluginMarketplace(read);
+    const logos = createPluginLogos({
+      read: async () => svgLogo,
+      listed: marketplace.listedLogoUrl,
+    });
+    for (let i = 0; i < 5; i++)
+      expect(await logos.logo("Cursor", logoKey(`mail/assets/${i}.svg`))).toBeNull();
+    expect(read).toHaveBeenCalledTimes(1);
+  });
   it("answers a failing submitted lookup as a missing logo, not an error", async () => {
     const read = vi.fn(async () => svgLogo);
     const logos = vi.fn(async () => {

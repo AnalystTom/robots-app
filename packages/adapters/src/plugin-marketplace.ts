@@ -213,6 +213,7 @@ export function createPluginMarketplace(read: PluginTextReader = publicRead) {
   const pending = new Map<string, Promise<ReturnType<typeof parsePluginMarketplace>>>();
   /** Sources whose preview failed; they are left out of browse until this time. */
   const unreadable = new Map<string, number>();
+  const logoCatalogFailures = new Map<string, number>();
   const files = new Map<string, { expires: number; text: string | null }>();
   const trees = new Map<string, { expires: number; paths: string[]; sizes: Map<string, number> }>();
   const cachedText = async (url: string, maxBytes: number, signal: AbortSignal) => {
@@ -400,9 +401,13 @@ export function createPluginMarketplace(read: PluginTextReader = publicRead) {
     },
     async listedLogoUrl(registryName: string, path: string): Promise<string | null> {
       const registry = REGISTRIES.find((candidate) => candidate.name === registryName);
-      if (!registry) return null;
+      if (!registry || (logoCatalogFailures.get(registry.name) ?? 0) > Date.now()) return null;
       const [catalog] = await Promise.allSettled([registryData(registry)]);
-      if (catalog.status === "rejected") return null;
+      if (catalog.status === "rejected") {
+        logoCatalogFailures.set(registry.name, Date.now() + LOGO_FAILED_TTL_MS);
+        return null;
+      }
+      logoCatalogFailures.delete(registry.name);
       const logo = pluginLogoUrl(registry, path);
       return catalog.value.entries.some((entry) => entry.logo === logo)
         ? `${registryFiles(registry)}${path}`
@@ -484,7 +489,7 @@ export function createPluginLogos({
     try {
       const url = await upstream(registryName, file.slice(0, -".png".length));
       if (!url) {
-        rememberMissing(id);
+        if (submitted?.registry !== registryName) rememberMissing(id);
         return null;
       }
       const png = await pluginLogoPng(await read(url, LOGO_MAX_BYTES, AbortSignal.timeout(15_000)));
