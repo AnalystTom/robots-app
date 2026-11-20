@@ -5,6 +5,8 @@ const fake = vi.hoisted(() => ({
   locked: false,
   onAppState: undefined as undefined | ((state: string) => void),
   onEvent: undefined as undefined | ((event: unknown) => void),
+  subscribes: 0,
+  failSubscribe: undefined as undefined | Error,
   lastResponse: null as unknown,
   actions: [] as Record<string, string>[],
   native: {
@@ -52,6 +54,8 @@ vi.mock("./api", () => ({
 }));
 vi.mock("./api-live", () => ({
   subscribeIncomingCallEvents: async (onEvent: (event: unknown) => void, signal: AbortSignal) => {
+    fake.subscribes += 1;
+    if (fake.failSubscribe) throw fake.failSubscribe;
     fake.onEvent = onEvent;
     await new Promise<void>((resolve) =>
       signal.addEventListener("abort", () => resolve(), { once: true }),
@@ -112,6 +116,8 @@ beforeEach(() => {
   fake.locked = false;
   fake.onAppState = undefined;
   fake.onEvent = undefined;
+  fake.subscribes = 0;
+  fake.failSubscribe = undefined;
   fake.lastResponse = null;
   fake.call = null;
   vi.clearAllMocks();
@@ -149,6 +155,18 @@ describe("mobile incoming calls", () => {
     expect(fake.onEvent).toBeTypeOf("function");
     expect(fake.native.configureIncomingSession).toHaveBeenCalledOnce();
   });
+  it("reconnects the call stream at once when the app returns to the foreground", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(1);
+    fake.failSubscribe = Object.assign(new Error("Unavailable"), { status: 503 });
+    stop = startIncomingCalls();
+    await vi.advanceTimersByTimeAsync(15_000);
+    const before = fake.subscribes;
+    expect(before).toBe(5);
+    fake.onAppState?.("active");
+    await tick();
+    expect(fake.subscribes).toBe(before + 1);
+  });
+
   it("rings from realtime and expires without polling", async () => {
     await ring();
     expect(getIncomingCall()?.incomingCall.callId).toBe("call-1");
