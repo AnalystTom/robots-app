@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BotTemplateIcon } from "../../components/bot-template-icon";
 import { NativeActionButton } from "../../components/native-action-button";
 import { PluginIcon } from "../../components/plugin-icon";
+import { PluginTitle } from "../../components/plugin-title";
 import { Chevron } from "../../components/row-accessories";
 import { SkillSymbol } from "../../components/skill-symbol";
 import { native, useThemedStyles } from "../../lib/native";
@@ -267,9 +268,7 @@ export default function SkillsScreen() {
                 size={LOGO_SIZE}
               />
               <View style={styles.grow}>
-                <Text numberOfLines={1} style={styles.title}>
-                  {entry.displayName}
-                </Text>
+                <PluginTitle name={entry.displayName} community={entry.community} />
                 {entry.description ? (
                   <Text numberOfLines={1} style={styles.secondary}>
                     {entry.description}

@@ -224,7 +224,7 @@ function documentBase(document: DocumentFragment, pageUrl: string): string {
 
 type ImageFormat = "png" | "jpeg" | "gif" | "webp" | "ico";
 
-function sniffImage(bytes: Uint8Array): ImageFormat | undefined {
+export function sniffImage(bytes: Uint8Array): ImageFormat | undefined {
   const ascii = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end));
   if (bytes.length >= 8 && ascii(1, 4) === "PNG" && bytes[0] === 0x89) return "png";
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "jpeg";

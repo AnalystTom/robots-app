@@ -14,6 +14,7 @@ const CURSOR_FILES: Record<string, string> = {
   "planning-notes/.cursor-plugin/plugin.json": JSON.stringify({
     name: "planning-notes",
     displayName: "Planning Notes",
+    author: { name: "Cursor" },
   }),
   "planning-notes/mcp.json": fixtureMcp,
   "planning-notes/skills/planning-notes/SKILL.md":

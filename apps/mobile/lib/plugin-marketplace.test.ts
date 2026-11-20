@@ -28,6 +28,7 @@ const entry = (overrides: Partial<PluginMarketplaceEntry>): PluginMarketplaceEnt
   installedSource: "https://github.com/acme/plugins",
   hasConnector: true,
   skillCount: 0,
+  community: false,
   ...overrides,
 });
 

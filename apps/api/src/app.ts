@@ -39,6 +39,7 @@ import {
   createConnectorRuntime,
   createMediaGenerationProvider,
   createPaymentWalletProvider,
+  createPluginLogos,
   createProductAnalytics,
   createRunReconciler,
   createRunRuntime,
@@ -160,7 +161,12 @@ import { marketingEmailRoutes, sendWelcomeEmail } from "./marketing-email.js";
 import { moveMcpArgsIntoSecrets } from "./mcp-args-migration.js";
 import { startMessagingRuntime } from "./messaging-runtime.js";
 import { monitoringRoutes } from "./monitoring.js";
-import { pluginSubmissionRoutes } from "./plugin-submissions.js";
+import { mountPluginLogos } from "./plugin-logos.js";
+import {
+  approvedPluginLogo,
+  PLUGIN_REGISTRY,
+  pluginSubmissionRoutes,
+} from "./plugin-submissions.js";
 import { sendReferralEmails } from "./referral-email.js";
 import { mountApiRequestBodyLimits, rpcBodyLimit } from "./request-body-limit.js";
 import { createRouter } from "./router.js";
@@ -916,6 +922,12 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
   mountApiRequestBodyLimits(app);
   mountScreenTarget(app, prisma, env.screenProxySecret);
   mountScriptAssets(app);
+  mountPluginLogos(
+    app,
+    createPluginLogos({
+      sources: { [PLUGIN_REGISTRY]: (id) => approvedPluginLogo(prisma, id) },
+    }),
+  );
   mountSharedPages(app, prisma, requestClientIp);
   const auditAuthResponse = createAuthResponseAudit();
   for (const [path, reason] of SYSTEM_CONTEXT_PATHS) {

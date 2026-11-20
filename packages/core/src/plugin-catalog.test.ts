@@ -26,6 +26,7 @@ function entry(
     installedSource: `https://github.com/example/${overrides.name}`,
     hasConnector: true,
     skillCount: 0,
+    community: false,
     ...overrides,
   };
 }

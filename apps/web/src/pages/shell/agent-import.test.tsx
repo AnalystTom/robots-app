@@ -29,6 +29,7 @@ vi.mock("../../lib/rpc", () => ({
 
 vi.mock("@robots/core", async (importOriginal) => ({
   ...(await importOriginal<typeof Core>()),
+  AGENT_IMPORT_SOURCE_NAMES: { grok_bot: "Catalog Bot" },
   openAgentImportArchive: (bytes: Uint8Array) => {
     const content = bytes[0] === 1 ? "First" : "Second";
     return {
@@ -583,6 +584,17 @@ describe("a Grok Bot reply with several Bots", () => {
 });
 
 describe("choosing Grok Bot files", () => {
+  it("names the section from the import-source catalog", async () => {
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(<AgentImportForm onClose={() => undefined} onCreated={() => undefined} />);
+    });
+    const grok = container.querySelector('[data-testid="agent-import-grok"]')!;
+    expect(grok.querySelector("h3")?.textContent).toBe("Catalog Bot");
+  });
+
   it("disables Continue while the chosen files are read", async () => {
     container = document.createElement("div");
     document.body.append(container);

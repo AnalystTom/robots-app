@@ -964,6 +964,7 @@ export const PluginMarketplaceEntrySchema = z.object({
   hasConnector: z.boolean(),
   /** Skills, sub-agents and commands, which all install as skills. */
   skillCount: z.number().int().nonnegative(),
+  community: z.boolean().default(false),
 });
 export type PluginMarketplaceEntry = z.infer<typeof PluginMarketplaceEntrySchema>;
 export const PluginMarketplaceCatalogSchema = z.object({
@@ -974,6 +975,7 @@ export const PluginMarketplaceCatalogSchema = z.object({
 export type PluginMarketplaceCatalog = z.infer<typeof PluginMarketplaceCatalogSchema>;
 
 export const PLUGIN_SUBMISSIONS_PATH = "/api/v1/plugin-submissions";
+export const PLUGIN_LOGO_PATH = "/api/v1/plugin-logos";
 /** Approved claims, public so the marketing site can show each owner's page at build time. */
 export const INTEGRATION_CLAIMS_PATH = "/api/v1/integration-claims";
 /** Opened from the email that proves a claimant reads mail at the app's domain. */

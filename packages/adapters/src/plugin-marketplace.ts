@@ -1,9 +1,12 @@
 import type { PluginMarketplaceCatalog, PluginMarketplaceEntry } from "@robots/contracts";
+import { PLUGIN_LOGO_PATH } from "@robots/contracts";
 import { comparePlugins, matchesPluginQuery, pluginCategory } from "@robots/core";
 import { z } from "zod";
+import { sniffImage } from "./favicon.js";
 import type { PluginCompleteness, PluginTextReader } from "./plugin-connectors.js";
 import { classifyPluginFiles, parsePluginSource } from "./plugin-connectors.js";
-import { fetchSafeWebText } from "./web-ssrf.js";
+import { neutralPluginDescription } from "./plugin-description.js";
+import { fetchSafeWebBytes, fetchSafeWebText } from "./web-ssrf.js";
 
 const REGISTRIES = [
   {
@@ -27,6 +30,12 @@ type Registry = (typeof REGISTRIES)[number];
 const MANIFEST_TTL_MS = 60 * 60_000;
 const CATALOG_TTL_MS = 10 * 60_000;
 const MANIFEST_CONCURRENCY = 16;
+const authorSchema = z
+  .union([z.string(), z.object({ name: z.string() })])
+  .transform((author) => (typeof author === "string" ? author : author.name).trim())
+  .optional()
+  .catch(undefined);
+const LOGO_FILE = /^(?!\/)(?!.*\.\.)[\w./-]+\.(svg|png|jpe?g|webp)$/i;
 const entrySchema = z.object({
   name: z.string().trim().min(1).max(120),
   description: z.string().max(4000).optional(),
@@ -34,6 +43,7 @@ const entrySchema = z.object({
   category: z.string().trim().min(1).max(60).optional().catch(undefined),
   homepage: z.string().url().max(2048).optional().catch(undefined),
   domains: z.array(z.string().max(253)).max(20).optional().catch(undefined),
+  author: authorSchema,
   source: z.union([
     z.string().max(2048),
     z.object({
@@ -101,7 +111,7 @@ export function parsePluginMarketplace(
         id: `${registry.name}:${installSource}`,
         name: entry.name,
         displayName: displayName(entry.name),
-        description: entry.description ?? "",
+        description: neutralPluginDescription(entry.description ?? "", entry.name),
         keywords: entry.keywords ?? [],
         category: entry.category?.toLowerCase() ?? null,
         logo: null,
@@ -112,6 +122,7 @@ export function parsePluginMarketplace(
         installedSource,
         hasConnector: false,
         skillCount: 0,
+        community: !entry.domains?.length && entry.author !== registry.name,
       });
     } catch {
       skipped++;
@@ -123,12 +134,8 @@ export function parsePluginMarketplace(
 const manifestSchema = z.object({
   displayName: z.string().trim().min(1).max(120).optional().catch(undefined),
   category: z.string().trim().min(1).max(60).optional().catch(undefined),
-  logo: z
-    .string()
-    .regex(/^(?!\/)(?!.*\.\.)[\w./-]+\.(svg|png|jpe?g|webp)$/i)
-    .max(512)
-    .optional()
-    .catch(undefined),
+  logo: z.string().regex(LOGO_FILE).max(512).optional().catch(undefined),
+  author: authorSchema,
 });
 
 const componentIndexSchema = z.object({
@@ -164,6 +171,14 @@ function parseManifest(text: string): z.infer<typeof manifestSchema> | undefined
   } catch {
     return undefined;
   }
+}
+
+function registryFiles(registry: Registry): string {
+  return `https://raw.githubusercontent.com${new URL(registry.repository).pathname}/HEAD/`;
+}
+
+function pluginLogoUrl(registry: Registry, file: string): string {
+  return `${PLUGIN_LOGO_PATH}/${encodeURIComponent(registry.name)}/${Buffer.from(file).toString("base64url")}.png`;
 }
 
 function displayName(name: string): string {
@@ -233,7 +248,7 @@ export function createPluginMarketplace(read: PluginTextReader = publicRead) {
     registry: Registry,
     entries: PluginMarketplaceEntry[],
   ): Promise<PluginMarketplaceEntry[]> {
-    const raw = `https://raw.githubusercontent.com${new URL(registry.repository).pathname}/HEAD/`;
+    const raw = registryFiles(registry);
     const prefix = `${registry.repository}#`;
     const signal = AbortSignal.timeout(15_000);
     const [{ paths, sizes }, index] = await Promise.all([
@@ -295,7 +310,10 @@ export function createPluginMarketplace(read: PluginTextReader = publicRead) {
           ...detail.parts,
           displayName: manifest?.displayName ?? entry.displayName,
           category: entry.category ?? manifest?.category?.toLowerCase() ?? null,
-          logo: manifest?.logo ? `${raw}${dir}/${manifest.logo.replace(/^\.\//, "")}` : null,
+          logo: manifest?.logo
+            ? pluginLogoUrl(registry, `${dir}/${manifest.logo.replace(/^\.\//, "")}`)
+            : null,
+          community: entry.community && manifest?.author !== registry.name,
         },
       ];
     });
@@ -314,9 +332,8 @@ export function createPluginMarketplace(read: PluginTextReader = publicRead) {
     const active = pending.get(registry.name);
     if (active) return active;
     const request = (async () => {
-      const repo = new URL(registry.repository).pathname;
       const text = await read(
-        `https://raw.githubusercontent.com${repo}/HEAD/${registry.path}`,
+        `${registryFiles(registry)}${registry.path}`,
         2_000_000,
         AbortSignal.timeout(15_000),
       );
@@ -368,4 +385,110 @@ export function createPluginMarketplace(read: PluginTextReader = publicRead) {
       unreadable.delete(source);
     },
   };
+}
+
+const LOGO_MAX_BYTES = 1024 * 1024;
+const LOGO_SIZE = 128;
+const LOGO_MAX_INPUT_PIXELS = 4096 * 4096;
+const LOGO_FOUND_TTL_MS = 24 * 60 * 60_000;
+const MAX_CACHED_LOGOS = 2_000;
+const MAX_CACHED_LOGO_BYTES = 32 * 1024 * 1024;
+
+export type PluginBytesReader = (
+  url: string,
+  maxBytes: number,
+  signal: AbortSignal,
+) => Promise<Uint8Array>;
+
+const publicBytes: PluginBytesReader = async (url, maxBytes, signal) =>
+  (await fetchSafeWebBytes(url, { maxBytes, signal })).body;
+
+export type PluginLogos = {
+  logo(registry: string, file: string): Promise<Uint8Array<ArrayBuffer> | null>;
+};
+
+export type PluginLogoSource = (key: string) => Promise<string | null>;
+
+export function createPluginLogos({
+  read = publicBytes,
+  now = Date.now,
+  sources = {},
+}: {
+  read?: PluginBytesReader;
+  now?: () => number;
+  sources?: Record<string, PluginLogoSource>;
+} = {}): PluginLogos {
+  const otherSources = new Map(Object.entries(sources));
+  const upstream = async (registryName: string, key: string) => {
+    const registry = REGISTRIES.find((candidate) => candidate.name === registryName);
+    if (!registry) return (await otherSources.get(registryName)?.(key)) ?? null;
+    const path = Buffer.from(key, "base64url").toString();
+    return LOGO_FILE.test(path) ? `${registryFiles(registry)}${path}` : null;
+  };
+  const cache = new Map<string, { expires: number; png: Uint8Array<ArrayBuffer> | null }>();
+  const pending = new Map<string, Promise<Uint8Array<ArrayBuffer> | null>>();
+  let cachedBytes = 0;
+  const forget = (url: string) => {
+    cachedBytes -= cache.get(url)?.png?.byteLength ?? 0;
+    cache.delete(url);
+  };
+  const remember = (url: string, png: Uint8Array<ArrayBuffer> | null) => {
+    forget(url);
+    cache.set(url, { png, expires: now() + (png ? LOGO_FOUND_TTL_MS : MANIFEST_TTL_MS) });
+    cachedBytes += png?.byteLength ?? 0;
+    while (cache.size > MAX_CACHED_LOGOS || cachedBytes > MAX_CACHED_LOGO_BYTES)
+      forget(cache.keys().next().value!);
+  };
+  const load = async (url: string) => {
+    try {
+      const png = await pluginLogoPng(await read(url, LOGO_MAX_BYTES, AbortSignal.timeout(15_000)));
+      remember(url, png);
+      return png;
+    } catch (error) {
+      if (error instanceof Error && error.message === "Request failed: HTTP 404")
+        remember(url, null);
+      return null;
+    }
+  };
+  return {
+    async logo(registryName, file) {
+      const url = /^[\w-]+\.png$/.test(file)
+        ? await upstream(registryName, file.slice(0, -".png".length))
+        : null;
+      if (!url) return null;
+      const cached = cache.get(url);
+      if (cached && cached.expires > now()) return cached.png;
+      const active = pending.get(url);
+      if (active) return active;
+      const request = load(url).finally(() => pending.delete(url));
+      pending.set(url, request);
+      return request;
+    },
+  };
+}
+
+export async function pluginLogoPng(bytes: Uint8Array): Promise<Uint8Array<ArrayBuffer> | null> {
+  const raster = sniffImage(bytes);
+  const svg = !raster && /<svg[\s>]/i.test(new TextDecoder().decode(bytes.subarray(0, 4096)));
+  if ((!raster || raster === "ico") && !svg) return null;
+  const { default: sharp } = await import("sharp");
+  try {
+    const density = svg ? svgDensity(await sharp(bytes).metadata()) : undefined;
+    const png = await sharp(bytes, {
+      density,
+      limitInputPixels: LOGO_MAX_INPUT_PIXELS,
+      animated: false,
+    })
+      .resize(LOGO_SIZE, LOGO_SIZE, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png()
+      .toBuffer();
+    return new Uint8Array(png);
+  } catch {
+    return null;
+  }
+}
+
+function svgDensity({ width = 0, height = 0 }: { width?: number; height?: number }): number {
+  const side = Math.max(width, height, 1);
+  return Math.min(2400, Math.max(1, Math.ceil((72 * LOGO_SIZE) / side)));
 }

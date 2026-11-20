@@ -9,7 +9,7 @@ import type {
 } from "@robots/contracts";
 import { mcpServerConnection, mcpServerNeedsSignIn, PluginPreviewSchema } from "@robots/contracts";
 import { installedPluginParts } from "@robots/core";
-import { Button, Spinner } from "@robots/ui-web";
+import { Badge, Button, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, Check, ChevronLeft, FileText, Plug } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { connectMcpOauth } from "../../lib/mcp-connect";
@@ -101,6 +101,7 @@ export function PluginRow({
   description,
   logo,
   site,
+  community,
   installed,
   onOpen,
 }: {
@@ -108,6 +109,7 @@ export function PluginRow({
   description: string;
   logo?: string | null;
   site?: string | null;
+  community: boolean;
   installed: boolean;
   onOpen: () => void;
 }) {
@@ -116,7 +118,14 @@ export function PluginRow({
       <button type="button" onClick={onOpen} className={ROW_BUTTON}>
         <PluginLogo name={name} logo={logo} site={site} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-body-lg font-medium text-foreground">{name}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-body-lg font-medium text-foreground">{name}</span>
+            {community ? (
+              <Badge variant="secondary">
+                <Trans>Community</Trans>
+              </Badge>
+            ) : null}
+          </span>
           {description ? (
             <span className="block truncate text-body-sm text-muted-foreground">{description}</span>
           ) : null}

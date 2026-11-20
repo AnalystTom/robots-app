@@ -15,6 +15,7 @@ vi.mock("@robots/adapters", async (original) => ({
 const {
   approvedIntegrationClaims,
   approvedPluginEntries,
+  approvedPluginLogo,
   listPluginSubmissions,
   pluginSubmissionRoutes,
   reviewPluginSubmission,
@@ -59,13 +60,14 @@ function fakePrisma(users: Array<{ id: string; email: string; emailVerified: boo
     findFirst: async ({
       where,
     }: {
-      where: { source?: string; claim?: string; email: string; status: Status };
+      where: { id?: string; source?: string; claim?: string; email?: string; status: Status };
     }) =>
       rows.find(
         (row) =>
-          (where.claim ? row.claim === where.claim : row.source === where.source) &&
-          row.email === where.email &&
-          statusIs(row.status, where.status),
+          (where.id
+            ? row.id === where.id && Boolean(row.pinnedSource)
+            : (where.claim ? row.claim === where.claim : row.source === where.source) &&
+              row.email === where.email) && statusIs(row.status, where.status),
       ) ?? null,
     findUnique: async ({ where }: { where: { id?: string; confirmToken?: string } }) => {
       const row = rows.find((candidate) =>
@@ -276,8 +278,12 @@ describe("reviewing submissions", () => {
         installedSource: "https://github.com/acme/plugins#tickets",
         hasConnector: false,
         skillCount: 2,
+        logo: "/api/v1/plugin-logos/RoBots/sub-1.png",
+        community: false,
       }),
     ]);
+    expect(await approvedPluginLogo(prisma, "sub-1")).toBe("https://example.test/logo.svg");
+    expect(await approvedPluginLogo(prisma, "sub-2")).toBeNull();
   });
 
   it("approves a plugin that leaves out a skill repeating a built-in one", async () => {

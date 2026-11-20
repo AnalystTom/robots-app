@@ -129,6 +129,22 @@ test("Integrations installs a plugin, completes real broker OAuth against a fake
   expect(await skillNames()).not.toContain("planning-notes");
 });
 
+test("Skills browse labels a pack published by an individual as community", async ({
+  page,
+}, testInfo) => {
+  await signup(page, `skill-packs-${Date.now()}@robots.test`, "password12", "Skill Packs Test");
+  await completeOnboarding(page);
+  await page.getByTestId("user-menu-trigger").click();
+  await page.getByRole("button", { name: "Skills", exact: true }).click();
+  const packs = page
+    .getByRole("dialog", { name: "Skills", exact: true })
+    .getByTestId("skill-packs")
+    .getByTestId("plugin-row");
+  const pack = packs.filter({ hasText: "Review Kit" });
+  await expect(pack.getByText("Community", { exact: true })).toBeVisible();
+  await captureScreenshot(page, testInfo, "skills-browse-community");
+});
+
 test("shows directly registered MCP servers in Integrations without catalog connections", async ({
   page,
 }, testInfo) => {

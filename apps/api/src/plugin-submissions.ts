@@ -21,6 +21,7 @@ import {
   INTEGRATION_CLAIMS_PATH,
   IntegrationClaimInputSchema,
   integrationPageUrl,
+  PLUGIN_LOGO_PATH,
   PLUGIN_SUBMISSIONS_PATH,
   PluginSubmissionInputSchema,
 } from "@robots/contracts";
@@ -34,7 +35,7 @@ import { rethrowUnlessPluginSourceFailed } from "./plugin-installs.js";
 import type { RouterDeps } from "./router.js";
 import { throttleKey, windowCounter } from "./window-counter.js";
 
-const PLUGIN_REGISTRY = "RoBots";
+export const PLUGIN_REGISTRY = "RoBots";
 const MAX_BODY_BYTES = 32 * 1024;
 const HOUR_MS = 60 * 60_000;
 const SUBMISSIONS_PER_IP_PER_HOUR = 10;
@@ -342,7 +343,7 @@ export async function approvedPluginEntries(
         description: row.description,
         keywords: [],
         category: pluginCategory({ name, category: null }),
-        logo: row.logo,
+        logo: row.logo ? `${PLUGIN_LOGO_PATH}/${PLUGIN_REGISTRY}/${row.id}.png` : null,
         homepage: row.website,
         domains: [],
         registry: PLUGIN_REGISTRY,
@@ -350,9 +351,18 @@ export async function approvedPluginEntries(
         installedSource,
         hasConnector: row.hasConnector,
         skillCount: row.skillCount,
+        community: false,
       },
     ];
   });
+}
+
+export async function approvedPluginLogo(prisma: PrismaClient, id: string): Promise<string | null> {
+  const row = await prisma.pluginSubmission.findFirst({
+    where: { id, status: "approved", pinnedSource: { not: null } },
+    select: { logo: true },
+  });
+  return row?.logo ?? null;
 }
 
 /** The newest approved claim for each integration page. */

@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createPluginMarketplace, parsePluginMarketplace } from "./plugin-marketplace.js";
+import {
+  createPluginLogos,
+  createPluginMarketplace,
+  parsePluginMarketplace,
+  pluginLogoPng,
+} from "./plugin-marketplace.js";
 
 const registry = { name: "Cursor", repository: "https://github.com/example/plugins" };
 const index = (plugins: unknown[]) => JSON.stringify({ name: "example", plugins });
@@ -30,7 +35,30 @@ describe("public marketplace indexes", () => {
         installedSource: "https://github.com/example/plugins#notes",
         hasConnector: false,
         skillCount: 0,
+        community: true,
       },
+    ]);
+  });
+  it("neutralises the host assistant in descriptions and marks entries without an owner", () => {
+    const { entries } = parsePluginMarketplace(
+      index([
+        {
+          name: "payments",
+          source: "./payments",
+          description: "Payments plugin for Grok Build: refunds and invoices.",
+          domains: ["payments.example.test"],
+        },
+        { name: "style", source: "./style", author: { name: "A Person" } },
+        { name: "owned", source: "./owned", author: { name: "xAI" } },
+      ]),
+      { name: "xAI", repository: "https://github.com/example/index" },
+    );
+    expect(
+      entries.map(({ name, description, community }) => ({ name, description, community })),
+    ).toEqual([
+      { name: "payments", description: "Payments plugin: refunds and invoices.", community: false },
+      { name: "style", description: "", community: true },
+      { name: "owned", description: "", community: false },
     ]);
   });
   it("loads xAI local-directory source objects without allowing traversal", () => {
@@ -198,19 +226,25 @@ describe("marketplace service", () => {
           displayName: "Mail",
           category: "Productivity",
           logo: "assets/logo.svg",
+          author: { name: "Cursor", email: "plugins@example.test" },
         }),
-        "/notes/.cursor-plugin/plugin.json": JSON.stringify({ logo: "../../escape.svg" }),
+        "/notes/.cursor-plugin/plugin.json": JSON.stringify({
+          logo: "../../escape.svg",
+          author: { name: "A Person" },
+        }),
       },
     });
     const { entries } = await createPluginMarketplace(read).catalog("");
+    const logo = Buffer.from("mail/assets/logo.svg").toString("base64url");
     expect(entries).toMatchObject([
       {
         name: "mail",
         displayName: "Mail",
         category: "productivity",
-        logo: "https://raw.githubusercontent.com/cursor/plugins/HEAD/mail/assets/logo.svg",
+        logo: `/api/v1/plugin-logos/Cursor/${logo}.png`,
+        community: false,
       },
-      { name: "notes", displayName: "Notes", category: null, logo: null },
+      { name: "notes", displayName: "Notes", category: null, logo: null, community: true },
     ]);
   });
   it("lists only plugins whose every part installs, and says which have a connector", async () => {
@@ -313,5 +347,74 @@ describe("marketplace service", () => {
       unavailableRegistries: ["Cursor", "xAI"],
       skippedEntries: 0,
     });
+  });
+});
+
+const svgLogo = new TextEncoder().encode(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="16" height="16" fill="#123456"/></svg>',
+);
+const logoKey = (path: string) => `${Buffer.from(path).toString("base64url")}.png`;
+
+describe("plugin logos", () => {
+  it("serves a registry logo as a cached PNG from the server", async () => {
+    const read = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read });
+    const png = await logos.logo("Cursor", logoKey("mail/assets/logo.svg"));
+    expect(read).toHaveBeenCalledWith(
+      "https://raw.githubusercontent.com/cursor/plugins/HEAD/mail/assets/logo.svg",
+      expect.any(Number),
+      expect.any(AbortSignal),
+    );
+    expect(Buffer.from(png!.subarray(1, 4)).toString()).toBe("PNG");
+    expect(await logos.logo("Cursor", logoKey("mail/assets/logo.svg"))).toBe(png);
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+  it("refuses anything but an image file in a known registry", async () => {
+    const read = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read });
+    for (const [registry, file] of [
+      ["Elsewhere", logoKey("mail/assets/logo.svg")],
+      ["Cursor", logoKey("../escape/logo.svg")],
+      ["Cursor", logoKey("/etc/logo.svg")],
+      ["Cursor", logoKey("mail/.cursor-plugin/plugin.json")],
+      ["Cursor", "mail/assets/logo.svg"],
+    ] as const)
+      expect(await logos.logo(registry, file)).toBeNull();
+    expect(read).not.toHaveBeenCalled();
+  });
+  it("asks a listed source for the logos of its own entries", async () => {
+    const read = vi.fn(async () => svgLogo);
+    const source = vi.fn(async (key: string) =>
+      key === "sub-1" ? "https://cdn.example.test/logo.svg" : null,
+    );
+    const logos = createPluginLogos({ read, sources: { RoBots: source } });
+    expect(await logos.logo("RoBots", "sub-1.png")).not.toBeNull();
+    expect(read).toHaveBeenCalledWith(
+      "https://cdn.example.test/logo.svg",
+      expect.any(Number),
+      expect.any(AbortSignal),
+    );
+    expect(await logos.logo("RoBots", "sub-2.png")).toBeNull();
+    expect(await logos.logo("constructor", "sub-1.png")).toBeNull();
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+  it("remembers a missing logo but retries other failures", async () => {
+    const read = vi
+      .fn<(url: string) => Promise<Uint8Array>>()
+      .mockRejectedValueOnce(new Error("Request failed: HTTP 500"))
+      .mockRejectedValueOnce(new Error("Request failed: HTTP 404"));
+    const logos = createPluginLogos({ read });
+    expect(await logos.logo("xAI", logoKey("neon/logo.png"))).toBeNull();
+    expect(await logos.logo("xAI", logoKey("neon/logo.png"))).toBeNull();
+    expect(await logos.logo("xAI", logoKey("neon/logo.png"))).toBeNull();
+    expect(read).toHaveBeenCalledTimes(2);
+  });
+  it("draws raster and SVG logos and rejects anything else", async () => {
+    const fromSvg = await pluginLogoPng(svgLogo);
+    expect(fromSvg).not.toBeNull();
+    expect(await pluginLogoPng(fromSvg!)).not.toBeNull();
+    expect(await pluginLogoPng(new TextEncoder().encode("<html><script></script></html>"))).toBe(
+      null,
+    );
   });
 });
