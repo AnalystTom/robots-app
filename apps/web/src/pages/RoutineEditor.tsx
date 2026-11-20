@@ -8,7 +8,7 @@ import { useId } from "react";
 import { useIdentityConfirmation } from "../components/ConfirmIdentityDialog";
 import { useSpaceQueries } from "../lib/query";
 import type { RoutineDraftState } from "../lib/routine-draft";
-import { routineDraftHasTrigger, routineNeedsOneShotArm } from "../lib/routine-draft";
+import { routineDraftMissing, routineNeedsOneShotArm } from "../lib/routine-draft";
 import { RoutineRunHistory } from "./RoutineRunHistory";
 import { RoutineSchedule } from "./RoutineSchedule";
 import { AddTriggerMenu } from "./routine-editor/add-trigger-menu";
@@ -78,7 +78,7 @@ export function RoutineEditor({
     (scheduleStatus.data === undefined
       ? editing?.scheduleDelayed
       : scheduleStatus.data?.scheduleDelayed);
-  const hasTriggers = routineDraftHasTrigger(draft);
+  const missing = routineDraftMissing(draft);
   const canTest = Boolean(editing) && !saving && !running;
   const needsOneShotArm =
     editing != null && routineNeedsOneShotArm(editing, draft.schedules.map(cronFromPreset));
@@ -280,15 +280,15 @@ export function RoutineEditor({
 
       <div className="mt-5 flex items-center gap-3">
         <Button
-          disabled={saving || running || !hasTriggers}
-          aria-describedby={hasTriggers ? undefined : `${fieldId}-needs-trigger`}
+          disabled={saving || running || missing !== null}
+          aria-describedby={missing === null ? undefined : `${fieldId}-save-missing`}
           onClick={onSave}
         >
           {saving ? t`Saving…` : t`Save`}
         </Button>
-        {hasTriggers ? null : (
-          <span id={`${fieldId}-needs-trigger`} className="text-body-sm text-muted-foreground">
-            <Trans>Add a trigger to save</Trans>
+        {missing === null ? null : (
+          <span id={`${fieldId}-save-missing`} className="text-body-sm text-muted-foreground">
+            {missing}
           </span>
         )}
       </div>

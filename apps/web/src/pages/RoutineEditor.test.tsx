@@ -45,12 +45,14 @@ afterEach(() => {
   container = null;
 });
 
-function NewRoutine() {
-  const [draft, setDraft] = useState<RoutineDraftState>({
-    ...emptyRoutineDraftState(),
-    name: "Inbox",
-    prompt: "Summarize my inbox.",
-  });
+const filledDraft: RoutineDraftState = {
+  ...emptyRoutineDraftState(),
+  name: "Inbox",
+  prompt: "Summarize my inbox.",
+};
+
+function NewRoutine({ initial }: { initial: RoutineDraftState }) {
+  const [draft, setDraft] = useState<RoutineDraftState>(initial);
   return (
     <RoutineEditor
       bot={{ id: "bot-1", name: "Chief" }}
@@ -76,7 +78,7 @@ function NewRoutine() {
   );
 }
 
-function renderNewRoutine() {
+function renderNewRoutine(initial: RoutineDraftState = filledDraft) {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   container = document.createElement("div");
   document.body.append(container);
@@ -85,7 +87,7 @@ function renderNewRoutine() {
     root = createRoot(container as HTMLElement);
     root.render(
       <QueryClientProvider client={client}>
-        <NewRoutine />
+        <NewRoutine initial={initial} />
       </QueryClientProvider>,
     );
   });
@@ -113,6 +115,14 @@ it("says why Save is disabled once the last trigger is removed", () => {
   expect(save.disabled).toBe(true);
   const reason = document.getElementById(save.getAttribute("aria-describedby") ?? "");
   expect(reason?.textContent).toBe("Add a trigger to save");
+});
+
+it("will not create a blank routine and says what is missing", () => {
+  const view = renderNewRoutine(emptyRoutineDraftState());
+  const save = button(view, "Save");
+  expect(save.disabled).toBe(true);
+  const reason = document.getElementById(save.getAttribute("aria-describedby") ?? "");
+  expect(reason?.textContent).toBe("Add a name and instruction to save");
 });
 
 it("says why Run now is disabled on a routine that is not saved yet", () => {

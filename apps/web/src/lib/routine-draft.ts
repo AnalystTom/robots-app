@@ -124,6 +124,12 @@ export function routineDraftHasTrigger(draft: RoutineDraftState): boolean {
   );
 }
 
+export function routineDraftMissing(draft: RoutineDraftState): string | null {
+  if (!draft.name.trim() || !draft.prompt.trim()) return t`Add a name and instruction to save`;
+  if (!routineDraftHasTrigger(draft)) return t`Add a trigger to save`;
+  return null;
+}
+
 export function emptyRoutineDraftState(): RoutineDraftState {
   return {
     ...emptyRoutineDraft(),

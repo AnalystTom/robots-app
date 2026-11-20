@@ -8,8 +8,30 @@ import {
   emptyRoutineDraftState,
   emptyWatchDraft,
   routineDraftHasTrigger,
+  routineDraftMissing,
   watchFromDraft,
 } from "./routine-draft";
+
+describe("routineDraftMissing", () => {
+  it("blocks a blank new routine even though the default schedule is a trigger", () => {
+    expect(routineDraftMissing(emptyRoutineDraftState())).toBe(
+      "Add a name and instruction to save",
+    );
+    expect(
+      routineDraftMissing({ ...emptyRoutineDraftState(), name: "   ", prompt: "Summarize." }),
+    ).toBe("Add a name and instruction to save");
+  });
+
+  it("asks for a trigger once a named routine has none", () => {
+    const named = { ...emptyRoutineDraftState(), name: "Inbox", prompt: "Summarize.", schedules: [] };
+    expect(routineDraftMissing(named)).toBe("Add a trigger to save");
+  });
+
+  it("allows saving once a name, an instruction and a trigger are present", () => {
+    const draft = { ...emptyRoutineDraftState(), name: "Inbox", prompt: "Summarize." };
+    expect(routineDraftMissing(draft)).toBeNull();
+  });
+});
 
 describe("routineDraftHasTrigger", () => {
   it("lets a new routine save once it has a name and an instruction", () => {
