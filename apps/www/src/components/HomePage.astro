@@ -1,5 +1,5 @@
 ---
-import { ANDROID_APP_STORE_URL } from "@robots/contracts/client-build";
+import { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "@robots/contracts/mobile-app";
 import Button from "./Button.astro";
 import Footer from "./Footer.astro";
 import GetStartedActions from "./GetStartedActions.astro";
@@ -48,7 +48,6 @@ import { homeStructuredData } from "../structured-data";
 import {
   APP_URL,
   GITHUB_URL,
-  IOS_APP_URL,
   SELF_HOST_GUIDE_PATH,
   SETUP_PROMPT_URL,
   SITE_URL,
@@ -72,6 +71,11 @@ const [starsLabel, recentChanges] = await Promise.all([
 const setupAgentPrompt = `Set up RoBots for me. Follow the setup prompt at ${SETUP_PROMPT_URL}`;
 const desktopPlatforms = DESKTOP_PLATFORMS;
 const PLATFORM_NAMES = { mac: "macOS", windows: "Windows", linux: "Linux" } as const;
+const MOBILE_NAMES = { ios: "iPhone and iPad", android: "Android" } as const;
+const mobileApps = MOBILE_PLATFORMS.flatMap((platform) => {
+  const href = MOBILE_APP_LINKS[platform];
+  return href ? [{ name: MOBILE_NAMES[platform], href }] : [];
+});
 const PROVIDER_LOGOS: Record<string, string> = {
   Claude: claudeLogo,
   ChatGPT: chatgptLogo,
@@ -130,7 +134,6 @@ const structuredData = homeStructuredData({
                     : /Macintosh/.test(ua)
                       ? "mac"
                       : "web";
-          // Chromium freezes the Linux UA at x86_64; the AppImage is x64-only.
           if (document.documentElement.dataset.platform === "linux") {
             navigator.userAgentData
               ?.getHighEntropyValues(["architecture"])
@@ -372,17 +375,20 @@ const structuredData = homeStructuredData({
                 ))}
               </div>
             </article>
-            <article class="platform-card">
-              <svg class="platform-card__icon" viewBox="0 0 48 48" aria-hidden="true">
-                <rect x="14" y="5" width="20" height="38" rx="5" />
-                <path d="M21 9.5h6" />
-              </svg>
-              <h3>{copy.platforms.mobile}</h3>
-              <div class="platform-card__links">
-                <a href={IOS_APP_URL}>iPhone and iPad</a>
-                <a href={ANDROID_APP_STORE_URL}>Android</a>
-              </div>
-            </article>
+            {mobileApps.length > 0 ? (
+              <article class="platform-card">
+                <svg class="platform-card__icon" viewBox="0 0 48 48" aria-hidden="true">
+                  <rect x="14" y="5" width="20" height="38" rx="5" />
+                  <path d="M21 9.5h6" />
+                </svg>
+                <h3>{copy.platforms.mobile}</h3>
+                <div class="platform-card__links">
+                  {mobileApps.map((app) => (
+                    <a href={app.href}>{app.name}</a>
+                  ))}
+                </div>
+              </article>
+            ) : null}
           </div>
         </div>
         <PhoneMockup locale={locale} />

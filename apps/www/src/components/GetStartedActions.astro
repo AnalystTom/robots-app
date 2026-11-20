@@ -1,19 +1,13 @@
 ---
-import { ANDROID_APP_STORE_URL } from "@robots/contracts/client-build";
+import { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "@robots/contracts/mobile-app";
 import type { HomeCopy } from "../i18n/home";
 import { DESKTOP_PLATFORMS, desktopDownloadHref } from "../github";
-import {
-  APP_URL,
-  GITHUB_URL,
-  IOS_APP_URL,
-} from "../site";
+import { APP_URL, GITHUB_URL } from "../site";
 
 type Props = {
   class: string;
   copy: HomeCopy["hero"];
-  /** Omitted where the GitHub link should stay on every platform. */
   desktop?: boolean;
-  /** PostHog `data-attr` prefix that tells this placement apart from others. */
   placement: string;
   githubLabel?: string;
 };
@@ -21,7 +15,17 @@ type Props = {
 const { class: className, copy, desktop, placement, githubLabel = copy.viewOnGithub } =
   Astro.props;
 
-// `data-show` lists the platforms (set on <html> by the HomePage script) that see each action.
+const mobileStores = MOBILE_PLATFORMS.flatMap((platform) => {
+  const href = MOBILE_APP_LINKS[platform];
+  return href ? [{ platform, label: copy.download[platform], href }] : [];
+});
+const webAppPlatforms = [
+  "mac",
+  "windows",
+  "linux",
+  "web",
+  ...MOBILE_PLATFORMS.filter((platform) => !MOBILE_APP_LINKS[platform]),
+].join(" ");
 const desktopDownloads = (desktop ? DESKTOP_PLATFORMS : []).map((platform) => ({
   platform,
   label: copy.download[platform],
@@ -33,13 +37,16 @@ const githubPlatforms = ["ios", "android", "web", "mac", "windows", "linux"]
 ---
 
 <div class={className}>
-  <a class="button button--primary" href={APP_URL} data-show="mac windows linux web">
+  <a class="button button--primary" href={APP_URL} data-show={webAppPlatforms}>
     {copy.getStarted}
   </a>
-  <a class="button button--primary" href={IOS_APP_URL} data-show="ios">{copy.download.ios}</a>
-  <a class="button button--primary" href={ANDROID_APP_STORE_URL} data-show="android">
-    {copy.download.android}
-  </a>
+  {
+    mobileStores.map((store) => (
+      <a class="button button--primary" href={store.href} data-show={store.platform}>
+        {store.label}
+      </a>
+    ))
+  }
   {
     desktopDownloads.map((download) => (
       <a class="button button--secondary" href={download.href} data-show={download.platform}>

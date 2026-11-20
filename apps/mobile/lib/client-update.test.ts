@@ -1,3 +1,4 @@
+import type * as Contracts from "@robots/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const updates = vi.hoisted(() => ({
@@ -24,14 +25,19 @@ const rn = vi.hoisted(() => {
   };
 });
 
+const links = vi.hoisted((): { ios?: string; android?: string } => ({}));
+
 vi.mock("expo-updates", () => updates);
+vi.mock("@robots/contracts", async (importOriginal) => ({
+  ...(await importOriginal<typeof Contracts>()),
+  MOBILE_APP_LINKS: links,
+}));
 vi.mock("react-native", () => rn);
 vi.mock("./api-server", () => ({}));
 vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
 vi.mock("./api", () => ({ configureClientBuild: vi.fn() }));
 
-import { IOS_APP_STORE_URL } from "@robots/contracts";
 import {
   clientBuildHeaders,
   FOREGROUND_UPDATE_CHECK_MS,
@@ -41,6 +47,7 @@ import {
 } from "./client-update";
 
 afterEach(() => {
+  delete links.ios;
   updates.isEnabled = true;
   updates.createdAt = new Date("2026-10-22T09:30:15Z");
   vi.clearAllMocks();
@@ -83,14 +90,19 @@ describe("update required", () => {
     expect(rn.Linking.openURL).not.toHaveBeenCalled();
   });
 
-  it("opens the store when no over-the-air update can fix it, and asks again next time", async () => {
+  it("opens the store only once it is listed, and asks again until updated", async () => {
     noteClientUpdateRequired();
     pressUpdate();
     await flush();
     expect(updates.reloadAsync).not.toHaveBeenCalled();
-    expect(rn.Linking.openURL).toHaveBeenCalledWith(IOS_APP_STORE_URL);
+    expect(rn.Linking.openURL).not.toHaveBeenCalled();
+    links.ios = "https://ios.example/app";
     noteClientUpdateRequired();
-    expect(rn.Alert.alert).toHaveBeenCalledTimes(2);
+    pressUpdate();
+    await flush();
+    expect(rn.Linking.openURL).toHaveBeenCalledWith("https://ios.example/app");
+    noteClientUpdateRequired();
+    expect(rn.Alert.alert).toHaveBeenCalledTimes(3);
   });
 });
 
@@ -111,7 +123,6 @@ describe("foreground update checks", () => {
     await flush();
     expect(updates.checkForUpdateAsync).toHaveBeenCalledOnce();
     expect(updates.fetchUpdateAsync).toHaveBeenCalledOnce();
-    // Downloaded for the next launch; nothing reloads under the user.
     expect(updates.reloadAsync).not.toHaveBeenCalled();
     now += FOREGROUND_UPDATE_CHECK_MS - 1;
     emit("background");

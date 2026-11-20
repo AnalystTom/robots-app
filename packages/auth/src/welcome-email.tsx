@@ -1,16 +1,20 @@
 /** @jsxRuntime automatic */
 import type { TransactionalEmail } from "@robots/adapter-kit";
-import { ANDROID_APP_STORE_URL, IOS_APP_STORE_URL } from "@robots/contracts";
+import { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "@robots/contracts";
 import { Link, Text } from "react-email";
 import { emailText, greeting, linkStyle, message, withNodes } from "./email.js";
 
-const APPS: Readonly<Record<string, string>> = {
-  iPhone: IOS_APP_STORE_URL,
-  Android: ANDROID_APP_STORE_URL,
-  Mac: "https://rakazo.com/api/download?platform=mac",
-  Windows: "https://rakazo.com/api/download?platform=windows",
-  Linux: "https://rakazo.com/api/download?platform=linux",
-};
+const MOBILE_APP_NAMES = { ios: "iPhone", android: "Android" } as const;
+
+const APPS: Readonly<Record<string, string>> = Object.fromEntries([
+  ...MOBILE_PLATFORMS.flatMap((platform) => {
+    const href = MOBILE_APP_LINKS[platform];
+    return href ? [[MOBILE_APP_NAMES[platform], href]] : [];
+  }),
+  ["Mac", "https://rakazo.com/api/download?platform=mac"],
+  ["Windows", "https://rakazo.com/api/download?platform=windows"],
+  ["Linux", "https://rakazo.com/api/download?platform=linux"],
+]);
 
 const stepStyle = { margin: "20px 0 4px" };
 
@@ -36,7 +40,6 @@ export function welcomeEmail(
         {withNodes(
           say("RoBots runs on {platforms}, so your bots can reach you wherever you are."),
           {
-            // The language's own list ("A, B, and C", "A, B y C"), with each app a link.
             platforms: new Intl.ListFormat(locale, { type: "conjunction" })
               .formatToParts(Object.keys(APPS))
               .map((part, index) =>

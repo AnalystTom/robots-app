@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import type { DesktopUpdateState } from "@robots/contracts";
+import { MOBILE_APP_LINKS } from "@robots/contracts";
 import { Toaster } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { act } from "react";
@@ -144,7 +145,6 @@ it("opens integrations and keeps the existing account actions and links", async 
     "Skills",
     "Artifacts",
     "Board",
-    "Get the mobile app",
     "Docs",
     "Log out",
   ]);
@@ -159,16 +159,17 @@ it("omits Board when unavailable", async () => {
   );
 });
 
-it("offers Google Play on Android", async () => {
-  vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Android");
-  await render();
-  const mobile = [...document.querySelectorAll("a")].find(
-    (link) => link.textContent === "Get the mobile app",
-  )!;
-  expect(mobile.href).toBe(
-    "https://play.google.com/store/apps/details?id=com.analysttom.robotsapp",
-  );
-});
+it.each(["Android", "iPhone", "Macintosh"])(
+  "offers no mobile app on %s while RoBots has no store listing",
+  async (userAgent) => {
+    expect(MOBILE_APP_LINKS).toEqual({});
+    vi.spyOn(navigator, "userAgent", "get").mockReturnValue(userAgent);
+    await render();
+    const menu = document.querySelector('[data-slot="popover-content"]')!;
+    expect(menu.textContent).not.toContain("mobile app");
+    expect(menu.querySelector('a[href*="apps.apple.com"], a[href*="play.google.com"]')).toBeNull();
+  },
+);
 
 it("falls back when app artwork fails and accepts replacement artwork", async () => {
   await render("Demo User", undefined, undefined, undefined, [
@@ -197,7 +198,6 @@ it.each(["throw", "state"] as const)(
         message: "Update could not be installed",
       });
     await render();
-    // The notice is a toast, which mounts and leaves on the toaster's own timers.
     const notice = () => document.querySelector('[aria-label="Desktop update"]');
     const later = () =>
       [...notice()!.querySelectorAll("button")].find((button) => button.textContent === "Later")!;

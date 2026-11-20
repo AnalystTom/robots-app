@@ -23,9 +23,11 @@ import {
   getHomeCopy,
 } from "./i18n/home";
 import { roundupMarkdown } from "./roundup";
-// Relative source path: the edge middleware bundles this file and cannot resolve workspace packages.
-import { ANDROID_APP_STORE_URL } from "../../../packages/contracts/src/client-build.js";
-import { APP_URL, GITHUB_URL, IOS_APP_URL, PLUGIN_SUBMISSIONS_URL } from "./site";
+import {
+  MOBILE_APP_LINKS,
+  MOBILE_PLATFORMS,
+} from "../../../packages/contracts/src/mobile-app.js";
+import { APP_URL, GITHUB_URL, PLUGIN_SUBMISSIONS_URL } from "./site";
 
 export const AGENT_DISCOVERY_LINKS =
   '</llms.txt>; rel="describedby"; type="text/plain", </.well-known/ai-catalog.json>; rel="ai-catalog"; type="application/ai-catalog+json"';
@@ -126,14 +128,18 @@ RoBots targets the web, macOS, Windows, Linux, iOS, and Android. The source is a
 - [Support](https://rakazo.com/support/)
 `;
 
+const MOBILE_DOWNLOAD_NAMES = { ios: "iPhone, iPhone Duo, and iPad", android: "Android" } as const;
+const MOBILE_DOWNLOADS = MOBILE_PLATFORMS.flatMap((platform) => {
+  const href = MOBILE_APP_LINKS[platform];
+  return href ? [`- [${MOBILE_DOWNLOAD_NAMES[platform]}](${href})\n`] : [];
+}).join("");
+
 export const DOWNLOAD_MARKDOWN = `# Download RoBots
 
 - [macOS](https://rakazo.com/api/download?platform=mac)
 - [Windows](https://rakazo.com/api/download?platform=windows)
 - [Linux](https://rakazo.com/api/download?platform=linux)
-- [iPhone, iPhone Duo, and iPad](${IOS_APP_URL})
-- [Android](${ANDROID_APP_STORE_URL})
-- [Web](${APP_URL})
+${MOBILE_DOWNLOADS}- [Web](${APP_URL})
 
 The apps also connect to a self-hosted server. See the [self-hosting guide](https://rakazo.com/self-hosted-ai-agent/).
 `;

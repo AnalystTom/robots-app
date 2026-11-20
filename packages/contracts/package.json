@@ -15,6 +15,11 @@
       "development": "./src/client-build.ts",
       "default": "./src/client-build.ts"
     },
+    "./mobile-app": {
+      "types": "./src/mobile-app.ts",
+      "development": "./src/mobile-app.ts",
+      "default": "./src/mobile-app.ts"
+    },
     "./network-host": {
       "types": "./src/network-host.ts",
       "development": "./src/network-host.ts",
