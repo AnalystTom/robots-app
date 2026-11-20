@@ -114,3 +114,11 @@ it("says why Save is disabled once the last trigger is removed", () => {
   const reason = document.getElementById(save.getAttribute("aria-describedby") ?? "");
   expect(reason?.textContent).toBe("Add a trigger to save");
 });
+
+it("says why Run now is disabled on a routine that is not saved yet", () => {
+  const view = renderNewRoutine();
+  const run = button(view, "Run now");
+  expect(run.disabled).toBe(true);
+  const reason = document.getElementById(run.getAttribute("aria-describedby") ?? "");
+  expect(reason?.textContent).toBe("Save to run");
+});

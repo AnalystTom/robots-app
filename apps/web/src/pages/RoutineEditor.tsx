@@ -127,7 +127,17 @@ export function RoutineEditor({
               <Trans>Delete</Trans>
             </Button>
           ) : null}
-          <Button variant="secondary" disabled={!canTest} onClick={onTestRun}>
+          {editing ? null : (
+            <span id={`${fieldId}-save-to-run`} className="text-body-sm text-muted-foreground">
+              <Trans>Save to run</Trans>
+            </span>
+          )}
+          <Button
+            variant="secondary"
+            disabled={!canTest}
+            aria-describedby={editing ? undefined : `${fieldId}-save-to-run`}
+            onClick={onTestRun}
+          >
             {running ? t`Running…` : t`Run now`}
           </Button>
         </div>

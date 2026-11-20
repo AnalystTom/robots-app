@@ -1,11 +1,6 @@
 import type { Routine, RpcInput } from "@robots/contracts";
 import type { RoutineDraft } from "@robots/core";
-import {
-  cronFromPreset,
-  draftFromRoutine,
-  emptyRoutineDraft,
-  isOneShotRoutineCrons,
-} from "@robots/core";
+import { cronFromPreset, draftFromRoutine, isOneShotRoutineCrons } from "@robots/core";
 import type { RoutineWebTrigger } from "./routine";
 import { routineTriggerNames } from "./routine";
 
@@ -47,11 +42,7 @@ function routineChanges(draft: MobileRoutineDraft, routine: Routine) {
 
 export function routineDraftChanged(draft: MobileRoutineDraft, routine: Routine | null): boolean {
   if (!routine) {
-    const defaultCrons = emptyRoutineDraft().schedules.map(cronFromPreset);
-    return (
-      Boolean(draft.name.trim() || draft.prompt.trim() || draft.emailSenders) ||
-      !sameCrons(draft.schedules.map(cronFromPreset), defaultCrons)
-    );
+    return Boolean(draft.name.trim() || draft.prompt.trim() || draft.emailSenders);
   }
   return Object.keys(routineChanges(draft, routine)).length > 0;
 }
