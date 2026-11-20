@@ -665,9 +665,14 @@ describe("Docker sandbox", () => {
       expect((failure as Error).cause).toMatchObject({
         message: expect.stringMatching(new RegExp(`^sandbox provision failed: ${status} `)),
       });
-      expect(normalizeRunError(userRunError(failure)).summary).toBe(
-        "The computer did not start. Try again.",
+      const stored = userRunError(failure);
+      expect(stored).toBe(
+        `The computer did not start. Try again.\nsandbox provision failed: ${status} ${JSON.stringify(body)}`,
       );
+      expect(normalizeRunError(stored)).toMatchObject({
+        summary: "The computer did not start. Try again.",
+        details: stored,
+      });
     },
   );
 
