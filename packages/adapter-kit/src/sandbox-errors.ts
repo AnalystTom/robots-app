@@ -1,5 +1,6 @@
 import {
   COMPUTER_ALLOWANCE_USED_ERROR,
+  COMPUTER_DID_NOT_START_ERROR,
   COMPUTER_PROVIDER_UNAVAILABLE_ERROR,
   COMPUTER_RATE_LIMIT_ERROR,
 } from "@robots/contracts";
@@ -65,7 +66,7 @@ export class SandboxProviderAccountError extends SandboxUnresponsiveError {
 export class SandboxUnavailableError extends Error {
   readonly code = "SANDBOX_UNAVAILABLE";
   constructor(options?: { cause?: unknown }) {
-    super("The computer did not start. Try again.", options);
+    super(COMPUTER_DID_NOT_START_ERROR, options);
     this.name = "SandboxUnavailableError";
   }
 }

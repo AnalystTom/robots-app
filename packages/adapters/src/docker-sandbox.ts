@@ -20,6 +20,7 @@ import {
   INVALID_BROWSER_REQUEST,
   SandboxDamagedError,
   SandboxRequestRejectedError,
+  SandboxUnavailableError,
   SandboxUnresponsiveError,
 } from "@robots/adapter-kit";
 import { COMPUTER_UNRESPONSIVE_ERROR } from "@robots/contracts";
@@ -180,12 +181,13 @@ export class DockerSandboxProvider implements SandboxProvider {
     });
     if (!res.ok) {
       const detail = await safeBody(res, context.signal);
-      // Match team-screen style: regex on safeBody (already ≤200 chars), not JSON.parse.
       const limitError = detail.match(/Computer limit reached for space \(max: \d+\)/i)?.[0];
       if (res.status === 429 && limitError) {
         throw new Error(limitError);
       }
-      throw new Error(`sandbox provision failed: ${res.status} ${detail}`.trim());
+      const failure = new Error(`sandbox provision failed: ${res.status} ${detail}`.trim());
+      if (res.status >= 500) throw new SandboxUnavailableError({ cause: failure });
+      throw failure;
     }
     const body = await readSandboxJson<{ id: string; resumed?: boolean; started?: boolean }>(
       res,

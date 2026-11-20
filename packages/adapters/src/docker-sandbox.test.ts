@@ -2,9 +2,11 @@ import type { ProcessEvent } from "@robots/adapter-kit";
 import {
   SandboxDamagedError,
   SandboxRequestRejectedError,
+  SandboxUnavailableError,
   SandboxUnresponsiveError,
 } from "@robots/adapter-kit";
 import { COMPUTER_UNRESPONSIVE_ERROR } from "@robots/contracts";
+import { normalizeRunError, userRunError } from "@robots/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DockerSandboxProvider,
@@ -640,6 +642,26 @@ describe("Docker sandbox", () => {
     await expect(
       provider.provision({ botId: "bot", homePath: "/tmp/bot" }, context),
     ).rejects.toThrow("Computer limit reached for space (max: 5)");
+  });
+
+  it("reports a supervisor failure to start the computer as the computer being unavailable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ error: "docker socket refused" }, { status: 500 })),
+    );
+    const provider = new DockerSandboxProvider("http://supervisor.test", "test-token");
+
+    const failure = await provider
+      .provision({ botId: "bot", homePath: "/tmp/bot" }, context)
+      .catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(SandboxUnavailableError);
+    expect((failure as Error).cause).toMatchObject({
+      message: expect.stringMatching(/^sandbox provision failed: 500 /),
+    });
+    expect(normalizeRunError(userRunError(failure)).summary).toBe(
+      "The computer did not start. Try again.",
+    );
   });
 
   it("stops a streamed file response at the caller-derived encoded limit", async () => {
