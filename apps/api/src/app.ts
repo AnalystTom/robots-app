@@ -164,7 +164,7 @@ import { startMessagingRuntime } from "./messaging-runtime.js";
 import { monitoringRoutes } from "./monitoring.js";
 import { mountPluginLogos } from "./plugin-logos.js";
 import {
-  approvedPluginLogo,
+  approvedPluginLogos,
   PLUGIN_REGISTRY,
   pluginSubmissionRoutes,
 } from "./plugin-submissions.js";
@@ -928,7 +928,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     app,
     createPluginLogos({
       listed: pluginMarketplace.listedLogoUrl,
-      submitted: { registry: PLUGIN_REGISTRY, logo: (id) => approvedPluginLogo(prisma, id) },
+      submitted: { registry: PLUGIN_REGISTRY, logos: () => approvedPluginLogos(prisma) },
     }),
   );
   mountSharedPages(app, prisma, requestClientIp);

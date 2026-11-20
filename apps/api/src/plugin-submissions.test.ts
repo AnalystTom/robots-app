@@ -15,7 +15,7 @@ vi.mock("@robots/adapters", async (original) => ({
 const {
   approvedIntegrationClaims,
   approvedPluginEntries,
-  approvedPluginLogo,
+  approvedPluginLogos,
   listPluginSubmissions,
   pluginSubmissionRoutes,
   reviewPluginSubmission,
@@ -282,8 +282,9 @@ describe("reviewing submissions", () => {
         community: true,
       }),
     ]);
-    expect(await approvedPluginLogo(prisma, "sub-1")).toBe("https://example.test/logo.svg");
-    expect(await approvedPluginLogo(prisma, "sub-2")).toBeNull();
+    const logos = await approvedPluginLogos(prisma);
+    expect(logos.get("sub-1")).toBe("https://example.test/logo.svg");
+    expect(logos.has("sub-2")).toBe(false);
   });
 
   it("approves a plugin that leaves out a skill repeating a built-in one", async () => {

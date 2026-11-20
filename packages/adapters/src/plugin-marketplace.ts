@@ -418,6 +418,7 @@ const LOGO_SIZE = 128;
 const LOGO_MAX_INPUT_PIXELS = 4096 * 4096;
 const LOGO_FOUND_TTL_MS = 24 * 60 * 60_000;
 const LOGO_FAILED_TTL_MS = 5 * 60_000;
+const SUBMITTED_LOGOS_TTL_MS = 60_000;
 const MAX_CACHED_LOGOS = 2_000;
 const MAX_MISSING_LOGOS = 2_000;
 const MAX_CACHED_LOGO_BYTES = 32 * 1024 * 1024;
@@ -444,12 +445,19 @@ export function createPluginLogos({
   read?: PluginBytesReader;
   now?: () => number;
   listed: (registryName: string, path: string) => Promise<string | null>;
-  submitted?: { registry: string; logo: (id: string) => Promise<string | null> };
+  submitted?: { registry: string; logos: () => Promise<ReadonlyMap<string, string>> };
 }): PluginLogos {
-  const upstream = (registryName: string, key: string) => {
-    if (submitted?.registry === registryName) return submitted.logo(key);
+  let approved: { expires: number; logos: Promise<ReadonlyMap<string, string>> } | undefined;
+  const approvedLogos = (source: () => Promise<ReadonlyMap<string, string>>) => {
+    if (!approved || approved.expires <= now())
+      approved = { expires: now() + SUBMITTED_LOGOS_TTL_MS, logos: source() };
+    return approved.logos;
+  };
+  const upstream = async (registryName: string, key: string) => {
+    if (submitted && submitted.registry === registryName)
+      return (await approvedLogos(submitted.logos)).get(key) ?? null;
     const path = Buffer.from(key, "base64url").toString();
-    if (Buffer.from(path).toString("base64url") !== key) return Promise.resolve(null);
+    if (Buffer.from(path).toString("base64url") !== key) return null;
     return listed(registryName, path);
   };
   const cache = new Map<string, { expires: number; png: Uint8Array<ArrayBuffer> }>();
@@ -473,12 +481,12 @@ export function createPluginLogos({
     while (missing.size > MAX_MISSING_LOGOS) missing.delete(missing.keys().next().value!);
   };
   const load = async (id: string, registryName: string, file: string) => {
-    const url = await upstream(registryName, file.slice(0, -".png".length));
-    if (!url) {
-      rememberMissing(id);
-      return null;
-    }
     try {
+      const url = await upstream(registryName, file.slice(0, -".png".length));
+      if (!url) {
+        rememberMissing(id);
+        return null;
+      }
       const png = await pluginLogoPng(await read(url, LOGO_MAX_BYTES, AbortSignal.timeout(15_000)));
       if (png) remember(id, png);
       else rememberMissing(id);

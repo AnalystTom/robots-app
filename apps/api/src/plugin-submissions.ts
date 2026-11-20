@@ -357,12 +357,14 @@ export async function approvedPluginEntries(
   });
 }
 
-export async function approvedPluginLogo(prisma: PrismaClient, id: string): Promise<string | null> {
-  const row = await prisma.pluginSubmission.findFirst({
-    where: { id, status: "approved", pinnedSource: { not: null } },
-    select: { logo: true },
+export async function approvedPluginLogos(
+  prisma: PrismaClient,
+): Promise<ReadonlyMap<string, string>> {
+  const rows = await prisma.pluginSubmission.findMany({
+    where: { status: "approved", pinnedSource: { not: null } },
+    select: { id: true, logo: true },
   });
-  return row?.logo ?? null;
+  return new Map(rows.flatMap((row) => (row.logo ? [[row.id, row.logo] as const] : [])));
 }
 
 /** The newest approved claim for each integration page. */

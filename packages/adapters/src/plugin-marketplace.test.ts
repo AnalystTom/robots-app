@@ -430,25 +430,41 @@ describe("plugin logos", () => {
       expect(await logos.logo(registry, file)).toBeNull();
     expect(fetchLogo).not.toHaveBeenCalled();
   });
-  it("asks a listed source for the logos of its own entries", async () => {
+  it("serves approved submissions' logos from one lookup per TTL", async () => {
     const read = vi.fn(async () => svgLogo);
-    const source = vi.fn(async (key: string) =>
-      key === "sub-1" ? "https://cdn.example.test/logo.svg" : null,
-    );
-    const logos = createPluginLogos({
+    const logos = vi.fn(async () => new Map([["sub-1", "https://cdn.example.test/logo.svg"]]));
+    const service = createPluginLogos({
       read,
       listed: async () => null,
-      submitted: { registry: "RoBots", logo: source },
+      submitted: { registry: "RoBots", logos },
     });
-    expect(await logos.logo("RoBots", "sub-1.png")).not.toBeNull();
+    expect(await service.logo("RoBots", "sub-1.png")).not.toBeNull();
     expect(read).toHaveBeenCalledWith(
       "https://cdn.example.test/logo.svg",
       expect.any(Number),
       expect.any(AbortSignal),
     );
-    expect(await logos.logo("RoBots", "sub-2.png")).toBeNull();
-    expect(await logos.logo("constructor", "sub-1.png")).toBeNull();
+    for (let i = 0; i < 50; i++)
+      expect(await service.logo("RoBots", `unknown-${i}.png`)).toBeNull();
+    expect(await service.logo("RoBots", "sub-2.png")).toBeNull();
+    expect(await service.logo("constructor", "sub-1.png")).toBeNull();
+    expect(logos).toHaveBeenCalledTimes(1);
     expect(read).toHaveBeenCalledTimes(1);
+  });
+  it("answers a failing submitted lookup as a missing logo, not an error", async () => {
+    const read = vi.fn(async () => svgLogo);
+    const logos = vi.fn(async () => {
+      throw new Error("database unavailable");
+    });
+    const service = createPluginLogos({
+      read,
+      listed: async () => null,
+      submitted: { registry: "RoBots", logos },
+    });
+    expect(await service.logo("RoBots", "sub-1.png")).toBeNull();
+    expect(await service.logo("RoBots", "sub-1.png")).toBeNull();
+    expect(logos).toHaveBeenCalledTimes(1);
+    expect(read).not.toHaveBeenCalled();
   });
   it("remembers a failed logo briefly, whatever the failure", async () => {
     const read = vi
