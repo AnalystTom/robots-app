@@ -15,7 +15,7 @@ const routine: Routine = {
   id: "routine-1",
   botId: "bot-1",
   name: "Daily",
-  prompt: "",
+  prompt: "Check in.",
   crons: ["0 9 * * *"],
   timezone: "UTC",
   active: true,
