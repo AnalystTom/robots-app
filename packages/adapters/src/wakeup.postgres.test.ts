@@ -159,6 +159,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
       await Promise.all([routineEntered.promise, maintenanceEntered.promise]);
       await publisher.enqueue({ name: "run.continue", payload: { runId: "routine-pending" } });
       await publisher.enqueue({ name: "run.continue", payload: { runId: "chat-new" } });
+      // A pre-release queue entry must move even while the legacy runner is busy.
       const key = "contract:reserved:legacy";
       await legacy.enqueue({
         name: "run.continue",
@@ -229,6 +230,9 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
       );
       await publisher.enqueue(messagingSendJob("outbound-first", new Date()));
       await waitFor(() => expect(sending).toEqual(["outbound-first"]));
+      // The second send starts while the first is still sending: one slow
+      // conversation must not hold back the rest. Order inside a conversation is
+      // kept by the send's claim on the conversation, not by a shared queue.
       await publisher.enqueue(messagingSendJob("outbound-second", new Date()));
       await waitFor(() => expect(sending).toEqual(["outbound-first", "outbound-second"]));
       release.resolve();
@@ -383,6 +387,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
       release.resolve();
       await stopping;
       expect(completed).toBe(true);
+      // The completion is written before stop returns, so the worker can exit right after.
       const { rowCount } = await testPool().query(
         "select 1 from graphile_worker._private_jobs where payload->>'runId' = 'graceful-stop' or payload->'payload'->>'runId' = 'graceful-stop'",
       );
@@ -449,6 +454,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
     let ranAt = 0;
     const target = handlers({
       "computer.sleep": async ({ computerId }) => {
+        // Database time: the clock Graphile compares `run_at` against.
         const { rows } = await testPool().query<{ now: Date }>("select clock_timestamp() as now");
         ranAt = rows[0]!.now.getTime();
         received.push(computerId);
@@ -470,10 +476,16 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
         availableAt: deadline,
         replaceKey: key,
       });
+      // The replacement must carry its own deadline, not keep the old job's:
+      // a payload swap at the 300 ms schedule would run it early.
       expect((await keyedRow(key))?.runAt.getTime()).toBe(deadline.getTime());
 
       await host.start(target);
+      // The replacement ran at its own later deadline, so the worker has polled
+      // well past the old job's earlier one; the exact list proves the old
+      // payload never ran.
       await waitFor(() => expect(received).toEqual(["replacement"]));
+      // It ran no earlier than its own deadline, so the worker honoured the schedule.
       expect(ranAt).toBeGreaterThanOrEqual(deadline.getTime());
     } finally {
       await host.stop();
@@ -497,6 +509,8 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
         replaceKey: key,
       });
       await publisher.cancel(key);
+      // A sentinel due after the cancelled job proves the worker has polled past
+      // the cancelled job's deadline, so its silence is real, not a missed poll.
       await publisher.enqueue({
         name: "computer.sleep",
         payload: { computerId: "sentinel" },
@@ -714,6 +728,9 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
     }
   });
 
+  // `pnpm test:integration` connects as the runtime login. graphile-worker turns on
+  // row-level security for its own tables, so without the queue policy that
+  // `pnpm db:migrate` installs, the runtime login can neither add nor take a job.
   it("enqueues from a request and runs the job as the restricted runtime login", async () => {
     const appPool = createPool(databaseUrl!);
     const workerPool = createPool(databaseUrl!);
@@ -736,6 +753,8 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
           },
         }),
       );
+      // The API enqueues inside the signed-in Space's context, keepExisting
+      // included, which reads the queue table before adding the job.
       await runAsTenant({ spaceId: "space-restricted", userId: "user-restricted" }, () =>
         publisher.enqueue({
           name: "run.continue",
@@ -847,6 +866,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
       await rolledBack((tx) => publisher.enqueueIn(tx, messagingSendJob(outboundId, dueAt)));
       expect(await keyedRow(key)).toBeNull();
 
+      // A session in another time zone still schedules the job for the same instant.
       await system.$transaction(async (tx) => {
         await tx.$executeRawUnsafe("set local time zone 'Asia/Kolkata'");
         await publisher.enqueueIn(tx, messagingSendJob(outboundId, dueAt));
@@ -888,6 +908,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
       await waitFor(async () =>
         expect(await jobState(key)).toMatchObject({ attempts: 1, locked_at: null }),
       );
+      // Skip Graphile's backoff: only the try count is under test.
       await testPool().query(
         "update graphile_worker._private_jobs set run_at = now() where key = $1",
         [key],
@@ -913,6 +934,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
     let askedAt: Date | undefined;
     const target = handlers({
       "messaging.send": async () => {
+        // Database time: the clock Graphile compares `run_at` against.
         const { rows } = await testPool().query<{ now: Date }>("select clock_timestamp() as now");
         askedAt = rows[0]!.now;
         throw new RetryJobLaterError(delayMs);
@@ -951,6 +973,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
     const sink = createTestSink();
     installLogger(createLogger({ service: "robots-worker", sinks: [sink] }));
     const target = handlers({
+      // Cannot decide yet: asks for a later try, as the cleanup does for undecided accounts.
       "connection.cleanup": async () => {
         throw new RetryJobLaterError(60_000, { cause: new Error("still connecting") });
       },
@@ -962,6 +985,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
       await waitFor(async () =>
         expect(await jobState(key)).toMatchObject({ attempts: 1, locked_at: null }),
       );
+      // The same record every job's retry-later gets: an error with its cause, never a quiet one.
       const completed = sink.events.filter((event) => event.message === "job.completed");
       expect(completed).toEqual([
         expect.objectContaining({
@@ -1005,6 +1029,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
       await publisher.enqueue(connectionCleanupJob(request, dueAt));
       await publisher.enqueue(connectionCleanupJob(app, dueAt));
 
+      // A removal that fails keeps its job: the delete rolls back with the transaction.
       await expect(
         direct(
           {
@@ -1018,12 +1043,14 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
       expect(await keyedRow(connectionCleanupJobKey(request))).not.toBeNull();
 
       const cancelAuthorizationRequest = vi.fn(async () => {
+        // Still recorded while the provider is being asked.
         expect(await keyedRow(connectionCleanupJobKey(request))).not.toBeNull();
       });
       await expect(direct({ cancelAuthorizationRequest }, request)).resolves.toBe("done");
       expect(cancelAuthorizationRequest).toHaveBeenCalledTimes(1);
       expect(await keyedRow(connectionCleanupJobKey(request))).toBeNull();
 
+      // Another begin in the scope may have recorded this job since the accounts were listed.
       const revokeUnreferencedAccounts = vi.fn(async () => undefined);
       await expect(direct({ revokeUnreferencedAccounts }, app)).resolves.toBe("done");
       expect(revokeUnreferencedAccounts).toHaveBeenCalledWith("mail", [], expect.anything());
@@ -1061,6 +1088,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
     const target = handlers({
       "connection.cleanup": async (payload) => {
         tries += 1;
+        // A busy scope: the job replaces itself under its key and finishes, as its handler does.
         if (tries === 1) return publisher.enqueue(connectionCleanupJob(payload, new Date()));
         throw new Error("provider unavailable");
       },
@@ -1068,14 +1096,16 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
     try {
       await host.start(target);
       await publisher.enqueue(connectionCleanupJob(cleanup));
-      await waitFor(() => expect(tries).toBe(2));
+      // The busy try cost nothing: the job that failed once has used one try of its full budget.
       await waitFor(async () =>
         expect(await budget()).toEqual({
           attempts: 1,
           max_attempts: CONNECTION_CLEANUP_MAX_ATTEMPTS,
         }),
       );
+      expect(tries).toBe(2);
 
+      // Skip to its last try.
       await testPool().query(
         `update graphile_worker._private_jobs set attempts = max_attempts - 1, run_at = now()
          where key = $1 and locked_at is null`,
@@ -1094,6 +1124,7 @@ describePostgres("Graphile background jobs (PostgreSQL contract)", () => {
         ]),
       );
       expect(tries).toBe(3);
+      // The exhausted job keeps its payload until the dead-job retention passes.
       expect(await budget()).toEqual({
         attempts: CONNECTION_CLEANUP_MAX_ATTEMPTS,
         max_attempts: CONNECTION_CLEANUP_MAX_ATTEMPTS,
