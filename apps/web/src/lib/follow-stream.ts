@@ -15,7 +15,6 @@ export function followStream<T>(
   let serverAskedToWait = false;
   const reconnectNow = () => {
     if (serverAskedToWait) return;
-    retry = 0;
     cancelRetry?.();
   };
   for (const event of RECONNECT_NOW_EVENTS) window.addEventListener(event, reconnectNow);

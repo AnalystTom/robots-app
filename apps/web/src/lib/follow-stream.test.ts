@@ -66,7 +66,7 @@ describe("followStream", () => {
     window.dispatchEvent(new Event("online"));
     await vi.advanceTimersByTimeAsync(0);
     expect(open).toHaveBeenCalledTimes(5);
-    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.advanceTimersByTimeAsync(16_000);
     expect(open).toHaveBeenCalledTimes(6);
 
     window.dispatchEvent(new Event("focus"));

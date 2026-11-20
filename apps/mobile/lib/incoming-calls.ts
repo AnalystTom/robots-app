@@ -158,14 +158,11 @@ async function follow(controller: AbortController) {
       const finish = () => {
         clearTimeout(timer);
         controller.signal.removeEventListener("abort", finish);
-        wakeFollow = undefined;
+        if (wakeFollow === finish) wakeFollow = undefined;
         resolve();
       };
       const timer = setTimeout(finish, delay);
-      wakeFollow = () => {
-        retry = 0;
-        finish();
-      };
+      wakeFollow = finish;
       controller.signal.addEventListener("abort", finish);
       if (controller.signal.aborted) finish();
     });
