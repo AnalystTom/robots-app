@@ -305,11 +305,13 @@ describe("thread subscription recovery", () => {
     await vi.advanceTimersByTimeAsync(0);
     channel.send(event(11));
     await vi.advanceTimersByTimeAsync(0);
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(1_000);
     replay.send(event(12));
     await vi.advanceTimersByTimeAsync(0);
     replay.end();
-    await vi.advanceTimersByTimeAsync(7_000);
+    await vi.advanceTimersByTimeAsync(RECONNECT_SPREAD_MS + 999);
+    expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 11]);
+    await vi.advanceTimersByTimeAsync(1);
     expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 11, 12]);
     for (const seq of [13, 14, 15, 16]) {
       resumed.send(event(seq));
@@ -349,11 +351,13 @@ describe("thread subscription recovery", () => {
       channel.send(event(seq));
       await vi.advanceTimersByTimeAsync(0);
     }
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(1_000);
     replay.send(event(11));
     await vi.advanceTimersByTimeAsync(0);
     replay.end();
-    await vi.advanceTimersByTimeAsync(7_000);
+    await vi.advanceTimersByTimeAsync(RECONNECT_SPREAD_MS + 999);
+    expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 10]);
+    await vi.advanceTimersByTimeAsync(1);
     expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 10, 11]);
     for (const seq of [12, 13, 14, 15, 16, 17, 18]) {
       resumed.send(event(seq));
