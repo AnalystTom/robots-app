@@ -1,5 +1,5 @@
 ---
-import { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "@robots/contracts/mobile-app";
+import { listedMobileApps } from "@robots/contracts/mobile-app";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 import {
@@ -24,10 +24,11 @@ const platforms = [
     href: desktopDownloadHref(platform),
     attr: platform,
   })),
-  ...MOBILE_PLATFORMS.flatMap((platform) => {
-    const href = MOBILE_APP_LINKS[platform];
-    return href ? [{ ...MOBILE_STORES[platform], href, attr: platform }] : [];
-  }),
+  ...listedMobileApps().map(({ platform, href }) => ({
+    ...MOBILE_STORES[platform],
+    href,
+    attr: platform,
+  })),
   { name: "Web", action: "Open", href: APP_URL, attr: "web" },
 ];
 const description = `Get RoBots for ${new Intl.ListFormat("en", { type: "conjunction" }).format([

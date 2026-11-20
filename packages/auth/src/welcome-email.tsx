@@ -1,16 +1,13 @@
 /** @jsxRuntime automatic */
 import type { TransactionalEmail } from "@robots/adapter-kit";
-import { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "@robots/contracts";
+import { listedMobileApps } from "@robots/contracts";
 import { Link, Text } from "react-email";
 import { emailText, greeting, linkStyle, message, withNodes } from "./email.js";
 
 const MOBILE_APP_NAMES = { ios: "iPhone", android: "Android" } as const;
 
 const APPS: Readonly<Record<string, string>> = Object.fromEntries([
-  ...MOBILE_PLATFORMS.flatMap((platform) => {
-    const href = MOBILE_APP_LINKS[platform];
-    return href ? [[MOBILE_APP_NAMES[platform], href]] : [];
-  }),
+  ...listedMobileApps().map(({ platform, href }) => [MOBILE_APP_NAMES[platform], href]),
   ["Mac", "https://rakazo.com/api/download?platform=mac"],
   ["Windows", "https://rakazo.com/api/download?platform=windows"],
   ["Linux", "https://rakazo.com/api/download?platform=linux"],

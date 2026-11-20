@@ -23,10 +23,7 @@ import {
   getHomeCopy,
 } from "./i18n/home";
 import { roundupMarkdown } from "./roundup";
-import {
-  MOBILE_APP_LINKS,
-  MOBILE_PLATFORMS,
-} from "../../../packages/contracts/src/mobile-app.js";
+import { listedMobileApps } from "../../../packages/contracts/src/mobile-app.js";
 import { APP_URL, GITHUB_URL, PLUGIN_SUBMISSIONS_URL } from "./site";
 
 export const AGENT_DISCOVERY_LINKS =
@@ -129,10 +126,9 @@ RoBots targets the web, macOS, Windows, Linux, iOS, and Android. The source is a
 `;
 
 const MOBILE_DOWNLOAD_NAMES = { ios: "iPhone, iPhone Duo, and iPad", android: "Android" } as const;
-const MOBILE_DOWNLOADS = MOBILE_PLATFORMS.flatMap((platform) => {
-  const href = MOBILE_APP_LINKS[platform];
-  return href ? [`- [${MOBILE_DOWNLOAD_NAMES[platform]}](${href})\n`] : [];
-}).join("");
+const MOBILE_DOWNLOADS = listedMobileApps()
+  .map(({ platform, href }) => `- [${MOBILE_DOWNLOAD_NAMES[platform]}](${href})\n`)
+  .join("");
 
 export const DOWNLOAD_MARKDOWN = `# Download RoBots
 

@@ -91,8 +91,7 @@ scores once processed. Managed publishing can delay release after approval.
 
 ## Android APK
 
-For manual installation, an APK is available.
-`release-mobile` publishes it, or run the `release-android-apk` workflow from
+`release-mobile` publishes the APK, or run the `release-android-apk` workflow from
 `main` on its own. It builds the `android-apk` EAS profile, signed with the
 project's managed keystore, and replaces the rolling `android` GitHub release,
 so the download link stays the same:

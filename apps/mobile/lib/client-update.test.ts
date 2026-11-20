@@ -36,7 +36,10 @@ vi.mock("react-native", () => rn);
 vi.mock("./api-server", () => ({}));
 vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
-vi.mock("./api", () => ({ configureClientBuild: vi.fn() }));
+vi.mock("./api", () => ({
+  configureClientBuild: vi.fn(),
+  currentApiBase: () => "https://server.example",
+}));
 
 import {
   clientBuildHeaders,
@@ -90,19 +93,25 @@ describe("update required", () => {
     expect(rn.Linking.openURL).not.toHaveBeenCalled();
   });
 
-  it("opens the store only once it is listed, and asks again until updated", async () => {
+  it("opens the server's web app when no store lists RoBots, and asks again until updated", async () => {
     noteClientUpdateRequired();
+    expect(rn.Alert.alert.mock.calls[0]?.[1]).toMatch(/not in the app store yet/);
     pressUpdate();
     await flush();
     expect(updates.reloadAsync).not.toHaveBeenCalled();
-    expect(rn.Linking.openURL).not.toHaveBeenCalled();
+    expect(rn.Linking.openURL).toHaveBeenCalledWith("https://server.example");
+    noteClientUpdateRequired();
+    expect(rn.Alert.alert).toHaveBeenCalledTimes(2);
+  });
+
+  it("opens the store once it is listed", async () => {
     links.ios = "https://ios.example/app";
     noteClientUpdateRequired();
+    expect(rn.Alert.alert.mock.calls[0]?.[1]).toBeUndefined();
     pressUpdate();
     await flush();
     expect(rn.Linking.openURL).toHaveBeenCalledWith("https://ios.example/app");
-    noteClientUpdateRequired();
-    expect(rn.Alert.alert).toHaveBeenCalledTimes(3);
+    expect(updates.reloadAsync).not.toHaveBeenCalled();
   });
 });
 

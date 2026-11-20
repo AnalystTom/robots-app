@@ -1,30 +1,44 @@
-import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
-import { MOBILE_APP_LINKS, mobileAppLinkFor } from "./mobile-app.js";
+import type * as MobileAppLinks from "./mobile-app-links.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-const STORE_LINK = /https:\/\/(?:apps\.apple\.com|play\.google\.com)\/[^\s)"'`]+/g;
-const DOCS = ["../../../docs/mobile-app.md", "../../../docs/mobile-release.md"];
+const links = vi.hoisted((): { ios?: string; android?: string } => ({}));
+
+vi.mock("./mobile-app-links.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof MobileAppLinks>()),
+  MOBILE_APP_LINKS: links,
+}));
+
+import { listedMobileApps, mobileAppLinkFor } from "./mobile-app.js";
+
+afterEach(() => {
+  delete links.ios;
+  delete links.android;
+});
 
 describe("mobile app links", () => {
   it("offers no mobile app while RoBots has no store listing", () => {
-    expect(MOBILE_APP_LINKS).toEqual({});
+    expect(listedMobileApps()).toEqual([]);
     for (const userAgent of ["Android", "iPhone", "Macintosh"]) {
       expect(mobileAppLinkFor(userAgent)).toBeUndefined();
     }
   });
 
-  it("picks the visitor's store, then the other one", () => {
-    const both = { ios: "https://ios.example/app", android: "https://android.example/app" };
-    expect(mobileAppLinkFor("Linux; Android 15", both)).toBe(both.android);
-    expect(mobileAppLinkFor("iPhone", both)).toBe(both.ios);
-    expect(mobileAppLinkFor("Macintosh", both)).toBe(both.ios);
-    expect(mobileAppLinkFor("Android", { ios: both.ios })).toBe(both.ios);
-    expect(mobileAppLinkFor("iPhone", { android: both.android })).toBe(both.android);
+  it("lists each platform's own store and offers it only to that platform", () => {
+    links.ios = "https://ios.example/app";
+    links.android = "https://android.example/app";
+    expect(listedMobileApps()).toEqual([
+      { platform: "ios", href: "https://ios.example/app" },
+      { platform: "android", href: "https://android.example/app" },
+    ]);
+    expect(mobileAppLinkFor("Linux; Android 15")).toBe("https://android.example/app");
+    expect(mobileAppLinkFor("iPhone")).toBe("https://ios.example/app");
+    expect(mobileAppLinkFor("Macintosh")).toBeUndefined();
   });
 
-  it.each(DOCS)("%s names only the listed stores", (path) => {
-    const text = readFileSync(new URL(path, import.meta.url), "utf8");
-    const listed = Object.values(MOBILE_APP_LINKS);
-    expect((text.match(STORE_LINK) ?? []).filter((link) => !listed.includes(link))).toEqual([]);
+  it("offers nothing to a platform whose store is not listed", () => {
+    links.ios = "https://ios.example/app";
+    expect(listedMobileApps()).toEqual([{ platform: "ios", href: "https://ios.example/app" }]);
+    expect(mobileAppLinkFor("Android")).toBeUndefined();
+    expect(mobileAppLinkFor("iPhone")).toBe("https://ios.example/app");
   });
 });

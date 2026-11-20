@@ -1,5 +1,5 @@
 ---
-import { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "@robots/contracts/mobile-app";
+import { listedMobileApps } from "@robots/contracts/mobile-app";
 import Button from "./Button.astro";
 import Footer from "./Footer.astro";
 import GetStartedActions from "./GetStartedActions.astro";
@@ -72,10 +72,10 @@ const setupAgentPrompt = `Set up RoBots for me. Follow the setup prompt at ${SET
 const desktopPlatforms = DESKTOP_PLATFORMS;
 const PLATFORM_NAMES = { mac: "macOS", windows: "Windows", linux: "Linux" } as const;
 const MOBILE_NAMES = { ios: "iPhone and iPad", android: "Android" } as const;
-const mobileApps = MOBILE_PLATFORMS.flatMap((platform) => {
-  const href = MOBILE_APP_LINKS[platform];
-  return href ? [{ name: MOBILE_NAMES[platform], href }] : [];
-});
+const mobileApps = listedMobileApps().map(({ platform, href }) => ({
+  name: MOBILE_NAMES[platform],
+  href,
+}));
 const PROVIDER_LOGOS: Record<string, string> = {
   Claude: claudeLogo,
   ChatGPT: chatgptLogo,

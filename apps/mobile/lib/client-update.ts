@@ -1,4 +1,5 @@
 import { t } from "@lingui/core/macro";
+import { bestEffort } from "@robots/logging";
 import {
   buildIdAt,
   CLIENT_BUILD_HEADER,
@@ -8,7 +9,7 @@ import {
 import * as Updates from "expo-updates";
 import type { AppStateStatus } from "react-native";
 import { Alert, AppState, Linking, Platform } from "react-native";
-import { configureClientBuild } from "./api";
+import { configureClientBuild, currentApiBase } from "./api";
 
 export const FOREGROUND_UPDATE_CHECK_MS = 15 * 60_000;
 
@@ -35,15 +36,16 @@ async function downloadUpdate(): Promise<boolean> {
   return true;
 }
 
+function storeListing(): string | undefined {
+  return MOBILE_APP_LINKS[Platform.OS === "ios" ? "ios" : "android"];
+}
+
 export async function applyRequiredUpdate(): Promise<void> {
-  try {
-    if (await downloadUpdate()) {
-      await Updates.reloadAsync();
-      return;
-    }
-  } catch {}
-  const listing = MOBILE_APP_LINKS[Platform.OS === "ios" ? "ios" : "android"];
-  if (listing) await Linking.openURL(listing).catch(() => undefined);
+  if (await bestEffort("download required update", downloadUpdate())) {
+    await bestEffort("reload after update", Updates.reloadAsync());
+    return;
+  }
+  await bestEffort("open store or web app", Linking.openURL(storeListing() ?? currentApiBase()));
 }
 
 let prompting = false;
@@ -53,7 +55,9 @@ export function noteClientUpdateRequired(): void {
   prompting = true;
   Alert.alert(
     t`Update required`,
-    undefined,
+    storeListing()
+      ? undefined
+      : t`This version of RoBots is no longer supported, and an update is not in the app store yet.`,
     [
       {
         text: t`Update`,
@@ -82,7 +86,7 @@ export function watchForegroundUpdates(now: () => number = Date.now): () => void
     wasBackground = false;
     if (now() - lastCheck < FOREGROUND_UPDATE_CHECK_MS) return;
     lastCheck = now();
-    void downloadUpdate().catch(() => undefined);
+    void bestEffort("foreground update check", downloadUpdate());
   });
   return () => subscription.remove();
 }

@@ -1,12 +1,18 @@
-export const MOBILE_PLATFORMS = ["ios", "android"] as const;
-export type MobilePlatform = (typeof MOBILE_PLATFORMS)[number];
-export type MobileAppLinks = Readonly<Partial<Record<MobilePlatform, string>>>;
+import { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "./mobile-app-links.js";
+import type { MobilePlatform } from "./mobile-app-links.js";
 
-export const MOBILE_APP_LINKS: MobileAppLinks = {};
+export { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "./mobile-app-links.js";
+export type { MobilePlatform } from "./mobile-app-links.js";
 
-export function mobileAppLinkFor(
-  userAgent: string,
-  links: MobileAppLinks = MOBILE_APP_LINKS,
-): string | undefined {
-  return /Android/i.test(userAgent) ? (links.android ?? links.ios) : (links.ios ?? links.android);
+export function listedMobileApps(): Array<{ platform: MobilePlatform; href: string }> {
+  return MOBILE_PLATFORMS.flatMap((platform) => {
+    const href = MOBILE_APP_LINKS[platform];
+    return href ? [{ platform, href }] : [];
+  });
+}
+
+export function mobileAppLinkFor(userAgent: string): string | undefined {
+  if (/Android/i.test(userAgent)) return MOBILE_APP_LINKS.android;
+  if (/iPhone|iPad|iPod/i.test(userAgent)) return MOBILE_APP_LINKS.ios;
+  return undefined;
 }

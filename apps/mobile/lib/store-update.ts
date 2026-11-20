@@ -1,4 +1,5 @@
 import { MOBILE_APP_LINKS } from "@robots/contracts";
+import { bestEffort } from "@robots/logging";
 import { useQuery } from "@tanstack/react-query";
 import * as Application from "expo-application";
 import { Linking, Platform } from "react-native";
@@ -46,5 +47,5 @@ export function useStoreUpdateAvailable(): boolean {
 }
 
 export function openStoreListing(): void {
-  if (IOS_LISTING) void Linking.openURL(IOS_LISTING).catch(() => undefined);
+  if (IOS_LISTING) void bestEffort("open store listing", Linking.openURL(IOS_LISTING));
 }
