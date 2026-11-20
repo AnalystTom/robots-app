@@ -1,8 +1,8 @@
-import { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "./mobile-app-links.js";
 import type { MobilePlatform } from "./mobile-app-links.js";
+import { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "./mobile-app-links.js";
 
-export { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "./mobile-app-links.js";
 export type { MobilePlatform } from "./mobile-app-links.js";
+export { MOBILE_APP_LINKS, MOBILE_PLATFORMS } from "./mobile-app-links.js";
 
 export function listedMobileApps(): Array<{ platform: MobilePlatform; href: string }> {
   return MOBILE_PLATFORMS.flatMap((platform) => {

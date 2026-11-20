@@ -8,6 +8,10 @@ Self-hosters normally do not need to publish their own mobile app: the RoBots
 client can select a compatible server from the sign-in screen. If you distribute
 your own branded build, use your own Expo and store accounts.
 
+When a RoBots store listing goes live, add its URL to `MOBILE_APP_LINKS` in
+`packages/contracts/src/mobile-app-links.ts`. Until a platform has a URL there, the
+web app, the marketing site, and the welcome email leave that store out.
+
 ## Configure a build
 
 1. Link `apps/mobile` to an Expo project owned by your account.

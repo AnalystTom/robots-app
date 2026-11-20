@@ -80,13 +80,17 @@ describe("mobile client build", () => {
 
 describe("update required", () => {
   it("applies an available update and reloads when no store lists RoBots", async () => {
-    updates.checkForUpdateAsync.mockResolvedValueOnce({ isAvailable: true }).mockResolvedValueOnce({ isAvailable: true });
+    updates.checkForUpdateAsync
+      .mockResolvedValueOnce({ isAvailable: true })
+      .mockResolvedValueOnce({ isAvailable: true });
     noteClientUpdateRequired();
     noteClientUpdateRequired();
     await flush();
     expect(rn.Alert.alert).toHaveBeenCalledOnce();
     expect(rn.Alert.alert.mock.calls[0]?.[0]).toBe("Update required");
-    expect(rn.Alert.alert.mock.calls[0]?.[2]).toEqual([expect.objectContaining({ text: "Update" })]);
+    expect(rn.Alert.alert.mock.calls[0]?.[2]).toEqual([
+      expect.objectContaining({ text: "Update" }),
+    ]);
     expect(rn.Alert.alert.mock.calls[0]?.[3]).toEqual({ cancelable: false });
     pressUpdate();
     await flush();
@@ -99,7 +103,9 @@ describe("update required", () => {
     noteClientUpdateRequired();
     await flush();
     expect(rn.Alert.alert.mock.calls[0]?.[1]).toMatch(/not in the app store yet/);
-    expect(rn.Alert.alert.mock.calls[0]?.[2]).toEqual([expect.objectContaining({ text: "Open on the web" })]);
+    expect(rn.Alert.alert.mock.calls[0]?.[2]).toEqual([
+      expect.objectContaining({ text: "Open on the web" }),
+    ]);
     pressUpdate();
     await flush();
     expect(updates.fetchUpdateAsync).not.toHaveBeenCalled();
@@ -116,7 +122,9 @@ describe("update required", () => {
     links.ios = "https://ios.example/app";
     noteClientUpdateRequired();
     expect(rn.Alert.alert.mock.calls[0]?.[1]).toBeUndefined();
-    expect(rn.Alert.alert.mock.calls[0]?.[2]).toEqual([expect.objectContaining({ text: "Update" })]);
+    expect(rn.Alert.alert.mock.calls[0]?.[2]).toEqual([
+      expect.objectContaining({ text: "Update" }),
+    ]);
     pressUpdate();
     await flush();
     expect(rn.Linking.openURL).toHaveBeenCalledWith("https://ios.example/app");

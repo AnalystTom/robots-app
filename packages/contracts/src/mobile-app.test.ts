@@ -1,5 +1,5 @@
-import type * as MobileAppLinks from "./mobile-app-links.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type * as MobileAppLinks from "./mobile-app-links.js";
 
 const links = vi.hoisted((): { ios?: string; android?: string } => ({}));
 

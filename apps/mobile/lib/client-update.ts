@@ -1,11 +1,11 @@
 import { t } from "@lingui/core/macro";
-import { bestEffort } from "@robots/logging";
 import {
   buildIdAt,
   CLIENT_BUILD_HEADER,
   formatClientBuild,
   MOBILE_APP_LINKS,
 } from "@robots/contracts";
+import { bestEffort } from "@robots/logging";
 import * as Updates from "expo-updates";
 import type { AppStateStatus } from "react-native";
 import { Alert, AppState, Linking, Platform } from "react-native";

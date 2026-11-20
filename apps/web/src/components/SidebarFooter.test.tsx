@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import type { DesktopUpdateState } from "@robots/contracts";
-import type * as MobileAppLinks from "../../../../packages/contracts/src/mobile-app-links.js";
 import { Toaster } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import type * as MobileAppLinks from "../../../../packages/contracts/src/mobile-app-links.js";
 import { DesktopUpdatesProvider } from "./DesktopUpdates";
 import { SidebarFooter, sidebarMarkCount } from "./SidebarFooter";
 
