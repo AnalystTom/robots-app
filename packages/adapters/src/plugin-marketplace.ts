@@ -453,10 +453,16 @@ export function createPluginLogos({
   submitted?: { registry: string; logos: () => Promise<ReadonlyMap<string, string>> };
 }): PluginLogos {
   let approved: { expires: number; logos: Promise<ReadonlyMap<string, string>> } | undefined;
-  const approvedLogos = (source: () => Promise<ReadonlyMap<string, string>>) => {
+  const approvedLogos = async (source: () => Promise<ReadonlyMap<string, string>>) => {
     if (!approved || approved.expires <= now())
       approved = { expires: now() + SUBMITTED_LOGOS_TTL_MS, logos: source() };
-    return approved.logos;
+    const current = approved;
+    try {
+      return await current.logos;
+    } catch (error) {
+      if (approved === current) approved = undefined;
+      throw error;
+    }
   };
   const upstream = async (registryName: string, key: string) => {
     if (submitted && submitted.registry === registryName)

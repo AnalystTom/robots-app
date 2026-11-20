@@ -451,6 +451,24 @@ describe("plugin logos", () => {
     expect(logos).toHaveBeenCalledTimes(1);
     expect(read).toHaveBeenCalledTimes(1);
   });
+  it("does not let one failed submitted lookup hide another submission's logo", async () => {
+    let lookups = 0;
+    const logos = vi.fn(async () => {
+      lookups += 1;
+      if (lookups === 1) throw new Error("database unavailable");
+      return new Map([["sub-2", "https://cdn.example.test/logo.svg"]]);
+    });
+    const read = vi.fn(async () => svgLogo);
+    const service = createPluginLogos({
+      read,
+      listed: async () => null,
+      submitted: { registry: "RoBots", logos },
+    });
+    expect(await service.logo("RoBots", "sub-1.png")).toBeNull();
+    expect(await service.logo("RoBots", "sub-2.png")).not.toBeNull();
+    expect(logos).toHaveBeenCalledTimes(2);
+    expect(read).toHaveBeenCalledTimes(1);
+  });
   it("gives a submission approved after a miss its logo once the approved map refreshes", async () => {
     let clock = 0;
     const approved = new Map<string, string>();
