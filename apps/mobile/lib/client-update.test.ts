@@ -108,6 +108,8 @@ describe("update required", () => {
     noteClientUpdateRequired();
     await flush();
     expect(rn.Alert.alert).toHaveBeenCalledTimes(2);
+    pressUpdate();
+    await flush();
   });
 
   it("opens the store once it is listed", async () => {
