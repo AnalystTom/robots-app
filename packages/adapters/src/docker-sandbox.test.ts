@@ -671,6 +671,25 @@ describe("Docker sandbox", () => {
     },
   );
 
+  it("reports an unreachable supervisor as the computer being unavailable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("fetch failed", { cause: { code: "ECONNREFUSED" } });
+      }),
+    );
+    const provider = new DockerSandboxProvider("http://supervisor.test", "test-token");
+
+    const failure = await provider
+      .provision({ botId: "bot", homePath: "/tmp/bot" }, context)
+      .catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(SandboxUnavailableError);
+    expect(normalizeRunError(userRunError(failure)).summary).toBe(
+      "The computer did not start. Try again.",
+    );
+  });
+
   it("stops a streamed file response at the caller-derived encoded limit", async () => {
     const cancel = vi.fn();
     vi.stubGlobal(

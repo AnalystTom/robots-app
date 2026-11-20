@@ -178,6 +178,9 @@ export class DockerSandboxProvider implements SandboxProvider {
         language: request.language,
       }),
       signal: context.signal,
+    }).catch((error: unknown) => {
+      if (context.signal.aborted || !(error instanceof TypeError)) throw error;
+      throw new SandboxUnavailableError({ cause: error });
     });
     if (!res.ok) {
       const detail = await safeBody(res, context.signal);
