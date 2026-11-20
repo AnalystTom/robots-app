@@ -337,13 +337,6 @@ it("retries extensionless artwork as SVG before falling back", async () => {
   );
   expect(container.textContent).toBe("E");
 });
-it("loads a server-relative logo from the API it talks to", async () => {
-  await render(<ConnectorIcon name="Example" logo="/api/v1/plugin-logos/Cursor/bG9nby5zdmc.png" />);
-  expect(container.querySelector("img")?.getAttribute("src")).toContain(
-    "https://api.example.test/api/v1/plugin-logos/Cursor/bG9nby5zdmc.png",
-  );
-  expect(container.querySelector("svg")).toBeNull();
-});
 it("falls back for absent logos and empty names", async () => {
   await render(<ConnectorIcon name=" example" logo={null} />);
   expect(container.textContent).toBe("E");

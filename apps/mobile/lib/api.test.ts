@@ -16,6 +16,7 @@ import {
   MAX_MOBILE_RPC_RESPONSE_BYTES,
   rpc,
   selectedSpaceId,
+  serverImageSource,
   setCachedApiBase,
   subscribeAiConsentGranted,
   subscribeServerReachable,
@@ -1157,5 +1158,23 @@ describe("mobile API requests", () => {
     expect(fetchMock.mock.calls[0]![1].headers["x-robots-space-id"]).toBe("space-support");
     expect(String(fetchMock.mock.calls[1]![0])).toContain("/rpc/spaces/list");
     expect(fetchMock.mock.calls[1]![1].headers["x-robots-space-id"]).toBeUndefined();
+  });
+});
+
+describe("serverImageSource", () => {
+  it("resolves a server-relative logo against the configured API base with that server's headers", async () => {
+    const originalBase = (await captureApiRequestContext(null)).apiBase;
+    const apiBase = "https://robots-logos.example.test";
+    try {
+      expect(await saveServerHeaders(apiBase, { "x-access-key": "fake-access-key" })).toBe(true);
+      setCachedApiBase(apiBase);
+      expect(serverImageSource("/api/v1/plugin-logos/Cursor/bG9nby5zdmc.png")).toEqual({
+        uri: "https://robots-logos.example.test/api/v1/plugin-logos/Cursor/bG9nby5zdmc.png",
+        headers: { "x-access-key": "fake-access-key" },
+      });
+    } finally {
+      await saveServerHeaders(apiBase, {});
+      setCachedApiBase(originalBase);
+    }
   });
 });

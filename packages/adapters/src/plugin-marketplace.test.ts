@@ -438,7 +438,7 @@ describe("plugin logos", () => {
     const logos = createPluginLogos({
       read,
       listed: async () => null,
-      sources: { RoBots: source },
+      submitted: { registry: "RoBots", logo: source },
     });
     expect(await logos.logo("RoBots", "sub-1.png")).not.toBeNull();
     expect(read).toHaveBeenCalledWith(
@@ -471,6 +471,21 @@ describe("plugin logos", () => {
     expect(await logos.logo("Cursor", logoKey("mail/assets/logo.svg"))).toBeNull();
     expect(listed).toHaveBeenCalledTimes(1);
     expect(read).not.toHaveBeenCalled();
+  });
+  it("serves a listed logo only under its canonical key", async () => {
+    const { marketplace } = logoRegistry(listedMail);
+    const { entries } = await marketplace.catalog("");
+    const canonical = entries[0]!.logo!.split("/").pop()!.slice(0, -".png".length);
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const variant = canonical.slice(0, -1) + alphabet[alphabet.indexOf(canonical.at(-1)!) ^ 1];
+    expect(Buffer.from(variant, "base64url").equals(Buffer.from(canonical, "base64url"))).toBe(
+      true,
+    );
+    const read = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read, listed: marketplace.listedLogoUrl });
+    expect(await logos.logo("Cursor", `${variant}.png`)).toBeNull();
+    expect(read).not.toHaveBeenCalled();
+    expect(await logos.logo("Cursor", `${canonical}.png`)).not.toBeNull();
   });
   it("keeps a cached logo when many unlisted keys are requested", async () => {
     const { marketplace } = logoRegistry(listedMail);

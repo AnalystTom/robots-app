@@ -928,7 +928,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     app,
     createPluginLogos({
       listed: pluginMarketplace.listedLogoUrl,
-      sources: { [PLUGIN_REGISTRY]: (id) => approvedPluginLogo(prisma, id) },
+      submitted: { registry: PLUGIN_REGISTRY, logo: (id) => approvedPluginLogo(prisma, id) },
     }),
   );
   mountSharedPages(app, prisma, requestClientIp);

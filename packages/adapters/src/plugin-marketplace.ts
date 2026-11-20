@@ -435,24 +435,22 @@ export type PluginLogos = {
   logo(registry: string, file: string): Promise<Uint8Array<ArrayBuffer> | null>;
 };
 
-export type PluginLogoSource = (key: string) => Promise<string | null>;
-
 export function createPluginLogos({
   read = publicBytes,
   now = Date.now,
   listed,
-  sources = {},
+  submitted,
 }: {
   read?: PluginBytesReader;
   now?: () => number;
   listed: (registryName: string, path: string) => Promise<string | null>;
-  sources?: Record<string, PluginLogoSource>;
+  submitted?: { registry: string; logo: (id: string) => Promise<string | null> };
 }): PluginLogos {
-  const otherSources = new Map(Object.entries(sources));
   const upstream = (registryName: string, key: string) => {
-    const source = otherSources.get(registryName);
-    if (source) return source(key);
-    return listed(registryName, Buffer.from(key, "base64url").toString());
+    if (submitted?.registry === registryName) return submitted.logo(key);
+    const path = Buffer.from(key, "base64url").toString();
+    if (Buffer.from(path).toString("base64url") !== key) return Promise.resolve(null);
+    return listed(registryName, path);
   };
   const cache = new Map<string, { expires: number; png: Uint8Array<ArrayBuffer> }>();
   const missing = new Map<string, number>();
