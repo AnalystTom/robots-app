@@ -216,12 +216,7 @@ export async function runThreadSubscription(options: {
         if (isStopped()) return;
         commitRecovery();
         if (generation !== attemptGeneration) continue;
-        await wait(
-          opened
-            ? retryDelayMs(lastFailure, 250, random)
-            : streamRetryDelayMs(lastFailure, streamRetry++, random),
-          reconnect.signal,
-        );
+        await wait(streamRetryDelayMs(lastFailure, streamRetry++, random), reconnect.signal);
       } finally {
         reconnect.abort();
         activeAttempt = undefined;

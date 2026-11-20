@@ -93,7 +93,7 @@ describe("thread subscription recovery", () => {
     expect(callbacks.applyEvent).not.toHaveBeenCalled();
     expect(callbacks.beforeEvent).toHaveBeenCalledTimes(2);
     expect(callbacks.onEvent).toHaveBeenCalledTimes(2);
-    await vi.advanceTimersByTimeAsync(5_250);
+    await vi.advanceTimersByTimeAsync(6_000);
     expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 11]);
     expect(callbacks.applyEvent).not.toHaveBeenCalled();
     replay.send(event(12));
@@ -116,7 +116,7 @@ describe("thread subscription recovery", () => {
     expect(callbacks.refresh).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     expect(callbacks.refresh).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(500);
     expect(callbacks.subscribe).toHaveBeenCalledTimes(2);
     abort.abort();
     await running;
@@ -213,7 +213,7 @@ describe("thread subscription recovery", () => {
       channel.send(event(seq));
       await vi.advanceTimersByTimeAsync(0);
     }
-    await vi.advanceTimersByTimeAsync(5_250);
+    await vi.advanceTimersByTimeAsync(6_000);
     expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 12]);
     for (const seq of [13, 14, 15, 16]) {
       replay.send(event(seq));
@@ -309,7 +309,7 @@ describe("thread subscription recovery", () => {
     replay.send(event(12));
     await vi.advanceTimersByTimeAsync(0);
     replay.end();
-    await vi.advanceTimersByTimeAsync(5_500);
+    await vi.advanceTimersByTimeAsync(7_000);
     expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 11, 12]);
     for (const seq of [13, 14, 15, 16]) {
       resumed.send(event(seq));
@@ -353,7 +353,7 @@ describe("thread subscription recovery", () => {
     replay.send(event(11));
     await vi.advanceTimersByTimeAsync(0);
     replay.end();
-    await vi.advanceTimersByTimeAsync(5_500);
+    await vi.advanceTimersByTimeAsync(7_000);
     expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 10, 11]);
     for (const seq of [12, 13, 14, 15, 16, 17, 18]) {
       resumed.send(event(seq));
@@ -636,7 +636,7 @@ describe("thread subscription recovery", () => {
         await vi.advanceTimersByTimeAsync(0);
         expect(callbacks.refresh).toHaveBeenCalledTimes(1);
       }
-      await vi.advanceTimersByTimeAsync(5_250);
+      await vi.advanceTimersByTimeAsync(6_000);
       await expect(running).resolves.toBeUndefined();
       expect(transportSignal?.aborted).toBe(true);
       expect(abort.signal.aborted).toBe(false);
@@ -688,6 +688,7 @@ describe("thread subscription recovery", () => {
   it("cancels a reconnect delay without rejecting or starting another request", async () => {
     vi.useFakeTimers();
     const { abort, channel, callbacks } = setup();
+    callbacks.random = () => 1;
     const running = runThreadSubscription(callbacks);
     await vi.advanceTimersByTimeAsync(0);
     channel.end();
