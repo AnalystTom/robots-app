@@ -15,26 +15,23 @@ describe("neutralPluginDescription", () => {
     ],
     ["Launch and manage campaigns from Grok.", "Launch and manage campaigns."],
     ["You can disconnect the store anytime from grok.", "You can disconnect the store anytime."],
-    [
-      "Give Grok a real browser. Grok keeps that authorization.",
-      "Give your bot a real browser. Your bot keeps that authorization.",
-    ],
-    [
-      "Let Grok Bot reach MCP servers, and Grok Bot's privacy mode still applies.",
-      "Let your bot reach MCP servers, and your bot's privacy mode still applies.",
-    ],
-    ["Ask Grok for a weekly restock.", "Ask your bot for a weekly restock."],
-  ])("drops the host assistant's name from %j", (description, expected) => {
+  ])("drops the host assistant attribution from %j", (description, expected) => {
     expect(neutralPluginDescription(description, "example")).toBe(expected);
   });
 
-  it("keeps other products and words untouched", () => {
-    const description = "Groks your logs and moves the cursor to the Grok Studio API.";
+  it.each([
+    "Connect your Grok account to query logs.",
+    "Tools for Grok development",
+    "Give Grok a real browser. Grok keeps that authorization.",
+    "Ask Grok for a weekly restock.",
+    "Let Grok Bot reach MCP servers, and Grok Bot's privacy mode still applies.",
+    "Groks your logs and moves the cursor to the Grok Studio API.",
+  ])("keeps other mentions of the word in %j", (description) => {
     expect(neutralPluginDescription(description, "example")).toBe(description);
   });
 
   it("keeps the name in a plugin that is about that product", () => {
-    const description = "Add Grok voice to an app.";
+    const description = "Launch campaigns from Grok.";
     expect(neutralPluginDescription(description, "grok-voice")).toBe(description);
   });
 });

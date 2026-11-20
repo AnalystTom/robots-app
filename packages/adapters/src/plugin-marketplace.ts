@@ -122,7 +122,7 @@ export function parsePluginMarketplace(
         installedSource,
         hasConnector: false,
         skillCount: 0,
-        community: !entry.domains?.length && entry.author !== registry.name,
+        community: isCommunityAuthor(entry.author, registry),
       });
     } catch {
       skipped++;
@@ -171,6 +171,10 @@ function parseManifest(text: string): z.infer<typeof manifestSchema> | undefined
   } catch {
     return undefined;
   }
+}
+
+function isCommunityAuthor(author: string | undefined, registry: { name: string }): boolean {
+  return !!author && author !== registry.name;
 }
 
 function registryFiles(registry: Registry): string {
@@ -313,7 +317,10 @@ export function createPluginMarketplace(read: PluginTextReader = publicRead) {
           logo: manifest?.logo
             ? pluginLogoUrl(registry, `${dir}/${manifest.logo.replace(/^\.\//, "")}`)
             : null,
-          community: entry.community && manifest?.author !== registry.name,
+          community:
+            manifest?.author === undefined
+              ? entry.community
+              : isCommunityAuthor(manifest.author, registry),
         },
       ];
     });
@@ -384,13 +391,26 @@ export function createPluginMarketplace(read: PluginTextReader = publicRead) {
     clearUnreadable(source: string) {
       unreadable.delete(source);
     },
+    async listedLogoUrl(registryName: string, path: string): Promise<string | null> {
+      const registry = REGISTRIES.find((candidate) => candidate.name === registryName);
+      if (!registry) return null;
+      const [catalog] = await Promise.allSettled([registryData(registry)]);
+      if (catalog.status === "rejected") return null;
+      const logo = pluginLogoUrl(registry, path);
+      return catalog.value.entries.some((entry) => entry.logo === logo)
+        ? `${registryFiles(registry)}${path}`
+        : null;
+    },
   };
 }
+
+export type PluginMarketplace = ReturnType<typeof createPluginMarketplace>;
 
 const LOGO_MAX_BYTES = 1024 * 1024;
 const LOGO_SIZE = 128;
 const LOGO_MAX_INPUT_PIXELS = 4096 * 4096;
 const LOGO_FOUND_TTL_MS = 24 * 60 * 60_000;
+const LOGO_FAILED_TTL_MS = 5 * 60_000;
 const MAX_CACHED_LOGOS = 2_000;
 const MAX_CACHED_LOGO_BYTES = 32 * 1024 * 1024;
 
@@ -412,56 +432,56 @@ export type PluginLogoSource = (key: string) => Promise<string | null>;
 export function createPluginLogos({
   read = publicBytes,
   now = Date.now,
+  listed,
   sources = {},
 }: {
   read?: PluginBytesReader;
   now?: () => number;
+  listed: (registryName: string, path: string) => Promise<string | null>;
   sources?: Record<string, PluginLogoSource>;
-} = {}): PluginLogos {
+}): PluginLogos {
   const otherSources = new Map(Object.entries(sources));
-  const upstream = async (registryName: string, key: string) => {
-    const registry = REGISTRIES.find((candidate) => candidate.name === registryName);
-    if (!registry) return (await otherSources.get(registryName)?.(key)) ?? null;
-    const path = Buffer.from(key, "base64url").toString();
-    return LOGO_FILE.test(path) ? `${registryFiles(registry)}${path}` : null;
+  const upstream = (registryName: string, key: string) => {
+    const source = otherSources.get(registryName);
+    if (source) return source(key);
+    return listed(registryName, Buffer.from(key, "base64url").toString());
   };
   const cache = new Map<string, { expires: number; png: Uint8Array<ArrayBuffer> | null }>();
   const pending = new Map<string, Promise<Uint8Array<ArrayBuffer> | null>>();
   let cachedBytes = 0;
-  const forget = (url: string) => {
-    cachedBytes -= cache.get(url)?.png?.byteLength ?? 0;
-    cache.delete(url);
+  const forget = (id: string) => {
+    cachedBytes -= cache.get(id)?.png?.byteLength ?? 0;
+    cache.delete(id);
   };
-  const remember = (url: string, png: Uint8Array<ArrayBuffer> | null) => {
-    forget(url);
-    cache.set(url, { png, expires: now() + (png ? LOGO_FOUND_TTL_MS : MANIFEST_TTL_MS) });
+  const remember = (id: string, png: Uint8Array<ArrayBuffer> | null) => {
+    forget(id);
+    cache.set(id, { png, expires: now() + (png ? LOGO_FOUND_TTL_MS : LOGO_FAILED_TTL_MS) });
     cachedBytes += png?.byteLength ?? 0;
     while (cache.size > MAX_CACHED_LOGOS || cachedBytes > MAX_CACHED_LOGO_BYTES)
       forget(cache.keys().next().value!);
   };
-  const load = async (url: string) => {
+  const load = async (id: string, registryName: string, file: string) => {
+    const url = await upstream(registryName, file.slice(0, -".png".length));
+    if (!url) return null;
     try {
       const png = await pluginLogoPng(await read(url, LOGO_MAX_BYTES, AbortSignal.timeout(15_000)));
-      remember(url, png);
+      remember(id, png);
       return png;
-    } catch (error) {
-      if (error instanceof Error && error.message === "Request failed: HTTP 404")
-        remember(url, null);
+    } catch {
+      remember(id, null);
       return null;
     }
   };
   return {
     async logo(registryName, file) {
-      const url = /^[\w-]+\.png$/.test(file)
-        ? await upstream(registryName, file.slice(0, -".png".length))
-        : null;
-      if (!url) return null;
-      const cached = cache.get(url);
+      if (!/^[\w-]+\.png$/.test(file)) return null;
+      const id = `${registryName}/${file}`;
+      const cached = cache.get(id);
       if (cached && cached.expires > now()) return cached.png;
-      const active = pending.get(url);
+      const active = pending.get(id);
       if (active) return active;
-      const request = load(url).finally(() => pending.delete(url));
-      pending.set(url, request);
+      const request = load(id, registryName, file).finally(() => pending.delete(id));
+      pending.set(id, request);
       return request;
     },
   };

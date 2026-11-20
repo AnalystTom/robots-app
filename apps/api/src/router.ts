@@ -24,8 +24,8 @@ import type {
   MessagingInstallations,
   PiOAuthLogins,
   PlanLimitsReader,
+  PluginMarketplace,
   PluginRepoFetcher,
-  PluginTextReader,
   ProviderCatalogCache,
   PushTokenStore,
   RemoteConnectorDependencies,
@@ -115,7 +115,7 @@ export interface RouterDeps {
   connectors: ConnectorRegistry;
   remoteConnectors?: RemoteConnectorDependencies;
   pluginRepoFetcher?: PluginRepoFetcher;
-  pluginMarketplaceRead?: PluginTextReader;
+  pluginMarketplace?: PluginMarketplace;
   artifacts: ArtifactStore;
   dataDir: string;
   messagingInstallations?: MessagingInstallations;

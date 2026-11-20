@@ -35,11 +35,11 @@ describe("public marketplace indexes", () => {
         installedSource: "https://github.com/example/plugins#notes",
         hasConnector: false,
         skillCount: 0,
-        community: true,
+        community: false,
       },
     ]);
   });
-  it("neutralises the host assistant in descriptions and marks entries without an owner", () => {
+  it("neutralises the host assistant in descriptions and marks only named individuals as community", () => {
     const { entries } = parsePluginMarketplace(
       index([
         {
@@ -354,40 +354,59 @@ const svgLogo = new TextEncoder().encode(
   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="16" height="16" fill="#123456"/></svg>',
 );
 const logoKey = (path: string) => `${Buffer.from(path).toString("base64url")}.png`;
+const logoRegistry = (files: Parameters<typeof registryReader>[0]) => {
+  const read = registryReader(files);
+  return { read, marketplace: createPluginMarketplace(read) };
+};
+const listedMail = {
+  cursor: [{ name: "mail", source: "mail" }],
+  tree: ["mail/skills/send/SKILL.md"],
+  text: { "/mail/.cursor-plugin/plugin.json": JSON.stringify({ logo: "assets/logo.svg" }) },
+};
 
 describe("plugin logos", () => {
-  it("serves a registry logo as a cached PNG from the server", async () => {
-    const read = vi.fn(async () => svgLogo);
-    const logos = createPluginLogos({ read });
-    const png = await logos.logo("Cursor", logoKey("mail/assets/logo.svg"));
-    expect(read).toHaveBeenCalledWith(
+  it("serves a listed registry logo as a cached PNG from the server", async () => {
+    const { marketplace } = logoRegistry(listedMail);
+    const { entries } = await marketplace.catalog("");
+    const file = entries[0]!.logo!.split("/").pop()!;
+    const fetchLogo = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read: fetchLogo, listed: marketplace.listedLogoUrl });
+    const png = await logos.logo("Cursor", file);
+    expect(fetchLogo).toHaveBeenCalledWith(
       "https://raw.githubusercontent.com/cursor/plugins/HEAD/mail/assets/logo.svg",
       expect.any(Number),
       expect.any(AbortSignal),
     );
     expect(Buffer.from(png!.subarray(1, 4)).toString()).toBe("PNG");
-    expect(await logos.logo("Cursor", logoKey("mail/assets/logo.svg"))).toBe(png);
-    expect(read).toHaveBeenCalledTimes(1);
+    expect(await logos.logo("Cursor", file)).toBe(png);
+    expect(fetchLogo).toHaveBeenCalledTimes(1);
   });
-  it("refuses anything but an image file in a known registry", async () => {
-    const read = vi.fn(async () => svgLogo);
-    const logos = createPluginLogos({ read });
+  it("serves only logos the current catalog lists, without fetching anything else", async () => {
+    const { marketplace } = logoRegistry(listedMail);
+    await marketplace.catalog("");
+    const fetchLogo = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read: fetchLogo, listed: marketplace.listedLogoUrl });
     for (const [registry, file] of [
       ["Elsewhere", logoKey("mail/assets/logo.svg")],
       ["Cursor", logoKey("../escape/logo.svg")],
       ["Cursor", logoKey("/etc/logo.svg")],
       ["Cursor", logoKey("mail/.cursor-plugin/plugin.json")],
+      ["Cursor", logoKey("mail/assets/unlisted.svg")],
       ["Cursor", "mail/assets/logo.svg"],
     ] as const)
       expect(await logos.logo(registry, file)).toBeNull();
-    expect(read).not.toHaveBeenCalled();
+    expect(fetchLogo).not.toHaveBeenCalled();
   });
   it("asks a listed source for the logos of its own entries", async () => {
     const read = vi.fn(async () => svgLogo);
     const source = vi.fn(async (key: string) =>
       key === "sub-1" ? "https://cdn.example.test/logo.svg" : null,
     );
-    const logos = createPluginLogos({ read, sources: { RoBots: source } });
+    const logos = createPluginLogos({
+      read,
+      listed: async () => null,
+      sources: { RoBots: source },
+    });
     expect(await logos.logo("RoBots", "sub-1.png")).not.toBeNull();
     expect(read).toHaveBeenCalledWith(
       "https://cdn.example.test/logo.svg",
@@ -398,16 +417,18 @@ describe("plugin logos", () => {
     expect(await logos.logo("constructor", "sub-1.png")).toBeNull();
     expect(read).toHaveBeenCalledTimes(1);
   });
-  it("remembers a missing logo but retries other failures", async () => {
+  it("remembers a failed logo briefly, whatever the failure", async () => {
     const read = vi
       .fn<(url: string) => Promise<Uint8Array>>()
       .mockRejectedValueOnce(new Error("Request failed: HTTP 500"))
-      .mockRejectedValueOnce(new Error("Request failed: HTTP 404"));
-    const logos = createPluginLogos({ read });
-    expect(await logos.logo("xAI", logoKey("neon/logo.png"))).toBeNull();
-    expect(await logos.logo("xAI", logoKey("neon/logo.png"))).toBeNull();
-    expect(await logos.logo("xAI", logoKey("neon/logo.png"))).toBeNull();
-    expect(read).toHaveBeenCalledTimes(2);
+      .mockResolvedValue(svgLogo);
+    const logos = createPluginLogos({
+      read,
+      listed: async (_registry, path) => `https://raw.example.test/${path}`,
+    });
+    expect(await logos.logo("xAI", logoKey("neon/logo.svg"))).toBeNull();
+    expect(await logos.logo("xAI", logoKey("neon/logo.svg"))).toBeNull();
+    expect(read).toHaveBeenCalledTimes(1);
   });
   it("draws raster and SVG logos and rejects anything else", async () => {
     const fromSvg = await pluginLogoPng(svgLogo);

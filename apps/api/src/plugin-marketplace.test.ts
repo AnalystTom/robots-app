@@ -1,4 +1,5 @@
 import { createRouterClient } from "@orpc/server";
+import { createPluginMarketplace } from "@robots/adapters";
 import type { PluginRepoFetcher } from "@robots/adapters";
 import type { Actor } from "@robots/contracts";
 import { describe, expect, it, vi } from "vitest";
@@ -36,7 +37,7 @@ function setup(approvedRows: (typeof approved)[] = [], pluginRepoFetcher?: Plugi
       pluginSubmission: { findMany: async () => approvedRows },
       user: { findUnique: async () => ({ email: actor.email, emailVerified: true }) },
     } as never,
-    pluginMarketplaceRead: read,
+    pluginMarketplace: createPluginMarketplace(read),
     pluginRepoFetcher,
     env: {
       webOrigin: "http://localhost:5173",

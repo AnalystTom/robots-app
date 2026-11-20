@@ -279,7 +279,7 @@ describe("reviewing submissions", () => {
         hasConnector: false,
         skillCount: 2,
         logo: "/api/v1/plugin-logos/RoBots/sub-1.png",
-        community: false,
+        community: true,
       }),
     ]);
     expect(await approvedPluginLogo(prisma, "sub-1")).toBe("https://example.test/logo.svg");

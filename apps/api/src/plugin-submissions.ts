@@ -351,7 +351,7 @@ export async function approvedPluginEntries(
         installedSource,
         hasConnector: row.hasConnector,
         skillCount: row.skillCount,
-        community: false,
+        community: true,
       },
     ];
   });

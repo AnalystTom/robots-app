@@ -40,6 +40,7 @@ import {
   createMediaGenerationProvider,
   createPaymentWalletProvider,
   createPluginLogos,
+  createPluginMarketplace,
   createProductAnalytics,
   createRunReconciler,
   createRunRuntime,
@@ -753,6 +754,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     (error) => getLogger().error("stalled organization deletion failed", error),
   );
 
+  const pluginMarketplace = createPluginMarketplace(pluginMarketplaceRead);
   const router = createRouter({
     speechSummary:
       env.voiceSummaryMinChars === undefined
@@ -767,7 +769,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
           },
     analytics,
     pluginRepoFetcher,
-    pluginMarketplaceRead,
+    pluginMarketplace,
     cloudAgent,
     userCloudAgents,
     paymentWallet,
@@ -925,6 +927,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
   mountPluginLogos(
     app,
     createPluginLogos({
+      listed: pluginMarketplace.listedLogoUrl,
       sources: { [PLUGIN_REGISTRY]: (id) => approvedPluginLogo(prisma, id) },
     }),
   );

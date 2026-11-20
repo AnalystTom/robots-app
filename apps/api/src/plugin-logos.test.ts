@@ -22,14 +22,18 @@ function catalogReader() {
 
 describe("plugin logo route", () => {
   it("serves the logo a catalog entry names, fetched by the server", async () => {
-    const { entries } = await createPluginMarketplace(catalogReader()).catalog("");
+    const marketplace = createPluginMarketplace(catalogReader());
+    const { entries } = await marketplace.catalog("");
     const logo = entries[0]!.logo!;
     expect(logo).toMatch(/^\/api\/v1\/plugin-logos\//);
     expect(logo).not.toContain("githubusercontent");
 
     const fetchLogo = vi.fn(async () => new TextEncoder().encode(svg));
     const app = new Hono();
-    mountPluginLogos(app, createPluginLogos({ read: fetchLogo }));
+    mountPluginLogos(
+      app,
+      createPluginLogos({ read: fetchLogo, listed: marketplace.listedLogoUrl }),
+    );
     const response = await app.request(logo);
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("image/png");
@@ -52,6 +56,7 @@ describe("plugin logo route", () => {
         read: async () => {
           throw new Error("Request failed: HTTP 404");
         },
+        listed: async (_registry, path) => `https://raw.example.test/${path}`,
       }),
     );
     const response = await app.request("/api/v1/plugin-logos/Cursor/bWFpbC9sb2dvLnN2Zw.png");
