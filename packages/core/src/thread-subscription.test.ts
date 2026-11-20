@@ -659,6 +659,7 @@ describe("thread subscription recovery", () => {
   it("keeps reconnecting through server errors and waits as long as a 429 asks", async () => {
     vi.useFakeTimers();
     const { abort, callbacks } = setup();
+    callbacks.random = () => 1;
     callbacks.subscribe
       .mockRejectedValueOnce(Object.assign(new Error("Unavailable"), { status: 503 }))
       .mockRejectedValueOnce(
@@ -666,7 +667,9 @@ describe("thread subscription recovery", () => {
       )
       .mockRejectedValue(new TypeError("Failed to fetch"));
     const running = runThreadSubscription(callbacks);
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(callbacks.subscribe).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
     expect(callbacks.subscribe).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(9_999);
     expect(callbacks.subscribe).toHaveBeenCalledTimes(2);

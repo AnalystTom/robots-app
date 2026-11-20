@@ -9,6 +9,7 @@ import {
   reduceThreadSnapshot,
   rememberTerminalRun,
   retryDelayMs,
+  streamRetryDelayMs,
 } from "@robots/core";
 import type { RefObject } from "react";
 import { useEffect, useRef } from "react";
@@ -29,11 +30,6 @@ type FeedbackBoundary = {
 
 const FEEDBACK_HEAD_BUDGET_MS = 250;
 
-/**
- * Streams the chat's live events while the app is in the foreground. Returning to the same chat
- * resumes from the last applied event, so pinned and expanded windows catch up without a gap;
- * another chat or session starts fresh. Returns whether the stream is connected right now.
- */
 export function useThreadLiveSubscription({
   botId,
   groupId,
@@ -64,9 +60,7 @@ export function useThreadLiveSubscription({
   focused?: boolean;
   readOnly: boolean;
   sessionEpoch: number;
-  /** The signed-in person: another member's message is new to them, their own is not. */
   userId: string;
-  /** A pending search jump, which loads its own page instead of the latest one. */
   messageId?: string;
   historyEpoch: RefObject<number>;
   expandedHistoryThread: RefObject<string | null>;
@@ -157,14 +151,11 @@ export function useThreadLiveSubscription({
   }, [botId, groupId, foreground, focused, readOnly, sessionEpoch]);
 
   useEffect(() => {
-    // Resume the same chat from its applied cursor so pinned and expanded windows catch up.
     if ((!botId && !groupId) || !foreground) return;
-    // Invalidate pending history loads while retaining pages already loaded for this chat.
     historyEpoch.current += 1;
     const abort = new AbortController();
     const subscriptionGeneration = ++liveSubscriptionGeneration.current;
     const sessionGeneration = currentSessionGeneration();
-    // Guards are checked when the queued read starts, not when it was requested.
     const snapshotRefresh = createRefreshCoalescer(async () => {
       if (
         sessionGeneration === currentSessionGeneration() &&
@@ -177,7 +168,6 @@ export function useThreadLiveSubscription({
     liveSubscribed.current = false;
     showSavedThread(abort.signal);
     void (async () => {
-      // Pending search jumps load the around-page separately; avoid replacing it with latest.
       const resuming = liveCursor.current !== null;
       const next = resuming
         ? null
@@ -211,7 +201,7 @@ export function useThreadLiveSubscription({
         }
       }
       liveCursor.current = cursor;
-      let retryMs = 250;
+      let streamRetry = 0;
       while (!abort.signal.aborted && sessionGeneration === currentSessionGeneration()) {
         let failure: unknown;
         try {
@@ -223,7 +213,7 @@ export function useThreadLiveSubscription({
               if (abort.signal.aborted || sessionGeneration !== currentSessionGeneration()) return;
               const newEvent = (event.seq ?? -1) > cursor;
               cursor = Math.max(cursor, event.seq ?? -1);
-              retryMs = 250;
+              streamRetry = 0;
               liveCursor.current = cursor;
               rememberTerminalRun(terminalRunIds.current, event);
               if (
@@ -272,24 +262,19 @@ export function useThreadLiveSubscription({
                 shouldProject &&
                 (isRunTerminalEvent(event) || event.type === "run.waiting_input")
               ) {
-                // Reconcile run ownership for ask cards first seen through live events.
                 void snapshotRefresh.invalidate().catch(() => undefined);
               }
             },
             abort.signal,
           );
         } catch (error) {
-          // A full refresh reconciles visible state; the event cursor still resumes without gaps.
           failure = error;
         } finally {
           if (liveSubscriptionGeneration.current === subscriptionGeneration) {
             liveSubscribed.current = false;
           }
         }
-        // A 4xx other than 408/429 is the server's answer; reconnecting only polls it.
         if (abort.signal.aborted || !isRetryableError(failure)) break;
-        // Ended without the server's answer: most likely closed under it, as a deploy closes
-        // every client's stream at once.
         if (errorStatus(failure) === undefined) {
           await abortableDelay(reconnectDelayMs(failure), abort.signal);
           if (abort.signal.aborted || sessionGeneration !== currentSessionGeneration()) break;
@@ -302,13 +287,12 @@ export function useThreadLiveSubscription({
           );
           if (!isRetryableError(refreshFailure)) break;
         }
-        // Wait as long as either request was asked to (a 429's Retry-After).
         const delay = Math.max(
-          retryDelayMs(failure, retryMs),
-          retryDelayMs(refreshFailure, retryMs),
+          streamRetryDelayMs(failure, streamRetry),
+          streamRetryDelayMs(refreshFailure, streamRetry),
         );
         await abortableDelay(delay, abort.signal);
-        retryMs = Math.min(retryMs * 2, 5_000);
+        streamRetry++;
       }
     })();
     return () => {

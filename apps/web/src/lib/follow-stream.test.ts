@@ -89,6 +89,19 @@ describe("followStream", () => {
     stop();
   });
 
+  it("reports each failed attempt before deciding whether to retry", async () => {
+    const busy = Object.assign(new Error("busy"), { status: 503 });
+    const open = vi.fn(() => Promise.reject(busy));
+    const onFailure = vi.fn();
+    const stop = followStream(open, () => {}, undefined, onFailure);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(onFailure).toHaveBeenCalledTimes(1);
+    expect(onFailure).toHaveBeenLastCalledWith(busy);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(onFailure).toHaveBeenCalledTimes(2);
+    stop();
+  });
+
   it("stops listening for online and focus once stopped or refused", async () => {
     const open = vi.fn(() => Promise.reject(Object.assign(new Error("gone"), { status: 401 })));
     const onRefused = vi.fn();

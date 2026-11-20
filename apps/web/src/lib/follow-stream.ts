@@ -2,15 +2,11 @@ import { isRetryableError, reconnectDelayMs, retryDelayMs, streamRetryDelayMs } 
 
 const RECONNECT_NOW_EVENTS = ["online", "focus"] as const;
 
-/**
- * Follows a server stream until stopped: reconnects after it drops, backs off while it cannot
- * open, retries at once when the browser comes back online or regains focus, and gives up on a
- * refusal, calling `onRefused`. Returns the stop function.
- */
 export function followStream<T>(
   open: (signal: AbortSignal) => Promise<AsyncIterable<T>>,
-  onFrame: (frame: T) => void,
+  onFrame: (frame: T) => void | Promise<void>,
   onRefused?: () => void,
+  onFailure?: (cause: unknown) => void,
 ): () => void {
   let active = true;
   let controller: AbortController | undefined;
@@ -22,11 +18,10 @@ export function followStream<T>(
     retry = 0;
     cancelRetry?.();
   };
-  const host = typeof window === "undefined" ? undefined : window;
-  for (const event of RECONNECT_NOW_EVENTS) host?.addEventListener(event, reconnectNow);
+  for (const event of RECONNECT_NOW_EVENTS) window.addEventListener(event, reconnectNow);
   const stop = () => {
     active = false;
-    for (const event of RECONNECT_NOW_EVENTS) host?.removeEventListener(event, reconnectNow);
+    for (const event of RECONNECT_NOW_EVENTS) window.removeEventListener(event, reconnectNow);
     controller?.abort();
     cancelRetry?.();
   };
@@ -41,7 +36,7 @@ export function followStream<T>(
         retry = 0;
         for await (const frame of stream) {
           if (!active) return;
-          onFrame(frame);
+          await onFrame(frame);
         }
       } catch (cause) {
         failure = cause;
@@ -49,10 +44,13 @@ export function followStream<T>(
         controller.abort();
       }
       if (!active) return;
-      if (failure !== undefined && !isRetryableError(failure)) {
-        onRefused?.();
-        stop();
-        return;
+      if (failure !== undefined) {
+        onFailure?.(failure);
+        if (!isRetryableError(failure)) {
+          onRefused?.();
+          stop();
+          return;
+        }
       }
       serverAskedToWait = retryDelayMs(failure, 0) > 0;
       const delay = opened ? reconnectDelayMs(failure) : streamRetryDelayMs(failure, retry++);

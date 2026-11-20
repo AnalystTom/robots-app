@@ -1,6 +1,11 @@
 import type { ProductEvent } from "@robots/contracts";
 import { abortableDelay } from "./async.js";
-import { isRetryableError, reconnectDelayMs, retryDelayMs } from "./retry-policy.js";
+import {
+  isRetryableError,
+  reconnectDelayMs,
+  retryDelayMs,
+  streamRetryDelayMs,
+} from "./retry-policy.js";
 
 type ThreadHead = { threadId: string; cursor: number };
 type SnapshotRecovery =
@@ -8,13 +13,8 @@ type SnapshotRecovery =
   | { phase: "replay"; projectionFloor: number; readonly suppressEffectsThrough: number }
   | { phase: "live" };
 
-/** No frame at all for this long means the stream is half-open; the server beats far faster. */
 export const IDLE_TIMEOUT_MS = 45_000;
 
-/**
- * Recover a durable stream while its caller owns snapshot commits and UI effects.
- * Missing snapshot state is replayed from storage without retaining delivered payloads.
- */
 export async function runThreadSubscription(options: {
   signal: AbortSignal;
   loadInitial: () => Promise<ThreadHead | null>;
@@ -29,14 +29,11 @@ export async function runThreadSubscription(options: {
 }): Promise<void> {
   const { signal, random = Math.random } = options;
   const stopped = Symbol("stopped");
-  // A 401 (session gone), 426 (build retired) or other 4xx is the server's answer: retrying
-  // cannot succeed and only polls the server. A 429 may ask for a longer wait.
   let refused = false;
   let lastFailure: unknown;
   const isStopped = () => signal.aborted || refused;
   const snapshotAbort = new AbortController();
   let activeAttempt: AbortController | undefined;
-  // Reusing a pending cancellation promise would retain every frame raced against it.
   const untilAborted = async <T>(
     work: Promise<T>,
     abort: AbortSignal,
@@ -58,7 +55,6 @@ export async function runThreadSubscription(options: {
     snapshotAbort.abort(signal.reason);
   };
   const noteFailure = (error: unknown) => {
-    // Keep whichever failure asked for the longer wait (a 429's Retry-After).
     if (retryDelayMs(error, 0) >= retryDelayMs(lastFailure, 0)) lastFailure = error;
     if (!isRetryableError(error)) {
       refused = true;
@@ -66,8 +62,7 @@ export async function runThreadSubscription(options: {
     }
     return null;
   };
-  const wait = async (ms: number, abort: AbortSignal) => {
-    const delay = retryDelayMs(lastFailure, ms, random);
+  const wait = async (delay: number, abort: AbortSignal) => {
     lastFailure = undefined;
     await abortableDelay(delay, abort);
     return !isStopped() && !abort.aborted;
@@ -84,7 +79,7 @@ export async function runThreadSubscription(options: {
       initial = await untilAborted(options.loadHead().catch(noteFailure), signal);
       if (initial === stopped || isStopped()) return;
       if (initial) break;
-      if (!(await wait(headRetryMs, signal))) return;
+      if (!(await wait(retryDelayMs(lastFailure, headRetryMs, random), signal))) return;
       headRetryMs = Math.min(headRetryMs * 2, 5_000);
     }
     if (!initial || isStopped()) return;
@@ -92,9 +87,6 @@ export async function runThreadSubscription(options: {
     let cursor = head.cursor;
     let effectsCursor = head.cursor;
     let generation = 0;
-    // A snapshot on screen counts as current only if it reaches the head. An older one (say,
-    // painted from a cache while its fresh load failed) would otherwise never get the events
-    // between its cursor and the head, since the stream starts from the head.
     const shown = options.currentSnapshot();
     const recovery: { current: SnapshotRecovery } = {
       current:
@@ -120,7 +112,10 @@ export async function runThreadSubscription(options: {
       snapshotTask = (async () => {
         let snapshotRetryMs = 250;
         while (!snapshotAbort.signal.aborted) {
-          if (!(await wait(snapshotRetryMs, snapshotAbort.signal))) return;
+          if (
+            !(await wait(retryDelayMs(lastFailure, snapshotRetryMs, random), snapshotAbort.signal))
+          )
+            return;
           await untilAborted(options.refresh().catch(noteFailure), snapshotAbort.signal);
           if (snapshotAbort.signal.aborted) return;
           commitRecovery();
@@ -128,7 +123,7 @@ export async function runThreadSubscription(options: {
         }
       })();
     }
-    let retryMs = 250;
+    let streamRetry = 0;
     while (!isStopped()) {
       const attempt = new AbortController();
       activeAttempt = attempt;
@@ -141,6 +136,7 @@ export async function runThreadSubscription(options: {
         );
         if (events === stopped || isStopped() || generation !== attemptGeneration) continue;
         opened = true;
+        streamRetry = 0;
         const iterator = events[Symbol.asyncIterator]();
         try {
           let pending: Promise<IteratorResult<ProductEvent>> | undefined;
@@ -166,8 +162,6 @@ export async function runThreadSubscription(options: {
               break;
             pending = undefined;
             const event = next.value;
-            retryMs = 250;
-            // Heartbeats only prove the socket is alive; they carry no state and no cursor.
             if (event.type === "heartbeat") continue;
             cursor = Math.max(cursor, event.seq);
             const replay = recovery.current.phase === "replay" ? recovery.current : null;
@@ -196,12 +190,10 @@ export async function runThreadSubscription(options: {
             }
           }
         } finally {
-          // Abort before return: a pending read can otherwise keep Safari's socket open.
           attempt.abort();
           void iterator.return?.(undefined).catch(() => {});
         }
       } catch (error) {
-        // Reconnect from the last durable event after a transient failure.
         noteFailure(error);
       } finally {
         attempt.abort();
@@ -223,14 +215,18 @@ export async function runThreadSubscription(options: {
         if (isStopped()) return;
         commitRecovery();
         if (generation !== attemptGeneration) continue;
-        await wait(retryMs, reconnect.signal);
+        await wait(
+          opened
+            ? retryDelayMs(lastFailure, 250, random)
+            : streamRetryDelayMs(lastFailure, streamRetry++, random),
+          reconnect.signal,
+        );
       } finally {
         reconnect.abort();
         activeAttempt = undefined;
       }
       if (isStopped()) return;
       if (generation !== attemptGeneration) continue;
-      retryMs = Math.min(retryMs * 2, 5_000);
     }
   } finally {
     activeAttempt?.abort();
