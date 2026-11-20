@@ -159,8 +159,8 @@ describe("routineDraftChanged", () => {
     expect(routineDraftChanged(emptyRoutineDraft(), null)).toBe(false);
     expect(routineDraftChanged({ ...emptyRoutineDraft(), prompt: "Go." }, null)).toBe(true);
     expect(routineDraftChanged({ ...emptyRoutineDraft(), schedules: [] }, null)).toBe(false);
-    expect(routineDraftChanged({ ...emptyRoutineDraft(), name: "Inbox", schedules: [] }, null)).toBe(
-      true,
-    );
+    expect(
+      routineDraftChanged({ ...emptyRoutineDraft(), name: "Inbox", schedules: [] }, null),
+    ).toBe(true);
   });
 });

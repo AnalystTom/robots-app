@@ -23,7 +23,12 @@ describe("routineDraftMissing", () => {
   });
 
   it("asks for a trigger once a named routine has none", () => {
-    const named = { ...emptyRoutineDraftState(), name: "Inbox", prompt: "Summarize.", schedules: [] };
+    const named = {
+      ...emptyRoutineDraftState(),
+      name: "Inbox",
+      prompt: "Summarize.",
+      schedules: [],
+    };
     expect(routineDraftMissing(named)).toBe("Add a trigger to save");
   });
 
