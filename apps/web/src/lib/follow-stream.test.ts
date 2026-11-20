@@ -56,6 +56,22 @@ describe("followStream", () => {
     stop();
   });
 
+  it("keeps growing the wait when a stream opens and closes without delivering", async () => {
+    const open = vi.fn(async () => endedStream<string>());
+    const stop = followStream(open, () => {});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(open).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(open).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(open).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(open).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(open).toHaveBeenCalledTimes(3);
+    stop();
+  });
+
   it("retries at once when the browser comes back online or regains focus", async () => {
     const open = vi.fn(offline);
     const stop = followStream(open, () => {});

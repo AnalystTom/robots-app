@@ -31,9 +31,9 @@ export function followStream<T>(
       let opened = false;
       try {
         const stream = await open(controller.signal);
-        opened = true;
         for await (const frame of stream) {
           if (!active) return;
+          opened = true;
           retry = 0;
           await onFrame(frame);
         }
