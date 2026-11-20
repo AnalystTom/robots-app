@@ -55,6 +55,26 @@ export function retryDelayMs(
   return error === undefined ? backoffMs : jitterMs(backoffMs, random);
 }
 
+/** First wait before reopening a live stream that could not open. */
+export const STREAM_RETRY_BASE_MS = 1_000;
+
+/** Longest a client waits between attempts to open a live stream. */
+export const STREAM_RETRY_MAX_MS = 30_000;
+
+/**
+ * Wait before retry number `retry` (from 0, reset once the stream opens) to open a live stream: a
+ * random moment up to a ceiling that doubles from a second to half a minute, so tabs left open
+ * through an outage back off and spread out. A wait the server asked for still stands.
+ */
+export function streamRetryDelayMs(
+  error: unknown,
+  retry: number,
+  random: () => number = Math.random,
+): number {
+  const ceiling = Math.min(STREAM_RETRY_MAX_MS, STREAM_RETRY_BASE_MS * 2 ** Math.max(retry, 0));
+  return Math.max(retryDelayMs(error, 0), Math.round(random() * ceiling));
+}
+
 /** Longest a client waits to reopen a live stream that ended after it was open. */
 export const RECONNECT_SPREAD_MS = 5_000;
 

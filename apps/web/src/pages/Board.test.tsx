@@ -297,6 +297,7 @@ it("saves only edits and refreshes comments for the open ticket", async () => {
 it("closes the subscription before retrying a failed ticket refresh", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.useFakeTimers();
+  const random = vi.spyOn(Math, "random").mockReturnValue(1);
   api.bots.list.mockResolvedValue([bot("bot-1", "Helper")]);
   api.tickets.list
     .mockReset()
@@ -325,6 +326,7 @@ it("closes the subscription before retrying a failed ticket refresh", async () =
   } finally {
     if (page.container.isConnected) await page.cleanup();
     vi.useRealTimers();
+    random.mockRestore();
   }
 });
 

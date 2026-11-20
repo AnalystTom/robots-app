@@ -8,7 +8,7 @@ import {
   TICKET_STATUSES,
   TICKET_TITLE_MAX_LENGTH,
 } from "@robots/contracts";
-import { isRetryableError, reconnectDelayMs, retryDelayMs } from "@robots/core";
+import { isRetryableError, reconnectDelayMs, streamRetryDelayMs } from "@robots/core";
 import { fetchFresh, writeSaved } from "@robots/core/query";
 import {
   Button,
@@ -62,6 +62,7 @@ export function BoardPage() {
           : queries.tickets.comments.key(),
       });
     let cancelRetry: (() => void) | undefined;
+    let retry = 0;
     void (async () => {
       while (active) {
         const controller = new AbortController();
@@ -78,6 +79,7 @@ export function BoardPage() {
           refreshComments();
           setError("");
           opened = true;
+          retry = 0;
           for await (const event of stream) {
             if (!active) return;
             refreshComments(event.ticketId);
@@ -93,7 +95,7 @@ export function BoardPage() {
         await new Promise<void>((resolve) => {
           const timer = setTimeout(
             resolve,
-            opened ? reconnectDelayMs(failure) : retryDelayMs(failure, 1_000),
+            opened ? reconnectDelayMs(failure) : streamRetryDelayMs(failure, retry++),
           );
           cancelRetry = () => {
             clearTimeout(timer);
