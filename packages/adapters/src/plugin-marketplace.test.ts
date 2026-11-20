@@ -6,7 +6,11 @@ import {
   pluginLogoPng,
 } from "./plugin-marketplace.js";
 
-const registry = { name: "Cursor", repository: "https://github.com/example/plugins" };
+const registry = {
+  name: "Cursor",
+  repository: "https://github.com/example/plugins",
+  publishers: ["Cursor"],
+};
 const index = (plugins: unknown[]) => JSON.stringify({ name: "example", plugins });
 const sha = "a".repeat(40);
 const indexReads = (read: { mock: { calls: unknown[][] } }) =>
@@ -51,7 +55,11 @@ describe("public marketplace indexes", () => {
         { name: "style", source: "./style", author: { name: "A Person" } },
         { name: "owned", source: "./owned", author: { name: "xAI" } },
       ]),
-      { name: "xAI", repository: "https://github.com/example/index" },
+      {
+        name: "xAI",
+        repository: "https://github.com/example/index",
+        publishers: ["xAI", "xAI Corp"],
+      },
     );
     expect(
       entries.map(({ name, description, community }) => ({ name, description, community })),
@@ -67,7 +75,11 @@ describe("public marketplace indexes", () => {
         { name: "neon", source: { type: "local", path: "./external_plugins/neon" } },
         { name: "escape", source: { type: "local", path: "./../escape" } },
       ]),
-      { name: "xAI", repository: "https://github.com/example/index" },
+      {
+        name: "xAI",
+        repository: "https://github.com/example/index",
+        publishers: ["xAI", "xAI Corp"],
+      },
     );
     expect(result.entries[0]?.source).toBe(
       "https://github.com/example/index#external_plugins/neon",
@@ -83,7 +95,11 @@ describe("public marketplace indexes", () => {
           keywords: ["planning"],
         },
       ]),
-      { name: "xAI", repository: "https://github.com/example/index" },
+      {
+        name: "xAI",
+        repository: "https://github.com/example/index",
+        publishers: ["xAI", "xAI Corp"],
+      },
     );
     expect(result.entries[0]).toMatchObject({
       source: `https://github.com/example/tasks@${sha}`,
@@ -131,7 +147,11 @@ describe("public marketplace indexes", () => {
           domains: ["stripe.com"],
         },
       ]),
-      { name: "xAI", repository: "https://github.com/example/index" },
+      {
+        name: "xAI",
+        repository: "https://github.com/example/index",
+        publishers: ["xAI", "xAI Corp"],
+      },
     );
     expect(result.entries[0]).toMatchObject({
       source: `https://github.com/stripe/ai@${sha}#providers/grok`,
@@ -245,6 +265,19 @@ describe("marketplace service", () => {
         community: false,
       },
       { name: "notes", displayName: "Notes", category: null, logo: null, community: true },
+    ]);
+  });
+  it("does not label a plugin published under a registry name variant as community", async () => {
+    const read = registryReader({
+      cursor: [{ name: "mail", source: "mail" }],
+      tree: ["mail/skills/send/SKILL.md"],
+      text: {
+        "/mail/.cursor-plugin/plugin.json": JSON.stringify({ author: { name: "Cursor, Inc." } }),
+      },
+    });
+    const { entries } = await createPluginMarketplace(read).catalog("");
+    expect(entries.map(({ name, community }) => ({ name, community }))).toEqual([
+      { name: "mail", community: false },
     ]);
   });
   it("lists only plugins whose every part installs, and says which have a connector", async () => {
@@ -429,6 +462,15 @@ describe("plugin logos", () => {
     expect(await logos.logo("xAI", logoKey("neon/logo.svg"))).toBeNull();
     expect(await logos.logo("xAI", logoKey("neon/logo.svg"))).toBeNull();
     expect(read).toHaveBeenCalledTimes(1);
+  });
+  it("remembers a logo that is not listed, so repeats do no work", async () => {
+    const listed = vi.fn(async () => null);
+    const read = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read, listed });
+    expect(await logos.logo("Cursor", logoKey("mail/assets/logo.svg"))).toBeNull();
+    expect(await logos.logo("Cursor", logoKey("mail/assets/logo.svg"))).toBeNull();
+    expect(listed).toHaveBeenCalledTimes(1);
+    expect(read).not.toHaveBeenCalled();
   });
   it("draws raster and SVG logos and rejects anything else", async () => {
     const fromSvg = await pluginLogoPng(svgLogo);
