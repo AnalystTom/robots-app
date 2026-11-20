@@ -31,10 +31,7 @@ const platforms = [
   })),
   { name: "Web", action: "Open", href: APP_URL, attr: "web" },
 ];
-const description = `Get RoBots for ${new Intl.ListFormat("en", { type: "conjunction" }).format([
-  ...platforms.map((platform) => platform.name).filter((name) => name !== "Web"),
-  "the web",
-])}.`;
+const description = "Get RoBots for desktop, mobile, or the web.";
 ---
 
 <BaseLayout title="Download · RoBots" description={description}>

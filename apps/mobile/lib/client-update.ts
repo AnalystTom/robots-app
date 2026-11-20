@@ -40,6 +40,11 @@ function storeListing(): string | undefined {
   return MOBILE_APP_LINKS[Platform.OS === "ios" ? "ios" : "android"];
 }
 
+async function checkOverTheAirUpdate(): Promise<boolean> {
+  if (!Updates.isEnabled) return false;
+  return (await Updates.checkForUpdateAsync()).isAvailable;
+}
+
 async function downloadAndReload(): Promise<boolean> {
   if (!(await downloadUpdate())) return false;
   await Updates.reloadAsync();
@@ -51,22 +56,25 @@ export async function applyRequiredUpdate(): Promise<void> {
   await bestEffort("open store or web app", Linking.openURL(storeListing() ?? currentApiBase()));
 }
 
+async function openServerInBrowser(): Promise<void> {
+  await bestEffort("open server in browser", Linking.openURL(currentApiBase()));
+}
+
 let prompting = false;
 
-export function noteClientUpdateRequired(): void {
-  if (prompting) return;
-  prompting = true;
-  const listing = storeListing();
+function alertUpdateRequired(
+  message: string | undefined,
+  label: string,
+  action: () => Promise<void>,
+): void {
   Alert.alert(
     t`Update required`,
-    listing
-      ? undefined
-      : t`This version of RoBots is no longer supported, and an update is not in the app store yet.`,
+    message,
     [
       {
-        text: listing ? t`Update` : t`Open on the web`,
+        text: label,
         onPress: () => {
-          void applyRequiredUpdate().finally(() => {
+          void action().finally(() => {
             prompting = false;
           });
         },
@@ -74,6 +82,26 @@ export function noteClientUpdateRequired(): void {
     ],
     { cancelable: false },
   );
+}
+
+export function noteClientUpdateRequired(): void {
+  if (prompting) return;
+  prompting = true;
+  if (storeListing()) {
+    alertUpdateRequired(undefined, t`Update`, applyRequiredUpdate);
+    return;
+  }
+  void bestEffort("check over-the-air update", checkOverTheAirUpdate()).then((available) => {
+    if (available) {
+      alertUpdateRequired(undefined, t`Update`, applyRequiredUpdate);
+      return;
+    }
+    alertUpdateRequired(
+      t`This version of RoBots is no longer supported, and an update is not in the app store yet.`,
+      t`Open on the web`,
+      openServerInBrowser,
+    );
+  });
 }
 
 export function installClientUpdates(): void {
