@@ -11,8 +11,10 @@ export function listedMobileApps(): Array<{ platform: MobilePlatform; href: stri
   });
 }
 
-export function mobileAppLinkFor(userAgent: string): string | undefined {
+export function mobileAppLinkFor(userAgent: string, maxTouchPoints: number): string | undefined {
   if (/Android/i.test(userAgent)) return MOBILE_APP_LINKS.android;
-  if (/iPhone|iPad|iPod/i.test(userAgent)) return MOBILE_APP_LINKS.ios;
+  if (/iPhone|iPad|iPod/i.test(userAgent) || (/Macintosh/i.test(userAgent) && maxTouchPoints > 1)) {
+    return MOBILE_APP_LINKS.ios;
+  }
   return undefined;
 }

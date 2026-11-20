@@ -19,7 +19,7 @@ describe("mobile app links", () => {
   it("offers no mobile app while RoBots has no store listing", () => {
     expect(listedMobileApps()).toEqual([]);
     for (const userAgent of ["Android", "iPhone", "Macintosh"]) {
-      expect(mobileAppLinkFor(userAgent)).toBeUndefined();
+      expect(mobileAppLinkFor(userAgent, 0)).toBeUndefined();
     }
   });
 
@@ -30,15 +30,16 @@ describe("mobile app links", () => {
       { platform: "ios", href: "https://ios.example/app" },
       { platform: "android", href: "https://android.example/app" },
     ]);
-    expect(mobileAppLinkFor("Linux; Android 15")).toBe("https://android.example/app");
-    expect(mobileAppLinkFor("iPhone")).toBe("https://ios.example/app");
-    expect(mobileAppLinkFor("Macintosh")).toBeUndefined();
+    expect(mobileAppLinkFor("Linux; Android 15", 0)).toBe("https://android.example/app");
+    expect(mobileAppLinkFor("iPhone", 5)).toBe("https://ios.example/app");
+    expect(mobileAppLinkFor("Macintosh", 0)).toBeUndefined();
+    expect(mobileAppLinkFor("Macintosh", 5)).toBe("https://ios.example/app");
   });
 
   it("offers nothing to a platform whose store is not listed", () => {
     links.ios = "https://ios.example/app";
     expect(listedMobileApps()).toEqual([{ platform: "ios", href: "https://ios.example/app" }]);
-    expect(mobileAppLinkFor("Android")).toBeUndefined();
-    expect(mobileAppLinkFor("iPhone")).toBe("https://ios.example/app");
+    expect(mobileAppLinkFor("Android", 0)).toBeUndefined();
+    expect(mobileAppLinkFor("iPhone", 0)).toBe("https://ios.example/app");
   });
 });

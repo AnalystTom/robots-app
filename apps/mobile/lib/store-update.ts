@@ -31,7 +31,7 @@ export async function fetchStoreVersion(bundleId: string): Promise<string | null
   return typeof version === "string" ? version : null;
 }
 
-export function useStoreUpdateAvailable(): boolean {
+export function useStoreUpdate(): (() => void) | null {
   const bundleId = Platform.OS === "ios" && IOS_LISTING ? Application.applicationId : null;
   const installed = Application.nativeApplicationVersion;
   const { data } = useQuery(
@@ -43,9 +43,7 @@ export function useStoreUpdateAvailable(): boolean {
     },
     queryClient,
   );
-  return Boolean(data && installed && isNewerVersion(data, installed));
-}
-
-export function openStoreListing(): void {
-  if (IOS_LISTING) void bestEffort("open store listing", Linking.openURL(IOS_LISTING));
+  const listing = IOS_LISTING;
+  if (!listing || !data || !installed || !isNewerVersion(data, installed)) return null;
+  return () => void bestEffort("open store listing", Linking.openURL(listing));
 }

@@ -89,7 +89,7 @@ export function SidebarFooter({
   onSwitchOrganization,
 }: Props) {
   const { t } = useLingui();
-  const mobileAppLink = mobileAppLinkFor(navigator.userAgent);
+  const mobileAppLink = mobileAppLinkFor(navigator.userAgent, navigator.maxTouchPoints);
   const update = useSidebarUpdate();
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const pillRef = useRef<HTMLButtonElement>(null);

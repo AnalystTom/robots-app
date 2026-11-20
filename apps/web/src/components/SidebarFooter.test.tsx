@@ -172,6 +172,7 @@ it.each(["Android", "iPhone", "Macintosh"])(
   "offers no mobile app on %s while RoBots has no store listing",
   async (userAgent) => {
     vi.spyOn(navigator, "userAgent", "get").mockReturnValue(userAgent);
+    Object.defineProperty(navigator, "maxTouchPoints", { value: 0, configurable: true });
     await render();
     const menu = document.querySelector('[data-slot="popover-content"]')!;
     expect(menu.textContent).not.toContain("Get the mobile app");
@@ -181,6 +182,18 @@ it.each(["Android", "iPhone", "Macintosh"])(
 it("offers the visitor's own store listing when RoBots has one", async () => {
   mobileLinks.ios = "https://apps.example/ios-robots";
   vi.spyOn(navigator, "userAgent", "get").mockReturnValue("iPhone");
+  Object.defineProperty(navigator, "maxTouchPoints", { value: 0, configurable: true });
+  await render();
+  const link = [...document.querySelectorAll('[data-slot="popover-content"] a')].find((a) =>
+    a.textContent?.includes("Get the mobile app"),
+  );
+  expect(link?.getAttribute("href")).toBe("https://apps.example/ios-robots");
+});
+
+it("offers the iOS listing to an iPad in desktop mode", async () => {
+  mobileLinks.ios = "https://apps.example/ios-robots";
+  vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Macintosh");
+  Object.defineProperty(navigator, "maxTouchPoints", { value: 5, configurable: true });
   await render();
   const link = [...document.querySelectorAll('[data-slot="popover-content"] a')].find((a) =>
     a.textContent?.includes("Get the mobile app"),
