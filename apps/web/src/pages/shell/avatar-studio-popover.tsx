@@ -31,24 +31,18 @@ import type { ClipboardEvent, DragEvent } from "react";
 import { useRef, useState } from "react";
 import { RobotBuilder } from "./robot-builder";
 
-/**
- * A bot's look: the robot character builder first, then the earlier styles (shape grid and color
- * row) under "More styles". With `organicIdentities`, the grid also offers the organic body each
- * identity draws (for a bot that has no id yet); without them, "Default" restores the bot's own
- * organic body.
- */
 export function BotLookPicker({
   value,
   identity,
   organicIdentities,
-  avatarSet = "organic",
+  avatarSet,
   onAvatarSetChange,
   onChange,
 }: {
   value: string;
   identity?: string;
   organicIdentities?: readonly string[];
-  avatarSet?: BotAvatarSet;
+  avatarSet: BotAvatarSet;
   onAvatarSetChange?: (set: BotAvatarSet, value: string) => void;
   onChange: (value: string, identity?: string) => void;
 }) {
@@ -69,7 +63,6 @@ export function BotLookPicker({
         contentClassName="space-y-4 pt-3"
         defaultOpen={robot === null}
       >
-        {/* Only one bot's own editor overrides the account's set; a new bot takes the default. */}
         {onAvatarSetChange ? (
           <Tabs
             value={avatarSet}
@@ -176,7 +169,7 @@ export interface AvatarStudioPopoverProps {
   value: string;
   identity?: string;
   status?: string;
-  avatarSet?: BotAvatarSet;
+  avatarSet: BotAvatarSet;
   size?: number;
   onChange: (value: string, avatarSet?: BotAvatarSet) => void;
   disabled?: boolean;
@@ -186,7 +179,7 @@ export function AvatarStudioPopover({
   value,
   identity,
   status,
-  avatarSet = "organic",
+  avatarSet,
   size = 72,
   onChange,
   disabled = false,

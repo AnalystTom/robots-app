@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { captureScreenshot, completeOnboarding, openBotPanelTab, signup } from "./helpers";
+import { captureScreenshot, completeOnboarding, openBotPanelTab, rpc, signup } from "./helpers";
 
 test("bot settings open Avatar Studio on the Bot tab", async ({ page }, testInfo) => {
   const stamp = Date.now();
   await signup(page, `avatar-studio-${stamp}@robots.test`, "password12", "Avatar Studio");
   await completeOnboarding(page);
+  await rpc(page, "preferences/update", { botAvatarSet: "organic" });
   await page.goto("/app");
   await page.waitForURL(/\/app\/[^/]+$/);
 

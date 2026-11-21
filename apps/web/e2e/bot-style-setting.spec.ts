@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { captureScreenshot, completeOnboarding, openUserSettings, signup } from "./helpers";
+import {
+  captureScreenshot,
+  completeOnboarding,
+  openNewBot,
+  openUserSettings,
+  rpc,
+  signup,
+} from "./helpers";
 
 test("bot style stays available when bootstrap omits the saved preference", async ({
   page,
@@ -29,4 +36,27 @@ test("bot style stays available when bootstrap omits the saved preference", asyn
   await expect(
     page.getByTestId("bot-style-select").getByRole("button", { name: "Original", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
+});
+
+test("a new account starts on RoBots and an Original account keeps Original", async ({
+  page,
+}, testInfo) => {
+  await signup(page, `bot-style-default-${Date.now()}@robots.test`, "password12", "Tester");
+  await completeOnboarding(page);
+  expect((await rpc<{ botAvatarSet?: string }>(page, "me", {})).botAvatarSet).toBe("robots");
+  await openNewBot(page);
+  const dialog = page.getByTestId("create-bot-dialog");
+  await expect(dialog.locator(".robots-logo-avatar").first()).toBeVisible();
+  await expect(dialog.locator(".robots-organic-avatar")).toHaveCount(0);
+  await captureScreenshot(page, testInfo, "new-bot-robots-default");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(dialog).toBeHidden();
+
+  await rpc(page, "preferences/update", { botAvatarSet: "organic" });
+  await page.reload();
+  expect((await rpc<{ botAvatarSet?: string }>(page, "me", {})).botAvatarSet).toBe("organic");
+  await openNewBot(page);
+  await expect(dialog.locator(".robots-organic-avatar").first()).toBeVisible();
+  await expect(dialog.locator(".robots-logo-avatar")).toHaveCount(0);
+  await captureScreenshot(page, testInfo, "new-bot-original-kept");
 });
