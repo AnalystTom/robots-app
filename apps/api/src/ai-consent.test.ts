@@ -18,7 +18,7 @@ function setup() {
       spaceSettingOverride: { findUnique: vi.fn(async () => null) },
       userModelRoleChoice: { findMany: vi.fn(async () => []) },
       spaceModelRoleChoice: { findMany: vi.fn(async () => []) },
-      userModelCredential: { findMany: vi.fn(async () => []) },
+      userModelCredential: { findMany: vi.fn(async () => []), findFirst: vi.fn(async () => null) },
       secret: { findMany: vi.fn(async () => []) },
       bot: { findMany: vi.fn(async () => []) },
       routine: { findMany: vi.fn(async () => []) },
