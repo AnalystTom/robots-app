@@ -90,7 +90,11 @@ describe("chooseBotAvatar", () => {
       color: BOT_COLORS[index % 6]!,
     }));
     for (let seed = 1; seed <= 20; seed++) {
-      const chosen = chooseBotAvatar(existing, undefined, { avatarSet: "organic", random: seeded(seed), now: 0 });
+      const chosen = chooseBotAvatar(existing, undefined, {
+        avatarSet: "organic",
+        random: seeded(seed),
+        now: 0,
+      });
       expect(organicAvatarFamily(chosen.id)).toBe(9);
       expect(BOT_COLORS.slice(6)).toContain(chosen.color);
       expect(chosen.id).toMatch(/^c[a-z0-9]{24}$/);
@@ -107,7 +111,11 @@ describe("chooseBotAvatar", () => {
     }));
     existing.push({ id: families[11]!, color: blue.hex });
     for (let seed = 1; seed <= 20; seed++) {
-      const chosen = chooseBotAvatar(existing, undefined, { avatarSet: "organic", random: seeded(seed), now: 0 });
+      const chosen = chooseBotAvatar(existing, undefined, {
+        avatarSet: "organic",
+        random: seeded(seed),
+        now: 0,
+      });
       expect(chosen.color).not.toBe(blue.hex);
     }
   });
@@ -120,7 +128,11 @@ describe("chooseBotAvatar", () => {
     }));
     const random = seeded(1);
     const looks = Array.from({ length: 20 }, () =>
-      organicAvatarLook(organicAvatarFamily(chooseBotAvatar(existing, undefined, { avatarSet: "organic", random }).id)),
+      organicAvatarLook(
+        organicAvatarFamily(
+          chooseBotAvatar(existing, undefined, { avatarSet: "organic", random }).id,
+        ),
+      ),
     );
     // Every look is used once, so the new bot is not pushed into a second round body.
     expect(looks.some((look) => look !== 2)).toBe(true);
@@ -144,7 +156,11 @@ describe("chooseBotAvatar", () => {
       ...others.slice(1).map((id, index) => ({ id, color: spread[index % spread.length]! })),
     ];
     for (let seed = 1; seed <= 20; seed++) {
-      const chosen = chooseBotAvatar(existing, undefined, { avatarSet: "organic", random: seeded(seed), now: 0 });
+      const chosen = chooseBotAvatar(existing, undefined, {
+        avatarSet: "organic",
+        random: seeded(seed),
+        now: 0,
+      });
       expect(organicAvatarLook(organicAvatarFamily(chosen.id))).toBe(2);
       expect(chosen.color).toBe(elsewhere);
     }
@@ -176,17 +192,27 @@ describe("chooseBotAvatar", () => {
     const existing = idsForFamilies([3, 3, 3]).map((id) => ({ id, color: "#3EC5A8" }));
     for (let family = 0; family < ORGANIC_AVATAR_FAMILY_COUNT; family++) {
       for (let seed = 1; seed <= 5; seed++) {
-        const chosen = chooseBotAvatar(existing, "#8B5CF6", { avatarSet: "organic", random: seeded(seed), family });
+        const chosen = chooseBotAvatar(existing, "#8B5CF6", {
+          avatarSet: "organic",
+          random: seeded(seed),
+          family,
+        });
         expect(organicAvatarFamily(chosen.id)).toBe(family);
         expect(chosen.id).toMatch(/^c[a-z0-9]{24}$/);
         expect(chosen.color).toBe("#8B5CF6");
       }
     }
-    expect(organicAvatarFamily(chooseBotAvatar(existing, undefined, { avatarSet: "organic", family: 3 }).id)).toBe(3);
+    expect(
+      organicAvatarFamily(
+        chooseBotAvatar(existing, undefined, { avatarSet: "organic", family: 3 }).id,
+      ),
+    ).toBe(3);
   });
 
   it("keeps a colour the caller chose", () => {
-    expect(chooseBotAvatar([], "#123456", { avatarSet: "organic", random: seeded(4), now: 0 }).color).toBe("#123456");
+    expect(
+      chooseBotAvatar([], "#123456", { avatarSet: "organic", random: seeded(4), now: 0 }).color,
+    ).toBe("#123456");
   });
 
   it("never assigns a heart with crypto randomness, regardless of existing looks", () => {
@@ -243,7 +269,11 @@ describe("chooseBotAvatar", () => {
     const heart = cuidForFamily(ORGANIC_AVATAR_HEART_FAMILY);
     const safe = cuidForFamily(1);
     const candidates = [...Array<string>(BOT_ID_ATTEMPTS).fill(heart), safe];
-    const chosen = chooseBotAvatar([], "#123456", { avatarSet: "organic", random: idStream(candidates), now: 0 });
+    const chosen = chooseBotAvatar([], "#123456", {
+      avatarSet: "organic",
+      random: idStream(candidates),
+      now: 0,
+    });
     expect(chosen.id).toBe(safe);
     expect(organicAvatarFamily(chosen.id)).not.toBe(ORGANIC_AVATAR_HEART_FAMILY);
   });
