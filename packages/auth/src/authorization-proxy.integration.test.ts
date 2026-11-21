@@ -99,6 +99,25 @@ describe("native authorization proxy", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 
+  it("refuses a RoBots request whose state this server never issued", async () => {
+    const url = await nativeSignIn();
+    const forged = new URL(url);
+    forged.searchParams.set("state", "never-issued");
+    const response = await proxy(forged.href);
+    expect(response.status).toBe(400);
+    expect(response.headers.getSetCookie()).toEqual([]);
+  });
+
+  it("refuses a RoBots request whose state has expired", async () => {
+    const url = await nativeSignIn();
+    for (const row of state.db.verification ?? []) {
+      if (String(row.identifier).startsWith("auth-state:")) row.expiresAt = new Date(0);
+    }
+    const response = await proxy(url);
+    expect(response.status).toBe(400);
+    expect(response.headers.getSetCookie()).toEqual([]);
+  });
+
   it("refuses a request that repeats its client", async () => {
     const response = await proxy(
       `${googleRequest({ client_id: googleClientId, redirect_uri: ownCallback })}&client_id=not-robots.apps.googleusercontent.com`,

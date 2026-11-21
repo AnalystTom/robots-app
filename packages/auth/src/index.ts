@@ -20,7 +20,7 @@ import {
   SpaceDeletionInProgressError,
 } from "@robots/db";
 import type { BetterAuthOptions, BetterAuthPlugin } from "better-auth";
-import { betterAuth } from "better-auth";
+import { betterAuth, getAuthStateVerificationIdentifier } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import {
   APIError,
@@ -535,12 +535,18 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
             env.social?.providers.some((provider) =>
               isBuiltinAuthorizationRequest(provider, callbackURL(provider.id), authorizationURL),
             ) ?? false;
-          if (
-            !(
-              builtin ||
-              (await discovery?.isAuthorizationRequest(authorizationURL, callbackURL("oidc")))
-            )
-          ) {
+          const own =
+            builtin ||
+            (await discovery?.isAuthorizationRequest(authorizationURL, callbackURL("oidc")));
+          const [state, ...otherStates] =
+            URL.parse(authorizationURL)?.searchParams.getAll("state") ?? [];
+          const issued =
+            state !== undefined && otherStates.length === 0
+              ? await ctx.context.internalAdapter.findVerificationValue(
+                  getAuthStateVerificationIdentifier(state),
+                )
+              : null;
+          if (!own || !issued || issued.expiresAt <= new Date()) {
             throw new APIError("BAD_REQUEST", { message: "Invalid authorizationURL" });
           }
         }

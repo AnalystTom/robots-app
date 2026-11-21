@@ -764,6 +764,7 @@ describe("OIDC callbacks", () => {
   it.each([
     { client_id: "foreign-client", redirect_uri: `${origin}/api/auth/callback/oidc` },
     { client_id: "test-client", redirect_uri: "https://example.com/cb" },
+    { state: "never-issued" },
   ])(
     "only lets the native proxy forward this deployment's own SSO request (%o)",
     async (params) => {
