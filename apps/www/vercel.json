@@ -32,11 +32,6 @@
       "source": "/github",
       "destination": "https://github.com/AnalystTom/robots-app",
       "permanent": false
-    },
-    {
-      "source": "/discord",
-      "destination": "https://discord.gg/RWwKa2Sn7h",
-      "permanent": false
     }
   ],
   "headers": [

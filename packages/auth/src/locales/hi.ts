@@ -28,9 +28,6 @@ export const HI_MESSAGES: Record<string, string> = {
   "Get the apps": "ऐप डाउनलोड करें",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots {platforms} पर चलता है, ताकि आपके बॉट आप तक कहीं भी पहुँच सकें।",
-  "Join the community": "कम्युनिटी से जुड़ें",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "देखें दूसरे क्या बना रहे हैं, जल्दी मदद पाएँ, और {discord} पर हमें बताएँ कि आगे क्या बनाएँ।",
   "Star us on GitHub": "GitHub पर हमें स्टार दें",
   "RoBots is open source. {star} helps more people find it.":
     "RoBots ओपन सोर्स है। {star} से ज़्यादा लोग इसे ढूँढ पाते हैं।",

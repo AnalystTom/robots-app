@@ -29,9 +29,6 @@ export const HE_MESSAGES: Record<string, string> = {
   "Get the apps": "להוריד את האפליקציות",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots זמין ל-{platforms}, כדי שהבוטים שלך יוכלו להשיג אותך בכל מקום.",
-  "Join the community": "להצטרף לקהילה",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "לראות מה אחרים בונים, לקבל עזרה מהר ולספר לנו ב-{discord} מה לבנות בהמשך.",
   "Star us on GitHub": "לתת לנו כוכב ב-GitHub",
   "RoBots is open source. {star} helps more people find it.":
     "RoBots הוא קוד פתוח. {star} עוזר ליותר אנשים למצוא אותו.",

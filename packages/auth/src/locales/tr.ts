@@ -29,9 +29,6 @@ export const TR_MESSAGES: Record<string, string> = {
   "Get the apps": "Uygulamaları indirin",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots {platforms} üzerinde çalışır; böylece botlarınız size her yerde ulaşabilir.",
-  "Join the community": "Topluluğa katılın",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "Başkalarının neler yaptığını görün, hızlıca yardım alın ve sırada ne yapmamız gerektiğini {discord} üzerinden bize söyleyin.",
   "Star us on GitHub": "GitHub'da bize yıldız verin",
   "RoBots is open source. {star} helps more people find it.":
     "RoBots açık kaynaklıdır. {star} daha fazla kişinin onu bulmasına yardımcı olur.",

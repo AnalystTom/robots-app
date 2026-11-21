@@ -52,24 +52,7 @@ export function welcomeEmail(
         )}
       </Text>
       <Text style={stepStyle}>
-        <strong>2. {say("Join the community")}</strong>
-      </Text>
-      <Text style={{ marginTop: 0 }}>
-        {withNodes(
-          say(
-            "See what others are building, get help fast, and tell us what to build next on {discord}.",
-          ),
-          {
-            discord: (
-              <Link href="https://discord.gg/RWwKa2Sn7h" style={linkStyle}>
-                Discord
-              </Link>
-            ),
-          },
-        )}
-      </Text>
-      <Text style={stepStyle}>
-        <strong>3. {say("Star us on GitHub")}</strong>
+        <strong>2. {say("Star us on GitHub")}</strong>
       </Text>
       <Text style={{ marginTop: 0 }}>
         {withNodes(say("RoBots is open source. {star} helps more people find it."), {
@@ -84,6 +67,5 @@ export function welcomeEmail(
       <Text>The RoBots team</Text>
     </>,
     unsubscribeUrl,
-    { src: "https://tryrobots.app/email/welcome.jpg", alt: "RoBots" },
   );
 }

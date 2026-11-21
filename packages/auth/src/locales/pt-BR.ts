@@ -29,9 +29,6 @@ export const PT_BR_MESSAGES: Record<string, string> = {
   "Get the apps": "Baixe os apps",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "O RoBots funciona no {platforms}, para que seus bots falem com você onde você estiver.",
-  "Join the community": "Entre na comunidade",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "Veja o que outras pessoas estão criando, receba ajuda rápido e conte para a gente no {discord} o que criar em seguida.",
   "Star us on GitHub": "Dê uma estrela no GitHub",
   "RoBots is open source. {star} helps more people find it.":
     "O RoBots é open source. {star} ajuda mais pessoas a encontrá-lo.",

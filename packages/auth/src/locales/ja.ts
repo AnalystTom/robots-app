@@ -30,9 +30,6 @@ export const JA_MESSAGES: Record<string, string> = {
   "Get the apps": "アプリを入手する",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots は {platforms} で使えるので、ボットはどこにいてもあなたに連絡できます。",
-  "Join the community": "コミュニティに参加する",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "{discord} で、ほかの人が作っているものを見たり、すぐに助けを得たり、次に作ってほしいものを教えてください。",
   "Star us on GitHub": "GitHub でスターを付ける",
   "RoBots is open source. {star} helps more people find it.":
     "RoBots はオープンソースです。{star} は、より多くの人が RoBots を見つける助けになります。",

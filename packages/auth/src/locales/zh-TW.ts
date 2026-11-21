@@ -27,9 +27,6 @@ export const ZH_TW_MESSAGES: Record<string, string> = {
   "Get the apps": "下載應用程式",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots 支援 {platforms}，讓你的機器人隨時隨地都能聯絡到你。",
-  "Join the community": "加入社群",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "在 {discord} 上看看別人在打造什麼、快速獲得協助，並告訴我們接下來該做什麼。",
   "Star us on GitHub": "在 GitHub 上給我們星星",
   "RoBots is open source. {star} helps more people find it.":
     "RoBots 是開源的。{star}能幫助更多人發現它。",
