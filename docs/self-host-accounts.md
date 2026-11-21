@@ -229,7 +229,10 @@ APPLE_KEY_ID=replace-with-key-id
 APPLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nreplace-with-key\n-----END PRIVATE KEY-----"
 ```
 
-Leave a pair empty to keep that provider off. `APPLE_PRIVATE_KEY` is the contents of the Sign in
+Leave a pair empty to keep that provider off. To let users connect Google's MCP servers (Gmail,
+Calendar, Drive) without their own OAuth client, set `GOOGLE_MCP_OAUTH_CLIENT_ID` and
+`GOOGLE_MCP_OAUTH_CLIENT_SECRET` instead; they do not turn on Google sign-in. See
+[MCP servers](self-host-integrations.md#mcp-servers). `APPLE_PRIVATE_KEY` is the contents of the Sign in
 with Apple `.p8` file. A line break in the env value can be a real newline or the two characters
 `\n`. To mount the file instead, set `APPLE_PRIVATE_KEY_FILE` to its path and leave
 `APPLE_PRIVATE_KEY` empty. Set one of them, not both. In every Compose variant, this path is

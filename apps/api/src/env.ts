@@ -3,6 +3,7 @@ import type {
   ApnsVoipConfig,
   DiscordBotCredentials,
   PhotonProjectCredentials,
+  SharedMcpOAuthClient,
   TelegramBotCredentials,
 } from "@robots/adapters";
 import {
@@ -11,6 +12,7 @@ import {
   boatApiUrlFromEnv,
   deploymentLabsFromEnv,
   discordBotFromEnv,
+  googleMcpOAuthClientFromEnv,
   mcpStdioOptionsFromEnv,
   photonProjectsFromEnv,
   resolveCloudAgentProvider,
@@ -160,6 +162,7 @@ export interface AppEnv {
   mcpStdioAllowedCommands: string[];
   mcpStdio: ReturnType<typeof mcpStdioOptionsFromEnv>;
   mcpAllowPrivateEndpoint: boolean;
+  googleMcpOAuthClient: SharedMcpOAuthClient | undefined;
   port: number;
   gitSha: string | undefined;
   minimumClientBuilds?: MinimumClientBuilds;
@@ -356,6 +359,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
       .filter(Boolean),
     mcpStdio: mcpStdioOptionsFromEnv(source),
     mcpAllowPrivateEndpoint: source.MCP_ALLOW_PRIVATE_ENDPOINT === "true",
+    googleMcpOAuthClient: googleMcpOAuthClientFromEnv(source),
     port: Number(source.API_PORT ?? 3100),
     gitSha: optional(source.GIT_SHA) ?? optional(source.ROBOTS_GIT_SHA),
     minimumClientBuilds: parseMinimumClientBuilds(source.ROBOTS_MIN_CLIENT_BUILD),

@@ -69,6 +69,21 @@ credentials and survives **Disconnect**; switching to a different client drops t
 On first use the client is bound to the authorization server the MCP server pointed to, and RoBots
 refuses to send it anywhere else afterwards. Replacing the client clears the binding.
 
+Google's MCP servers (Gmail, Calendar, Drive) only accept such a client. To let every user connect
+them with a plain **Connect OAuth**, create one OAuth client of type **Web application** in the
+Google Cloud console, add the same redirect URI, and set it on the API and worker:
+
+```env
+GOOGLE_MCP_OAUTH_CLIENT_ID=replace-with-client-id
+GOOGLE_MCP_OAUTH_CLIENT_SECRET=replace-with-client-secret
+```
+
+Set both or neither. RoBots uses this client only for remote servers whose authorization server is
+`https://accounts.google.com`, asks Google for offline access so the grant can be refreshed, and
+never stores it with a server or shows its secret. A client entered under **Advanced** still takes
+precedence. These are separate from `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, which turn on Sign
+in with Google.
+
 Stdio MCP servers can use OAuth too. They do not authorize themselves (the MCP spec has them
 read credentials from the environment), so RoBots runs the flow for them. They are off unless
 the API and worker have `MCP_STDIO_ENABLED=true` and the command is listed in

@@ -2446,7 +2446,8 @@ describe("MCP server health", () => {
       $transaction: vi.fn(async (run: (tx: unknown) => Promise<unknown>) => run(prisma)),
     } as unknown as PrismaClient;
     const summaryFor = vi.fn(
-      async () => options.oauth ?? { status: "none", clientId: null, credential: true },
+      async () =>
+        options.oauth ?? { status: "none", clientId: null, sharedClient: false, credential: true },
     );
     const deps = {
       prisma,
@@ -2644,7 +2645,12 @@ describe("MCP server health", () => {
 
     it("says why it did not probe when the server still needs its OAuth account", async () => {
       const { client, probe } = harness({
-        oauth: { status: "none", clientId: "client-1.apps.example.test", credential: true },
+        oauth: {
+          status: "none",
+          clientId: "client-1.apps.example.test",
+          sharedClient: false,
+          credential: true,
+        },
       });
 
       const tested = await client.mcp.servers.test({ id: "server-1" });
@@ -2664,7 +2670,7 @@ describe("MCP server health", () => {
       async (material, shouldProbe) => {
         const h = harness({
           row: baseRow({ secretId: "secret-1" }),
-          oauth: { status: "none", clientId: "fake-client", credential: true },
+          oauth: { status: "none", clientId: "fake-client", sharedClient: false, credential: true },
         });
         vi.mocked(h.deps.prisma.secret.findFirst).mockResolvedValue({
           id: "secret-1",
@@ -2733,7 +2739,12 @@ describe("MCP server health", () => {
     it("does not probe a server whose OAuth account is not connected", async () => {
       const { client, probe, row } = harness({
         row: null,
-        oauth: { status: "none", clientId: "client-1.apps.example.test", credential: true },
+        oauth: {
+          status: "none",
+          clientId: "client-1.apps.example.test",
+          sharedClient: false,
+          credential: true,
+        },
       });
 
       const created = await client.mcp.servers.create(stdioInput);
@@ -3050,7 +3061,7 @@ describe("MCP server health", () => {
           ...(h.deps.mcpOAuth as object),
           summaryFor: vi.fn(async () => {
             editLandsDuring(h);
-            return { status: "none", clientId: null, credential: true };
+            return { status: "none", clientId: null, sharedClient: false, credential: true };
           }),
         },
       });
@@ -3095,7 +3106,7 @@ describe("MCP server health", () => {
           complete: vi.fn(async () => ({ serverId: "server-1", revision: 1 })),
           summaryFor: vi.fn(async () => {
             editLandsDuring(h);
-            return { status: "connected", clientId: null, credential: true };
+            return { status: "connected", clientId: null, sharedClient: false, credential: true };
           }),
         },
       });

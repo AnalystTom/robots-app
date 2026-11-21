@@ -270,6 +270,8 @@ x-app-environment: &app-environment # Runtime
   MCP_MAX_PAGES:
   MCP_PACKAGES_DIR:
   MCP_ALLOW_PRIVATE_ENDPOINT:
+  GOOGLE_MCP_OAUTH_CLIENT_ID:
+  GOOGLE_MCP_OAUTH_CLIENT_SECRET:
   # Messaging (outbound delivery runs in the worker)
   MESSAGING_OPEN_SIGNUP:
   SENDBLUE_API_KEY_ID:

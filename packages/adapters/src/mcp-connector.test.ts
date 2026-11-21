@@ -17,7 +17,7 @@ import { DIRECT_TOOL_LIMIT } from "./lazy-tool-catalog.js";
 import { MCP_CLOSE_TIMEOUT_MS } from "./mcp-close.js";
 import { allowlistDrift, McpConnector } from "./mcp-connector.js";
 import type { McpOAuthBroker, OAuthMaterial } from "./mcp-oauth.js";
-import { StoredMcpOAuthProvider } from "./mcp-oauth.js";
+import { oauthMaterialSecrets, StoredMcpOAuthProvider } from "./mcp-oauth.js";
 import { MCP_TOOL_TIMEOUT_MS, McpSession } from "./mcp-transport.js";
 import { InMemoryRealtimeFanout } from "./realtime.js";
 import { checkRoutineWatch, validateRoutineWatch } from "./routine-watch.js";
@@ -1839,7 +1839,10 @@ describe("MCP connector session cache", () => {
             }),
           },
         },
-        { providerFor: vi.fn().mockResolvedValue(provider) } as unknown as McpOAuthBroker,
+        {
+          providerFor: vi.fn().mockResolvedValue(provider),
+          secretsIn: oauthMaterialSecrets,
+        } as unknown as McpOAuthBroker,
       );
       const error = vi.spyOn(getLogger(), "error");
       try {
@@ -1925,7 +1928,10 @@ describe("MCP connector session cache", () => {
             }),
           },
         },
-        { providerFor: vi.fn().mockResolvedValue(provider) } as unknown as McpOAuthBroker,
+        {
+          providerFor: vi.fn().mockResolvedValue(provider),
+          secretsIn: oauthMaterialSecrets,
+        } as unknown as McpOAuthBroker,
       );
 
       try {
@@ -2261,6 +2267,7 @@ describe("MCP connector session cache", () => {
       },
     };
     const oauth = {
+      secretsIn: oauthMaterialSecrets,
       providerFor: vi.fn(
         async (_server: unknown, _context: unknown, loaded: { material: OAuthMaterial }) =>
           loaded.material.oauth
@@ -2658,7 +2665,7 @@ describe("MCP connector stdio OAuth", () => {
 
   function stdioConnector(
     load: () => OAuthMaterial,
-    oauth: Pick<McpOAuthBroker, "providerFor"> | undefined,
+    oauth: Pick<McpOAuthBroker, "providerFor" | "secretsIn"> | undefined,
   ) {
     const assignment = { ...ASSIGNMENT, server: STDIO_SERVER };
     const prisma = {
@@ -2681,6 +2688,7 @@ describe("MCP connector stdio OAuth", () => {
 
   function brokerFor() {
     return {
+      secretsIn: oauthMaterialSecrets,
       providerFor: vi.fn<McpOAuthBroker["providerFor"]>(async (_server, _context, loaded) =>
         loaded?.material.oauth
           ? new StoredMcpOAuthProvider("server-1", loaded.material, async () => undefined)
@@ -3014,6 +3022,7 @@ describe("MCP connector stdio credential files", () => {
     };
     const secrets = { load: vi.fn(async () => JSON.stringify(load())) };
     const broker = {
+      secretsIn: oauthMaterialSecrets,
       providerFor: vi.fn<McpOAuthBroker["providerFor"]>(async (_server, _context, loaded) =>
         loaded?.material.oauth
           ? new StoredMcpOAuthProvider("server-1", loaded.material, async () => undefined, {

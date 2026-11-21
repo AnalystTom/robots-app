@@ -424,6 +424,11 @@ export class McpConnector implements ConnectorProvider {
       }) ?? (() => {});
   }
 
+  private materialSecrets(material: OAuthMaterial | undefined): string[] {
+    if (!material) return [];
+    return this.oauth ? this.oauth.secretsIn(material) : oauthMaterialSecrets(material);
+  }
+
   describe() {
     return {
       id: "mcp",
@@ -551,7 +556,7 @@ export class McpConnector implements ConnectorProvider {
           // same reason execute() captures it before callTool.
           const material = (entry ?? this.sessions.get(key))?.material;
           const secrets = [
-            ...(material ? oauthMaterialSecrets(material) : []),
+            ...this.materialSecrets(material),
             ...((entry ?? this.sessions.get(key))?.launchSecrets ?? []),
           ];
           const reason = this.installing.has(key)
@@ -706,7 +711,7 @@ export class McpConnector implements ConnectorProvider {
     }
     // Capture material before callTool so a concurrent eviction/replace cannot
     // drop this call's OAuth secrets from model-visible redaction. Recompute via
-    // oauthMaterialSecrets(material) so in-place token refresh stays covered.
+    // materialSecrets(material) so in-place token refresh stays covered.
     let material: OAuthMaterial | undefined;
     let launchSecrets: string[] = [];
     const sessionKey = this.sessionKey(assignment.server, context);
@@ -719,7 +724,7 @@ export class McpConnector implements ConnectorProvider {
         launchSecrets = this.sessions.get(sessionKey)?.launchSecrets ?? [];
         return session.callTool(toolName, call.args, { signal: context.signal });
       });
-      const secrets = [...(material ? oauthMaterialSecrets(material) : []), ...launchSecrets];
+      const secrets = [...this.materialSecrets(material), ...launchSecrets];
       yield { type: "result", data: redactConnectorPayload(result, secrets) };
       const app = await readMcpApp(
         assignment.server.name,
@@ -733,7 +738,7 @@ export class McpConnector implements ConnectorProvider {
       );
       if (app) yield { type: "app", app };
     } catch (error) {
-      const secrets = [...(material ? oauthMaterialSecrets(material) : []), ...launchSecrets];
+      const secrets = [...this.materialSecrets(material), ...launchSecrets];
       // Drop a broken, hung or unauthorized connection, so the next call reconnects. A
       // cancelled run or the server's own error leaves a stdio process and the server's
       // session state in place. A session another call already replaced stays replaced:
@@ -794,7 +799,7 @@ export class McpConnector implements ConnectorProvider {
           await this.withSession(server, context, (session) => {
             const material = this.sessions.get(key)?.material;
             secrets = [
-              ...(material ? oauthMaterialSecrets(material) : []),
+              ...this.materialSecrets(material),
               ...(this.sessions.get(key)?.launchSecrets ?? []),
             ];
             return session.listTools({ signal: context.signal });
@@ -802,7 +807,7 @@ export class McpConnector implements ConnectorProvider {
         ).tools.length;
       } else {
         const connected = await this.connectSession(server, context, () => undefined);
-        secrets = [...oauthMaterialSecrets(connected.material), ...(connected.launchSecrets ?? [])];
+        secrets = [...this.materialSecrets(connected.material), ...(connected.launchSecrets ?? [])];
         try {
           toolCount = (await connected.session.listTools({ signal: context.signal })).tools.length;
         } finally {
@@ -1322,7 +1327,7 @@ export class McpConnector implements ConnectorProvider {
       if (!material) throw error;
       if (error instanceof McpReauthorizationRequiredError) throw error;
       throw new McpConnectFailure(
-        sanitizeConnectorError(error, [...oauthMaterialSecrets(material), ...launchSecrets]),
+        sanitizeConnectorError(error, [...this.materialSecrets(material), ...launchSecrets]),
         isRejectedTokenError(error) ? "reconnect" : expectedFailure(error),
       );
     }
