@@ -126,7 +126,13 @@ const PER_REQUEST_PARAMS = new Set(["state", "nonce", "code_challenge", "code_ch
 
 export function isDefaultAuthorizationRequest(value: string, expected: URL): boolean {
   const url = URL.parse(value);
-  if (url?.origin !== expected.origin || url.pathname !== expected.pathname || url.hash) {
+  if (
+    url?.origin !== expected.origin ||
+    url.pathname !== expected.pathname ||
+    url.hash ||
+    url.username ||
+    url.password
+  ) {
     return false;
   }
   const keys = [...url.searchParams.keys()];

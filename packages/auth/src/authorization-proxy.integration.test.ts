@@ -139,6 +139,15 @@ describe("native authorization proxy", () => {
     expect(response.headers.getSetCookie()).toEqual([]);
   });
 
+  it("refuses a RoBots request that carries credentials in its URL", async () => {
+    const url = new URL(await nativeSignIn());
+    url.username = "user";
+    url.password = "pass";
+    const response = await proxy(url.href);
+    expect(response.status).toBe(400);
+    expect(response.headers.getSetCookie()).toEqual([]);
+  });
+
   it("refuses a RoBots request whose scope was changed", async () => {
     const url = new URL(await nativeSignIn());
     url.searchParams.set("scope", "openid email https://www.googleapis.com/auth/drive");

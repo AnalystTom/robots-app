@@ -793,7 +793,9 @@ describe("OIDC callbacks", () => {
       disableRedirect: true,
       loginHint: "victim@example.test",
     });
+    expect(response.status).toBe(200);
     const authorize = ((await response.json()) as { url: string }).url;
+    expect(new URL(authorize).searchParams.get("login_hint")).toBe("victim@example.test");
     const proxied = await request(
       `/expo-authorization-proxy?${new URLSearchParams({ authorizationURL: authorize })}`,
     );
