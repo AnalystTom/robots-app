@@ -3,7 +3,7 @@ import { expect, it } from "vitest";
 import {
   appleUserInfo,
   googleEmailVerified,
-  isBuiltinAuthorizationURL,
+  isBuiltinAuthorizationRequest,
   publicSignInProviders,
   socialAuthFromFields,
   socialTrustedOrigins,
@@ -77,23 +77,70 @@ it("lists OpenID Connect ahead of the configured social providers, without secre
   expect(JSON.stringify(publicSignInProviders(social, undefined))).not.toContain("PRIVATE KEY");
 });
 
-it("recognizes only the enabled provider's authorization endpoint", () => {
+it("recognizes only this deployment's own authorization request", () => {
+  const google = { id: "google", clientId: "robots-client" } as const;
+  const callback = "https://robots.example.test/api/auth/callback/google";
+  const request = (endpoint: string, params: Record<string, string>) =>
+    `${endpoint}?${new URLSearchParams({ state: "1", ...params })}`;
+  const googleAuthorize = "https://accounts.google.com/o/oauth2/v2/auth";
   expect(
-    isBuiltinAuthorizationURL(
-      "google",
-      "https://accounts.google.com/o/oauth2/v2/auth?state=1&client_id=x",
+    isBuiltinAuthorizationRequest(
+      google,
+      callback,
+      request(googleAuthorize, { client_id: "robots-client", redirect_uri: callback }),
     ),
   ).toBe(true);
-  expect(isBuiltinAuthorizationURL("google", "https://accounts.google.com/o/oauth2/v2/other")).toBe(
-    false,
-  );
+  const foreignRequests: Record<string, string>[] = [
+    { client_id: "foreign-client", redirect_uri: callback },
+    { client_id: "robots-client", redirect_uri: "https://example.com/cb" },
+    { redirect_uri: callback },
+    { client_id: "robots-client" },
+  ];
+  for (const params of foreignRequests) {
+    expect(isBuiltinAuthorizationRequest(google, callback, request(googleAuthorize, params))).toBe(
+      false,
+    );
+  }
   expect(
-    isBuiltinAuthorizationURL("apple", "https://appleid.apple.com/auth/authorize?state=1"),
+    isBuiltinAuthorizationRequest(
+      google,
+      callback,
+      `${request(googleAuthorize, { client_id: "robots-client", redirect_uri: callback })}&client_id=foreign-client`,
+    ),
+  ).toBe(false);
+  expect(
+    isBuiltinAuthorizationRequest(
+      google,
+      callback,
+      request("https://accounts.google.com/o/oauth2/v2/other", {
+        client_id: "robots-client",
+        redirect_uri: callback,
+      }),
+    ),
+  ).toBe(false);
+  const apple = { id: "apple", clientId: "com.example.service" } as const;
+  const appleCallback = "https://robots.example.test/api/auth/callback/apple";
+  expect(
+    isBuiltinAuthorizationRequest(
+      apple,
+      appleCallback,
+      request("https://appleid.apple.com/auth/authorize", {
+        client_id: "com.example.service",
+        redirect_uri: appleCallback,
+      }),
+    ),
   ).toBe(true);
-  expect(isBuiltinAuthorizationURL("apple", "https://attacker.example.test/auth/authorize")).toBe(
-    false,
-  );
-  expect(isBuiltinAuthorizationURL("oidc", "https://appleid.apple.com/auth/authorize")).toBe(false);
+  expect(
+    isBuiltinAuthorizationRequest(
+      apple,
+      appleCallback,
+      request("https://attacker.example.test/auth/authorize", {
+        client_id: "com.example.service",
+        redirect_uri: appleCallback,
+      }),
+    ),
+  ).toBe(false);
+  expect(isBuiltinAuthorizationRequest(apple, appleCallback, "not a url")).toBe(false);
 });
 
 it("fills a later Apple sign-in from the stored account when the token omits the email", async () => {

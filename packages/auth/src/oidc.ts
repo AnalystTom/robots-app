@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { BetterAuthPlugin } from "better-auth";
 import { APIError, getOAuthState } from "better-auth/api";
 import { genericOAuth } from "better-auth/plugins";
+import { isOwnAuthorizationRequest } from "./social.js";
 import type { TokenKey } from "./token-storage.js";
 import { openIdToken } from "./token-storage.js";
 
@@ -17,7 +18,6 @@ export interface OidcConfig {
   allowSignupBypass: boolean;
 }
 
-/** Discovery never gates API startup. Failed attempts share exponential backoff. */
 export function oidcDiscovery(config: OidcConfig) {
   const generic = genericOAuth({
     config: [
@@ -31,7 +31,6 @@ export function oidcDiscovery(config: OidcConfig) {
         pkce: true,
         accountSubject: ({ profile }) => {
           if (typeof profile.sub !== "string" || !profile.sub.trim()) return "";
-          // Subjects are unique within an issuer, never across different IdPs.
           return oidcAccountSubject(config.issuer, profile.sub);
         },
         requireIdTokenVerification: true,
@@ -71,7 +70,6 @@ export function oidcDiscovery(config: OidcConfig) {
           let timeout: ReturnType<typeof setTimeout> | undefined;
           try {
             const result = await Promise.race([
-              // The library may log upstream error detail. Keep discovery errors generic.
               generic.init({
                 ...ctx,
                 socialProviders: ctx.socialProviders.filter((item) => item.id !== "oidc"),
@@ -118,17 +116,11 @@ export function oidcDiscovery(config: OidcConfig) {
         requiresIdTokenNonce: true,
         createAuthorizationURL: async (data) => {
           const url = await (await getProvider()).createAuthorizationURL(data);
-          // Only authenticated, server-bound reauthentication needs an interactive
-          // provider login. Apply these last so client parameters cannot weaken it.
           const expectedUser = (await getOAuthState())?.serverContext?.reauthUserId;
           if (typeof expectedUser === "string") {
             url.searchParams.set("prompt", "login");
             url.searchParams.set("max_age", "0");
           }
-          // Better Auth's state read/delete is not atomic. Consume a separate
-          // server-side marker before code exchange, including concurrent callbacks.
-          // Better Auth's Expo plugin probes providers with a synthetic request
-          // that has no ID token nonce. Only real OIDC sign-ins need this marker.
           if (typeof data.idTokenNonce === "string" && data.idTokenNonce.length > 0) {
             await ctx.internalAdapter.createVerificationValue({
               identifier: `oidc-callback-${data.state}`,
@@ -156,11 +148,8 @@ export function oidcDiscovery(config: OidcConfig) {
           } catch {
             return null;
           }
-          // Reject malformed identity claims before the library can fall back to
-          // userinfo. None of these claims are trusted until verification below.
           if (claims?.iss !== config.issuer || typeof claims.sub !== "string" || !claims.sub.trim())
             return null;
-          // The provider verifies the signature, issuer, audience and nonce first.
           const info = await (await getProvider()).getUserInfo(tokens);
           if (!info?.data || !("sub" in info.data) || info.data.sub !== claims.sub) return null;
           const context = (await getOAuthState())?.serverContext;
@@ -192,8 +181,6 @@ export function oidcDiscovery(config: OidcConfig) {
               authTime <= now - OIDC_FRESH_AGE
             )
               return null;
-            // Request-local parsed state: never persist callback-derived fields in
-            // the reusable OAuth record. Skew must not extend the proof lifetime.
             context.reauthExpiresAt = (Math.min(authTime, now) + OIDC_FRESH_AGE) * 1_000;
           }
           return info;
@@ -215,16 +202,14 @@ export function oidcDiscovery(config: OidcConfig) {
   return {
     plugin,
     availability: () => availability,
-    /** The Expo proxy must only send a browser to the provider's real authorization endpoint. */
-    isAuthorizationURL: async (value: string) => {
+    isAuthorizationRequest: async (value: string, redirectURI: string) => {
       if (!resolveProvider) return false;
-      const endpoint = await (await resolveProvider()).createAuthorizationURL({
+      const own = await (await resolveProvider()).createAuthorizationURL({
         state: "probe",
         codeVerifier: "probe",
-        redirectURI: config.issuer,
+        redirectURI,
       });
-      const url = URL.parse(value);
-      return url?.origin === endpoint.origin && url.pathname === endpoint.pathname;
+      return isOwnAuthorizationRequest(value, own);
     },
     dispose: () => {
       disposed = true;
@@ -239,7 +224,6 @@ export function oidcAccountSubject(issuer: string, subject: string) {
     .digest("hex");
 }
 
-/** Stored ID tokens were verified during linking; bind their subject to the stored account ID. */
 export async function isCurrentOidcAccount(
   account: { providerId: string; accountId: string; idToken?: string | null },
   issuer: string | undefined,
