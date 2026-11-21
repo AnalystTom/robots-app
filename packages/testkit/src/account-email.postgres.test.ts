@@ -2,13 +2,13 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { FakeSandboxProvider } from "@robots/adapters";
+import type { AppHandles } from "@robots/api/app";
+import { createApp } from "@robots/api/app";
 import { runAsSystem } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { sessionCookieHeader } from "../../../packages/testkit/src/index.js";
-import type { CapturedMail, SmtpCapture } from "../../../packages/testkit/src/smtp-capture.js";
-import { startSmtpCapture } from "../../../packages/testkit/src/smtp-capture.js";
-import type { AppHandles } from "./app.js";
-import { createApp } from "./app.js";
+import { sessionCookieHeader } from "./index.js";
+import type { CapturedMail, SmtpCapture } from "./smtp-capture.js";
+import { startSmtpCapture } from "./smtp-capture.js";
 
 const databaseUrl = process.env.VERIFY_DATABASE === "1" ? process.env.DATABASE_URL : undefined;
 const publicOrigin = "https://app.tryrobots.app";
