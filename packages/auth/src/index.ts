@@ -89,6 +89,7 @@ export { welcomeEmail } from "./welcome-email.js";
 export interface AuthEnv {
   analytics?: ProductAnalytics;
   passwordAuth?: boolean;
+  emailSignup?: boolean;
   /** Opt-in: rejects new passwords found in Have I Been Pwned. Calls an outside service. */
   breachedPasswordCheck?: boolean;
   oidc?: OidcConfig;
@@ -224,6 +225,8 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
     if (!env.singleAccount || !policy.enabled) return policy;
     return (await hasAdmittedAccount(prisma)) ? { ...policy, enabled: false } : policy;
   };
+  const emailAdmission = async () =>
+    env.emailSignup === false ? { ...signupPolicyFromEnv(env), enabled: false } : admission();
   /** Admits the sole account one at a time, so two first signups cannot both get in. */
   const admitSoleAccount = (userId: string) =>
     prisma.$transaction(async (tx) => {
@@ -341,8 +344,6 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
     database: prismaAdapter(prisma, { provider: "postgresql" }),
     emailAndPassword: {
       enabled: env.passwordAuth !== false,
-      // Signup policy is mutable deployment state, so the request hook below
-      // enforces it instead of freezing an environment value at process start.
       disableSignUp: false,
       minPasswordLength: MIN_PASSWORD_LENGTH,
       maxPasswordLength: MAX_PASSWORD_LENGTH,
@@ -636,14 +637,11 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
         }
         if (isUnusedEmailCodePath(ctx.path, ctx.body)) throw new APIError("NOT_FOUND");
         if (ctx.path === SEND_SIGN_IN_CODE_PATH || ctx.path === CODE_SIGN_IN_PATH) {
-          // A code for an unknown address creates an account, so it passes the
-          // same registration policy as password signup. A refused address is
-          // answered like any other so replies do not reveal which accounts exist.
           const email = String(ctx.body?.email ?? "")
             .trim()
             .toLowerCase();
           if (!(await ctx.context.internalAdapter.findUserByEmail(email))) {
-            const policy = await admission();
+            const policy = await emailAdmission();
             if (!policy.enabled || !emailAllowed(email, policy.allowlist)) {
               if (ctx.path === SEND_SIGN_IN_CODE_PATH) return ctx.json({ success: true });
               throw new APIError("BAD_REQUEST", { code: "INVALID_OTP", message: "Invalid OTP" });
@@ -652,7 +650,7 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
         }
         let policy =
           ctx.path === "/sign-up/email"
-            ? await admission()
+            ? await emailAdmission()
             : ctx.path === "/sign-in/email"
               ? signupPolicyFromEnv(env)
               : undefined;
@@ -960,6 +958,7 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
   authContext = auth.$context;
   return Object.assign(auth, {
     emailCodeSignIn,
+    emailSignup: env.passwordAuth !== false && env.emailSignup !== false,
     /** Encrypts OAuth tokens stored before encryption was enabled. Safe to rerun. */
     encryptStoredOAuthTokens: async () => encryptStoredOAuthTokens(prisma, await tokenKey()),
     ssoAvailability: () => discovery?.availability(),

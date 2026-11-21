@@ -39,7 +39,6 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   const chooserPath = mode === "up" ? "/sign-up" : "/sign-in";
   const emailStep = location.pathname === `${chooserPath}/email`;
   const next = signInNext(searchParams.get("next"));
-  // Switching between sign-in and sign-up keeps where the person was going.
   const nextQuery = next ? `?next=${encodeURIComponent(next)}` : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,7 +55,6 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   const entering = useRef(false);
   const passkey = usePasskeySignIn({ onSignedIn: enterApp, onError: setError });
   const [resetSent, setResetSent] = useState(false);
-  // Signup triggers a session refresh that remounts the anonymous auth page.
   const sent = resetSent || searchParams.get("verify") === "email";
   const [reset, setReset] = useState<AuthCapabilities | null>(null);
   const [capabilityError, setCapabilityError] = useState(false);
@@ -64,16 +62,22 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState("");
   const useCode = Boolean(reset?.passwordAuth && reset.emailCode) && mode !== "forgot";
-  // A blank password asks for an emailed code, so code-only accounts need no toggle.
   const codeMode = useCode && !password;
   const codeStep = useCode && codeSent;
   const providers = reset ? signInProviders(reset) : [];
+  const providerOnlySignup = mode === "up" && reset?.emailSignup === false;
   const chooser = Boolean(
-    reset?.passwordAuth && providers.length > 0 && !emailStep && mode !== "forgot" && !codeStep,
+    reset?.passwordAuth &&
+      (providerOnlySignup || (providers.length > 0 && !emailStep)) &&
+      mode !== "forgot" &&
+      !codeStep,
   );
-  // The chooser and the email step share a card. A server with no providers keeps today's form.
   const presented = Boolean(
-    reset?.passwordAuth && providers.length > 0 && mode !== "forgot" && !sent && !codeStep,
+    reset?.passwordAuth &&
+      (providerOnlySignup || providers.length > 0) &&
+      mode !== "forgot" &&
+      !sent &&
+      !codeStep,
   );
   const passwordFieldId = mode === "in" ? "current-password" : "new-password";
   const title =
@@ -101,10 +105,6 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
         if (active) setCapabilityError(true);
       });
     return () => {
-      // Do not abort on unmount: a guard redirect that bounces through this
-      // page only mounts it for a render or two, and the cancelled fetch then
-      // surfaces as a failed request. `active` drops the result; the request
-      // keeps its own time bound.
       active = false;
     };
   }, [mode, capabilityAttempt]);
@@ -113,7 +113,6 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
     e.preventDefault();
     if (!reset?.passwordAuth) return;
     if (codeStep) {
-      // An unfinished code would spend one of the code's three attempts.
       if (code.length === CODE_LENGTH) await verifyCode(code);
       return;
     }
@@ -196,7 +195,6 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       const result = await authClient.signIn.emailOtp({
         email: trimmedEmail,
         otp,
-        // Only used when this creates the account.
         name: mode === "up" ? name || trimmedEmail.split("@")[0] || "User" : undefined,
       });
       if (result.error) {
@@ -214,8 +212,6 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
 
   function enterApp() {
     clearSpaceSelection();
-    // The routes move a signed-in user on once the session refetch lands. Navigating
-    // first beats it, so the guards bounce through sign-in and the shell.
     entering.current = true;
     setPending(true);
   }
@@ -256,7 +252,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       title={title}
       surface={presented}
       leading={
-        presented && emailStep ? (
+        presented && emailStep && !providerOnlySignup ? (
           <Button
             type="button"
             variant="ghost"
@@ -317,10 +313,16 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                 providers={providers}
                 disabled={pending || passkey.pending}
                 onPress={(providerId) => void signInWithProvider(providerId)}
-                onEmail={() => {
-                  setError(null);
-                  navigate(`${chooserPath}/email${nextQuery}`, { state: { authChooser: true } });
-                }}
+                onEmail={
+                  providerOnlySignup
+                    ? undefined
+                    : () => {
+                        setError(null);
+                        navigate(`${chooserPath}/email${nextQuery}`, {
+                          state: { authChooser: true },
+                        });
+                      }
+                }
                 onPasskey={mode === "in" && passkey.supported ? passkey.start : undefined}
               />
               {error ? (

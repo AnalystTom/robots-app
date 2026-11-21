@@ -534,6 +534,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     directoryProvisioning: Boolean(directory),
     analytics,
     passwordAuth: env.passwordAuth,
+    emailSignup: env.emailSignup,
     breachedPasswordCheck: env.breachedPasswordCheck,
     oidc: env.oidc,
     social: env.social,
@@ -677,6 +678,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
           sandboxKind: env.sandboxProvider,
           url: hostComputer.hostComputerUrl,
           token: hostComputer.hostComputerToken,
+          access: hostComputer.hostComputerAccess,
         }),
       paymentWallet,
       shutdownSignal: shutdown.signal,
@@ -880,6 +882,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       resetUrl:
         env.passwordAuth !== false && email ? new URL("/reset-password", env.webOrigin).href : null,
       emailCode: auth.emailCodeSignIn,
+      emailSignup: auth.emailSignup,
       billing: Boolean(billing),
       passkeyRpId: auth.passkeyRpId,
       nativePasskeys: nativePasskeys(env, auth.passkeyRpId),
