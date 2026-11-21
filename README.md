@@ -10,8 +10,8 @@ contributors, used under the [Apache License 2.0](./LICENSE). See [NOTICE](./NOT
 attribution. The upstream project stays at the `upstream` git remote:
 `git fetch upstream && git merge upstream/main` pulls in new Rakazo work.
 
-Links to `rakazo.com` (documentation, privacy, terms, Rakazo Cloud) still point to the upstream
-project's site, because RoBots has no hosted site or cloud of its own yet.
+RoBots Cloud runs at [app.tryrobots.app](https://app.tryrobots.app). Documentation, privacy and
+terms live at [tryrobots.app](https://tryrobots.app).
 
 ## Features
 

@@ -7,7 +7,7 @@ import { t } from "./i18n.js";
 /** Managed desktop origin; development keeps its usual web/API ports. */
 export const DEFAULT_LOCAL_WEB_URL = "http://127.0.0.1:45173";
 /** Hosted RoBots; setup saves it as an `existing` server so it opens like any other. */
-export const ROBOTS_CLOUD_URL = "https://app.rakazo.com";
+export const ROBOTS_CLOUD_URL = "https://app.tryrobots.app";
 export const PROBE_RESPONSE_LIMIT_BYTES = 64 * 1024;
 
 export const SETUP_FILE_NAME = "setup.json";
@@ -122,12 +122,6 @@ export function serializeSetup(setup: DesktopSetup): string {
   return `${JSON.stringify(setup, null, 2)}\n`;
 }
 
-/**
- * Decides between the setup window and the app window. A first launch opens setup,
- * so nobody is sent to the upstream Rakazo Cloud without choosing it. An explicit
- * `ROBOTS_WEB_URL` still wins over saved configuration so test and performance
- * harnesses can point the shell anywhere without touching a user's real setup.
- */
 export function resolveStartupTarget(input: {
   envUrl?: string;
   saved?: DesktopSetup | null;

@@ -558,7 +558,7 @@ describe("setup", () => {
       "Tus datos se quedan en esta computadora.",
     );
     expect(document.querySelector('label[for="mode-cloud"] .choice-title')?.textContent).toBe(
-      "Rakazo Cloud",
+      "RoBots Cloud",
     );
     expect(element("quit").textContent).toBe("Salir");
     expect(element("quit").title).toBe("Salir de RoBots");

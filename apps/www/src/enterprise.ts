@@ -8,7 +8,7 @@ export const ENTERPRISE_DESCRIPTION =
   "Run RoBots on your own infrastructure with SSO, SCIM, an audit log, encryption at rest, and approval rules. Open source under Apache-2.0.";
 export const ENTERPRISE_LEAD =
   "AI teammates on infrastructure you control, with the sign-in, audit, and encryption controls a security review asks for.";
-export const ENTERPRISE_CONTACT_EMAIL = "hello@rakazo.com";
+export const ENTERPRISE_CONTACT_EMAIL = "hello@tryrobots.app";
 
 export type EnterpriseFeatureKind =
   | "sso"

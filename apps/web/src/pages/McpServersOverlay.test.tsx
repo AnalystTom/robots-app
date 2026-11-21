@@ -21,7 +21,6 @@ const api = vi.hoisted(() => ({
   mcp: { servers: mocks, assignments: { all: access.all }, oauth: { disconnect: vi.fn() } },
   bots: { list: access.bots },
 }));
-// One space, so no "Available in" choice appears.
 vi.mock("../components/integrations/space-availability", () => ({
   AvailabilityControl: () => null,
   AvailabilityLabel: () => null,
@@ -246,7 +245,6 @@ it("offers stdio only where the deployment runs it, and still shows existing std
     await vi.waitFor(() => expect(host.textContent).toContain("files"));
     expect(host.textContent).not.toContain("STDIO");
 
-    // Editing an existing stdio server keeps its tab until the edit ends.
     await act(async () => root.render(overlay("files", false)));
     await vi.waitFor(() => expect(host.textContent).toContain("STDIO"));
     const button = (label: string) =>
@@ -477,7 +475,6 @@ it("points a server that cannot register a client at the client ID fields", asyn
     await act(async () =>
       host.querySelector<HTMLButtonElement>('button[aria-label="Back"]')?.click(),
     );
-    // The server now says why, and a sign-in that cannot work is no longer offered.
     await vi.waitFor(() =>
       expect(host.querySelector('[data-testid="mcp-health"]')?.textContent).toContain(
         "Needs an OAuth client ID",
@@ -550,7 +547,6 @@ it("reopens with cached servers and refreshes them in the background", async () 
   const second = createRoot(host);
   try {
     await act(async () => second.render(overlay()));
-    // Painted from the cache while the refresh is still out.
     expect(host.textContent).toContain("cached");
     expect(mocks.list).toHaveBeenCalledTimes(2);
     await act(async () => finish([server("cached"), server("added")]));
@@ -578,7 +574,6 @@ it("keeps a test result when an older list read lands after it", async () => {
       button.textContent?.includes("Test connection"),
     );
     await act(async () => testButton?.click());
-    // The read started before the test and must not bring back its older health.
     await act(async () => finishRead([server("one")]));
     await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
     const cached = client
@@ -713,8 +708,6 @@ it("keeps the first server's form open until saving it has finished", async () =
         .some((query) => (query.state.data as McpServer[] | undefined)?.[0]?.id === "docs");
     await vi.waitFor(() => expect(listed()).toBe(true));
     await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
-    // The list arrives before the rest of the refresh; the form must not give way to it yet,
-    // or an "Add server" click there is undone when the save finishes.
     expect(host.querySelector("#mcp-name")).not.toBeNull();
 
     await act(async () => releaseBots());
@@ -751,7 +744,7 @@ it("links callback mismatches in MCP settings to the shared recovery guide", asy
     await vi.waitFor(() => expect(connectButton()).toBeDefined());
     await act(async () => connectButton()?.click());
     expect(host.querySelector('[role="alert"] a')?.getAttribute("href")).toBe(
-      "https://rakazo.com/docs/troubleshooting/#mcp-oauth-redirect-mismatch",
+      "https://tryrobots.app/docs/troubleshooting/#mcp-oauth-redirect-mismatch",
     );
     expect(connectButton()?.disabled).toBe(false);
   } finally {

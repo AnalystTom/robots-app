@@ -8,9 +8,9 @@ const MOBILE_APP_NAMES = { ios: "iPhone", android: "Android" } as const;
 
 const APPS: Readonly<Record<string, string>> = Object.fromEntries([
   ...listedMobileApps().map(({ platform, href }) => [MOBILE_APP_NAMES[platform], href]),
-  ["Mac", "https://rakazo.com/api/download?platform=mac"],
-  ["Windows", "https://rakazo.com/api/download?platform=windows"],
-  ["Linux", "https://rakazo.com/api/download?platform=linux"],
+  ["Mac", "https://tryrobots.app/api/download?platform=mac"],
+  ["Windows", "https://tryrobots.app/api/download?platform=windows"],
+  ["Linux", "https://tryrobots.app/api/download?platform=linux"],
 ]);
 
 const stepStyle = { margin: "20px 0 4px" };
@@ -81,9 +81,9 @@ export function welcomeEmail(
         })}
       </Text>
       <Text style={{ marginTop: "28px" }}>{say("Questions? Just reply. I read every one.")}</Text>
-      <Text>Elie</Text>
+      <Text>The RoBots team</Text>
     </>,
     unsubscribeUrl,
-    { src: "https://rakazo.com/email/welcome.jpg", alt: "RoBots" },
+    { src: "https://tryrobots.app/email/welcome.jpg", alt: "RoBots" },
   );
 }

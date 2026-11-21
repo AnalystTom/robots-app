@@ -567,7 +567,7 @@ describe("graphical computer spec", () => {
     expect(isRegistryQualifiedImage("localhost/robots/computer:local")).toBe(true);
     expect(isRegistryQualifiedImage("docker.io/robots/computer:edge")).toBe(true);
     expect(isRegistryQualifiedImage("Registry/robots/computer:edge")).toBe(true);
-    expect(isRegistryQualifiedImage("rakazO/computer:edge")).toBe(true);
+    expect(isRegistryQualifiedImage("roBots/computer:edge")).toBe(true);
     expect(isRegistryQualifiedImage("robots/computer:local")).toBe(false);
     expect(isRegistryQualifiedImage("robots/computer@sha256:0123")).toBe(false);
     expect(isRegistryQualifiedImage("computer:local")).toBe(false);

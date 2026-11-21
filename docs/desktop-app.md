@@ -5,13 +5,13 @@ everything on your own computer.
 
 ## Install
 
-Download it from [rakazo.com](https://rakazo.com). The Linux AppImage needs FUSE 2.
+Download it from [tryrobots.app](https://tryrobots.app). The Linux AppImage needs FUSE 2.
 
 ## Choose a server
 
 The first time it opens, the app asks which server to use:
 
-- **RoBots Cloud**: sign in to your rakazo.com account.
+- **RoBots Cloud**: sign in to your RoBots Cloud account.
 - **This computer**: run your own RoBots locally in Docker. If Docker isn't installed, the app offers
   the Docker Desktop download (Docker Engine on Linux) and carries on by itself once Docker is
   installed and open; if Docker is installed but stopped, the app opens it. Everything, including

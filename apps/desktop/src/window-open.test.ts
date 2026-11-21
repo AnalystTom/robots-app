@@ -15,7 +15,11 @@ describe("desktop child windows", () => {
 
   it("opens ordinary external links outside Electron", () => {
     expect(
-      shouldOpenInAppPopup(appOrigin, "https://github.com/elie222/rakazo/pull/395", "_blank"),
+      shouldOpenInAppPopup(
+        appOrigin,
+        "https://github.com/AnalystTom/robots-app/pull/395",
+        "_blank",
+      ),
     ).toBe(false);
   });
 
@@ -52,7 +56,6 @@ describe("MCP sign-in browsers", () => {
     expect(mcpOAuthPopupServerId("robots-mcp-signin:clx123abc")).toBe("clx123abc");
     expect(mcpOAuthPopupServerId("robots-mcp-signin:")).toBeNull();
     expect(mcpOAuthPopupServerId("robots-mcp-signin:a/b")).toBeNull();
-    // Session-named windows sign in through the app's own session.
     expect(mcpOAuthPopupServerId("robots-mcp-oauth:session-1")).toBeNull();
     expect(mcpOAuthPopupServerId("_blank")).toBeNull();
   });
