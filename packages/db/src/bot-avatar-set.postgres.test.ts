@@ -72,7 +72,7 @@ describePostgres("avatar-set migration and persistence (PostgreSQL)", () => {
       await client.query(
         await readFile(
           new URL(
-            "../prisma/migrations/20261221120000_bot_avatar_set_robots_default/migration.sql",
+            "../prisma/migrations/20261224120000_bot_avatar_set_robots_default/migration.sql",
             import.meta.url,
           ),
           "utf8",
