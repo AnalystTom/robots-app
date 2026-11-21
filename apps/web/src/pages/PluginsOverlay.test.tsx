@@ -15,6 +15,7 @@ const api = vi.hoisted(() => ({
   capabilities: { list: vi.fn(), catalogSearch: vi.fn(), sourcePresets: vi.fn() },
   mcp: { servers: { list: vi.fn() }, assignments: { list: vi.fn() } },
   marketplace: { catalog: vi.fn() },
+  bots: { list: vi.fn() },
 }));
 
 vi.mock("../lib/rpc", () => ({
@@ -115,6 +116,7 @@ beforeEach(() => {
   api.connections.catalog.mockReset().mockResolvedValue([]);
   api.connections.list.mockReset().mockResolvedValue([]);
   api.connections.tools.mockReset().mockResolvedValue([]);
+  api.bots.list.mockReset().mockResolvedValue([]);
   api.capabilities.list.mockReset().mockResolvedValue([]);
   api.capabilities.sourcePresets.mockReset().mockResolvedValue([]);
   api.capabilities.catalogSearch
@@ -193,7 +195,6 @@ it("offers the public catalog for a search and sends nothing there until it is p
   await type(searchBox(), "c");
   expect(publicCatalogRow()).toBeUndefined();
 
-  // Longer than the catalog search accepts: nothing to offer.
   await type(searchBox(), "x".repeat(254));
   expect(publicCatalogRow()).toBeUndefined();
 

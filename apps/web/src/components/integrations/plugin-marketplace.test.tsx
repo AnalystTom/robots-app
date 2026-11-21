@@ -48,6 +48,7 @@ vi.mock("@robots/ui-web", () => {
   );
   return {
     Disclosure: Container,
+    SectionHeading: Container,
     Spinner: () => <span role="status" />,
     Button: ({
       variant: _variant,
@@ -418,7 +419,7 @@ describe("integration fallback icons", () => {
           <section data-icon="connector">
             <ConnectorIcon name={name} />
           </section>
-          <ConnectorDetail item={item} state={state} onBack={() => undefined} />
+          <ConnectorDetail item={item} state={state} botName="Robo" />
         </>,
       ),
     );
@@ -450,7 +451,7 @@ describe("integration fallback icons", () => {
         <>
           <PluginLogo name={item.name} logo={logo} />
           <ConnectorIcon name={item.name} logo={logo} />
-          <ConnectorDetail item={item} state={state} onBack={() => undefined} />
+          <ConnectorDetail item={item} state={state} botName="Robo" />
         </>,
       ),
     );

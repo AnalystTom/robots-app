@@ -9,6 +9,7 @@ import {
   TemporarilyUnavailableError,
   TooManyRequestsError,
 } from "@modelcontextprotocol/sdk/server/auth/errors.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import type {
   AdapterContext,
@@ -19,7 +20,7 @@ import type {
   SecretStore,
 } from "@robots/adapter-kit";
 import { SecretStoreUnavailableError } from "@robots/adapter-kit";
-import type { McpOAuthEnvField } from "@robots/contracts";
+import type { ConnectionTool, McpOAuthEnvField } from "@robots/contracts";
 import {
   isLocalhostOrLoopbackIp,
   mcpOAuthEnvReferences,
@@ -240,6 +241,8 @@ const UNAVAILABLE_TOOL = "__robots_unavailable";
 /** Skip rewriting an unchanged health observation more often than this. */
 const HEALTH_REWRITE_MS = 60_000;
 
+export type McpServerProbe = McpServerHealthUpdate & { tools: ConnectionTool[] };
+
 export type McpConnectorOptions = {
   stdioEnabled?: boolean;
   allowedCommands?: string[];
@@ -390,7 +393,7 @@ async function closeEntry(entry: { session: McpSession; credentialDir?: string }
 export class McpConnector implements ConnectorProvider {
   private readonly sessions = new Map<string, SessionEntry>();
   private readonly connecting = new Map<string, PendingSession>();
-  private readonly probes = new Map<string, Promise<McpServerHealthUpdate>>();
+  private readonly probes = new Map<string, Promise<McpServerProbe>>();
   /** Last discovery failure per session key, returned by the unavailable stand-in tool. */
   private readonly unavailable = new Map<string, string>();
   private readonly healthWrites = new Map<string, { value: string; at: number }>();
@@ -749,16 +752,10 @@ export class McpConnector implements ConnectorProvider {
     }
   }
 
-  /**
-   * Launch (or reuse) a server once and list its tools, for the settings "Test connection"
-   * and the check after a save. A live session in this process is reused; otherwise an
-   * isolated session is started and stopped again. Concurrent probes of one server share a
-   * result. The outcome is recorded as the server's health and returned.
-   */
   probe(
     server: McpServer,
     context: { spaceId: string; userId: string; signal?: AbortSignal },
-  ): Promise<McpServerHealthUpdate> {
+  ): Promise<McpServerProbe> {
     const timeoutMs =
       (this.options.installTimeoutMs ?? DEFAULT_MCP_INSTALL_TIMEOUT_MS) +
       (this.options.startupTimeoutMs ?? DEFAULT_MCP_STDIO_STARTUP_TIMEOUT_MS) +
@@ -785,17 +782,17 @@ export class McpConnector implements ConnectorProvider {
     server: McpServer,
     context: AdapterContext,
     key: string,
-  ): Promise<McpServerHealthUpdate> {
+  ): Promise<McpServerProbe> {
     let secrets: string[] = [];
     let update: McpServerHealthUpdate;
-    // A process this one already runs (or is starting) answers; never launch a second.
+    let tools: McpServerProbe["tools"] = [];
     const shared =
       this.sessions.get(key)?.revision === server.revision ||
       this.connecting.get(key)?.revision === server.revision;
     try {
-      let toolCount: number;
+      let listed: Tool[];
       if (shared) {
-        toolCount = (
+        listed = (
           await this.withSession(server, context, (session) => {
             const material = this.sessions.get(key)?.material;
             secrets = [
@@ -804,26 +801,30 @@ export class McpConnector implements ConnectorProvider {
             ];
             return session.listTools({ signal: context.signal });
           })
-        ).tools.length;
+        ).tools;
       } else {
         const connected = await this.connectSession(server, context, () => undefined);
         secrets = [...this.materialSecrets(connected.material), ...(connected.launchSecrets ?? [])];
         try {
-          toolCount = (await connected.session.listTools({ signal: context.signal })).tools.length;
+          listed = (await connected.session.listTools({ signal: context.signal })).tools;
         } finally {
           await closeEntry(connected).catch(() => undefined);
         }
       }
       this.unavailable.delete(key);
       this.discoveryBackoff.delete(key);
-      update = { status: "ok", message: null, toolCount };
+      update = { status: "ok", message: null, toolCount: listed.length };
+      tools = listed.map((tool) => ({
+        name: tool.name,
+        description: tool.description ?? tool.title ?? tool.name,
+        readOnly: mcpToolFields(tool).readOnly,
+      }));
     } catch (error) {
-      // Like discovery: a shared session that cannot list its tools is dropped.
       if (shared) await this.evict(key).catch(() => undefined);
       update = { status: "error", message: sanitizeConnectorError(error, secrets) };
     }
     await this.recordHealth(server.id, update, { force: true, revision: server.revision });
-    return update;
+    return { ...update, tools };
   }
 
   /**

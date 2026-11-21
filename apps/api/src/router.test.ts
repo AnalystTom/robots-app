@@ -2603,6 +2603,31 @@ describe("MCP server health", () => {
     });
   });
 
+  describe("tools", () => {
+    it("lists the tools the server reports with their read-only hints", async () => {
+      const tools = [
+        { name: "search", description: "Search", readOnly: true },
+        { name: "send_message", description: "Send", readOnly: undefined },
+      ];
+      const { client, probe } = harness({
+        probe: async () => ({ status: "ok", toolCount: 2, tools }),
+      });
+
+      await expect(client.mcp.servers.tools({ id: "server-1" })).resolves.toEqual(tools);
+      expect(probe.mock.calls[0]?.[1]).toMatchObject({ spaceId: "workspace-1", userId: "owner-1" });
+    });
+
+    it("refuses another user's server and skips a disabled one without probing", async () => {
+      const { clientFor, probe } = harness({ row: baseRow({ enabled: false }) });
+
+      await expect(
+        clientFor({ userId: "member-1" }).mcp.servers.tools({ id: "server-1" }),
+      ).rejects.toThrow();
+      await expect(clientFor().mcp.servers.tools({ id: "server-1" })).resolves.toEqual([]);
+      expect(probe).not.toHaveBeenCalled();
+    });
+  });
+
   describe("test", () => {
     it("probes the server and returns the recorded health", async () => {
       const { client, probe } = harness();

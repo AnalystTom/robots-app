@@ -1,6 +1,14 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { ConnectionCatalogItem, PluginMarketplaceEntry } from "@robots/contracts";
-import { CATALOG_SEARCH_QUERY_MAX_LENGTH, SUBMIT_PLUGIN_URL } from "@robots/contracts";
+import type {
+  ConnectionCatalogItem,
+  MacAppConnection,
+  PluginMarketplaceEntry,
+} from "@robots/contracts";
+import {
+  CATALOG_SEARCH_QUERY_MAX_LENGTH,
+  MAC_APP_CONNECTIONS,
+  SUBMIT_PLUGIN_URL,
+} from "@robots/contracts";
 import {
   CONNECTION_CATALOG_PAGE_SIZE,
   catalogItemKey,
@@ -10,6 +18,7 @@ import {
 } from "@robots/core";
 import { Button, SectionHeading, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, Search } from "lucide-react";
+import { MacAppIcon } from "../../components/integrations/mac-app-icon";
 import type { PluginSelection } from "../../components/integrations/plugin-marketplace";
 import {
   PluginRow,
@@ -33,6 +42,7 @@ export function PluginBrowse({
   tileContext,
   onOpenPlugin,
   onSearchPublic,
+  onOpenMacApp,
 }: {
   browse: CatalogBrowse;
   state: PluginConnections;
@@ -40,6 +50,7 @@ export function PluginBrowse({
   onOpenPlugin: (selection: PluginSelection) => void;
   /** Opens the public MCP catalog searched for the query. */
   onSearchPublic: (query: string) => void;
+  onOpenMacApp: (app: MacAppConnection) => void;
 }) {
   const { t } = useLingui();
   const { catalogLoaded, catalog, pluginCatalog, pluginInstalls } = state;
@@ -266,6 +277,28 @@ export function PluginBrowse({
             </div>
           )}
         </div>
+      ) : null}
+
+      {showFeatured && !category ? (
+        <section data-testid="mac-apps" className="mb-6">
+          <SectionHeading as="h2" className="mb-2 px-2.5">
+            <Trans>On your Mac</Trans>
+          </SectionHeading>
+          <div className="grid grid-cols-2 gap-2">
+            {MAC_APP_CONNECTIONS.map((app) => (
+              <div key={app.id} className={`${ROW_SHELL} ${ROW_HOVER}`}>
+                <button type="button" className={ROW_BUTTON} onClick={() => onOpenMacApp(app)}>
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground [&_svg]:size-5">
+                    <MacAppIcon name={app.icon} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-start text-body-lg font-medium text-foreground">
+                    {app.name}
+                  </span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {catalogsReady &&

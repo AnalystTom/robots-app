@@ -99,6 +99,7 @@ import {
   CONNECTION_LABEL_MAX_LENGTH,
   ConnectionCatalogItemSchema,
   ConnectionSchema,
+  ConnectionToolSchema,
   CreateAgentSkillInput,
   CreateBotInput,
   CreateGroupInput,
@@ -1152,6 +1153,7 @@ export const appContract = {
         .output(McpServerSchema),
       remove: oc.input(z.object({ id: Id })).output(z.object({ ok: z.literal(true) })),
       test: oc.input(z.object({ id: Id })).output(McpServerSchema),
+      tools: oc.input(z.object({ id: Id })).output(z.array(ConnectionToolSchema)),
       agents: oc
         .input(z.object({ id: Id, allBots: z.boolean(), botIds: z.array(Id).max(500).default([]) }))
         .output(z.object({ server: McpServerSchema, assignments: z.array(BotMcpServerSchema) })),
@@ -1249,14 +1251,9 @@ export const appContract = {
       )
       .output(ConnectionSchema),
     revoke: oc.input(z.object({ connectionId: Id })).output(z.object({ ok: z.literal(true) })),
-    tools: oc.input(z.object({ connectorId: z.string(), provider: z.string() })).output(
-      z.array(
-        z.object({
-          name: z.string(),
-          description: z.string(),
-        }),
-      ),
-    ),
+    tools: oc
+      .input(z.object({ connectorId: z.string(), provider: z.string() }))
+      .output(z.array(ConnectionToolSchema)),
   },
   messaging: {
     installations: {

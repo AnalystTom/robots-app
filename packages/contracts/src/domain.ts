@@ -805,6 +805,13 @@ export const ConnectionCatalogItemSchema = z.object({
 });
 export type ConnectionCatalogItem = z.infer<typeof ConnectionCatalogItemSchema>;
 
+export const ConnectionToolSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  readOnly: z.boolean().optional(),
+});
+export type ConnectionTool = z.infer<typeof ConnectionToolSchema>;
+
 export const ActionApprovalRuleSchema = z.object({
   id: Id,
   effect: z.enum(["always_allow", "require_approval", "deny"]),
