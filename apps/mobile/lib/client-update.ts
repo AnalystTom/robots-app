@@ -1,23 +1,18 @@
 import { t } from "@lingui/core/macro";
 import {
-  ANDROID_APK_URL,
   buildIdAt,
   CLIENT_BUILD_HEADER,
   formatClientBuild,
-  IOS_APP_STORE_URL,
+  MOBILE_APP_LINKS,
 } from "@robots/contracts";
+import { bestEffort } from "@robots/logging";
 import * as Updates from "expo-updates";
 import type { AppStateStatus } from "react-native";
 import { Alert, AppState, Linking, Platform } from "react-native";
-import { configureClientBuild } from "./api";
+import { configureClientBuild, currentApiBase } from "./api";
 
-/** Foreground returns closer together than this reuse the last update check. */
 export const FOREGROUND_UPDATE_CHECK_MS = 15 * 60_000;
 
-/**
- * The running JavaScript bundle's build: when its update (embedded or downloaded) was created.
- * Null where expo-updates is off (development, Expo Go), which leaves the handshake off.
- */
 export function mobileClientBuild(): string | null {
   try {
     if (!Updates.isEnabled) return null;
@@ -33,7 +28,6 @@ export function clientBuildHeaders(): Record<string, string> {
   return build ? { [CLIENT_BUILD_HEADER]: formatClientBuild("mobile", build) } : {};
 }
 
-/** Download a newer update; expo-updates runs it on the next launch unless the app reloads. */
 async function downloadUpdate(): Promise<boolean> {
   if (!Updates.isEnabled) return false;
   const check = await Updates.checkForUpdateAsync();
@@ -42,35 +36,45 @@ async function downloadUpdate(): Promise<boolean> {
   return true;
 }
 
-/** Apply an over-the-air update now if one exists; otherwise send the user to the store. */
+function storeListing(): string | undefined {
+  return MOBILE_APP_LINKS[Platform.OS === "ios" ? "ios" : "android"];
+}
+
+async function checkOverTheAirUpdate(): Promise<boolean> {
+  if (!Updates.isEnabled) return false;
+  return (await Updates.checkForUpdateAsync()).isAvailable;
+}
+
+async function downloadAndReload(): Promise<boolean> {
+  if (!(await downloadUpdate())) return false;
+  await Updates.reloadAsync();
+  return true;
+}
+
 export async function applyRequiredUpdate(): Promise<void> {
-  try {
-    if (await downloadUpdate()) {
-      await Updates.reloadAsync();
-      return;
-    }
-  } catch {
-    // An unreachable update server falls through to the store.
-  }
-  await Linking.openURL(Platform.OS === "ios" ? IOS_APP_STORE_URL : ANDROID_APK_URL).catch(
-    () => undefined,
-  );
+  if (await bestEffort("apply required update", downloadAndReload())) return;
+  await bestEffort("open store or web app", Linking.openURL(storeListing() ?? currentApiBase()));
+}
+
+async function openServerInBrowser(): Promise<void> {
+  await bestEffort("open server in browser", Linking.openURL(currentApiBase()));
 }
 
 let prompting = false;
 
-/** The server refused this build. One alert at a time; it stays until the user updates. */
-export function noteClientUpdateRequired(): void {
-  if (prompting) return;
-  prompting = true;
+function alertUpdateRequired(
+  message: string | undefined,
+  label: string,
+  action: () => Promise<void>,
+): void {
   Alert.alert(
     t`Update required`,
-    undefined,
+    message,
     [
       {
-        text: t`Update`,
+        text: label,
         onPress: () => {
-          void applyRequiredUpdate().finally(() => {
+          void action().finally(() => {
             prompting = false;
           });
         },
@@ -80,15 +84,30 @@ export function noteClientUpdateRequired(): void {
   );
 }
 
-/** Name this build on every API request, and prompt for an update when the server refuses it. */
+export function noteClientUpdateRequired(): void {
+  if (prompting) return;
+  prompting = true;
+  if (storeListing()) {
+    alertUpdateRequired(undefined, t`Update`, applyRequiredUpdate);
+    return;
+  }
+  void bestEffort("check over-the-air update", checkOverTheAirUpdate()).then((available) => {
+    if (available) {
+      alertUpdateRequired(undefined, t`Update`, applyRequiredUpdate);
+      return;
+    }
+    alertUpdateRequired(
+      t`This version of RoBots is no longer supported, and an update is not in the app store yet.`,
+      t`Open on the web`,
+      openServerInBrowser,
+    );
+  });
+}
+
 export function installClientUpdates(): void {
   configureClientBuild({ headers: clientBuildHeaders, onUpdateRequired: noteClientUpdateRequired });
 }
 
-/**
- * expo-updates checks only at launch. Check again when the app returns to the foreground, and
- * download what it finds so the next launch runs it; nothing reloads under the user.
- */
 export function watchForegroundUpdates(now: () => number = Date.now): () => void {
   if (!Updates.isEnabled) return () => {};
   let lastCheck = now();
@@ -99,7 +118,7 @@ export function watchForegroundUpdates(now: () => number = Date.now): () => void
     wasBackground = false;
     if (now() - lastCheck < FOREGROUND_UPDATE_CHECK_MS) return;
     lastCheck = now();
-    void downloadUpdate().catch(() => undefined);
+    void bestEffort("foreground update check", downloadUpdate());
   });
   return () => subscription.remove();
 }

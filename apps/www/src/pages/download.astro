@@ -1,5 +1,5 @@
 ---
-import { ANDROID_APP_STORE_URL } from "@robots/contracts/client-build";
+import { listedMobileApps } from "@robots/contracts/mobile-app";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 import {
@@ -8,11 +8,15 @@ import {
   githubStarsLabel,
 } from "../github";
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { APP_URL, IOS_APP_URL, SELF_HOST_GUIDE_PATH } from "../site";
+import { APP_URL, SELF_HOST_GUIDE_PATH } from "../site";
 
 const starsLabel = await githubStarsLabel();
 
 const DESKTOP_NAMES = { mac: "macOS", windows: "Windows", linux: "Linux" } as const;
+const MOBILE_STORES = {
+  ios: { name: "iPhone, iPhone Duo, and iPad", action: "App Store" },
+  android: { name: "Android", action: "Google Play" },
+} as const;
 const platforms = [
   ...DESKTOP_PLATFORMS.map((platform) => ({
     name: DESKTOP_NAMES[platform],
@@ -20,13 +24,17 @@ const platforms = [
     href: desktopDownloadHref(platform),
     attr: platform,
   })),
-  { name: "iPhone, iPhone Duo, and iPad", action: "App Store", href: IOS_APP_URL, attr: "ios" },
-  { name: "Android", action: "Google Play", href: ANDROID_APP_STORE_URL, attr: "android" },
+  ...listedMobileApps().map(({ platform, href }) => ({
+    ...MOBILE_STORES[platform],
+    href,
+    attr: platform,
+  })),
   { name: "Web", action: "Open", href: APP_URL, attr: "web" },
 ];
+const description = "Get RoBots for desktop, mobile, or the web.";
 ---
 
-<BaseLayout title="Download · RoBots" description="Get RoBots for macOS, Windows, Linux, iPhone, iPhone Duo, iPad, Android, and the web.">
+<BaseLayout title="Download · RoBots" description={description}>
   <div class="container">
     <Header starsLabel={starsLabel} />
     <main id="main" class="privacy-copy">

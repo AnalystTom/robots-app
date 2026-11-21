@@ -8,6 +8,10 @@ Self-hosters normally do not need to publish their own mobile app: the RoBots
 client can select a compatible server from the sign-in screen. If you distribute
 your own branded build, use your own Expo and store accounts.
 
+When a RoBots store listing goes live, add its URL to `MOBILE_APP_LINKS` in
+`packages/contracts/src/mobile-app-links.ts`. Until a platform has a URL there, the
+web app, the marketing site, and the welcome email leave that store out.
+
 ## Configure a build
 
 1. Link `apps/mobile` to an Expo project owned by your account.
@@ -91,9 +95,7 @@ scores once processed. Managed publishing can delay release after approval.
 
 ## Android APK
 
-Android users should install [RoBots from Google Play](https://play.google.com/store/apps/details?id=com.analysttom.robotsapp).
-For manual installation, an APK remains available.
-`release-mobile` publishes it, or run the `release-android-apk` workflow from
+`release-mobile` publishes the APK, or run the `release-android-apk` workflow from
 `main` on its own. It builds the `android-apk` EAS profile, signed with the
 project's managed keystore, and replaces the rolling `android` GitHub release,
 so the download link stays the same:

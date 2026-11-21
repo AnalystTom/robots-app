@@ -50,7 +50,6 @@ describe("account email templates", () => {
   );
 });
 
-// Every template must retain the same layout and a text alternative.
 it("shares the layout across account, product and marketplace emails", async () => {
   const user = { id: "user-1", name: "Alex", email: "alex@example.com" };
   const url = "https://app.example.com";
@@ -233,7 +232,8 @@ describe("email languages", () => {
     const english = await welcomeEmail(user, "https://example.test/u");
     expect(english.subject).toBe("Welcome to RoBots");
     expect(english.text).toContain("Hi Ana,");
-    expect(english.text).toContain("RoBots runs on iPhone");
+    expect(english.text).toMatch(/RoBots runs on Mac \S+, Windows \S+, and Linux \S+, so/);
+    expect(english.html).not.toMatch(/apps\.apple\.com|play\.google\.com/);
   });
 
   it.each(Object.entries(CATALOGS))(

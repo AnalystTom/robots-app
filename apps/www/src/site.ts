@@ -9,7 +9,6 @@ export const INTEGRATION_CLAIMS_URL = `${APP_URL}/api/v1/integration-claims`;
 export const CATALOG_URL =
   "https://robots-public.fsn1.your-objectstorage.com/integrations/catalog.json";
 export const GITHUB_URL = "https://github.com/AnalystTom/robots-app";
-export const IOS_APP_URL = "https://apps.apple.com/app/robots/id6801531099";
 export const GITHUB_API_REPO = "https://api.github.com/repos/AnalystTom/robots-app";
 export const DOCS_URL = "https://github.com/AnalystTom/robots-app/blob/main/docs/self-host.md";
 export const SELF_HOST_SECRETS_URL =

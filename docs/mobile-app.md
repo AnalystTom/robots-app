@@ -4,10 +4,9 @@ Chat with your bots, answer their questions, watch their computers and take call
 
 ## Install
 
-- iPhone, iPhone Duo and iPad: [App Store](https://apps.apple.com/app/robots/id6801531099).
-- Android: [Google Play](https://play.google.com/store/apps/details?id=com.analysttom.robotsapp).
-
-You can also choose **Get the mobile app** from the account menu in the web or desktop app.
+RoBots is not in the App Store or Google Play yet. Until it is, open RoBots in your phone's browser.
+When the store listings go live, they will appear here and under **Get the mobile app** in the
+account menu of the web and desktop apps.
 
 ## Sign in
 
