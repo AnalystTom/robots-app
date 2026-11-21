@@ -13,7 +13,7 @@ import {
   SettingsSwitch,
   useStackedSettings,
 } from "../../components/settings-group";
-import { aiDataDisclosure, promptAiConsent } from "../../lib/ai-consent";
+import { aiDataDisclosure } from "../../lib/ai-consent";
 import {
   aiDataSharingPlaceholder,
   aiPrivacyLinks,
@@ -29,13 +29,11 @@ export default function AiDataSharing() {
   const sideInsets = useSideInsets();
   const { t } = useLingui();
   const statusRead = rpcQuery("aiConsent/status");
-  // Read on every visit: a consent prompt elsewhere, or another device, can change it meanwhile.
   const { data, error: loadError, refetch } = useScreenQuery(statusRead);
   const status = data ?? null;
   const placeholder = aiDataSharingPlaceholder(status, Boolean(loadError));
   const styles = useThemedStyles(createStyles);
   const stacked = useStackedSettings();
-  // A read can fail while another screen covers this one; its alert waits for the return.
   const focused = useIsFocused();
   useEffect(() => {
     if (!loadError || !focused) return;
@@ -53,14 +51,11 @@ export default function AiDataSharing() {
           ? await send("aiConsent/revoke", { key: null })
           : !ask.allowed
             ? await send("aiConsent/revoke", { key: ask.recipient.key })
-            : (await promptAiConsent(ask.recipient, status.privacyUrl))
-              ? await send("aiConsent/allow", {
-                  scope: status.scope,
-                  version: status.version,
-                  keys: [ask.recipient.key],
-                })
-              : null;
-      // A read that started before the change never puts back what it replaced.
+            : await send("aiConsent/allow", {
+                scope: status.scope,
+                version: status.version,
+                keys: [ask.recipient.key],
+              });
       if (saved) await writeSaved(queryClient, statusRead.queryKey, () => saved);
     },
     onFailed: (cause) =>

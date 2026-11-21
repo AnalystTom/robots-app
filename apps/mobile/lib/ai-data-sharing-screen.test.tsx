@@ -11,7 +11,6 @@ type AlertButton = { text: string; onPress?: () => void };
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   alert: vi.fn(),
-  prompt: vi.fn(),
   focused: true,
 }));
 vi.mock("./side-insets", () => ({ useSideInsets: () => ({}) }));
@@ -40,7 +39,6 @@ vi.mock("expo-router", () => ({
 }));
 vi.mock("./ai-consent", () => ({
   aiDataDisclosure: (use: string) => `About ${use}`,
-  promptAiConsent: mocks.prompt,
 }));
 vi.mock("../components/settings-group", () => ({
   useStackedSettings: () => false,
@@ -107,7 +105,6 @@ beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   queryClient.clear();
   mocks.focused = true;
-  mocks.prompt.mockResolvedValue(true);
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -141,7 +138,6 @@ function lastAlert() {
     press: (text: string) => buttons?.find((b) => b.text === text)?.onPress?.(),
   };
 }
-/** Answers the opening read, and holds the named write open so a test decides how it ends. */
 function hold(write: string, answer = opened) {
   let finish!: (outcome: Error | typeof opened) => void;
   mocks.rpc.mockImplementation((proc: string) =>
@@ -162,7 +158,6 @@ function hold(write: string, answer = opened) {
   };
 }
 
-/** What every write carries: the server, session and space its save was started in. */
 const pinned = {
   requestContext: {
     apiBase: "https://app.example.test",
@@ -170,14 +165,13 @@ const pinned = {
     headers: { "x-robots-space-id": "space-1" },
   },
 };
-it("shows each service's permission, and allows one only after its consent prompt", async () => {
+it("shows each service's permission, and allows one from its switch", async () => {
   const allow = hold("aiConsent/allow");
   await render();
   expect(toggle("Allow Models on mobile").checked).toBe(true);
   expect(toggle("Allow Speech on mobile").checked).toBe(false);
 
   await act(async () => toggle("Allow Speech on mobile").click());
-  expect(mocks.prompt).toHaveBeenCalledWith(opened.recipients[1], undefined);
   expect(allow.calls()).toEqual([
     ["aiConsent/allow", { scope: "mobile", version: "v1", keys: ["Speech"] }, pinned],
   ]);
@@ -189,26 +183,10 @@ it("shows each service's permission, and allows one only after its consent promp
   expect(mocks.alert).not.toHaveBeenCalled();
 });
 
-it("holds the controls during the consent prompt, and saves nothing when it is declined", async () => {
-  let answer!: (allowed: boolean) => void;
-  mocks.prompt.mockReturnValue(new Promise((resolve) => (answer = resolve)));
-  const allow = hold("aiConsent/allow");
-  await render();
-  await act(async () => toggle("Allow Speech on mobile").click());
-  expect(controls().map((control) => control.disabled)).toEqual([true, true, true]);
-
-  await act(async () => answer(false));
-  await settle();
-  expect(allow.calls()).toEqual([]);
-  expect(toggle("Allow Speech on mobile").checked).toBe(false);
-  expect(controls().map((control) => control.disabled)).toEqual([false, false, false]);
-});
-
 it("revokes one service without asking, and says so in an alert when that fails", async () => {
   const revoke = hold("aiConsent/revoke");
   await render();
   await act(async () => toggle("Allow Models on mobile").click());
-  expect(mocks.prompt).not.toHaveBeenCalled();
   expect(revoke.calls()).toEqual([["aiConsent/revoke", { key: "Models" }, pinned]]);
 
   await revoke.finish(new Error("Server said no"));

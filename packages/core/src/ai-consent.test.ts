@@ -89,6 +89,22 @@ describe("foreground AI consent", () => {
       keys: ["model"],
     });
   });
+  it("asks once for every recipient one action needs", async () => {
+    const prompt = vi.fn(async () => true);
+    const allow = vi.fn(async () => undefined);
+    await ensureAiDataConsent({
+      uses: ["model", "voice"],
+      status: async () => status,
+      prompt,
+      allow,
+    });
+    expect(prompt).toHaveBeenCalledExactlyOnceWith(status.recipients, undefined);
+    expect(allow).toHaveBeenCalledExactlyOnceWith({
+      scope: status.scope,
+      version: status.version,
+      keys: ["model", "voice"],
+    });
+  });
   it("does not prompt for already granted permissions or read-only procedures", async () => {
     const prompt = vi.fn();
     await ensureAiDataConsent({
@@ -113,7 +129,6 @@ describe("foreground AI consent", () => {
     ).toEqual(["model", "memory"]);
     expect(aiConsentTarget({ routineId: "routine-1" })).toEqual({ routineId: "routine-1" });
     expect(aiConsentTarget({ botId: "bot", text: "hello" })).toEqual({ botId: "bot" });
-    // A voice request for the account's copy is asked about the account's provider.
     expect(aiConsentTarget({ text: "hello", scope: "account" })).toEqual({
       settingsScope: "account",
     });
