@@ -276,6 +276,7 @@ describeWithDatabase("API authorization and resource isolation", () => {
       ["bots/get", { botId: "missing-bot" }],
       ["bots/create", botInput("Unauthenticated")],
       ["bots/duplicate", { botId: "missing-bot" }],
+      ["bots/exportPackage"],
       ["bots/importPreview", { files: [{ path: "SOUL.md", content: "Calm." }] }],
       [
         "bots/importCreate",
@@ -500,7 +501,6 @@ describeWithDatabase("API authorization and resource isolation", () => {
       ["devicePairing/devices"],
       ["devicePairing/revoke", { id: "missing-session" }],
       ["devicePairing/revokeOthers"],
-      ["today/runs", { since: "2026-01-01T00:00:00.000Z" }],
       ["email/mailboxes"],
       ["email/messages", { botId: "missing-bot", folder: "inbox" }],
       ["email/message", { id: "missing-message" }],
@@ -535,6 +535,7 @@ describeWithDatabase("API authorization and resource isolation", () => {
       ["mcp/servers/remove"],
       ["mcp/servers/test"],
       ["mcp/servers/agents"],
+      ["mcp/servers/tools"],
       ["mcp/assignments/list"],
       ["mcp/assignments/all"],
       ["mcp/assignments/approve"],
