@@ -17,6 +17,7 @@ test("create group from + and see two bots in one transcript", async ({ page }, 
   const stamp = Date.now();
   await signup(page, `group-${stamp}@robots.test`, "password12", "Group E2E");
   await completeOnboarding(page);
+  await rpc(page, "preferences/update", { botAvatarSet: "organic" });
   await page.goto("/app");
   await page.waitForURL(/\/app\/[^/]+$/);
 
@@ -88,7 +89,6 @@ test("create group from + and see two bots in one transcript", async ({ page }, 
     });
   });
   await page.reload();
-  // Anchor ^ so Now/Recent activity rows ("Bot, Draft team, …") do not match.
   const groupAvatar = page
     .locator("aside")
     .first()
@@ -107,8 +107,6 @@ test("create group from + and see two bots in one transcript", async ({ page }, 
   await page.unroute("**/rpc/threads/get");
   await page.reload();
 
-  // The route header renders before bootstrap finishes restoring the group.
-  // Wait for its composer before opening a panel that bootstrap may reset.
   await expect(page.getByRole("combobox", { name: "Message Draft team" })).toBeVisible();
   const groupPill = page.getByTestId("bot-settings-trigger");
   if ((await groupPill.getAttribute("aria-expanded")) !== "true") await groupPill.click();
@@ -181,7 +179,6 @@ test("create group from + and see two bots in one transcript", async ({ page }, 
   ).toBeVisible();
   await composer.pressSequentially("ask me which city to use");
   await composer.press("Enter");
-  // threads/get can observe waiting_input before the shell realtime feed paints the ask card.
   await expect
     .poll(
       async () => {
