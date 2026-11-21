@@ -1,16 +1,17 @@
 /** @jsxRuntime automatic */
 import type { TransactionalEmail } from "@robots/adapter-kit";
-import { ANDROID_APP_STORE_URL, IOS_APP_STORE_URL, ROBOTS_DOWNLOADS_URL } from "@robots/contracts";
+import { listedMobileApps } from "@robots/contracts";
 import { Link, Text } from "react-email";
 import { emailText, greeting, linkStyle, message, withNodes } from "./email.js";
 
-const APPS: Readonly<Record<string, string>> = {
-  iPhone: IOS_APP_STORE_URL,
-  Android: ANDROID_APP_STORE_URL,
-  Mac: ROBOTS_DOWNLOADS_URL,
-  Windows: ROBOTS_DOWNLOADS_URL,
-  Linux: ROBOTS_DOWNLOADS_URL,
-};
+const MOBILE_APP_NAMES = { ios: "iPhone", android: "Android" } as const;
+
+const APPS: Readonly<Record<string, string>> = Object.fromEntries([
+  ...listedMobileApps().map(({ platform, href }) => [MOBILE_APP_NAMES[platform], href]),
+  ["Mac", "https://tryrobots.app/api/download?platform=mac"],
+  ["Windows", "https://tryrobots.app/api/download?platform=windows"],
+  ["Linux", "https://tryrobots.app/api/download?platform=linux"],
+]);
 
 const stepStyle = { margin: "20px 0 4px" };
 
@@ -47,10 +48,21 @@ export function welcomeEmail(
           },
         )}
       </Text>
-      <Text style={{ marginTop: "28px" }}>{say("Questions? Just reply.")}</Text>
-      <Text>{say("The RoBots team")}</Text>
+      <Text style={stepStyle}>
+        <strong>2. {say("Star us on GitHub")}</strong>
+      </Text>
+      <Text style={{ marginTop: 0 }}>
+        {withNodes(say("RoBots is open source. {star} helps more people find it."), {
+          star: (
+            <Link href="https://github.com/AnalystTom/robots-app" style={linkStyle}>
+              {say("A star on GitHub")}
+            </Link>
+          ),
+        })}
+      </Text>
+      <Text style={{ marginTop: "28px" }}>{say("Questions? Just reply. We read every one.")}</Text>
+      <Text>The RoBots team</Text>
     </>,
     unsubscribeUrl,
-    { src: "https://tryrobots.app/og.png", alt: "RoBots" },
   );
 }

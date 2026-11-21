@@ -3088,7 +3088,11 @@ describe("outbound destinations", () => {
         args: { url: "https://tryrobots.app/docs/routines.md" },
         executionId: "call-1",
       },
-      { name: "web_fetch", args: { url: "https://tryrobots.app/" }, executionId: "call-2" },
+      {
+        name: "web_fetch",
+        args: { url: "https://tryrobots.app/?q=secret" },
+        executionId: "call-2",
+      },
     ]);
     await f.run();
     expect(f.fetchedUrls).toEqual(["https://tryrobots.app/docs/routines.md"]);

@@ -20,7 +20,6 @@ import { PL_MESSAGES } from "./locales/pl.js";
 import { readUiLocale, writeUiLocale } from "./setup-store.js";
 
 const srcDir = import.meta.dirname;
-/** Product and vendor names the setup page shows as they are. */
 const UNTRANSLATED = new Set([
   "RoBots",
   "RoBots Cloud",
@@ -30,14 +29,12 @@ const UNTRANSLATED = new Set([
   "https://robots.example.com",
 ]);
 
-/** Literal `t("…")` ids; the formatter keeps every string double-quoted. */
 function translationIds(source: string): string[] {
   return [...source.matchAll(/\bt\(\s*("(?:\\.|[^"\\])*")/g)].map(
     (match) => JSON.parse(match[1] ?? '""') as string,
   );
 }
 
-/** What setup.js translates in setup.html: its text and its title, aria-label and placeholder attributes. */
 function setupPageStrings(): string[] {
   const html = readFileSync(path.join(srcDir, "setup.html"), "utf8");
   const text = [...html.matchAll(/>([^<>]*)</g)].map((match) => match[1]?.trim() ?? "");
@@ -72,7 +69,6 @@ describe("desktop language", () => {
     [null, "pl-PL", "pl"],
     [null, "pl_PL", "pl"],
     ["en", "pl-PL", "en"],
-    // The app offers languages the desktop has no catalog for yet; those read English.
     ["it", "es-CL", "en"],
     [null, "it-IT", "en"],
     [null, undefined, "en"],
@@ -114,12 +110,10 @@ describe("desktop language", () => {
     expect(save).toHaveBeenLastCalledWith("es");
     expect(onChange).toHaveBeenCalledTimes(1);
 
-    // Another regional Spanish is still Spanish: saved for the next launch, menus unchanged.
     await handle(event, "es-MX");
     expect(save).toHaveBeenLastCalledWith("es-MX");
     expect(onChange).toHaveBeenCalledTimes(1);
 
-    // Every launch reports again; an unchanged language writes nothing.
     await handle(event, "es-MX");
     expect(save).toHaveBeenCalledTimes(2);
 

@@ -4,14 +4,13 @@ Chat with your bots, answer their questions, watch their computers and take call
 
 ## Install
 
-- Android: download the app from [tryrobots.app](https://tryrobots.app/#platforms).
-- iPhone and iPad: coming soon. Join the list on [tryrobots.app](https://tryrobots.app/#platforms).
-
-You can also choose **Get the mobile app** from the account menu in the web or desktop app.
+RoBots is not in the App Store or Google Play yet. Until it is, open RoBots in your phone's browser.
+When the store listings go live, they will appear here and under **Get the mobile app** in the
+account menu of the web and desktop apps.
 
 ## Sign in
 
-Sign in with your tryrobots.app account. To use your own server instead, tap **Use a custom server** on
+Sign in with your RoBots Cloud account. To use your own server instead, tap **Use a custom server** on
 the sign-in screen and enter its address. For a server on your local network, follow
 [Connecting a phone on the same network](./self-host-clients.md#connecting-a-phone-on-the-same-network).
 

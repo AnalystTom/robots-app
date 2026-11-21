@@ -291,8 +291,7 @@ vi.mock("./app-version", () => ({
 }));
 const storeUpdate = vi.hoisted(() => ({ available: false, open: vi.fn() }));
 vi.mock("./store-update", () => ({
-  openStoreListing: storeUpdate.open,
-  useStoreUpdateAvailable: () => storeUpdate.available,
+  useStoreUpdate: () => (storeUpdate.available ? storeUpdate.open : null),
 }));
 vi.mock("./appearance", () => ({
   getCachedAppearancePreference: () => "system",

@@ -29,7 +29,7 @@ import { createSettingsPageStyles } from "../../lib/settings-page-styles";
 import { isSettingsLink, openFromSettingsSheet } from "../../lib/settings-sheet";
 import { ACCOUNT_SETTINGS } from "../../lib/settings-target";
 import { useSideInsets } from "../../lib/side-insets";
-import { openStoreListing, useStoreUpdateAvailable } from "../../lib/store-update";
+import { useStoreUpdate } from "../../lib/store-update";
 import { confirmUnsentSendLoss } from "../../lib/unsent-send-warning";
 import { errorText } from "../../lib/user-error";
 
@@ -61,7 +61,7 @@ export default function Account() {
   const versionInfo = getAppVersionInfo();
   const updateLabel = formatUpdateLabel(versionInfo.update);
   const versionAccessibility = [versionInfo.nativeLabel, updateLabel].filter(Boolean).join(". ");
-  const storeUpdateAvailable = useStoreUpdateAvailable();
+  const openStoreUpdate = useStoreUpdate();
   const approvals = useApprovalSettings(ACCOUNT_SETTINGS);
   const spending = useSpendingStatus();
   const organizations = useOrganizations().data;
@@ -426,10 +426,10 @@ export default function Account() {
               {updateLabel ? <Text style={styles.versionLine}>{updateLabel}</Text> : null}
             </View>
           ) : null}
-          {storeUpdateAvailable ? (
+          {openStoreUpdate ? (
             <NativeActionButton
               label={t`Update`}
-              onPress={openStoreListing}
+              onPress={openStoreUpdate}
               prominence="secondary"
               size="compact"
               style={styles.updateButton}

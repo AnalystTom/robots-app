@@ -27,8 +27,11 @@ export const ES_MESSAGES: Record<string, string> = {
   "Get the apps": "Descarga las apps",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots funciona en {platforms}, para que tus bots puedan contactarte estés donde estés.",
-  "Questions? Just reply.": "¿Preguntas? Solo responde.",
-  "The RoBots team": "El equipo de RoBots",
+  "Star us on GitHub": "Danos una estrella en GitHub",
+  "RoBots is open source. {star} helps more people find it.":
+    "RoBots es de código abierto. {star} ayuda a que más gente lo encuentre.",
+  "A star on GitHub": "Una estrella en GitHub",
+  "Questions? Just reply. We read every one.": "¿Preguntas? Responde a este correo. Leemos todos.",
   Unsubscribe: "Cancelar suscripción",
   "Invite a friend": "Invita a un amigo",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

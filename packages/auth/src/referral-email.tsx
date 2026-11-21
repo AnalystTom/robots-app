@@ -27,7 +27,7 @@ export function referralEmail(
         </Link>{" "}
         {say("and choose Invite friends for your link.")}
       </Text>
-      <Text>{say("The RoBots team")}</Text>
+      <Text>The RoBots team</Text>
     </>,
     unsubscribeUrl,
   );

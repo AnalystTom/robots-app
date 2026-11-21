@@ -37,14 +37,8 @@ const ROBOTS_DOCS: ReadonlyArray<readonly [topics: string, url: string]> = [
   ["Self-hosted server configuration", "https://tryrobots.app/docs/self-host-configuration.md"],
 ];
 
-/** Fixed URLs, so fetching one can't carry anything out of a run. */
 export const ROBOTS_DOCS_URLS = ROBOTS_DOCS.map(([, url]) => url);
 
-/**
- * Built-in Agent Skills (SKILL.md recipes) available to every user.
- * Only generic how-tos; no account-specific content.
- * Descriptions show in the / picker (truncated at 72) and inject every turn in the skills catalog.
- */
 const SKILLS: Array<{ name: string; description: string; body: string }> = [
   {
     name: "Interrogate",

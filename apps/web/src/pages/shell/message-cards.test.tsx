@@ -42,7 +42,6 @@ function popupFlow({ focused }: { focused: boolean }) {
       channels.push(this);
     }
   }
-  // A popup on a COOP provider page reads as closed to the opener.
   const popup = { closed: true, close: vi.fn() };
   vi.stubGlobal("BroadcastChannel", FakeChannel);
   vi.spyOn(window, "open").mockReturnValue(popup as unknown as Window);

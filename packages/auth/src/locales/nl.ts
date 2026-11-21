@@ -27,8 +27,11 @@ export const NL_MESSAGES: Record<string, string> = {
   "Get the apps": "Download de apps",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots werkt op {platforms}, zodat je bots je overal kunnen bereiken.",
-  "Questions? Just reply.": "Vragen? Antwoord gewoon.",
-  "The RoBots team": "Het RoBots-team",
+  "Star us on GitHub": "Geef ons een ster op GitHub",
+  "RoBots is open source. {star} helps more people find it.":
+    "RoBots is open source. {star} helpt meer mensen het te vinden.",
+  "A star on GitHub": "Een ster op GitHub",
+  "Questions? Just reply. We read every one.": "Vragen? Antwoord gewoon. Wij lezen elk bericht.",
   Unsubscribe: "Afmelden",
   "Invite a friend": "Nodig een vriend uit",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

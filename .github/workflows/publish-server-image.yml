@@ -43,7 +43,7 @@ jobs:
   installer-smoke:
     name: Compose installer smokes
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 5
     permissions:
       contents: read
@@ -51,12 +51,14 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
+      - name: Provide dpkg for the apt security smokes
+        run: bash .github/scripts/provide-host-tool.sh dpkg
       - run: bash infra/compose/run-smokes.sh
 
   validate:
     name: Validate ${{ matrix.name }} image
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 90
     permissions:
       contents: read
@@ -193,7 +195,7 @@ jobs:
     if: github.event_name != 'pull_request' && vars.DEPOT_PROJECT_ID != ''
     # Each Depot image is checked, tagged, and attested in this job without a second runner.
     # Per-image locks bound builds and protect moving tags while other CI runs independently.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 60
     permissions:
       contents: read
@@ -296,7 +298,7 @@ jobs:
     if: >-
       !cancelled() && github.event_name != 'pull_request' && needs.build.result == 'success'
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 15
     permissions:
       contents: read

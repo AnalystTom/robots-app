@@ -10,7 +10,7 @@ import { fetchAuthCapabilities } from "../lib/auth-capabilities";
 import type * as Passkeys from "../lib/passkeys";
 import { usePasskeysSupported } from "../lib/passkeys";
 import { clearSpaceSelection } from "../lib/rpc";
-import { AuthPage } from "./Auth";
+import { AuthPage, PasswordResetPage } from "./Auth";
 
 vi.mock("@lingui/react/macro", () => ({
   useLingui: () => ({
@@ -74,6 +74,7 @@ vi.mock("../lib/auth", () => ({
       passkey: vi.fn(async () => ({ data: {}, error: null })),
     },
     emailOtp: { sendVerificationOtp: vi.fn() },
+    resetPassword: vi.fn(),
   },
 }));
 vi.mock("../lib/rpc", () => ({ clearSpaceSelection: vi.fn() }));
@@ -449,4 +450,46 @@ it("leaves the password form unchanged without email codes", async () => {
   expect(host.querySelector('input[type="password"]')).not.toBeNull();
   expect(host.querySelector<HTMLInputElement>('input[type="password"]')!.required).toBe(true);
   expect(host.querySelector('button[type="submit"]')!.textContent).toBe("Sign in");
+});
+
+async function renderReset(entry: string) {
+  await act(async () =>
+    root.render(
+      <MemoryRouter initialEntries={[entry]}>
+        <PasswordResetPage />
+      </MemoryRouter>,
+    ),
+  );
+}
+function sendNewLink() {
+  return [...host.querySelectorAll("a")].find((node) => node.textContent === "Send a new link");
+}
+it("offers only a new link when the reset link is expired", async () => {
+  await renderReset("/reset-password?error=INVALID_TOKEN");
+  expect(host.querySelector("input")).toBeNull();
+  expect(host.querySelector('[role="alert"]')?.textContent).toBe(
+    "This reset link is invalid or expired",
+  );
+  expect(sendNewLink()?.getAttribute("href")).toBe("/forgot-password");
+});
+it("replaces the password form with a new link when a used link is refused", async () => {
+  vi.mocked(authClient.resetPassword).mockResolvedValue({
+    data: null,
+    error: { code: "INVALID_TOKEN", message: "Invalid token", status: 400, statusText: "" },
+  } as never);
+  await renderReset("/reset-password?token=used");
+  await enter(host.querySelector("#new-password"), "new-password-1");
+  await enter(host.querySelector("#confirm-password"), "new-password-1");
+  await submit();
+  expect(authClient.resetPassword).toHaveBeenCalledWith({
+    newPassword: "new-password-1",
+    token: "used",
+  });
+  expect(host.querySelector("input")).toBeNull();
+  expect(sendNewLink()?.getAttribute("href")).toBe("/forgot-password");
+});
+it("keeps the password form for a valid reset link", async () => {
+  await renderReset("/reset-password?token=fresh");
+  expect(host.querySelector("#new-password")).not.toBeNull();
+  expect(sendNewLink()).toBeUndefined();
 });

@@ -1,7 +1,11 @@
 import type { MenuAction } from "@expo/ui/community/menu";
-import { t } from "@lingui/core/macro";
+import { ph, t } from "@lingui/core/macro";
 import type { OrganizationList } from "@robots/contracts";
-import { organizationLandingSpaceId, organizationOfSpace } from "@robots/core";
+import {
+  marksPersonalOrganization,
+  organizationLandingSpaceId,
+  organizationOfSpace,
+} from "@robots/core";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { selectedSpaceId } from "./api";
@@ -38,7 +42,7 @@ function noteOrganizationSwitch(): void {
 }
 
 /** A server without organizations refuses the list, so it is not asked again. */
-function organizationsQuery() {
+export function organizationsQuery() {
   return {
     ...rpcQuery("organizations/list"),
     retry: (failures: number, error: Error) => {
@@ -79,9 +83,19 @@ export function organizationSwitchActions(list: OrganizationList | undefined): M
   const active = activeOrganization(list);
   return list.organizations.map((organization) => ({
     id: `${ORGANIZATION_ACTION_PREFIX}${organization.id}`,
-    title: organization.name,
+    title: organizationMenuTitle(list.organizations, organization),
     state: organization.id === active?.id ? "on" : "off",
   }));
+}
+
+function organizationMenuTitle(
+  organizations: readonly Organization[],
+  organization: Organization,
+): string {
+  const name = organization.name;
+  return marksPersonalOrganization(organizations, organization)
+    ? t`${ph({ name })} (Personal)`
+    : name;
 }
 
 export function organizationForAction(

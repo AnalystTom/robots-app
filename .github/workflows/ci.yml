@@ -28,7 +28,7 @@ jobs:
   changes:
     name: Changed areas
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 5
     outputs:
       web: ${{ steps.areas.outputs.web }}
@@ -50,7 +50,7 @@ jobs:
     name: Production builds
     needs: changes
     if: needs.changes.outputs.web == 'true'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -76,6 +76,8 @@ jobs:
         with:
           path: .turbo/cache
           key: turbo-build-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+      - name: Provide xvfb-run
+        run: bash .github/scripts/provide-host-tool.sh xvfb-run
       - name: Electron smoke
         env:
           electron_config_cache: ${{ runner.temp }}/electron-cache
@@ -94,7 +96,7 @@ jobs:
   # main always runs everything.
   static-checks:
     name: Lint and typecheck
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 25
     concurrency:
       group: ci-checks-${{ github.ref == 'refs/heads/main' && 'main' || github.run_id }}
@@ -164,7 +166,7 @@ jobs:
   # The unit suite is CPU-bound; six runners keep it under the native install floor.
   unit-tests-shard:
     name: Unit tests (${{ matrix.shard }}/6)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     strategy:
       fail-fast: false
       matrix:
@@ -186,11 +188,16 @@ jobs:
           DATABASE_URL: postgres://robots:robots@127.0.0.1:5433/robots
       - name: Install age for the encrypted backup round trip
         run: |
+          if command -v age >/dev/null && command -v age-keygen >/dev/null; then
+            exit 0
+          fi
           curl -fsSL -o "$RUNNER_TEMP/age.tar.gz" \
             "https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz"
           echo "cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10  $RUNNER_TEMP/age.tar.gz" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/age.tar.gz" -C "$RUNNER_TEMP" age/age age/age-keygen
-          sudo install -m 755 "$RUNNER_TEMP/age/age" "$RUNNER_TEMP/age/age-keygen" /usr/local/bin/
+          echo "$RUNNER_TEMP/age" >> "$GITHUB_PATH"
+      - name: Provide dpkg for the apt security smokes
+        run: bash .github/scripts/provide-host-tool.sh dpkg
       - name: Unit tests
         if: steps.areas.outputs.all_packages != 'false'
         run: pnpm run test --shard=${{ matrix.shard }}/6
@@ -224,7 +231,7 @@ jobs:
     name: Checks
     needs: [static-checks, unit-tests-shard]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     steps:
       - run: test "${{ needs.static-checks.result }}" = success && test "${{ needs.unit-tests-shard.result }}" = success
 
@@ -235,7 +242,7 @@ jobs:
   native-computer:
     name: Native computer (${{ matrix.os }})
     needs: changes
-    if: needs.changes.outputs.native == 'true'
+    if: needs.changes.outputs.native == 'true' && vars.HOSTED_RUNNERS == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -277,7 +284,7 @@ jobs:
   # The suites are CPU-bound; six runners keep them under the native install floor.
   test-integration-shard:
     name: Postgres journeys (${{ matrix.shard }}/6)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     strategy:
       fail-fast: false
       matrix:
@@ -293,44 +300,17 @@ jobs:
       - id: areas
         if: github.event_name == 'pull_request'
         run: bash .github/scripts/changed-areas.sh >> "$GITHUB_OUTPUT"
-      - name: Postgres cache week
-        if: steps.areas.outputs.server != 'false'
-        id: postgres-cache-week
-        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
-      - name: Restore Postgres image cache
+      - name: Restore Postgres binaries cache
         if: steps.areas.outputs.server != 'false'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
-          path: ${{ runner.temp }}/docker-postgres-cache
-          key: docker-postgres-18-alpine-v2-${{ steps.postgres-cache-week.outputs.week }}
-      - name: Load or pull Postgres image
-        if: steps.areas.outputs.server != 'false'
-        run: bash .github/scripts/restore-postgres-image.sh
+          path: ${{ runner.temp }}/postgres-binaries-cache
+          key: postgres-binaries-${{ hashFiles('.github/scripts/start-postgres.sh') }}
       - name: Start Postgres
         if: steps.areas.outputs.server != 'false'
-        run: |
-          docker run -d --name ci-postgres \
-            -e POSTGRES_USER=postgres \
-            -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=robots \
-            -p 5432:5432 \
-            mirror.gcr.io/library/postgres:18-alpine \
-            postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=500
-          echo "CI_POSTGRES_URL=postgres://postgres:postgres@127.0.0.1:5432/robots" >> "$GITHUB_ENV"
+        run: bash .github/scripts/start-postgres.sh
       - uses: ./.github/actions/setup-workspace
         if: steps.areas.outputs.server != 'false'
-      - name: Wait for Postgres
-        if: steps.areas.outputs.server != 'false'
-        run: |
-          for i in $(seq 1 30); do
-            if docker exec ci-postgres pg_isready -U postgres -d robots; then
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "Postgres did not become ready" >&2
-          docker logs ci-postgres >&2 || true
-          exit 1
       - run: pnpm test:integration --shard=${{ matrix.shard }}/6
         if: steps.areas.outputs.server != 'false'
 
@@ -339,7 +319,7 @@ jobs:
     name: Postgres journeys
     needs: test-integration-shard
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     steps:
       - run: test "${{ needs.test-integration-shard.result }}" = success
 
@@ -347,7 +327,7 @@ jobs:
     name: Postgres upgrade
     needs: changes
     if: needs.changes.outputs.compose == 'true'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -382,7 +362,7 @@ jobs:
     name: Publish compatible mobile update
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [checks, test-integration]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 20
     concurrency:
       group: mobile-production-update
@@ -532,7 +512,7 @@ jobs:
             exit 1
           fi
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: ./.github/actions/setup-pnpm
         if: steps.ota.outputs.publish == 'true'
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         if: steps.ota.outputs.publish == 'true'
@@ -597,7 +577,7 @@ jobs:
     # The host pulls the image published for this commit; it builds only if that pull fails.
     # Only checks that catch a broken server gate the deploy; lint, E2E, and Docker drills report on their own.
     needs: [checks, test-integration, publish-server-image]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     # Matches infra/compose/deploy-main.sh's own limits, including a fallback build, rollback, and
     # waiting twice for a replaced worker to finish its jobs.
     timeout-minutes: 140

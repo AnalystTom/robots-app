@@ -31,16 +31,14 @@ let corruptSignature = false;
 let omitIdToken = false;
 let replayedIdToken: string | undefined;
 let userInfoClaims: Record<string, unknown>;
-/** Directory-made accounts by user id: the profile source the directory manages, or null when adopted. */
 let directorySubjects: Map<string, string | null>;
-/** Users the directory currently provisions. */
 let provisionedUsers: Set<string>;
-/** Users who have a workspace, which every first sign-in creates. */
 let signedInUsers: Set<string>;
 const codes = new Map<
   string,
   { challenge: string; nonce: string; claims: Record<string, unknown> }
 >();
+const authorizationByCallback = new Map<string, string>();
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status });
@@ -140,7 +138,6 @@ function setup(options: Partial<AuthEnv> = {}, hasMembership = true) {
   });
 }
 
-/** Signs a stored session token the way the session cookie and `set-auth-token` do. */
 function signedBearer(token: string) {
   if (token.includes(".")) return token;
   return `${token}.${createHmac("sha256", secret).update(token).digest("base64")}`;
@@ -162,7 +159,6 @@ async function request(
     if (value === null) headers.delete(key);
     else headers.set(key, value);
   }
-  // Better Auth disables origin checks in tests; exercise production CSRF behavior here.
   const context = await auth.$context;
   context.skipOriginCheck = false;
   context.skipCSRFCheck = false;
@@ -227,7 +223,9 @@ async function start(
       ...claims,
     },
   });
-  return `/callback/oidc?state=${url.searchParams.get("state")}&code=${code}`;
+  const callback = `/callback/oidc?state=${url.searchParams.get("state")}&code=${code}`;
+  authorizationByCallback.set(callback, url.href);
+  return callback;
 }
 async function signIn(claims?: Record<string, unknown>) {
   return request(await start(claims));
@@ -265,6 +263,7 @@ beforeEach(() => {
   provisionedUsers = new Set();
   signedInUsers = new Set();
   codes.clear();
+  authorizationByCallback.clear();
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -338,7 +337,6 @@ it("refuses implicit Google linking even when a third-party mailbox claim is ver
   state.db.session = [];
   const context = await auth.$context;
   const provider = context.socialProviders.find((item) => item.id === "google")!;
-  // Keep the real sign-in/link policy; replace only the provider network boundary.
   provider.idToken = { verify: async () => true };
   provider.getUserInfo = async () => ({
     user: {
@@ -376,7 +374,6 @@ describe("OIDC callbacks", () => {
         },
         { "x-robots-signup-surface": surface },
       );
-      // The callback's browser has an unrelated web attribution cookie and no native header.
       cookies += `; robots_signup_attribution=${encodeURIComponent(JSON.stringify({ surface: "web", utmSource: "unrelated" }))}`;
       const returned = await request(callback);
       expect(new URL(returned.headers.get("location")!).protocol).toBe("robots:");
@@ -503,7 +500,6 @@ describe("OIDC callbacks", () => {
     expect(await (await request("/account-security")).json()).toMatchObject({ ssoLinked: true });
     expect(await encryptStoredOAuthTokens(prisma as never, secret)).toBe(0);
 
-    // A sign-in that refreshes the row after the upgrade read it must win.
     account.accessToken = "legacy-access-token";
     prisma.account.findMany.mockImplementationOnce(async () => {
       const read = rows("account").map((row) => ({ ...row }));
@@ -635,7 +631,7 @@ describe("OIDC callbacks", () => {
       name: "Squatter",
     });
     const callback = await start(undefined, true);
-    const authorize = `${issuer}/authorize?state=${new URL(`${origin}${callback}`).searchParams.get("state")}`;
+    const authorize = authorizationByCallback.get(callback)!;
     cookies = "";
     await request(
       `/expo-authorization-proxy?${new URLSearchParams({ authorizationURL: authorize })}`,
@@ -653,7 +649,7 @@ describe("OIDC callbacks", () => {
     });
     const session = cookies;
     const planted = await start(undefined, true);
-    const authorize = `${issuer}/authorize?state=${new URL(`${origin}${planted}`).searchParams.get("state")}`;
+    const authorize = authorizationByCallback.get(planted)!;
     cookies = "";
     await request(
       `/expo-authorization-proxy?${new URLSearchParams({ authorizationURL: authorize })}`,
@@ -676,7 +672,7 @@ describe("OIDC callbacks", () => {
     });
     rows("user")[0]!.emailVerified = true;
     const callback = await start(undefined, true, "robots://account");
-    const authorize = `${issuer}/authorize?state=${new URL(`${origin}${callback}`).searchParams.get("state")}`;
+    const authorize = authorizationByCallback.get(callback)!;
     cookies = "";
     await request(
       `/expo-authorization-proxy?${new URLSearchParams({ authorizationURL: authorize })}`,
@@ -727,7 +723,7 @@ describe("OIDC callbacks", () => {
       },
     );
     const callback = await start(undefined, false, "robots://sign-in");
-    const authorize = `${issuer}/authorize?state=${new URL(`${origin}${callback}`).searchParams.get("state")}`;
+    const authorize = authorizationByCallback.get(callback)!;
     const callbackMarkers = rows("verification").filter((row) =>
       String(row.identifier).startsWith("oidc-callback-"),
     ).length;
@@ -765,6 +761,47 @@ describe("OIDC callbacks", () => {
       expect(cookies).not.toContain("state=");
     },
   );
+  it.each([
+    { client_id: "foreign-client", redirect_uri: `${origin}/api/auth/callback/oidc` },
+    { client_id: "test-client", redirect_uri: "https://example.com/cb" },
+    { state: "never-issued" },
+    { login_hint: "someone@example.test" },
+    { scope: "openid admin" },
+  ])(
+    "only lets the native proxy forward this deployment's own SSO request (%o)",
+    async (params) => {
+      setup();
+      const own = new URL(
+        authorizationByCallback.get(await start(undefined, false, "robots://sign-in"))!,
+      );
+      expect(own.searchParams.get("client_id")).toBe("test-client");
+      expect(own.searchParams.get("redirect_uri")).toBe(`${origin}/api/auth/callback/oidc`);
+      for (const [name, value] of Object.entries(params)) own.searchParams.set(name, value);
+      const response = await request(
+        `/expo-authorization-proxy?${new URLSearchParams({ authorizationURL: own.href })}`,
+      );
+      expect(response.status).toBe(400);
+      expect(response.headers.get("location")).toBeNull();
+    },
+  );
+  it("refuses an SSO request from a sign-in that carried a login hint", async () => {
+    setup();
+    const response = await request("/sign-in/social", {
+      provider: "oidc",
+      callbackURL: `${origin}/app`,
+      errorCallbackURL: `${origin}/sign-in`,
+      disableRedirect: true,
+      loginHint: "victim@example.test",
+    });
+    expect(response.status).toBe(200);
+    const authorize = ((await response.json()) as { url: string }).url;
+    expect(new URL(authorize).searchParams.get("login_hint")).toBe("victim@example.test");
+    const proxied = await request(
+      `/expo-authorization-proxy?${new URLSearchParams({ authorizationURL: authorize })}`,
+    );
+    expect(proxied.status).toBe(400);
+    expect(proxied.headers.get("location")).toBeNull();
+  });
   it("closes the native proxy without SSO", async () => {
     setup({ oidc: undefined });
     const response = await request(
@@ -866,8 +903,6 @@ describe("OIDC callbacks", () => {
     async (reauthenticate) => {
       setup();
       await signIn();
-      // A valid token for another subject must not become this user's account
-      // through a UserInfo response naming their already-linked subject.
       const callback = await start(
         { sub: "other-subject" },
         false,
@@ -1300,7 +1335,7 @@ describe("SSO-only account deletion", () => {
         auth_time: Math.floor(Date.now() / 1000),
       },
     });
-    const authorize = `${issuer}/authorize?state=${url.searchParams.get("state")}`;
+    const authorize = url.href;
     await request(
       `/expo-authorization-proxy?${new URLSearchParams({ authorizationURL: authorize })}`,
     );
@@ -1476,7 +1511,6 @@ describe("SSO-only account deletion", () => {
     const sessionToken = String(rows("session")[0]!.token);
     expireOidcProofs();
     cookies = "";
-    // A token copied from the session table is not a session.
     const raw = { authorization: `Bearer ${sessionToken}` };
     expect((await request("/request-account-deletion", {}, undefined, raw)).status).toBe(401);
     expect((await request("/delete-user", {}, undefined, raw)).status).toBe(401);
@@ -1512,7 +1546,6 @@ describe("SSO-only account deletion", () => {
   it("refuses newly minted sessions that did not authenticate with OIDC", async () => {
     setup();
     await signIn();
-    // A valid server-side session alone must not manufacture provider proof.
     state.db.session!.push({
       ...rows("session")[0],
       id: "unproven-session",
@@ -1603,7 +1636,6 @@ it("counts only stored OIDC subjects bound to the current issuer", async () => {
 describe("directory accounts", () => {
   const now = () => new Date();
 
-  /** An account the directory made: no login yet, its profile managed by the directory. */
   function provisionedAccount(id = "provisioned-1", email = "sso@example.test") {
     rows("user").push({
       id,
@@ -1656,7 +1688,6 @@ describe("directory accounts", () => {
     expect(rows("user")).toHaveLength(1);
     expect(rows("account")).toEqual([expect.objectContaining({ userId, providerId: "oidc" })]);
     expect(rows("user")[0]?.emailVerified).toBe(true);
-    // The link is now the account's own; signing in again needs no claim.
     cookies = "";
     expect((await signIn()).headers.get("location")).toBe(`${origin}/app`);
   });
@@ -1666,7 +1697,6 @@ describe("directory accounts", () => {
     provisionedAccount();
     expect((await signIn()).headers.get("location")).toBe(`${origin}/app`);
 
-    // An account the directory no longer provisions follows the signup policy again.
     cookies = "";
     provisionedAccount("provisioned-2", "second@example.test");
     provisionedUsers.delete("provisioned-2");
@@ -1684,14 +1714,8 @@ describe("directory accounts", () => {
       () => provisionedAccount(),
       { sub: "subject-1", email: "sso@example.test", email_verified: false },
     ],
+    ["someone already signed in to it", () => signedInUsers.add(provisionedAccount()), undefined],
     [
-      // An emailed code leaves no login row, only the workspace the first sign-in made.
-      "someone already signed in to it",
-      () => signedInUsers.add(provisionedAccount()),
-      undefined,
-    ],
-    [
-      // Nothing is linked to an account while it is off, so turning it back on adds no login.
       "the account is deactivated",
       () => {
         const userId = provisionedAccount();
@@ -2006,7 +2030,6 @@ describe.each(["google", "apple"] as const)("%s ordinary OAuth boundary", (provi
     rows("user")[0]!.emailVerified = true;
     Object.assign(rows("account")[0]!, { providerId, accountId: "own-subject", password: null });
     const provider = (await auth.$context).socialProviders.find((p) => p.id === providerId)!;
-    // Replace only remote signing-key retrieval; verify signature, issuer, audience and nonce.
     if (!provider.idToken || !("jwks" in provider.idToken)) throw new Error("Missing verifier");
     provider.idToken.jwks = async () => publicKey as never;
     return String(rows("session")[0]!.token);
@@ -2241,7 +2264,6 @@ it.each([
         nonce: authorization.searchParams.get("nonce"),
       }),
     });
-    // The returning browser sends no native header or attribution cookie.
     const response = await request(
       `/callback/${providerId}?code=offline-code&state=${authorization.searchParams.get("state")}`,
     );

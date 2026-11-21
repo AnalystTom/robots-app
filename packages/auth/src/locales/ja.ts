@@ -28,8 +28,12 @@ export const JA_MESSAGES: Record<string, string> = {
   "Get the apps": "アプリを入手する",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots は {platforms} で使えるので、ボットはどこにいてもあなたに連絡できます。",
-  "Questions? Just reply.": "ご質問は、このメールに返信するだけでどうぞ。",
-  "The RoBots team": "RoBots チーム",
+  "Star us on GitHub": "GitHub でスターを付ける",
+  "RoBots is open source. {star} helps more people find it.":
+    "RoBots はオープンソースです。{star} は、より多くの人が RoBots を見つける助けになります。",
+  "A star on GitHub": "GitHub のスター",
+  "Questions? Just reply. We read every one.":
+    "質問があれば、このメールに返信してください。すべて読んでいます。",
   Unsubscribe: "配信停止",
   "Invite a friend": "友だちを招待",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

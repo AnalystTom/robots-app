@@ -45,10 +45,9 @@ test("an owner invites someone by link and both see the space's members", async 
   expect(inviteUrl).toMatch(/\/invite\//);
   await captureScreenshot(ownerPage, testInfo, "space-members-owner");
 
-  // A signed-out invitee signs in first and comes back to the invite.
   const invitePath = new URL(inviteUrl).pathname;
   await inviteePage.goto(invitePath);
-  await expect(inviteePage).toHaveURL(/\/sign-in\?next=%2Finvite%2F/);
+  await expect(inviteePage).toHaveURL(/\/sign-up\?next=%2Finvite%2F/);
 
   await signup(inviteePage, `share-invitee-${stamp}@robots.test`, "password12", "Bob Invitee");
   await completeOnboarding(inviteePage);
@@ -70,7 +69,6 @@ test("an owner invites someone by link and both see the space's members", async 
   await expect(inviteeSettings.getByRole("button", { name: "Leave space" })).toBeVisible();
   await captureScreenshot(inviteePage, testInfo, "space-members-member");
 
-  // Both people talk to one bot in the shared space; each sees who wrote what.
   const inHome = { "x-robots-space-id": home.id };
   const post = async <T>(path: string, json: unknown) =>
     ownerPage.request
@@ -91,8 +89,6 @@ test("an owner invites someone by link and both see the space's members", async 
     computerMode: "team",
     color: "#2A92FE",
   });
-  // Each person reads for themselves: what Ada writes is new to Bob, not to her. Bob is in
-  // another chat first, so his shell does not open Family, and read it, when it appears.
   const familyRow = (page: Page) =>
     page.locator("aside").first().locator(`[data-roster-bot-id="${bot.id}"]`);
   await openBotInSpace(inviteePage, home.id, planner.id, "Planner");
@@ -114,7 +110,6 @@ test("an owner invites someone by link and both see the space's members", async 
   await expect(ownerPage.getByText("Bob Invitee", { exact: true })).toBeVisible();
   await captureScreenshot(ownerPage, testInfo, "shared-thread-owner");
 
-  // A group in the shared space: each bot's reply is named and in its own color.
   const group = await post<{ id: string }>("groups/create", {
     name: "Household",
     botIds: [bot.id, planner.id],
@@ -126,8 +121,6 @@ test("an owner invites someone by link and both see the space's members", async 
   await expect(inviteePage.getByText("Planner", { exact: true }).last()).toBeVisible();
   await captureScreenshot(inviteePage, testInfo, "shared-group-invitee");
 
-  // The link was single use. Leave the chat first: its open streams react to the session
-  // change and navigate the page, which aborts the next sign-up navigation.
   await inviteePage.goto("about:blank");
   await invitee.clearCookies();
   await signup(inviteePage, `share-late-${stamp}@robots.test`, "password12", "Late Invitee");

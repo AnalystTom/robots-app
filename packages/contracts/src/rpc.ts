@@ -312,6 +312,7 @@ export const OrganizationListSchema = z.object({
       defaultSpaceId: Id,
       spaceIds: z.array(Id),
       canManage: z.boolean(),
+      personal: z.boolean(),
     }),
   ),
 });

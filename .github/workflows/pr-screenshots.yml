@@ -24,7 +24,7 @@ concurrency:
 jobs:
   screenshot-context:
     name: Gather screenshot context
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 5
     permissions:
       actions: read
@@ -103,7 +103,7 @@ jobs:
     name: Screenshot the change
     needs: screenshot-context
     if: needs.screenshot-context.outputs.pr != ''
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 30
     # Only Codex uses the shared login; other agents get a run-specific group.
     concurrency:
@@ -122,6 +122,12 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
+      - name: Require passwordless sudo
+        run: |
+          if ! sudo -n true 2>/dev/null; then
+            echo "::error::This job needs passwordless sudo to run the browser and agent as separate users."
+            exit 1
+          fi
       - name: Recheck the queued commit
         id: current
         env:
@@ -264,7 +270,7 @@ jobs:
       - name: Remove subscription login and logs
         if: always() && env.SCREENSHOT_AGENT == 'codex'
         run: |
-          sudo rm -rf /home/codex-screenshots/.codex /srv/pr-screenshot-agent
+          sudo -n rm -rf /home/codex-screenshots/.codex /srv/pr-screenshot-agent
           rm -rf "$RUNNER_TEMP/screenshot-codex" "$RUNNER_TEMP/screenshot-auth.json" "$RUNNER_TEMP/codex-mcp.json"
       - name: Collect screenshots
         if: steps.claude.outputs.structured_output != '' || steps.codex.outputs.result != ''
@@ -287,7 +293,7 @@ jobs:
     name: Add screenshots to the pull request
     needs: screenshots
     if: needs.screenshots.outputs.result != ''
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 10
     concurrency:
       group: pr-screenshot-publication-${{ inputs.pull_request }}

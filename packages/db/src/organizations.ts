@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Actor, OrganizationList } from "@robots/contracts";
 import { GUEST_ROLE, LIVE_ORGANIZATION as LIVE } from "./billing.js";
-import { createOrganizationWithDefaultSpace } from "./bootstrap-user.js";
+import { createOrganizationWithDefaultSpace, personalOrganizationSlug } from "./bootstrap-user.js";
 import type { PrismaClient } from "./client.js";
 import { Prisma } from "./client.js";
 import { IsolationError } from "./scope.js";
@@ -87,6 +87,7 @@ export async function listMemberOrganizations(
       select: {
         id: true,
         name: true,
+        slug: true,
         spaces: { where: { isDefault: true }, select: { id: true }, take: 1 },
         members: { where: { userId: actor.userId }, select: { role: true }, take: 1 },
         _count: { select: { members: { where: { role: { not: GUEST_ROLE } } } } },
@@ -104,12 +105,10 @@ export async function listMemberOrganizations(
       id: organization.id,
       name: organization.name,
       defaultSpaceId: organization.spaces[0]!.id,
-      // Phase one manages only organizations their owner has to themselves.
       canManage:
         organization._count.members === 1 &&
         organization.members.some((member) => member.role.includes("owner")),
-      // Spaces shared with them as a guest show beside the active organization's, as in the
-      // sidebar.
+      personal: organization.slug === personalOrganizationSlug(actor.userId),
       spaceIds: memberships
         .filter((membership) =>
           membership.member.role === GUEST_ROLE

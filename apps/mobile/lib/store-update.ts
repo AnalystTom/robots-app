@@ -1,12 +1,13 @@
-import { IOS_APP_STORE_URL } from "@robots/contracts";
+import { MOBILE_APP_LINKS } from "@robots/contracts";
+import { bestEffort } from "@robots/logging";
 import { useQuery } from "@tanstack/react-query";
 import * as Application from "expo-application";
 import { Linking, Platform } from "react-native";
 import { queryClient } from "./query";
 
 const STORE_LOOKUP_URL = "https://itunes.apple.com/lookup";
+const IOS_LISTING = MOBILE_APP_LINKS.ios;
 
-/** True when dotted version `latest` is ahead of `current`; false when either is unreadable. */
 export function isNewerVersion(latest: string, current: string): boolean {
   const parse = (value: string) =>
     /^\d+(\.\d+)*$/.test(value) ? value.split(".").map(Number) : null;
@@ -20,7 +21,6 @@ export function isNewerVersion(latest: string, current: string): boolean {
   return false;
 }
 
-/** The version the App Store currently offers for this app, or null when it cannot say. */
 export async function fetchStoreVersion(bundleId: string): Promise<string | null> {
   const response = await fetch(
     `${STORE_LOOKUP_URL}?bundleId=${encodeURIComponent(bundleId)}&_=${Date.now()}`,
@@ -31,9 +31,8 @@ export async function fetchStoreVersion(bundleId: string): Promise<string | null
   return typeof version === "string" ? version : null;
 }
 
-/** Whether the App Store has a newer native build than the one installed. iOS only. */
-export function useStoreUpdateAvailable(): boolean {
-  const bundleId = Platform.OS === "ios" ? Application.applicationId : null;
+export function useStoreUpdate(): (() => void) | null {
+  const bundleId = Platform.OS === "ios" && IOS_LISTING ? Application.applicationId : null;
   const installed = Application.nativeApplicationVersion;
   const { data } = useQuery(
     {
@@ -44,9 +43,7 @@ export function useStoreUpdateAvailable(): boolean {
     },
     queryClient,
   );
-  return Boolean(data && installed && isNewerVersion(data, installed));
-}
-
-export function openStoreListing(): void {
-  void Linking.openURL(IOS_APP_STORE_URL).catch(() => undefined);
+  const listing = IOS_LISTING;
+  if (!listing || !data || !installed || !isNewerVersion(data, installed)) return null;
+  return () => void bestEffort("open store listing", Linking.openURL(listing));
 }

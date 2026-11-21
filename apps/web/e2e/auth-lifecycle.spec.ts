@@ -133,7 +133,6 @@ test(
 
 test("a deactivated account's sign-in says so", async ({ page }, testInfo) => {
   await page.route("**/api/auth/get-session**", (route) => route.fulfill({ json: null }));
-  // Where a refused SSO sign-in lands; password and code sign-in show the same text.
   await page.goto("/sign-in?error=ACCOUNT_DEACTIVATED");
   await expect(page.getByText("This account is deactivated")).toBeVisible();
   await captureScreenshot(page, testInfo, "sign-in-account-deactivated");
@@ -190,8 +189,6 @@ test("logout protects bot deep links and sign-in restores the session", async ({
 
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
-  // Sign-out usually overlaps a bot refresh that the server rejects; wait for every
-  // refresh that started so an unhandled rejection would surface before the assertion.
   const refreshes: Promise<unknown>[] = [];
   const trackRefresh = (request: Request) => {
     if (request.url().includes("/rpc/spaces/list")) refreshes.push(request.response());
@@ -203,14 +200,15 @@ test("logout protects bot deep links and sign-in restores the session", async ({
   await Promise.all(refreshes);
   await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 250)));
   expect(pageErrors).toEqual([]);
-  // Someone who has signed in here before reopens the app to sign in, not to a new account.
   await page.goto("/");
   await expect(page).toHaveURL(/\/sign-in$/);
   await expect(page.getByRole("heading", { name: "Sign in to RoBots" })).toBeVisible();
   await captureScreenshot(page, testInfo, "37-logged-out-returning");
 
+  const backToBot = (url: URL) =>
+    url.pathname.startsWith("/sign-in") && url.searchParams.get("next") === protectedBotPath;
   await page.goto(protectedBotPath);
-  await page.waitForURL((url) => url.pathname === "/sign-in");
+  await page.waitForURL(backToBot);
   await expect(page.getByRole("heading", { name: "Sign in to RoBots" })).toBeVisible();
   await expect(page.getByText("Chief", { exact: true })).toHaveCount(0);
   await expect(page.getByText(userName, { exact: true })).toHaveCount(0);
@@ -230,7 +228,7 @@ test("logout protects bot deep links and sign-in restores the session", async ({
       .locator("form")
       .getByText(/invalid email or password|invalid credentials|incorrect password/i),
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page).toHaveURL(backToBot);
   await captureScreenshot(page, testInfo, "39-invalid-credentials");
 
   await page.getByPlaceholder("Password").fill(password);
@@ -261,13 +259,10 @@ test("logout protects bot deep links and sign-in restores the session", async ({
 
   const message = "Fake composer regression check.";
   await composer.fill(message);
-  // The transcript is optimistic; wait for the previous send to finish before
-  // testing Enter again, just as the enabled Send control requires.
   await expect(page.getByRole("button", { name: "Send", exact: true })).toBeEnabled();
   await captureScreenshot(page, testInfo, "40-restored-auth-session");
   await composer.press("Enter");
   await expect(composer).toHaveValue("");
-  // Scope to the transcript: the sidebar activity row can echo the same text.
   await expect(page.getByTestId("transcript").getByText(message, { exact: true })).toBeVisible();
 });
 
@@ -339,7 +334,6 @@ test("changes and recovers an email password", async ({ page }, testInfo) => {
   await captureScreenshot(page, testInfo, "42-password-reset-requested");
 
   const emailApi = process.env.API_URL ?? "http://127.0.0.1:3110";
-  // Workers share one outbox, so read only this user's mail.
   const sentToUser = async () => {
     const response = await page.request.get(`${emailApi}/__e2e/emails`);
     expect(response.headers()["cache-control"]).toBe("no-store");

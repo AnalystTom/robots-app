@@ -1,3 +1,4 @@
+import type * as Contracts from "@robots/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const updates = vi.hoisted(() => ({
@@ -24,14 +25,22 @@ const rn = vi.hoisted(() => {
   };
 });
 
+const links = vi.hoisted((): { ios?: string; android?: string } => ({}));
+
 vi.mock("expo-updates", () => updates);
+vi.mock("@robots/contracts", async (importOriginal) => ({
+  ...(await importOriginal<typeof Contracts>()),
+  MOBILE_APP_LINKS: links,
+}));
 vi.mock("react-native", () => rn);
 vi.mock("./api-server", () => ({}));
 vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
-vi.mock("./api", () => ({ configureClientBuild: vi.fn() }));
+vi.mock("./api", () => ({
+  configureClientBuild: vi.fn(),
+  currentApiBase: () => "https://server.example",
+}));
 
-import { IOS_APP_STORE_URL } from "@robots/contracts";
 import {
   clientBuildHeaders,
   FOREGROUND_UPDATE_CHECK_MS,
@@ -41,6 +50,7 @@ import {
 } from "./client-update";
 
 afterEach(() => {
+  delete links.ios;
   updates.isEnabled = true;
   updates.createdAt = new Date("2026-10-22T09:30:15Z");
   vi.clearAllMocks();
@@ -69,12 +79,18 @@ describe("mobile client build", () => {
 });
 
 describe("update required", () => {
-  it("shows one alert, then applies an available update and reloads", async () => {
-    updates.checkForUpdateAsync.mockResolvedValueOnce({ isAvailable: true });
+  it("applies an available update and reloads when no store lists RoBots", async () => {
+    updates.checkForUpdateAsync
+      .mockResolvedValueOnce({ isAvailable: true })
+      .mockResolvedValueOnce({ isAvailable: true });
     noteClientUpdateRequired();
     noteClientUpdateRequired();
+    await flush();
     expect(rn.Alert.alert).toHaveBeenCalledOnce();
     expect(rn.Alert.alert.mock.calls[0]?.[0]).toBe("Update required");
+    expect(rn.Alert.alert.mock.calls[0]?.[2]).toEqual([
+      expect.objectContaining({ text: "Update" }),
+    ]);
     expect(rn.Alert.alert.mock.calls[0]?.[3]).toEqual({ cancelable: false });
     pressUpdate();
     await flush();
@@ -83,14 +99,36 @@ describe("update required", () => {
     expect(rn.Linking.openURL).not.toHaveBeenCalled();
   });
 
-  it("opens the store when no over-the-air update can fix it, and asks again next time", async () => {
+  it("opens the server's web app when no store lists RoBots and no update is available, and asks again", async () => {
     noteClientUpdateRequired();
+    await flush();
+    expect(rn.Alert.alert.mock.calls[0]?.[1]).toMatch(/not in the app store yet/);
+    expect(rn.Alert.alert.mock.calls[0]?.[2]).toEqual([
+      expect.objectContaining({ text: "Open on the web" }),
+    ]);
     pressUpdate();
     await flush();
+    expect(updates.fetchUpdateAsync).not.toHaveBeenCalled();
     expect(updates.reloadAsync).not.toHaveBeenCalled();
-    expect(rn.Linking.openURL).toHaveBeenCalledWith(IOS_APP_STORE_URL);
+    expect(rn.Linking.openURL).toHaveBeenCalledWith("https://server.example");
     noteClientUpdateRequired();
+    await flush();
     expect(rn.Alert.alert).toHaveBeenCalledTimes(2);
+    pressUpdate();
+    await flush();
+  });
+
+  it("opens the store once it is listed", async () => {
+    links.ios = "https://ios.example/app";
+    noteClientUpdateRequired();
+    expect(rn.Alert.alert.mock.calls[0]?.[1]).toBeUndefined();
+    expect(rn.Alert.alert.mock.calls[0]?.[2]).toEqual([
+      expect.objectContaining({ text: "Update" }),
+    ]);
+    pressUpdate();
+    await flush();
+    expect(rn.Linking.openURL).toHaveBeenCalledWith("https://ios.example/app");
+    expect(updates.reloadAsync).not.toHaveBeenCalled();
   });
 });
 
@@ -111,7 +149,6 @@ describe("foreground update checks", () => {
     await flush();
     expect(updates.checkForUpdateAsync).toHaveBeenCalledOnce();
     expect(updates.fetchUpdateAsync).toHaveBeenCalledOnce();
-    // Downloaded for the next launch; nothing reloads under the user.
     expect(updates.reloadAsync).not.toHaveBeenCalled();
     now += FOREGROUND_UPDATE_CHECK_MS - 1;
     emit("background");

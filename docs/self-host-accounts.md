@@ -101,13 +101,23 @@ SMTP_URL=smtps://smtp-user:replace-with-password@smtp.example.com:465
 EMAIL_FROM=RoBots <no-reply@example.com>
 ```
 
-Set `EMAIL_REPLY_TO` to send replies somewhere other than `EMAIL_FROM`.
+Set `EMAIL_REPLY_TO` to send replies somewhere other than `EMAIL_FROM`. Links in verification and
+reset emails use `BETTER_AUTH_URL`, which defaults to `WEB_ORIGIN`, so set it to the public app
+address, such as `https://app.tryrobots.app`.
 
 `EMAIL_PROVIDER=smtp` is optional: an existing `SMTP_URL` continues to select SMTP when no provider
 is specified. `EMAIL_PROVIDER=none` disables external sending. Explicit provider settings take
 precedence over an old `SMTP_URL`; incomplete or unknown provider configurations fail at startup.
 
-Resend also supports SMTP: use `smtp.resend.com`, username `resend`, and an API key as the password. For Amazon
+For Resend over SMTP, use username `resend` and a sending API key as the password. RoBots Cloud
+sends with:
+
+```env
+SMTP_URL=smtps://resend:replace-with-sending-api-key@smtp.resend.com:465
+EMAIL_FROM=RoBots <no-reply@tryrobots.app>
+```
+
+The sending domain must be verified in Resend; a self-hosted server uses its own domain. For Amazon
 SES, use the regional SMTP endpoint and SES SMTP credentials; these are different from ordinary AWS
 access keys. Verify the sender/domain with the provider before testing delivery. Keep credentials in
 `.env`, never in tracked files. `smtps://` uses implicit TLS; `smtp://` is also supported but requires

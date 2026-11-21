@@ -19,7 +19,7 @@ describe("OpenRouter attribution and usage recovery", () => {
     );
     const init = fetcher.mock.calls[0]![1]!;
     const headers = new Headers(init.headers);
-    expect(headers.get("HTTP-Referer")).toBe("https://tryrobots.app/");
+    expect(headers.get("HTTP-Referer")).toBe("https://tryrobots.app");
     expect(headers.get("X-OpenRouter-Title")).toBe("RoBots");
     expect(headers.get("Authorization")).toBe("Bearer fixture");
     expect(init.signal).toBe(controller.signal);
@@ -138,7 +138,6 @@ describe("OpenRouter attribution and usage recovery", () => {
     const server = createServer((request, response) => {
       if (request.url?.includes("gen-missing")) {
         response.writeHead(404, { "content-type": "application/json" });
-        // Keep a large body unread and unfinished until the client cancels it.
         response.write("x".repeat(256 * 1024));
         return;
       }
@@ -154,7 +153,6 @@ describe("OpenRouter attribution and usage recovery", () => {
         headers: Object.fromEntries(new Headers(init?.headers)),
         redirect: init?.redirect,
         dispatcher: pool,
-        // The next lookup must finish before the missing lookup's five-second timeout.
         signal:
           url.searchParams.get("id") === "gen-found"
             ? AbortSignal.any([init!.signal!, AbortSignal.timeout(1500)])

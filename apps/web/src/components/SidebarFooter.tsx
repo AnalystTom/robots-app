@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { NavLink } from "@robots/contracts";
-import { ANDROID_APP_STORE_URL, IOS_APP_STORE_URL } from "@robots/contracts";
+import { mobileAppLinkFor } from "@robots/contracts";
 import {
   AppMarkStack,
   Button,
@@ -29,6 +29,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { Organization } from "../lib/organizations";
 import { useSidebarUpdate } from "./DesktopUpdates";
 import { IconTooltip } from "./IconTooltip";
+import { OrganizationName } from "./OrganizationName";
 
 type Props = {
   mini?: boolean;
@@ -46,7 +47,6 @@ type Props = {
   onLink?: (link: NavLink) => void;
   onArtifacts: () => void;
   onSettings: () => void;
-  /** How much of the member's allowance is used; the Usage row shows only with one. */
   usage?: string | null;
   onUsage?: () => void;
   onInvite?: () => void;
@@ -58,7 +58,6 @@ type Props = {
   onSwitchOrganization?: (organization: Organization) => void;
 };
 
-// Marks are 24px wide, overlap by 2px, and need 2px for the outer ring.
 export function sidebarMarkCount(availableWidth: number) {
   return Math.max(0, Math.min(3, Math.floor((availableWidth - 26) / 22) + 1));
 }
@@ -90,6 +89,7 @@ export function SidebarFooter({
   onSwitchOrganization,
 }: Props) {
   const { t } = useLingui();
+  const mobileAppLink = mobileAppLinkFor(navigator.userAgent, navigator.maxTouchPoints);
   const update = useSidebarUpdate();
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const pillRef = useRef<HTMLButtonElement>(null);
@@ -167,7 +167,7 @@ export function SidebarFooter({
                       className="h-9 w-full justify-between gap-2.5 font-normal"
                       onClick={() => onSwitchOrganization?.(organization)}
                     >
-                      <span className="min-w-0 truncate">{organization.name}</span>
+                      <OrganizationName organization={organization} organizations={organizations} />
                       {active ? <Check aria-hidden="true" strokeWidth={1.75} /> : null}
                     </Button>
                   );
@@ -245,17 +245,17 @@ export function SidebarFooter({
               </Button>
             ))}
             <div className="my-1 border-t border-border" />
-            <a
-              className={`${buttonVariants({ variant: "ghost" })} h-9 w-full justify-start gap-2.5 font-normal`}
-              href={
-                /Android/i.test(navigator.userAgent) ? ANDROID_APP_STORE_URL : IOS_APP_STORE_URL
-              }
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Smartphone className="text-muted-foreground" strokeWidth={1.75} />
-              <Trans>Get the mobile app</Trans>
-            </a>
+            {mobileAppLink ? (
+              <a
+                className={`${buttonVariants({ variant: "ghost" })} h-9 w-full justify-start gap-2.5 font-normal`}
+                href={mobileAppLink}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Smartphone className="text-muted-foreground" strokeWidth={1.75} />
+                <Trans>Get the mobile app</Trans>
+              </a>
+            ) : null}
             {onInvite ? (
               <Button
                 variant="ghost"

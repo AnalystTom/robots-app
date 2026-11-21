@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import type { DesktopUpdateState } from "@robots/contracts";
+import type * as MobileAppLinks from "@robots/contracts/mobile-app-links";
 import { Toaster } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { act } from "react";
@@ -7,6 +8,13 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { DesktopUpdatesProvider } from "./DesktopUpdates";
 import { SidebarFooter, sidebarMarkCount } from "./SidebarFooter";
+
+const mobileLinks = vi.hoisted((): { ios?: string; android?: string } => ({}));
+
+vi.mock("@robots/contracts/mobile-app-links", async (importOriginal) => ({
+  ...(await importOriginal<typeof MobileAppLinks>()),
+  MOBILE_APP_LINKS: mobileLinks,
+}));
 
 vi.mock("@lingui/react/macro", () => ({
   useLingui: () => ({
@@ -23,6 +31,8 @@ beforeEach(() => {
   root = createRoot(host);
 });
 afterEach(async () => {
+  delete mobileLinks.ios;
+  delete mobileLinks.android;
   await act(async () => root.unmount());
   host.remove();
   delete window.robotsDesktop;
@@ -144,7 +154,6 @@ it("opens integrations and keeps the existing account actions and links", async 
     "Skills",
     "Artifacts",
     "Board",
-    "Get the mobile app",
     "Docs",
     "Log out",
   ]);
@@ -159,13 +168,45 @@ it("omits Board when unavailable", async () => {
   );
 });
 
-it("offers Google Play on Android", async () => {
-  vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Android");
+it.each(["Android", "iPhone", "Macintosh"])(
+  "offers no mobile app on %s while RoBots has no store listing",
+  async (userAgent) => {
+    vi.spyOn(navigator, "userAgent", "get").mockReturnValue(userAgent);
+    Object.defineProperty(navigator, "maxTouchPoints", { value: 0, configurable: true });
+    await render();
+    const menu = document.querySelector('[data-slot="popover-content"]')!;
+    expect(menu.textContent).not.toContain("Get the mobile app");
+  },
+);
+
+it("offers the visitor's own store listing when RoBots has one", async () => {
+  mobileLinks.ios = "https://apps.example/ios-robots";
+  vi.spyOn(navigator, "userAgent", "get").mockReturnValue("iPhone");
+  Object.defineProperty(navigator, "maxTouchPoints", { value: 0, configurable: true });
   await render();
-  const mobile = [...document.querySelectorAll("a")].find(
-    (link) => link.textContent === "Get the mobile app",
-  )!;
-  expect(mobile.href).toBe("https://tryrobots.app/#platforms");
+  const link = [...document.querySelectorAll('[data-slot="popover-content"] a')].find((a) =>
+    a.textContent?.includes("Get the mobile app"),
+  );
+  expect(link?.getAttribute("href")).toBe("https://apps.example/ios-robots");
+});
+
+it("offers the iOS listing to an iPad in desktop mode", async () => {
+  mobileLinks.ios = "https://apps.example/ios-robots";
+  vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Macintosh");
+  Object.defineProperty(navigator, "maxTouchPoints", { value: 5, configurable: true });
+  await render();
+  const link = [...document.querySelectorAll('[data-slot="popover-content"] a')].find((a) =>
+    a.textContent?.includes("Get the mobile app"),
+  );
+  expect(link?.getAttribute("href")).toBe("https://apps.example/ios-robots");
+});
+
+it("hides a store listing from the other platform", async () => {
+  mobileLinks.ios = "https://apps.example/ios-robots";
+  vi.spyOn(navigator, "userAgent", "get").mockReturnValue("Linux; Android 15");
+  await render();
+  const menu = document.querySelector('[data-slot="popover-content"]')!;
+  expect(menu.textContent).not.toContain("Get the mobile app");
 });
 
 it("falls back when app artwork fails and accepts replacement artwork", async () => {
@@ -195,7 +236,6 @@ it.each(["throw", "state"] as const)(
         message: "Update could not be installed",
       });
     await render();
-    // The notice is a toast, which mounts and leaves on the toaster's own timers.
     const notice = () => document.querySelector('[aria-label="Desktop update"]');
     const later = () =>
       [...notice()!.querySelectorAll("button")].find((button) => button.textContent === "Later")!;
@@ -250,6 +290,7 @@ const personal = {
   defaultSpaceId: "s1",
   spaceIds: ["s1"],
   canManage: true,
+  personal: true,
 };
 const work = {
   id: "org-work",
@@ -257,6 +298,7 @@ const work = {
   defaultSpaceId: "s2",
   spaceIds: ["s2"],
   canManage: true,
+  personal: false,
 };
 
 async function renderOrganizations(
@@ -304,4 +346,13 @@ it("lists two organizations with the active one checked", async () => {
   expect(rows[1]!.querySelector("svg")).toBeNull();
   await act(async () => rows[1]!.click());
   expect(onSwitch).toHaveBeenCalledWith(work);
+});
+
+it("marks the personal organization once another one shares its name", async () => {
+  const renamed = { ...personal, name: "Northwind" };
+  const rows = await renderOrganizations([renamed, { ...work, name: "Northwind" }]);
+  expect(rows.map((row) => row.textContent).slice(0, 2)).toEqual([
+    "NorthwindPersonal",
+    "Northwind",
+  ]);
 });

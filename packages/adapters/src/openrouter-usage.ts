@@ -3,7 +3,6 @@ import { cancelResponseBody, readBoundedJsonResponse } from "@robots/core";
 import { z } from "zod";
 import { readBoundedText } from "./connector-http.js";
 
-/** Attribution is restricted to OpenRouter inference endpoints, never compatible/custom hosts. */
 export function openRouterInferenceFetch(fetcher: typeof fetch, userId?: string): typeof fetch {
   return async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input));
@@ -19,7 +18,7 @@ export function openRouterInferenceFetch(fetcher: typeof fetch, userId?: string)
           ? input.headers
           : undefined,
     );
-    headers.set("HTTP-Referer", "https://tryrobots.app/");
+    headers.set("HTTP-Referer", "https://tryrobots.app");
     headers.set("X-OpenRouter-Title", "RoBots");
     const body = init?.body ?? (input instanceof Request ? await input.clone().text() : undefined);
     if (typeof body !== "string") throw new Error("OpenRouter inference requires a JSON body");
@@ -30,19 +29,15 @@ export function openRouterInferenceFetch(fetcher: typeof fetch, userId?: string)
 }
 
 const MAX_USAGE_RESPONSE_BYTES = 64 * 1024;
-// The lookup accepts only OpenRouter's own generation ids; an upstream message id is a 400.
 const GENERATION_ID = /^gen-[0-9A-Za-z-]{1,124}$/;
 
-/** The provider's error message, never echoed request data, so a failed lookup is diagnosable. */
 async function errorDetail(response: Response): Promise<string> {
   const { text } = await readBoundedText(response, 2048).catch(() => ({ text: "" }));
   let detail = text;
   try {
     const message = JSON.parse(text)?.error?.message;
     if (typeof message === "string") detail = message;
-  } catch {
-    /* Not JSON: keep the raw prefix. */
-  }
+  } catch {}
   return detail
     .replace(/[^\x20-\x7e]+/g, " ")
     .trim()
@@ -92,7 +87,6 @@ export class OpenRouterUsageLookup implements ModelUsageLookup {
       await readBoundedJsonResponse(response, MAX_USAGE_RESPONSE_BYTES),
     );
     if (data.id !== providerRequestId) throw new Error("Provider returned a different generation");
-    // A bring-your-own-key generation's total is only OpenRouter's fee.
     const upstreamCost = data.is_byok ? data.upstream_inference_cost : 0;
     if (data.total_cost === null || upstreamCost == null) return null;
     return {
