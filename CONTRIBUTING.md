@@ -130,7 +130,7 @@ capability config, fixtures, logs, or snapshots; use the encrypted secret store 
 
 ## Contact
 
-| Where                                                                | Use for                                               |
-| -------------------------------------------------------------------- | ----------------------------------------------------- |
-| [security@tryrobots.app](mailto:security@tryrobots.app)              | Vulnerabilities only — see [SECURITY.md](SECURITY.md) |
-| [GitHub issues](https://github.com/AnalystTom/robots-app/issues)     | Bugs, user and support questions                      |
+| Where                                                            | Use for                                               |
+| ---------------------------------------------------------------- | ----------------------------------------------------- |
+| [security@tryrobots.app](mailto:security@tryrobots.app)          | Vulnerabilities only — see [SECURITY.md](SECURITY.md) |
+| [GitHub issues](https://github.com/AnalystTom/robots-app/issues) | Bugs, user and support questions                      |
