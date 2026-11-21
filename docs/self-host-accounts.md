@@ -12,6 +12,20 @@ SIGNUP_ALLOWLIST=you@example.com,@company.com
 
 `SIGNUPS_ENABLED` and `SIGNUP_ALLOWLIST` come from the operator's environment on every start. An empty allowlist clears any old stored list; signup order never grants privileges.
 
+To open signup without email delivery, let new accounts come only through Google, Apple or OIDC:
+
+```env
+SIGNUPS_ENABLED=true
+SIGNUP_ALLOWLIST=
+AUTH_EMAIL_SIGNUP_ENABLED=false
+```
+
+`AUTH_EMAIL_SIGNUP_ENABLED=false` refuses every new account by email, whether by password or by
+emailed code, with the same answer as closed registration. Existing email accounts keep signing in
+with their password or a code. Sign-up pages then offer only the configured providers, which still
+follow `SIGNUPS_ENABLED`, the allowlist, and the provider's email verification described under
+[Google and Apple sign-in](#google-and-apple-sign-in). The default is `true`.
+
 Server configuration belongs in the operator's environment. App accounts cannot change signup policy,
 server integration credentials, or deployment updates, and cannot read deployment security logs.
 

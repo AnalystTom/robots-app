@@ -36,6 +36,7 @@ import {
   resolveSupervisorToken,
   uploadSizeFromEnv,
 } from "@robots/core";
+import { deploymentAdminEmails } from "@robots/db";
 import { getLogger, monitoringPseudonymSecret } from "@robots/logging";
 
 export { resolveCloudAgentProvider, resolveSandboxProvider } from "@robots/adapters";
@@ -44,6 +45,7 @@ const DEFAULT_WEB_ORIGIN = "http://127.0.0.1:5173";
 
 export interface AppEnv {
   passwordAuth?: boolean;
+  emailSignup?: boolean;
   breachedPasswordCheck?: boolean;
   oidc?: OidcConfig;
   social?: SocialAuthConfig;
@@ -194,6 +196,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   }
   for (const key of [
     "AUTH_PASSWORD_ENABLED",
+    "AUTH_EMAIL_SIGNUP_ENABLED",
     "AUTH_BREACHED_PASSWORD_CHECK_ENABLED",
     "OIDC_ALLOW_SIGNUP_BYPASS",
   ]) {
@@ -235,6 +238,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   const deploymentModel = resolveDeploymentModel(source);
   return {
     passwordAuth,
+    emailSignup: source.AUTH_EMAIL_SIGNUP_ENABLED !== "false",
     breachedPasswordCheck: source.AUTH_BREACHED_PASSWORD_CHECK_ENABLED === "true",
     oidc,
     social,
@@ -267,7 +271,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     userDevicesEnabled: source.USER_DEVICES_ENABLED !== "false",
     computerSettingsEnabled: source.COMPUTER_SETTINGS_ENABLED === "true",
     navLinks: parseNavLinks(source.ROBOTS_NAV_LINKS),
-    adminEmails: list(source.ROBOTS_ADMIN_EMAILS).map((email) => email.toLowerCase()),
+    adminEmails: deploymentAdminEmails(source.ROBOTS_ADMIN_EMAILS),
     ...phoneCallSettings(source),
     maxUploadSizeBytes: uploadSizeFromEnv(source),
     maxAttachmentsPerMessage: attachmentCountFromEnv(source),
