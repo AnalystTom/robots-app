@@ -122,6 +122,24 @@ export function socialTrustedOrigins(
     : [];
 }
 
+const PER_REQUEST_PARAMS = new Set(["state", "nonce", "code_challenge", "code_challenge_method"]);
+
+export function isDefaultAuthorizationRequest(value: string, expected: URL): boolean {
+  const url = URL.parse(value);
+  if (url?.origin !== expected.origin || url.pathname !== expected.pathname || url.hash) {
+    return false;
+  }
+  const keys = [...url.searchParams.keys()];
+  const expectedKeys = [...expected.searchParams.keys()];
+  if (new Set(keys).size !== keys.length || keys.length !== expectedKeys.length) return false;
+  return expectedKeys.every(
+    (name) =>
+      url.searchParams.has(name) &&
+      (PER_REQUEST_PARAMS.has(name) ||
+        url.searchParams.get(name) === expected.searchParams.get(name)),
+  );
+}
+
 export function googleEmailVerified(profile: {
   email?: string;
   email_verified?: boolean;

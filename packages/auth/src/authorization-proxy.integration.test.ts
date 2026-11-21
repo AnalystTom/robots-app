@@ -33,7 +33,7 @@ beforeEach(() => {
   });
 });
 
-async function nativeSignIn() {
+async function nativeSignIn(extra: Record<string, unknown> = {}) {
   const response = await auth.handler(
     new Request(`${baseURL}/api/auth/sign-in/social`, {
       method: "POST",
@@ -43,6 +43,7 @@ async function nativeSignIn() {
         callbackURL: "robots://sign-in",
         errorCallbackURL: "robots://sign-in",
         disableRedirect: true,
+        ...extra,
       }),
     }),
   );
@@ -119,6 +120,15 @@ describe("native authorization proxy", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it.each([
+    { loginHint: "victim@example.test" },
+    { scopes: ["https://www.googleapis.com/auth/drive"] },
+  ])("refuses a RoBots request from a sign-in that carried %o", async (extra) => {
+    const response = await proxy(await nativeSignIn(extra));
+    expect(response.status).toBe(400);
+    expect(response.headers.getSetCookie()).toEqual([]);
   });
 
   it("refuses a RoBots request with an extra parameter the server did not emit", async () => {

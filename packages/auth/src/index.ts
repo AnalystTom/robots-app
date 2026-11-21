@@ -20,7 +20,7 @@ import {
   SpaceDeletionInProgressError,
 } from "@robots/db";
 import type { BetterAuthOptions, BetterAuthPlugin } from "better-auth";
-import { betterAuth } from "better-auth";
+import { betterAuth, getAuthStateVerificationIdentifier } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import {
   APIError,
@@ -54,6 +54,7 @@ import type { AppleProviderConfig, GoogleProviderConfig, SocialAuthConfig } from
 import {
   appleUserInfo,
   googleEmailVerified,
+  isDefaultAuthorizationRequest,
   requestProviderId,
   socialTrustedOrigins,
 } from "./social.js";
@@ -110,7 +111,6 @@ export interface AuthEnv {
 
 type AuthSession = { id: string; userId: string };
 
-const authorizationURLIdentifier = (state: string) => `authorization-url:${state}`;
 const SEND_SIGN_IN_CODE_PATH = "/email-otp/send-verification-otp";
 const CODE_SIGN_IN_PATH = "/sign-in/email-otp";
 
@@ -529,13 +529,35 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
         }
         if (ctx.path === "/expo-authorization-proxy") {
           const authorizationURL = String(ctx.query?.authorizationURL ?? "");
+          const callbackURL = (providerId: string) =>
+            `${ctx.context.baseURL}/callback/${providerId}`;
           const state = URL.parse(authorizationURL)?.searchParams.get("state");
-          const minted = state
+          const stateRecord = state
             ? await ctx.context.internalAdapter.findVerificationValue(
-                authorizationURLIdentifier(state),
+                getAuthStateVerificationIdentifier(state),
               )
             : null;
-          if (!minted || minted.value !== authorizationURL || minted.expiresAt <= new Date()) {
+          const builtin = await Promise.all(
+            (env.social?.providers ?? []).map(async (provider) => {
+              const own = await ctx.context.socialProviders
+                .find((candidate) => candidate.id === provider.id)
+                ?.createAuthorizationURL({
+                  state: "probe",
+                  codeVerifier: "probe",
+                  redirectURI: callbackURL(provider.id),
+                  idTokenNonce: "probe",
+                });
+              return own !== undefined && isDefaultAuthorizationRequest(authorizationURL, own);
+            }),
+          );
+          const own =
+            builtin.some(Boolean) ||
+            (await discovery?.isAuthorizationRequest(
+              authorizationURL,
+              callbackURL("oidc"),
+              reauthenticating(stateRecord?.value),
+            ));
+          if (!own || !stateRecord || stateRecord.expiresAt <= new Date()) {
             throw new APIError("BAD_REQUEST", { message: "Invalid authorizationURL" });
           }
         }
@@ -672,20 +694,6 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
           });
         }
         const returned = ctx.context.returned;
-        if (
-          (ctx.path === "/sign-in/social" || ctx.path === "/link-social") &&
-          isRecord(returned) &&
-          typeof returned.url === "string"
-        ) {
-          const state = URL.parse(returned.url)?.searchParams.get("state");
-          if (state) {
-            await ctx.context.internalAdapter.createVerificationValue({
-              identifier: authorizationURLIdentifier(state),
-              value: returned.url,
-              expiresAt: new Date(Date.now() + 10 * 60_000),
-            });
-          }
-        }
         if (
           (ctx.path === "/get-access-token" || ctx.path === "/refresh-token") &&
           isRecord(returned) &&
@@ -973,6 +981,15 @@ function withoutToken(session: unknown): unknown {
   if (!isRecord(session)) return session;
   const { token: _token, ...rest } = session;
   return rest;
+}
+
+function reauthenticating(stateValue: string | undefined): boolean {
+  const state: unknown = stateValue ? JSON.parse(stateValue) : undefined;
+  return (
+    isRecord(state) &&
+    isRecord(state.serverContext) &&
+    typeof state.serverContext.reauthUserId === "string"
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

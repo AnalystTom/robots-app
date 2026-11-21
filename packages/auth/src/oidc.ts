@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { BetterAuthPlugin } from "better-auth";
 import { APIError, getOAuthState } from "better-auth/api";
 import { genericOAuth } from "better-auth/plugins";
+import { isDefaultAuthorizationRequest } from "./social.js";
 import type { TokenKey } from "./token-storage.js";
 import { openIdToken } from "./token-storage.js";
 
@@ -39,6 +40,7 @@ export function oidcDiscovery(config: OidcConfig) {
   });
   type Provider = Awaited<ReturnType<typeof generic.init>>["context"]["socialProviders"][number];
   let provider: Provider | undefined;
+  let resolveProvider: (() => Promise<Provider>) | undefined;
   let pending: Promise<Provider> | undefined;
   let nextAttempt = 0;
   let failures = 0;
@@ -106,6 +108,7 @@ export function oidcDiscovery(config: OidcConfig) {
       };
       schedule(0);
       const getProvider = () => (provider ? Promise.resolve(provider) : discover());
+      resolveProvider = getProvider;
       const lazy: Provider = {
         id: "oidc",
         name: config.name,
@@ -114,10 +117,7 @@ export function oidcDiscovery(config: OidcConfig) {
         createAuthorizationURL: async (data) => {
           const url = await (await getProvider()).createAuthorizationURL(data);
           const expectedUser = (await getOAuthState())?.serverContext?.reauthUserId;
-          if (typeof expectedUser === "string") {
-            url.searchParams.set("prompt", "login");
-            url.searchParams.set("max_age", "0");
-          }
+          if (typeof expectedUser === "string") reauthenticated(url);
           if (typeof data.idTokenNonce === "string" && data.idTokenNonce.length > 0) {
             await ctx.internalAdapter.createVerificationValue({
               identifier: `oidc-callback-${data.state}`,
@@ -199,11 +199,27 @@ export function oidcDiscovery(config: OidcConfig) {
   return {
     plugin,
     availability: () => availability,
+    isAuthorizationRequest: async (value: string, redirectURI: string, reauth: boolean) => {
+      if (!resolveProvider) return false;
+      const own = await (await resolveProvider()).createAuthorizationURL({
+        state: "probe",
+        codeVerifier: "probe",
+        redirectURI,
+        idTokenNonce: "probe",
+      });
+      return isDefaultAuthorizationRequest(value, reauth ? reauthenticated(own) : own);
+    },
     dispose: () => {
       disposed = true;
       clearTimeout(timer);
     },
   };
+}
+
+function reauthenticated(url: URL): URL {
+  url.searchParams.set("prompt", "login");
+  url.searchParams.set("max_age", "0");
+  return url;
 }
 
 export function oidcAccountSubject(issuer: string, subject: string) {

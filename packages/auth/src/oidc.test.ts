@@ -784,6 +784,22 @@ describe("OIDC callbacks", () => {
       expect(response.headers.get("location")).toBeNull();
     },
   );
+  it("refuses an SSO request from a sign-in that carried a login hint", async () => {
+    setup();
+    const response = await request("/sign-in/social", {
+      provider: "oidc",
+      callbackURL: `${origin}/app`,
+      errorCallbackURL: `${origin}/sign-in`,
+      disableRedirect: true,
+      loginHint: "victim@example.test",
+    });
+    const authorize = ((await response.json()) as { url: string }).url;
+    const proxied = await request(
+      `/expo-authorization-proxy?${new URLSearchParams({ authorizationURL: authorize })}`,
+    );
+    expect(proxied.status).toBe(400);
+    expect(proxied.headers.get("location")).toBeNull();
+  });
   it("closes the native proxy without SSO", async () => {
     setup({ oidc: undefined });
     const response = await request(
