@@ -440,7 +440,9 @@ function fixture({
     },
     userModelPreference: { findFirst: vi.fn(async () => null), findMany: vi.fn(async () => []) },
     userModelCredential: {
-      findMany: vi.fn(async () => (reviewCredential ? [reviewCredential] : [])),
+      findMany: vi.fn(async (args?: { where?: { provider?: unknown } }) =>
+        reviewCredential && args?.where?.provider ? [reviewCredential] : [],
+      ),
       findFirst: vi.fn(async () => reviewCredential),
     },
     userModelRoleChoice: {

@@ -20,6 +20,7 @@ describe("team chat engagement judge", () => {
     const prisma = {
       user: { findUnique: vi.fn(async () => null) },
       deploymentSettings: { findUnique: vi.fn(async () => null) },
+      userModelCredential: { findMany: vi.fn(async () => []) },
       userModelPreference: {
         findFirst: vi.fn(async () => ({
           credential: {
@@ -134,6 +135,7 @@ describe("team chat engagement judge", () => {
     const prisma = {
       user: { findUnique: vi.fn(async () => null) },
       deploymentSettings: { findUnique: vi.fn(async () => null) },
+      userModelCredential: { findMany: vi.fn(async () => []) },
       userModelPreference: {
         findFirst: vi.fn(async () => ({
           credential: {
@@ -215,6 +217,7 @@ describe("team chat engagement judge", () => {
     const prisma = {
       user: { findUnique: vi.fn(async () => null) },
       deploymentSettings: { findUnique: vi.fn(async () => null) },
+      userModelCredential: { findMany: vi.fn(async () => []) },
       userModelPreference: {
         findFirst: vi.fn(async () => ({
           credential: {
@@ -289,6 +292,7 @@ describe("team chat engagement judge", () => {
     const prisma = {
       user: { findUnique: vi.fn(async () => null) },
       deploymentSettings: { findUnique: vi.fn(async () => null) },
+      userModelCredential: { findMany: vi.fn(async () => []) },
       userModelPreference: {
         findFirst: vi.fn(async () => ({
           credential: {
@@ -369,6 +373,7 @@ describe("team chat engagement judge", () => {
     const prisma = {
       user: { findUnique: vi.fn(async () => null) },
       deploymentSettings: { findUnique: vi.fn(async () => null) },
+      userModelCredential: { findMany: vi.fn(async () => []) },
       userModelPreference: { findFirst: vi.fn(async () => null) },
       $transaction: async (work: (tx: unknown) => Promise<unknown>) =>
         work({ usageRecord: { createMany } }),
@@ -474,6 +479,7 @@ describe("team chat engagement judge", () => {
                   : null,
             },
             userModelCredential: {
+              findMany: async () => [],
               findFirst: async () => (personal ? { id: "personal" } : null),
             },
             secret: {
@@ -529,6 +535,7 @@ describe("team chat engagement judge", () => {
     const judge = new ModelTeamChatEngagementJudge({
       prisma: {
         deploymentSettings: { findUnique: async () => ({ modelCreditsEnabled: true }) },
+        userModelCredential: { findMany: vi.fn(async () => []) },
         userModelPreference: { findFirst: async () => null },
         space: { findUnique: async () => ({ organizationId: "org" }) },
         member: { findUnique: async () => ({ role: "owner" }) },
@@ -568,6 +575,7 @@ describe("team chat engagement judge", () => {
       const prisma = {
         user: { findUnique },
         deploymentSettings: { findUnique: vi.fn(async () => null) },
+        userModelCredential: { findMany: vi.fn(async () => []) },
         userModelPreference: { findFirst: vi.fn(async () => null) },
         usageRecord: { create: vi.fn(async () => ({ id: "usage-1" })) },
       };

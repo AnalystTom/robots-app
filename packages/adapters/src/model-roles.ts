@@ -81,9 +81,8 @@ export type MemberMainModel = ModelRoleChoice & {
 
 type MainModelClient = Pick<
   PrismaClient,
-  "spaceModelRoleChoice" | "userModelRoleChoice" | "spaceSettingOverride"
-> &
-  Pick<PrismaClient, "userModelPreference" | "userModelCredential">;
+  "spaceModelRoleChoice" | "userModelRoleChoice" | "spaceSettingOverride" | "userModelCredential"
+>;
 
 export async function memberMainChoice(
   prisma: MainModelClient,
@@ -94,34 +93,34 @@ export async function memberMainChoice(
 }
 
 async function connectedModelChoice(
-  prisma: Pick<PrismaClient, "userModelPreference" | "userModelCredential">,
+  prisma: Pick<PrismaClient, "userModelCredential">,
   scope: { userId: string },
 ): Promise<ModelRoleChoice | null> {
-  const [preferences, credentials] = await Promise.all([
-    prisma.userModelPreference.findMany({
-      where: { userId: scope.userId, modelId: { not: null } },
-      select: {
-        credentialId: true,
-        modelId: true,
-        thinkingLevel: true,
-        updatedAt: true,
-        credential: { select: { provider: true } },
+  const credentials = await prisma.userModelCredential.findMany({
+    where: { userId: scope.userId },
+    orderBy: newestModelCredentialOrder,
+    select: {
+      id: true,
+      provider: true,
+      userPreferences: {
+        where: { userId: scope.userId },
+        select: { credentialId: true, modelId: true, thinkingLevel: true, updatedAt: true },
       },
-    }),
-    prisma.userModelCredential.findMany({
-      where: { userId: scope.userId },
-      orderBy: newestModelCredentialOrder,
-      select: { id: true, provider: true },
-    }),
-  ]);
-  const preferred = preferences
-    .filter((preference) => usableModelId(preference.modelId))
+    },
+  });
+  const preferred = credentials
+    .flatMap((credential) =>
+      (credential.userPreferences ?? []).flatMap((preference) => {
+        const modelId = usableModelId(preference.modelId);
+        return modelId ? [{ ...preference, modelId, provider: credential.provider }] : [];
+      }),
+    )
     .sort(comparePreferenceOrder)[0];
   if (preferred) {
     const thinkingLevel = ThinkingLevelSchema.safeParse(preferred.thinkingLevel);
     return {
-      provider: canonicalPiProviderId(preferred.credential.provider),
-      modelId: usableModelId(preferred.modelId)!,
+      provider: canonicalPiProviderId(preferred.provider),
+      modelId: preferred.modelId,
       credentialId: preferred.credentialId,
       ...(thinkingLevel.success ? { thinkingLevel: thinkingLevel.data } : {}),
     };
