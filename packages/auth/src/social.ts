@@ -111,33 +111,6 @@ export function publicSignInProviders(
   return providers;
 }
 
-const AUTHORIZE_ENDPOINT: Record<BuiltinSocialProvider["id"], string> = {
-  google: "https://accounts.google.com/o/oauth2/v2/auth",
-  apple: "https://appleid.apple.com/auth/authorize",
-};
-
-const OWN_REQUEST_PARAMS = ["client_id", "redirect_uri"] as const;
-
-export function isOwnAuthorizationRequest(value: string, own: URL): boolean {
-  const url = URL.parse(value);
-  if (url?.origin !== own.origin || url.pathname !== own.pathname) return false;
-  return OWN_REQUEST_PARAMS.every((name) => {
-    const values = url.searchParams.getAll(name);
-    return values.length === 1 && values[0] === own.searchParams.get(name);
-  });
-}
-
-export function isBuiltinAuthorizationRequest(
-  provider: Pick<BuiltinSocialProvider, "id" | "clientId">,
-  redirectURI: string,
-  value: string,
-): boolean {
-  const own = new URL(AUTHORIZE_ENDPOINT[provider.id]);
-  own.searchParams.set("client_id", provider.clientId);
-  own.searchParams.set("redirect_uri", redirectURI);
-  return isOwnAuthorizationRequest(value, own);
-}
-
 export function socialTrustedOrigins(
   social: SocialAuthConfig | undefined,
   request?: Request,

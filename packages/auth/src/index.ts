@@ -20,7 +20,7 @@ import {
   SpaceDeletionInProgressError,
 } from "@robots/db";
 import type { BetterAuthOptions, BetterAuthPlugin } from "better-auth";
-import { betterAuth, getAuthStateVerificationIdentifier } from "better-auth";
+import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import {
   APIError,
@@ -54,7 +54,6 @@ import type { AppleProviderConfig, GoogleProviderConfig, SocialAuthConfig } from
 import {
   appleUserInfo,
   googleEmailVerified,
-  isBuiltinAuthorizationRequest,
   requestProviderId,
   socialTrustedOrigins,
 } from "./social.js";
@@ -111,6 +110,7 @@ export interface AuthEnv {
 
 type AuthSession = { id: string; userId: string };
 
+const authorizationURLIdentifier = (state: string) => `authorization-url:${state}`;
 const SEND_SIGN_IN_CODE_PATH = "/email-otp/send-verification-otp";
 const CODE_SIGN_IN_PATH = "/sign-in/email-otp";
 
@@ -529,24 +529,13 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
         }
         if (ctx.path === "/expo-authorization-proxy") {
           const authorizationURL = String(ctx.query?.authorizationURL ?? "");
-          const callbackURL = (providerId: string) =>
-            `${ctx.context.baseURL}/callback/${providerId}`;
-          const builtin =
-            env.social?.providers.some((provider) =>
-              isBuiltinAuthorizationRequest(provider, callbackURL(provider.id), authorizationURL),
-            ) ?? false;
-          const own =
-            builtin ||
-            (await discovery?.isAuthorizationRequest(authorizationURL, callbackURL("oidc")));
-          const [state, ...otherStates] =
-            URL.parse(authorizationURL)?.searchParams.getAll("state") ?? [];
-          const issued =
-            state !== undefined && otherStates.length === 0
-              ? await ctx.context.internalAdapter.findVerificationValue(
-                  getAuthStateVerificationIdentifier(state),
-                )
-              : null;
-          if (!own || !issued || issued.expiresAt <= new Date()) {
+          const state = URL.parse(authorizationURL)?.searchParams.get("state");
+          const minted = state
+            ? await ctx.context.internalAdapter.findVerificationValue(
+                authorizationURLIdentifier(state),
+              )
+            : null;
+          if (!minted || minted.value !== authorizationURL || minted.expiresAt <= new Date()) {
             throw new APIError("BAD_REQUEST", { message: "Invalid authorizationURL" });
           }
         }
@@ -683,6 +672,20 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
           });
         }
         const returned = ctx.context.returned;
+        if (
+          (ctx.path === "/sign-in/social" || ctx.path === "/link-social") &&
+          isRecord(returned) &&
+          typeof returned.url === "string"
+        ) {
+          const state = URL.parse(returned.url)?.searchParams.get("state");
+          if (state) {
+            await ctx.context.internalAdapter.createVerificationValue({
+              identifier: authorizationURLIdentifier(state),
+              value: returned.url,
+              expiresAt: new Date(Date.now() + 10 * 60_000),
+            });
+          }
+        }
         if (
           (ctx.path === "/get-access-token" || ctx.path === "/refresh-token") &&
           isRecord(returned) &&

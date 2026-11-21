@@ -109,13 +109,31 @@ describe("native authorization proxy", () => {
   });
 
   it("refuses a RoBots request whose state has expired", async () => {
-    const url = await nativeSignIn();
-    for (const row of state.db.verification ?? []) {
-      if (String(row.identifier).startsWith("auth-state:")) row.expiresAt = new Date(0);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const url = await nativeSignIn();
+      vi.setSystemTime(Date.now() + 11 * 60_000);
+      const response = await proxy(url);
+      expect(response.status).toBe(400);
+      expect(response.headers.getSetCookie()).toEqual([]);
+    } finally {
+      vi.useRealTimers();
     }
-    const response = await proxy(url);
+  });
+
+  it("refuses a RoBots request with an extra parameter the server did not emit", async () => {
+    const url = new URL(await nativeSignIn());
+    url.searchParams.set("login_hint", "someone@example.test");
+    const response = await proxy(url.href);
     expect(response.status).toBe(400);
     expect(response.headers.getSetCookie()).toEqual([]);
+  });
+
+  it("refuses a RoBots request whose scope was changed", async () => {
+    const url = new URL(await nativeSignIn());
+    url.searchParams.set("scope", "openid email https://www.googleapis.com/auth/drive");
+    const response = await proxy(url.href);
+    expect(response.status).toBe(400);
   });
 
   it("refuses a request that repeats its client", async () => {

@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import type { BetterAuthPlugin } from "better-auth";
 import { APIError, getOAuthState } from "better-auth/api";
 import { genericOAuth } from "better-auth/plugins";
-import { isOwnAuthorizationRequest } from "./social.js";
 import type { TokenKey } from "./token-storage.js";
 import { openIdToken } from "./token-storage.js";
 
@@ -46,7 +45,6 @@ export function oidcDiscovery(config: OidcConfig) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let disposed = false;
   let availability: "checking" | "available" | "unavailable" = "checking";
-  let resolveProvider: (() => Promise<Provider>) | undefined;
   const unavailable = () =>
     new APIError("SERVICE_UNAVAILABLE", {
       code: "SSO_UNAVAILABLE",
@@ -108,7 +106,6 @@ export function oidcDiscovery(config: OidcConfig) {
       };
       schedule(0);
       const getProvider = () => (provider ? Promise.resolve(provider) : discover());
-      resolveProvider = getProvider;
       const lazy: Provider = {
         id: "oidc",
         name: config.name,
@@ -202,15 +199,6 @@ export function oidcDiscovery(config: OidcConfig) {
   return {
     plugin,
     availability: () => availability,
-    isAuthorizationRequest: async (value: string, redirectURI: string) => {
-      if (!resolveProvider) return false;
-      const own = await (await resolveProvider()).createAuthorizationURL({
-        state: "probe",
-        codeVerifier: "probe",
-        redirectURI,
-      });
-      return isOwnAuthorizationRequest(value, own);
-    },
     dispose: () => {
       disposed = true;
       clearTimeout(timer);
