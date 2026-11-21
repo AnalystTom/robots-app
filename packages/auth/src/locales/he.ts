@@ -33,7 +33,7 @@ export const HE_MESSAGES: Record<string, string> = {
   "RoBots is open source. {star} helps more people find it.":
     "RoBots הוא קוד פתוח. {star} עוזר ליותר אנשים למצוא אותו.",
   "A star on GitHub": "כוכב ב-GitHub",
-  "Questions? Just reply. I read every one.": "שאלות? פשוט להשיב לאימייל. אני קורא כל תשובה.",
+  "Questions? Just reply. We read every one.": "שאלות? פשוט להשיב לאימייל. אנחנו קוראים כל תשובה.",
   Unsubscribe: "ביטול המינוי",
   "Invite a friend": "הזמנת חבר",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

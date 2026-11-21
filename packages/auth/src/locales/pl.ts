@@ -32,8 +32,8 @@ export const PL_MESSAGES: Record<string, string> = {
   "RoBots is open source. {star} helps more people find it.":
     "RoBots jest open source. {star} pomaga innym go znaleźć.",
   "A star on GitHub": "Gwiazdka na GitHubie",
-  "Questions? Just reply. I read every one.":
-    "Masz pytania? Po prostu odpowiedz. Czytam każdą wiadomość.",
+  "Questions? Just reply. We read every one.":
+    "Masz pytania? Po prostu odpowiedz. Czytamy każdą wiadomość.",
   Unsubscribe: "Zrezygnuj z otrzymywania wiadomości",
   "Invite a friend": "Zaproś znajomego",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

@@ -63,7 +63,7 @@ export function welcomeEmail(
           ),
         })}
       </Text>
-      <Text style={{ marginTop: "28px" }}>{say("Questions? Just reply. I read every one.")}</Text>
+      <Text style={{ marginTop: "28px" }}>{say("Questions? Just reply. We read every one.")}</Text>
       <Text>The RoBots team</Text>
     </>,
     unsubscribeUrl,

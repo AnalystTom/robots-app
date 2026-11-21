@@ -34,7 +34,7 @@ export const JA_MESSAGES: Record<string, string> = {
   "RoBots is open source. {star} helps more people find it.":
     "RoBots はオープンソースです。{star} は、より多くの人が RoBots を見つける助けになります。",
   "A star on GitHub": "GitHub のスター",
-  "Questions? Just reply. I read every one.":
+  "Questions? Just reply. We read every one.":
     "質問があれば、このメールに返信してください。すべて読んでいます。",
   Unsubscribe: "配信停止",
   "Invite a friend": "友だちを招待",

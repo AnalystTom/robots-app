@@ -31,7 +31,7 @@ export const ZH_CN_MESSAGES: Record<string, string> = {
   "RoBots is open source. {star} helps more people find it.":
     "RoBots 是开源的。{star}能帮助更多人发现它。",
   "A star on GitHub": "在 GitHub 上加星",
-  "Questions? Just reply. I read every one.": "有问题？直接回复即可。每封我都会看。",
+  "Questions? Just reply. We read every one.": "有问题？直接回复即可。我们每封都会看。",
   Unsubscribe: "退订",
   "Invite a friend": "邀请好友",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

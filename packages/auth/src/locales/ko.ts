@@ -33,7 +33,7 @@ export const KO_MESSAGES: Record<string, string> = {
   "RoBots is open source. {star} helps more people find it.":
     "RoBots는 오픈 소스입니다. {star}는 더 많은 사람이 RoBots를 찾는 데 도움이 됩니다.",
   "A star on GitHub": "GitHub 스타",
-  "Questions? Just reply. I read every one.":
+  "Questions? Just reply. We read every one.":
     "질문이 있으신가요? 답장만 보내 주세요. 모두 읽습니다.",
   Unsubscribe: "수신 거부",
   "Invite a friend": "친구 초대",

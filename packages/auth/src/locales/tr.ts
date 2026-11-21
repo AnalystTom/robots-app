@@ -33,8 +33,8 @@ export const TR_MESSAGES: Record<string, string> = {
   "RoBots is open source. {star} helps more people find it.":
     "RoBots açık kaynaklıdır. {star} daha fazla kişinin onu bulmasına yardımcı olur.",
   "A star on GitHub": "GitHub'da bir yıldız",
-  "Questions? Just reply. I read every one.":
-    "Sorunuz mu var? Yanıtlamanız yeterli. Her birini okuyorum.",
+  "Questions? Just reply. We read every one.":
+    "Sorunuz mu var? Yanıtlamanız yeterli. Hepsini okuyoruz.",
   Unsubscribe: "Abonelikten çık",
   "Invite a friend": "Bir arkadaşını davet et",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":
