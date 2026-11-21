@@ -18,7 +18,6 @@ const describePostgres = process.env.VERIFY_DATABASE && databaseUrl ? describe :
 
 describePostgres("new bot avatars (PostgreSQL)", () => {
   const provider = "sendblue";
-  // A prefix no other test file uses, so parallel files never share this account.
   const address = `+1554${Math.floor(Math.random() * 9_000_000 + 1_000_000)}`;
   let prisma: PrismaClient;
   let close: () => Promise<void>;
@@ -79,7 +78,6 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
           await repos.createBot(actor(), { ...botInput(`Helper ${index}`), avatarSet: "organic" }),
         );
       }
-      // A bot made by a bot goes through the same choice.
       bots.push(
         await repos.createBot(actor(), {
           ...botInput("Child"),
@@ -92,18 +90,15 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
 
     const all = [...before, ...created];
     const lookOf = (id: string) => organicAvatarLook(organicAvatarFamily(id));
-    // Eight automatic looks: the heart is excluded and the two round families share a look.
     const firstEight = all.slice(0, 8);
     expect(new Set(firstEight.map((bot) => lookOf(bot.id))).size).toBe(firstEight.length);
     expect(
       created.every((bot) => organicAvatarFamily(bot.id) !== ORGANIC_AVATAR_HEART_FAMILY),
     ).toBe(true);
-    // The starter bot counts too: no colour repeats until the palette is used up.
     const firstColors = all.slice(0, BOT_COLORS.length).map((bot) => bot.color);
     expect(new Set(firstColors).size).toBe(firstColors.length);
     expect(created.every((bot) => /^c[a-z0-9]{24}$/.test(bot.id))).toBe(true);
 
-    // Existing bots keep their id and colour.
     const after = await system.bot.findMany({
       where: { id: { in: before.map((bot) => bot.id) } },
       select: { id: true, color: true },
@@ -111,13 +106,24 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     expect(after).toEqual(expect.arrayContaining(before));
   });
 
-  it("defaults new creation to Original and reloads explicit sets without altering photos or shapes", async () => {
+  it("defaults a new account's bots to RoBots, keeps an Original account on Original, and reloads explicit sets without altering photos or shapes", async () => {
     const repos = createRepos(prisma);
+    const system = asSystem(prisma);
+    expect(
+      (await system.user.findUniqueOrThrow({ where: { id: owner.userId } })).botAvatarSet,
+    ).toBe("robots");
     const created = await runAsTenant(owner, () =>
-      repos.createBot(actor(), botInput("Original default")),
+      repos.createBot(actor(), botInput("RoBots default")),
     );
-    expect(created.avatarSet).toBe("organic");
+    expect(created).toMatchObject({ avatarSet: "robots" });
     expect(BOT_COLORS).toContain(created.color);
+    await system.user.update({ where: { id: owner.userId }, data: { botAvatarSet: "organic" } });
+    const keptOriginal = await runAsTenant(owner, () =>
+      repos.createBot(actor(), botInput("Original account")),
+    );
+    expect(keptOriginal).toMatchObject({ avatarSet: "organic" });
+    expect(BOT_COLORS).toContain(keptOriginal.color);
+    await system.user.update({ where: { id: owner.userId }, data: { botAvatarSet: "robots" } });
     for (const color of ["#8B5CF6", "#8B5CF6::shape_3", "data:image/png;base64,aGVsbG8="]) {
       const original = await runAsTenant(owner, () =>
         repos.createBot(actor(), { ...botInput("Original look"), avatarSet: "organic", color }),
@@ -243,7 +249,6 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       where: { spaceId: owner.spaceId, userId: owner.userId, archivedAt: null },
       select: { id: true },
     });
-    // Archive every bot but one; the next bot then avoids only that one's family.
     const [kept, ...rest] = live;
     await system.bot.updateMany({
       where: { id: { in: rest.map((bot) => bot.id) } },

@@ -18,12 +18,13 @@ describe("listSpaceGroupsForSpaces", () => {
           reads: [{ unread: true, snoozedUntil: new Date("2026-08-21T09:00:00.000Z") }],
         },
         members: [
-          { bot: { id: "bot-1", name: "Triage", color: "#111", runs: [] } },
+          { bot: { id: "bot-1", name: "Triage", color: "#111", avatarSet: "organic", runs: [] } },
           {
             bot: {
               id: "bot-2",
               name: "Responder",
               color: "#222",
+              avatarSet: "organic",
               runs: [{ status: "running" }],
             },
           },
@@ -107,9 +108,6 @@ describe("archiveGroup", () => {
       { id: "run-1", taskId: "task-1" },
       { id: "run-legacy", taskId: "task-legacy" },
     ]);
-    // computer-1 matches production: the lease is ownership, executionRunId stays unset.
-    // computer-legacy is the executionRunId fallback for a run with no lease row.
-    // computer-2's executionRunId names a reclaimed run; resume must not follow that column.
     const computerRows = [
       {
         id: "computer-1",
@@ -161,11 +159,7 @@ describe("archiveGroup", () => {
     );
     attemptUpdateMany = vi.fn();
     taskUpdateMany = vi.fn();
-    // computer-1 is a Team computer: bot-2's lease there belongs to a run outside this group.
-    // run-1 and run-stale expired without reclaim, so their runId still names the screen.
-    // run-reclaimed has no lease row; computer-2's column is not enough to resume.
     const liveUntil = new Date("2099-01-01T00:00:00.000Z");
-    // After the cleanup epoch, so a resume still tears this unreclaimed lease down.
     const expiredAt = new Date("2026-09-25T00:00:00.000Z");
     const leaseRows = [
       { computerId: "computer-1", botId: "bot-1", runId: "run-1", fence: 3, expiresAt: liveUntil },
@@ -298,7 +292,6 @@ describe("archiveGroup", () => {
         select: { archivedAt: true, thread: { select: { id: true } } },
       }),
     );
-    // The leases outlive the transaction so the caller's screen release still carries the fence.
     expect(leaseUpdateMany).not.toHaveBeenCalled();
     expect(computerUpdateMany).not.toHaveBeenCalled();
     expect(groupUpdate).toHaveBeenCalledWith({
@@ -473,8 +466,6 @@ describe("createGroup", () => {
       thread: { create: vi.fn() },
       message: { findMany: vi.fn(async () => []) },
     };
-    // The bots come back in a different order than the caller asked for, so the recorded
-    // order has to come from the input, not from the lookup.
     const prisma = {
       $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) => callback(tx)),
       bot: {
@@ -560,7 +551,6 @@ describe("listGroups archived", () => {
       ["archived-with-active-bots", true],
       ["left-with-one-bot", false],
     ]);
-    // Archived bots stay listed, so the group still names who is in it.
     expect(listed[0]!.members.map((item) => item.botId)).toEqual(["a", "b"]);
     expect(listed[2]!.members.map((item) => item.botId)).toEqual(["c", "d"]);
     const query = findMany.mock.calls[0]![0] as {
