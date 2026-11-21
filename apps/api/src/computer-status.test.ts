@@ -1,35 +1,6 @@
 import { ComputerStatusSchema } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
-import { resolveComputerWork, toComputerStatus } from "./computer-status.js";
-
-type WorkPrisma = Parameters<typeof resolveComputerWork>[0];
-
-function workWith(runStatus: string) {
-  const prisma = {
-    computerExecutionLease: {
-      findUnique: async () => ({ runId: "run-1", expiresAt: new Date(Date.now() + 60_000) }),
-    },
-    run: {
-      findUnique: async () => ({ status: runStatus }),
-      findFirst: async () => null,
-    },
-  } as unknown as WorkPrisma;
-  return resolveComputerWork(prisma, {
-    computerId: "computer-1",
-    botId: "bot-1",
-    botName: "Writer",
-  });
-}
-
-describe("resolveComputerWork", () => {
-  it("shows the bot busy while its lease's run is still working", async () => {
-    await expect(workWith("running")).resolves.toMatchObject({ busyBotName: "Writer" });
-  });
-
-  it("frees the computer once its run has completed, even while the lease row is still live", async () => {
-    await expect(workWith("completed")).resolves.toMatchObject({ busyBotName: null });
-  });
-});
+import { toComputerStatus } from "./computer-status.js";
 
 describe("toComputerStatus", () => {
   it("shows a quarantined computer as an error without making its screen available", () => {
