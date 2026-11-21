@@ -107,7 +107,18 @@ test("choosing a bot's model in its settings saves without a Save step", async (
 
   await page.reload();
   await openBotPanelTab(page, "Advanced");
-  await expect(page.getByTestId("bot-settings").locator('[id$="-model"]')).toContainText(
-    "Claude Sonnet 5.5",
-  );
+  const reloaded = page.getByTestId("bot-settings").locator('[id$="-model"]');
+  await expect(reloaded).toContainText("Claude Sonnet 5.5");
+
+  await page.route("**/rpc/bots/update", (route) => route.abort("failed"));
+  await reloaded.click();
+  await page.getByRole("combobox", { name: "Search models" }).fill("Opus 5.5");
+  await page.getByRole("option", { name: /Claude Opus 5\.5/ }).first().click();
+  await expect(page.getByText("Could not reach the server").first()).toBeVisible();
+  await expect(reloaded).toContainText("Claude Sonnet 5.5");
+  await page.unroute("**/rpc/bots/update");
+  expect(await botModel(page, botId)).toEqual({
+    modelProvider: "anthropic",
+    modelId: "claude-sonnet-5-5",
+  });
 });
