@@ -4,6 +4,7 @@ import type {
   ConnectionCatalogItem,
   IntegrationCatalogResult,
   IntegrationCatalogSurface,
+  MacAppConnection,
   McpSourcePreset,
 } from "@robots/contracts";
 import { MCP_OAUTH_CLIENT_REQUIRED, mcpServerConnection } from "@robots/contracts";
@@ -30,6 +31,7 @@ import {
 } from "@robots/ui-web";
 import { ArrowUpRight, ChevronDown, ChevronRight, LayoutTemplate, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { ConnectionPageHeader } from "../components/integrations/connection-page";
 import { IntegrationSetup } from "../components/integrations/IntegrationSetup";
 import type {
   ManagedAppLink,
@@ -37,6 +39,7 @@ import type {
 } from "../components/integrations/plugin-marketplace";
 import { PluginDetail, pluginSelection } from "../components/integrations/plugin-marketplace";
 import { reachesOtherSpaces, useOwnSpaces } from "../components/integrations/space-availability";
+import { useBotName } from "../components/integrations/use-bot-name";
 import type { connectedAppMarks } from "../lib/connected-apps";
 import { connectMcpOauth } from "../lib/mcp-connect";
 import { rpc } from "../lib/rpc";
@@ -45,6 +48,7 @@ import { AddMenu } from "./plugins/add-menu";
 import { ConnectorDetail } from "./plugins/connector-detail";
 import { DomainSearch, useDomainSearch } from "./plugins/domain-search";
 import { GithubImport } from "./plugins/github-import";
+import { MacAppDetail } from "./plugins/mac-app-detail";
 import { ManageView } from "./plugins/manage-view";
 import type { TileContext } from "./plugins/parts";
 import { ViewTitle } from "./plugins/parts";
@@ -74,15 +78,16 @@ export function PluginsOverlay({
   const { t } = useLingui();
   const [confirmingSource, setConfirmingSource] = useState<string | null>(null);
   const spaceCount = useOwnSpaces().length;
+  const botName = useBotName(activeBotId);
   const [sourceError, setSourceError] = useState<string | null>(null);
   const sourceAction = useRef(0);
   const [oauthError, setOauthError] = useState<string | null>(null);
   const [view, setView] = useState<OverlayView>("browse");
   const [publicCatalogQuery, setPublicCatalogQuery] = useState("");
-  // Where a source form returns: the domain search that prefilled it, or browse.
   const [sourceBack, setSourceBack] = useState<OverlayView>("browse");
   const [plugin, setPlugin] = useState<PluginSelection | null>(null);
   const [gitSource, setGitSource] = useState("");
+  const [macApp, setMacApp] = useState<MacAppConnection | null>(null);
   const [detailKey, setDetailKey] = useState<{
     connectorId: string;
     slug: string;
@@ -148,7 +153,6 @@ export function PluginsOverlay({
     install ? mcpServers.filter((server) => server.installId === install.id) : [];
   const standaloneServers = mcpServers.filter((server) => !server.installId);
   const connectedItems = catalog.filter((item) => itemConnected(item));
-  // Skills live in their own dialog, so only installs with a connector count as apps here.
   const connectorInstalls = pluginInstalls.filter((install) =>
     installedPluginParts(install.config).includes("connector"),
   );
@@ -177,14 +181,13 @@ export function PluginsOverlay({
     }),
   ].slice(0, 4);
 
-  const browsing = !plugin && !detailItem && view === "browse";
+  const browsing = !plugin && !detailItem && !macApp && view === "browse";
 
   function openPlugin(selection: PluginSelection) {
     setCatalogError(null);
     setPlugin(selection);
   }
 
-  /** A managed app whose brand also has a plugin opens one page with its skills. */
   function openApp(item: ConnectionCatalogItem) {
     const entry = pluginForApp.get(catalogItemKey(item));
     if (entry) openPlugin(pluginSelection(entry));
@@ -230,7 +233,6 @@ export function PluginsOverlay({
 
   const tileContext: TileContext = {
     connections: state,
-    pluginForApp,
     onOpenApp: openApp,
     onOpenDetail: openDetail,
   };
@@ -275,7 +277,6 @@ export function PluginsOverlay({
     const action = sourceAction.current;
     let savedForOauth = false;
     try {
-      // OAuth is the MCP server itself signing in, so it is saved first and then authorized.
       if (sourceKind === "mcp" && authType === "oauth") {
         const server = await rpc.mcp.servers.create(customMcpServerInput(name, sourceUrl));
         savedForOauth = true;
@@ -389,58 +390,71 @@ export function PluginsOverlay({
       }}
     >
       <DialogContent showCloseButton={false} size="2xl" className="bg-card">
-        <DialogHeader className="flex-row items-start justify-between px-8 pt-7">
-          <DialogTitle className="text-heading2 text-foreground">
-            <Trans>Integrations</Trans>
-          </DialogTitle>
-          <div className="flex items-center gap-2">
-            {browsing && appCount > 0 ? (
-              <Button
-                variant="ghost"
-                className="-my-1 h-9 gap-2.5 px-2.5 text-body text-muted-foreground"
-                onClick={() => setView("manage")}
+        {(detailItem || macApp) && !plugin ? (
+          <ConnectionPageHeader
+            title={macApp?.name ?? detailItem?.name ?? ""}
+            onBack={() => {
+              setMacApp(null);
+              closeDetail();
+            }}
+            closeLabel={t`Close integrations`}
+          />
+        ) : (
+          <DialogHeader className="flex-row items-start justify-between px-8 pt-7">
+            <DialogTitle className="text-heading2 text-foreground">
+              <Trans>Integrations</Trans>
+            </DialogTitle>
+            <div className="flex items-center gap-2">
+              {browsing && appCount > 0 ? (
+                <Button
+                  variant="ghost"
+                  className="-my-1 h-9 gap-2.5 px-2.5 text-body text-muted-foreground"
+                  onClick={() => setView("manage")}
+                >
+                  <span aria-hidden className="flex -space-x-1.5">
+                    {connectedMarks.map((mark) => (
+                      <span key={mark.key} className="rounded-[9px] ring-2 ring-card">
+                        {mark.logo ? (
+                          <img
+                            src={mark.logo}
+                            alt=""
+                            className="h-6 w-6 rounded-lg bg-favicon-plate object-contain p-0.5"
+                          />
+                        ) : (
+                          <span className="grid h-6 w-6 place-items-center rounded-lg border border-border/60 bg-favicon-plate text-caption font-semibold text-foreground">
+                            {Array.from(mark.name)[0]?.toUpperCase()}
+                          </span>
+                        )}
+                      </span>
+                    ))}
+                  </span>
+                  <Plural value={connectedCount} one="# connected" other="# connected" />
+                  <ChevronRight />
+                </Button>
+              ) : null}
+              {browsing || view === "manage" ? (
+                <AddMenu
+                  presets={sourcePresets}
+                  onGithub={() => openAddView("github")}
+                  onSource={beginSource}
+                  onBrowseMcp={() => {
+                    setPublicCatalogQuery("");
+                    openAddView("browseMcp");
+                  }}
+                  onDomainSearch={catalogFeedEnabled ? () => openAddView("domain") : undefined}
+                  onOpenMcp={onOpenMcp}
+                />
+              ) : null}
+              <DialogClose
+                render={
+                  <Button variant="ghost" size="icon-sm" aria-label={t`Close integrations`} />
+                }
               >
-                <span aria-hidden className="flex -space-x-1.5">
-                  {connectedMarks.map((mark) => (
-                    <span key={mark.key} className="rounded-[9px] ring-2 ring-card">
-                      {mark.logo ? (
-                        <img
-                          src={mark.logo}
-                          alt=""
-                          className="h-6 w-6 rounded-lg bg-favicon-plate object-contain p-0.5"
-                        />
-                      ) : (
-                        <span className="grid h-6 w-6 place-items-center rounded-lg border border-border/60 bg-favicon-plate text-caption font-semibold text-foreground">
-                          {Array.from(mark.name)[0]?.toUpperCase()}
-                        </span>
-                      )}
-                    </span>
-                  ))}
-                </span>
-                <Plural value={connectedCount} one="# connected" other="# connected" />
-                <ChevronRight />
-              </Button>
-            ) : null}
-            {browsing || view === "manage" ? (
-              <AddMenu
-                presets={sourcePresets}
-                onGithub={() => openAddView("github")}
-                onSource={beginSource}
-                onBrowseMcp={() => {
-                  setPublicCatalogQuery("");
-                  openAddView("browseMcp");
-                }}
-                onDomainSearch={catalogFeedEnabled ? () => openAddView("domain") : undefined}
-                onOpenMcp={onOpenMcp}
-              />
-            ) : null}
-            <DialogClose
-              render={<Button variant="ghost" size="icon-sm" aria-label={t`Close integrations`} />}
-            >
-              <X />
-            </DialogClose>
-          </div>
-        </DialogHeader>
+                <X />
+              </DialogClose>
+            </div>
+          </DialogHeader>
+        )}
 
         {browsing ? (
           <div className="space-y-4 px-8 pt-4">
@@ -572,8 +586,15 @@ export function PluginsOverlay({
               onBack={() => setPlugin(null)}
               onChanged={refresh}
             />
+          ) : macApp ? (
+            <MacAppDetail app={macApp} botName={botName} />
           ) : detailItem ? (
-            <ConnectorDetail item={detailItem} state={state} onBack={closeDetail} />
+            <ConnectorDetail
+              item={detailItem}
+              state={state}
+              botName={botName}
+              description={pluginForApp.get(catalogItemKey(detailItem))?.description}
+            />
           ) : view === "manage" ? (
             <ManageView
               state={state}
@@ -635,6 +656,7 @@ export function PluginsOverlay({
               state={state}
               tileContext={tileContext}
               onOpenPlugin={openPlugin}
+              onOpenMacApp={setMacApp}
               onSearchPublic={(publicQuery) => {
                 setPublicCatalogQuery(publicQuery);
                 openAddView("browseMcp");

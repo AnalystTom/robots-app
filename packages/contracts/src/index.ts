@@ -32,6 +32,7 @@ export * from "./ids.js";
 export * from "./integration-settings.js";
 export * from "./labs.js";
 export * from "./local-settings.js";
+export * from "./mac-apps.js";
 export * from "./markdown-text.js";
 export * from "./mcp.js";
 export * from "./mcp-app.js";
