@@ -779,7 +779,7 @@ describe("BotSettings avatar set persistence", () => {
     await render();
     expect(
       container.querySelector('[aria-label="Avatar set"]')?.getAttribute("data-avatar-set"),
-    ).toBe("organic");
+    ).toBe("robots");
     expect(onSave).not.toHaveBeenCalled();
   });
 
