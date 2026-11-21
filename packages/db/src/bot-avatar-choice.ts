@@ -90,9 +90,9 @@ export function chooseBotAvatar(
     random = cryptoRandom,
     now = Date.now(),
     family,
-    avatarSet = "organic",
+    avatarSet,
     id: previewId,
-  }: { random?: Random; now?: number; family?: number; avatarSet?: BotAvatarSet; id?: string } = {},
+  }: { random?: Random; now?: number; family?: number; avatarSet: BotAvatarSet; id?: string },
 ): { id: string; color: string } {
   if (avatarSet === "robots") {
     // The logo uses no organic family. Keep automatic ids non-heart for a later

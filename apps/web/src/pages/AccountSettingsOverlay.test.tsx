@@ -648,6 +648,10 @@ it("keeps bot style available without a saved value and saves an explicit Origin
       (button) => button.textContent === "Original",
     )!;
     expect(original.getAttribute("aria-pressed")).toBe("false");
+    const robots = Array.from(picker!.querySelectorAll("button")).find(
+      (button) => button.textContent === "RoBots",
+    )!;
+    expect(robots.getAttribute("aria-pressed")).toBe("false");
     await act(async () => original.click());
     expect(onChange).toHaveBeenCalledWith("organic");
   } finally {
