@@ -3,7 +3,6 @@ import { expect, it } from "vitest";
 import {
   appleUserInfo,
   googleEmailVerified,
-  isBuiltinAuthorizationURL,
   publicSignInProviders,
   socialAuthFromFields,
   socialTrustedOrigins,
@@ -75,25 +74,6 @@ it("lists OpenID Connect ahead of the configured social providers, without secre
   ]);
   expect(JSON.stringify(publicSignInProviders(social, undefined))).not.toContain("google-secret");
   expect(JSON.stringify(publicSignInProviders(social, undefined))).not.toContain("PRIVATE KEY");
-});
-
-it("recognizes only the enabled provider's authorization endpoint", () => {
-  expect(
-    isBuiltinAuthorizationURL(
-      "google",
-      "https://accounts.google.com/o/oauth2/v2/auth?state=1&client_id=x",
-    ),
-  ).toBe(true);
-  expect(isBuiltinAuthorizationURL("google", "https://accounts.google.com/o/oauth2/v2/other")).toBe(
-    false,
-  );
-  expect(
-    isBuiltinAuthorizationURL("apple", "https://appleid.apple.com/auth/authorize?state=1"),
-  ).toBe(true);
-  expect(isBuiltinAuthorizationURL("apple", "https://attacker.example.test/auth/authorize")).toBe(
-    false,
-  );
-  expect(isBuiltinAuthorizationURL("oidc", "https://appleid.apple.com/auth/authorize")).toBe(false);
 });
 
 it("fills a later Apple sign-in from the stored account when the token omits the email", async () => {

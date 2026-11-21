@@ -22,7 +22,6 @@ export interface GoogleProviderConfig {
 export interface AppleProviderConfig {
   id: "apple";
   name: "Apple";
-  /** Services ID. It is the OAuth client id and the subject of the client-secret JWT. */
   clientId: string;
   teamId: string;
   keyId: string;
@@ -54,7 +53,6 @@ const GOOGLE_TOGETHER = "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be confi
 const APPLE_TOGETHER =
   "APPLE_CLIENT_ID, APPLE_TEAM_ID, APPLE_KEY_ID and an Apple private key must be configured together";
 
-/** Enables each provider only when its credentials are complete. Anything partial refuses to start. */
 export function socialAuthFromFields(fields: SocialAuthFields): SocialAuthConfig | undefined {
   const googleClientId = blank(fields.googleClientId);
   const googleClientSecret = blank(fields.googleClientSecret);
@@ -97,10 +95,6 @@ export function socialAuthFromFields(fields: SocialAuthFields): SocialAuthConfig
   return providers.length ? { providers } : undefined;
 }
 
-/**
- * What the public capabilities endpoint may say. Names only: secrets stay on the server.
- * The deployment's own OpenID Connect provider leads, then each configured social provider.
- */
 export function publicSignInProviders(
   social: SocialAuthConfig | undefined,
   oidc: { name: string } | undefined,
@@ -117,20 +111,6 @@ export function publicSignInProviders(
   return providers;
 }
 
-const AUTHORIZE: Record<string, { origin: string; pathname: string }> = {
-  google: { origin: "https://accounts.google.com", pathname: "/o/oauth2/v2/auth" },
-  apple: { origin: "https://appleid.apple.com", pathname: "/auth/authorize" },
-};
-
-/** The mobile authorization proxy may open only these endpoints, and only for enabled providers. */
-export function isBuiltinAuthorizationURL(providerId: string, value: string): boolean {
-  const expected = AUTHORIZE[providerId];
-  if (!expected) return false;
-  const url = URL.parse(value);
-  return url?.origin === expected.origin && url.pathname === expected.pathname;
-}
-
-/** Only Apple's form POST callback needs the provider origin. OAuth state checks still apply. */
 export function socialTrustedOrigins(
   social: SocialAuthConfig | undefined,
   request?: Request,
@@ -142,7 +122,30 @@ export function socialTrustedOrigins(
     : [];
 }
 
-/** Google is authoritative for Gmail and verified Workspace addresses, not third-party mailboxes. */
+const PER_REQUEST_PARAMS = new Set(["state", "nonce", "code_challenge", "code_challenge_method"]);
+
+export function isDefaultAuthorizationRequest(value: string, expected: URL): boolean {
+  const url = URL.parse(value);
+  if (
+    url?.origin !== expected.origin ||
+    url.pathname !== expected.pathname ||
+    url.hash ||
+    url.username ||
+    url.password
+  ) {
+    return false;
+  }
+  const keys = [...url.searchParams.keys()];
+  const expectedKeys = [...expected.searchParams.keys()];
+  if (new Set(keys).size !== keys.length || keys.length !== expectedKeys.length) return false;
+  return expectedKeys.every(
+    (name) =>
+      url.searchParams.has(name) &&
+      (PER_REQUEST_PARAMS.has(name) ||
+        url.searchParams.get(name) === expected.searchParams.get(name)),
+  );
+}
+
 export function googleEmailVerified(profile: {
   email?: string;
   email_verified?: boolean;
@@ -177,10 +180,6 @@ interface AppleIdentityToken {
   user?: { name?: { firstName?: string; lastName?: string }; email?: string };
 }
 
-/**
- * Apple includes the email on the first authorization and often omits it later.
- * A returning account keeps the address already stored for that subject.
- */
 export async function appleUserInfo(
   prisma: AppleAccountLookup,
   token: AppleIdentityToken,
@@ -193,7 +192,6 @@ export async function appleUserInfo(
   const claimEmail = typeof profile.email === "string" ? profile.email.trim() : undefined;
   let email = claimEmail || undefined;
   const verifiedClaim = profile.email_verified === true || profile.email_verified === "true";
-  // Historical verification of an external mailbox does not establish current ownership.
   const domain = claimEmail?.split("@")[1]?.toLowerCase();
   const managedMailbox =
     domain !== undefined &&
@@ -219,8 +217,6 @@ export async function appleUserInfo(
   const profileName = typeof profile.name === "string" ? profile.name.trim() : "";
   return {
     user: { name: provided || profileName || storedName, email, emailVerified },
-    // The decoded token is the provider profile. Cast keeps fields the library's
-    // profile type requires even when Apple omits them on a later sign-in.
     data: {
       ...profile,
       sub: subject,
