@@ -1,7 +1,14 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_NAME_MAX_LENGTH } from "@robots/contracts";
-import { newBotLook, newBotLookInput, newBotPreviewIdentity } from "@robots/core";
+import type { RobotPresetId } from "@robots/core";
+import {
+  newBotLook,
+  newBotLookInput,
+  newBotPreviewIdentity,
+  randomRobotPreset,
+  robotPresetValue,
+} from "@robots/core";
 import {
   BotAvatar,
   Button,
@@ -14,25 +21,20 @@ import {
 } from "@robots/ui-web";
 import { useRef, useState } from "react";
 import { errorText } from "../../lib/user-error";
-import type { RobotPresetId } from "./robot-presets";
-import { RobotPresetPicker, randomRobotPreset, robotPresetValue } from "./robot-presets";
+import { RobotPresetPicker } from "./robot-presets";
 
 export interface CreateBotDialogInput {
   name: string;
   color: string;
-  /** Reserve the logo preview's persistent seed through creation and retries. */
   id?: string;
-  /** The organic family the preview drew; omitted when a studio shape is picked. */
   avatarFamily?: number;
 }
 
-/** Mounted only while open; the parent unmounts it from `onCancel` or after `onCreate`. */
 export function CreateBotDialog({
   avatarSet,
   onCancel,
   onCreate,
 }: {
-  /** The account's set: the server gives it to the new bot, so the preview draws it too. */
   avatarSet: BotAvatarSet;
   onCancel: () => void;
   onCreate: (input: CreateBotDialogInput) => Promise<void>;

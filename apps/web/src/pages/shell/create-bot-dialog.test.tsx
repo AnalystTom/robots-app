@@ -2,7 +2,7 @@
 
 import type { BotAvatarSet } from "@robots/contracts";
 import { parseBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
-import { robotCharacterDataUri } from "@robots/core";
+import { ROBOT_PRESETS, robotCharacterDataUri } from "@robots/core";
 import type { ReactNode } from "react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -17,7 +17,6 @@ vi.mock("@lingui/react/macro", () => {
 });
 
 import { CreateBotDialog } from "./create-bot-dialog";
-import { ROBOT_PRESETS } from "./robot-presets";
 
 let container: HTMLDivElement;
 let root: Root;

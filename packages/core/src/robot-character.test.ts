@@ -4,11 +4,16 @@ import { describe, expect, it } from "vitest";
 import { notificationAvatarSource } from "./notification-avatar.js";
 import {
   READY_MADE_ROBOTS,
+  ROBOT_PRESETS,
   randomRobotCharacterValue,
   randomRobotLook,
+  randomRobotPreset,
   readyMadeRobotValue,
   robotCharacterDataUri,
   robotCharacterSvg,
+  robotPresetOf,
+  robotPresetValue,
+  withRobotPart,
 } from "./robot-character.js";
 
 function* everyLook(): Generator<RobotLook> {
@@ -35,7 +40,6 @@ describe("robotCharacterSvg", () => {
       const svg = robotCharacterSvg(look);
       count++;
       expect(svg).not.toMatch(/undefined|GLOW|<script|on\w+=|href=/i);
-      // Every opened element is closed or self-closing.
       const opened = svg.match(/<[a-zA-Z]/g)?.length ?? 0;
       const selfClosed = svg.match(/\/>/g)?.length ?? 0;
       const closed = svg.match(/<\/[a-zA-Z]+>/g)?.length ?? 0;
@@ -108,5 +112,33 @@ describe("random robots", () => {
       expect(isBotAvatarValue(readyMadeRobotValue(key))).toBe(true);
       expect(readyMadeRobotValue(key)).toBe(robotCharacterValue(READY_MADE_ROBOTS[key]));
     }
+  });
+});
+
+describe("robot presets", () => {
+  it("are distinct valid robots that each name their own preset", () => {
+    const values = ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id));
+    expect(new Set(values).size).toBe(ROBOT_PRESETS.length);
+    for (const preset of ROBOT_PRESETS) {
+      expect(isBotAvatarValue(robotPresetValue(preset.id))).toBe(true);
+      expect(robotPresetOf(preset.look)).toBe(preset.id);
+    }
+  });
+
+  it("keep their name in any colour", () => {
+    for (const preset of ROBOT_PRESETS)
+      for (const colour of ROBOT_PARTS.colour)
+        expect(robotPresetOf(withRobotPart(preset.look, "colour", colour))).toBe(preset.id);
+  });
+
+  it("do not claim a robot with other parts", () => {
+    const chef = ROBOT_PRESETS.find((preset) => preset.id === "chef")!.look;
+    expect(robotPresetOf(withRobotPart(chef, "face", "grumpy"))).toBeNull();
+    expect(robotPresetOf(READY_MADE_ROBOTS.chef)).toBeNull();
+  });
+
+  it("are drawn at random from the whole set", () => {
+    expect(randomRobotPreset(() => 0)).toBe(ROBOT_PRESETS[0].id);
+    expect(randomRobotPreset(() => 0.99)).toBe(ROBOT_PRESETS[ROBOT_PRESETS.length - 1]!.id);
   });
 });
