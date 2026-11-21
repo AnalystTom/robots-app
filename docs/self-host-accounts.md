@@ -269,9 +269,14 @@ Apple button when available; it starts browser authorization rather than acquiri
 token. Native token submission is not supported: the browser flow binds authorization to one-use
 server state and a nonce. The App Store requires an Apple option on a build that offers Google.
 
-Existing accounts connect Google, Apple, or generic OpenID Connect through authenticated
-linking in account settings. Matching provider and account emails never implicitly link them:
-historical provider verification does not prove current control of a mailbox hosted elsewhere.
+Existing accounts connect Apple or generic OpenID Connect through authenticated linking in account
+settings; the directory claim under [SCIM](#directory-provisioning-scim) is the only other path to
+link OpenID Connect by email. Apple never links on a matching email: historical provider
+verification does not prove current control of a mailbox hosted elsewhere.
+
+Google is the exception. "Continue with Google" signs in to an existing account and links Google to
+it when both the Google email and the RoBots email are verified and match. Otherwise Google
+sign-in is refused with `account_not_linked`.
 
 Linking requires the provider's verified email to match the verified RoBots email. A different
 provider address, including Apple's Hide My Email relay address, cannot be linked to that account.
