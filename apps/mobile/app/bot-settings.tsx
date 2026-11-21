@@ -5,6 +5,7 @@ import {
   BOT_DESCRIPTION_MAX_LENGTH,
   BOT_INSTRUCTIONS_MAX_LENGTH,
   BOT_NAME_MAX_LENGTH,
+  DEFAULT_NEW_BOT_AVATAR_SET,
   resolveBotAvatarSet,
 } from "@robots/contracts";
 import {
@@ -79,7 +80,7 @@ export default function BotSettingsScreen() {
   const [instructions, setInstructions] = useState("");
   const [color, setColor] = useState<string>(DEFAULT_BOT_AVATAR_COLOR);
   const [computerMode, setComputerMode] = useState<ComputerMode>("team");
-  const [avatarSet, setAvatarSet] = useState<BotAvatarSet>("organic");
+  const [avatarSet, setAvatarSet] = useState<BotAvatarSet>(DEFAULT_NEW_BOT_AVATAR_SET);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(focus === "model" || pickedModel !== undefined);
   const [modelKey, setModelKey] = useState("");
