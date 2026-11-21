@@ -63,7 +63,7 @@ describe("createRepos.listBots", () => {
       expect(
         bots.map((bot) => ({ id: bot.id, color: bot.color, avatarSet: bot.avatarSet })),
       ).toEqual(
-        rows.map((row) => ({ id: row.id, color: row.color, avatarSet: avatarSet ?? "robots" })),
+        rows.map((row) => ({ id: row.id, color: row.color, avatarSet: avatarSet ?? "organic" })),
       );
     },
   );

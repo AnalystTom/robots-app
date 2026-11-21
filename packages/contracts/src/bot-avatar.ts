@@ -6,7 +6,7 @@ export const DEFAULT_NEW_BOT_AVATAR_SET: BotAvatarSet = "robots";
 
 export function resolveBotAvatarSet(value?: string | null): BotAvatarSet {
   const parsed = BotAvatarSetSchema.safeParse(value);
-  return parsed.success ? parsed.data : DEFAULT_NEW_BOT_AVATAR_SET;
+  return parsed.success ? parsed.data : "organic";
 }
 
 export interface BotColorDef {
