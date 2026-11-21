@@ -8,7 +8,6 @@ import type { ComputerStatus } from "@robots/contracts";
 import { ACTIVE_RUN_STATUSES } from "@robots/core";
 import type { PrismaClient } from "@robots/db";
 
-/** What this bot is doing with its computer: which run holds it, and whether one waits for a person. */
 export async function resolveComputerWork(
   prisma: Pick<PrismaClient, "computerExecutionLease" | "run">,
   input: {
@@ -21,7 +20,7 @@ export async function resolveComputerWork(
   const [lease, waiting] = await Promise.all([
     prisma.computerExecutionLease.findUnique({
       where: { computerId_botId: { computerId: input.computerId, botId: input.botId } },
-      select: { expiresAt: true, runId: true },
+      select: { runId: true },
     }),
     prisma.run.findFirst({
       where: { botId: input.botId, status: "waiting_takeover" },
@@ -31,11 +30,10 @@ export async function resolveComputerWork(
   const run = lease
     ? await prisma.run.findUnique({ where: { id: lease.runId }, select: { status: true } })
     : null;
-  const leaseActive = Boolean(lease && lease.expiresAt.getTime() > Date.now());
   const runActive = Boolean(
     run?.status && (ACTIVE_RUN_STATUSES as readonly string[]).includes(run.status),
   );
-  const working = run?.status !== "waiting_takeover" && (leaseActive || runActive);
+  const working = runActive && run?.status !== "waiting_takeover";
   return { busyBotName: working ? input.botName : null, takeoverRequested: Boolean(waiting) };
 }
 
@@ -68,7 +66,6 @@ export function toComputerStatus(
   const controlledByOther = Boolean(
     viewerId && computer?.controlHolder === "user" && !holdsUserControl(computer, viewerId),
   );
-  // Only the holder learns their lease, the one their screen hands back when it closes.
   const ownLeaseId =
     viewerId &&
     computer?.controlHolder === "user" &&
