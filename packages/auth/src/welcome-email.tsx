@@ -8,9 +8,9 @@ const MOBILE_APP_NAMES = { ios: "iPhone", android: "Android" } as const;
 
 const APPS: Readonly<Record<string, string>> = Object.fromEntries([
   ...listedMobileApps().map(({ platform, href }) => [MOBILE_APP_NAMES[platform], href]),
-  ["Mac", "https://rakazo.com/api/download?platform=mac"],
-  ["Windows", "https://rakazo.com/api/download?platform=windows"],
-  ["Linux", "https://rakazo.com/api/download?platform=linux"],
+  ["Mac", "https://tryrobots.app/api/download?platform=mac"],
+  ["Windows", "https://tryrobots.app/api/download?platform=windows"],
+  ["Linux", "https://tryrobots.app/api/download?platform=linux"],
 ]);
 
 const stepStyle = { margin: "20px 0 4px" };
@@ -52,24 +52,7 @@ export function welcomeEmail(
         )}
       </Text>
       <Text style={stepStyle}>
-        <strong>2. {say("Join the community")}</strong>
-      </Text>
-      <Text style={{ marginTop: 0 }}>
-        {withNodes(
-          say(
-            "See what others are building, get help fast, and tell us what to build next on {discord}.",
-          ),
-          {
-            discord: (
-              <Link href="https://discord.gg/RWwKa2Sn7h" style={linkStyle}>
-                Discord
-              </Link>
-            ),
-          },
-        )}
-      </Text>
-      <Text style={stepStyle}>
-        <strong>3. {say("Star us on GitHub")}</strong>
+        <strong>2. {say("Star us on GitHub")}</strong>
       </Text>
       <Text style={{ marginTop: 0 }}>
         {withNodes(say("RoBots is open source. {star} helps more people find it."), {
@@ -80,10 +63,9 @@ export function welcomeEmail(
           ),
         })}
       </Text>
-      <Text style={{ marginTop: "28px" }}>{say("Questions? Just reply. I read every one.")}</Text>
-      <Text>Elie</Text>
+      <Text style={{ marginTop: "28px" }}>{say("Questions? Just reply. We read every one.")}</Text>
+      <Text>The RoBots team</Text>
     </>,
     unsubscribeUrl,
-    { src: "https://rakazo.com/email/welcome.jpg", alt: "RoBots" },
   );
 }

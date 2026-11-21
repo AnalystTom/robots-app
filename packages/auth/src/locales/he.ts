@@ -29,14 +29,11 @@ export const HE_MESSAGES: Record<string, string> = {
   "Get the apps": "להוריד את האפליקציות",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots זמין ל-{platforms}, כדי שהבוטים שלך יוכלו להשיג אותך בכל מקום.",
-  "Join the community": "להצטרף לקהילה",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "לראות מה אחרים בונים, לקבל עזרה מהר ולספר לנו ב-{discord} מה לבנות בהמשך.",
   "Star us on GitHub": "לתת לנו כוכב ב-GitHub",
   "RoBots is open source. {star} helps more people find it.":
     "RoBots הוא קוד פתוח. {star} עוזר ליותר אנשים למצוא אותו.",
   "A star on GitHub": "כוכב ב-GitHub",
-  "Questions? Just reply. I read every one.": "שאלות? פשוט להשיב לאימייל. אני קורא כל תשובה.",
+  "Questions? Just reply. We read every one.": "שאלות? פשוט להשיב לאימייל. אנחנו קוראים כל תשובה.",
   Unsubscribe: "ביטול המינוי",
   "Invite a friend": "הזמנת חבר",
   "Invite a friend to RoBots: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":

@@ -2,7 +2,7 @@ import * as z from "zod";
 import { SettingsScopeSchema } from "./settings-scope.js";
 
 export const AI_DISCLOSURE_VERSION = "2026-11-12";
-export const AI_PRIVACY_URL = "https://rakazo.com/privacy/";
+export const AI_PRIVACY_URL = "https://tryrobots.app/privacy/";
 export const AiDataUseSchema = z.enum(["model", "voice", "memory"]);
 export type AiDataUse = z.infer<typeof AiDataUseSchema>;
 export const AiConsentQuerySchema = z
@@ -11,7 +11,6 @@ export const AiConsentQuerySchema = z
     groupId: z.string().optional(),
     routineId: z.string().optional(),
     uses: z.array(AiDataUseSchema).optional(),
-    /** Which copy of the member's settings names the recipients; omitted means the one that applies. */
     settingsScope: SettingsScopeSchema.optional(),
   })
   .default({});

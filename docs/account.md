@@ -46,14 +46,14 @@ plan and removes its bots and data.
 In **Settings → General**:
 
 - **Export data** downloads a zip of your account: every space's chats, files and bot workspaces.
-- **Import data** loads an export, for example to move between rakazo.com and your own server.
+- **Import data** loads an export, for example to move between RoBots Cloud and your own server.
 - **Import an agent** brings in an OpenClaw, Hermes or ChatGPT assistant. See
   [Import an agent](./import-an-agent.md).
 - **Delete account** emails you a code, then permanently deletes your account and data.
 
-## Billing on rakazo.com
+## Billing on RoBots Cloud
 
-rakazo.com is free to try; the sidebar shows when your free period ends. To keep going, choose a
+RoBots Cloud is free to try; the sidebar shows when your free period ends. To keep going, choose a
 plan:
 
 - **Use my subscription or API key**: connect a supported [model subscription](./model-subscriptions.md)
@@ -63,7 +63,7 @@ plan:
 
 Both plans come in monthly or yearly, and include monthly hours on your bots' computers.
 **Settings → Billing** shows your plan, when it renews and the computer hours left. Choose
-**Manage** to change it. See [pricing](https://rakazo.com/pricing) for current plans.
+**Manage** to change it. See [pricing](https://tryrobots.app/pricing) for current plans.
 
 **Invite friends** in the account menu gives you a link. You get a free month for each friend who
 starts a trial.

@@ -42,7 +42,6 @@ function popupFlow({ focused }: { focused: boolean }) {
       channels.push(this);
     }
   }
-  // A popup on a COOP provider page reads as closed to the opener.
   const popup = { closed: true, close: vi.fn() };
   vi.stubGlobal("BroadcastChannel", FakeChannel);
   vi.spyOn(window, "open").mockReturnValue(popup as unknown as Window);
@@ -180,7 +179,7 @@ it("links OAuth failures in chat to the shared recovery guide without approving 
     );
     await act(async () => host.querySelector("button")?.click());
     expect(host.querySelector('[role="alert"] a')?.getAttribute("href")).toBe(
-      "https://rakazo.com/docs/troubleshooting/#mcp-oauth-redirect-mismatch",
+      "https://tryrobots.app/docs/troubleshooting/#mcp-oauth-redirect-mismatch",
     );
     expect(calls.approve.mock.calls).toHaveLength(approvalsBefore);
     expect(host.querySelector("button")?.disabled).toBe(false);

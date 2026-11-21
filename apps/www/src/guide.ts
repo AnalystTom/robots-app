@@ -84,7 +84,7 @@ export const SELF_HOST_FAQS: readonly FaqItem[] = [
   {
     question: "Is hosted RoBots available?",
     answer:
-      "Yes. RoBots Cloud is in beta at app.rakazo.com. Self-hosting is available too.",
+      "Yes. RoBots Cloud is in beta at app.tryrobots.app. Self-hosting is available too.",
   },
   {
     question: "How does this compare with OpenClaw?",

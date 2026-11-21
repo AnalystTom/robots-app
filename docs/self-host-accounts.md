@@ -87,13 +87,23 @@ SMTP_URL=smtps://smtp-user:replace-with-password@smtp.example.com:465
 EMAIL_FROM=RoBots <no-reply@example.com>
 ```
 
-Set `EMAIL_REPLY_TO` to send replies somewhere other than `EMAIL_FROM`.
+Set `EMAIL_REPLY_TO` to send replies somewhere other than `EMAIL_FROM`. Links in verification and
+reset emails use `BETTER_AUTH_URL`, which defaults to `WEB_ORIGIN`, so set it to the public app
+address, such as `https://app.tryrobots.app`.
 
 `EMAIL_PROVIDER=smtp` is optional: an existing `SMTP_URL` continues to select SMTP when no provider
 is specified. `EMAIL_PROVIDER=none` disables external sending. Explicit provider settings take
 precedence over an old `SMTP_URL`; incomplete or unknown provider configurations fail at startup.
 
-Resend also supports SMTP: use `smtp.resend.com`, username `resend`, and an API key as the password. For Amazon
+For Resend over SMTP, use username `resend` and a sending API key as the password. RoBots Cloud
+sends with:
+
+```env
+SMTP_URL=smtps://resend:replace-with-sending-api-key@smtp.resend.com:465
+EMAIL_FROM=RoBots <no-reply@tryrobots.app>
+```
+
+The sending domain must be verified in Resend; a self-hosted server uses its own domain. For Amazon
 SES, use the regional SMTP endpoint and SES SMTP credentials; these are different from ordinary AWS
 access keys. Verify the sender/domain with the provider before testing delivery. Keep credentials in
 `.env`, never in tracked files. `smtps://` uses implicit TLS; `smtp://` is also supported but requires
@@ -339,11 +349,11 @@ relying party is that origin's host, so existing passkeys keep working only whil
 stays on the same domain. They are off when password sign-in is disabled for SSO-only
 deployments. On web, a browser offers them where it has a platform authenticator. The macOS
 desktop app uses the system passkey sheet, which only serves the domain the release is
-associated with (`app.rakazo.com`), so it hides passkeys for other servers.
+associated with (`app.tryrobots.app`), so it hides passkeys for other servers.
 
 Native apps can use a domain's passkeys only when the domain vouches for them and the app was
 built for that domain. The iOS app's associated domain comes from `EXPO_PUBLIC_API_URL` at build
-time. A macOS desktop build takes it from `ROBOTS_PASSKEY_RP_ID` (default `app.rakazo.com`): set
+time. A macOS desktop build takes it from `ROBOTS_PASSKEY_RP_ID` (default `app.tryrobots.app`): set
 it to the same domain for `pnpm build` and for `scripts/passkey-entitlements.ts`, then package with
 electron-builder's `-c.mac.entitlements` set to that script's output and `-c.mac.provisioningProfile`
 set to a profile for your App ID with the Associated Domains capability, as the release workflow

@@ -1,47 +1,44 @@
 import { buildSkillMd } from "@robots/core";
 
 const ROBOTS_DOCS: ReadonlyArray<readonly [topics: string, url: string]> = [
-  ["Getting started, first bot, what RoBots does", "https://rakazo.com/docs.md"],
+  ["Getting started, first bot, what RoBots does", "https://tryrobots.app/docs.md"],
   [
     "Creating bots, chatting, bot settings, sidebar, search",
-    "https://rakazo.com/docs/bots-and-chats.md",
+    "https://tryrobots.app/docs/bots-and-chats.md",
   ],
-  ["Importing an OpenClaw, Hermes or ChatGPT agent", "https://rakazo.com/docs/import-an-agent.md"],
+  [
+    "Importing an OpenClaw, Hermes or ChatGPT agent",
+    "https://tryrobots.app/docs/import-an-agent.md",
+  ],
   [
     "Connecting apps and integrations (Gmail, GitHub, MCP tools)",
-    "https://rakazo.com/docs/integrations.md",
+    "https://tryrobots.app/docs/integrations.md",
   ],
-  ["Slack, Telegram, WhatsApp and other chat apps", "https://rakazo.com/docs/messaging-apps.md"],
-  ["Routines, schedules and triggers", "https://rakazo.com/docs/routines.md"],
-  ["The bot's computer, files, using your own computer", "https://rakazo.com/docs/computer.md"],
-  ["Memory", "https://rakazo.com/docs/memory.md"],
-  ["Skills", "https://rakazo.com/docs/skills.md"],
-  ["Approvals, Allow and Block lists", "https://rakazo.com/docs/approvals.md"],
-  ["Group chats, bots working together, subagents", "https://rakazo.com/docs/groups.md"],
-  ["Voice, calls, spoken replies", "https://rakazo.com/docs/voice-and-calls.md"],
-  ["Models, providers, API keys, fallbacks, usage", "https://rakazo.com/docs/models.md"],
-  ["Spaces", "https://rakazo.com/docs/spaces.md"],
-  ["Saved credentials and website logins", "https://rakazo.com/docs/bot-secrets.md"],
+  ["Slack, Telegram, WhatsApp and other chat apps", "https://tryrobots.app/docs/messaging-apps.md"],
+  ["Routines, schedules and triggers", "https://tryrobots.app/docs/routines.md"],
+  ["The bot's computer, files, using your own computer", "https://tryrobots.app/docs/computer.md"],
+  ["Memory", "https://tryrobots.app/docs/memory.md"],
+  ["Skills", "https://tryrobots.app/docs/skills.md"],
+  ["Approvals, Allow and Block lists", "https://tryrobots.app/docs/approvals.md"],
+  ["Group chats, bots working together, subagents", "https://tryrobots.app/docs/groups.md"],
+  ["Voice, calls, spoken replies", "https://tryrobots.app/docs/voice-and-calls.md"],
+  ["Models, providers, API keys, fallbacks, usage", "https://tryrobots.app/docs/models.md"],
+  ["Spaces", "https://tryrobots.app/docs/spaces.md"],
+  ["Saved credentials and website logins", "https://tryrobots.app/docs/bot-secrets.md"],
   [
     "Account, preferences, data export, credits, plans, billing",
-    "https://rakazo.com/docs/account.md",
+    "https://tryrobots.app/docs/account.md",
   ],
-  ["Desktop app", "https://rakazo.com/docs/desktop-app.md"],
-  ["Mobile app", "https://rakazo.com/docs/mobile-app.md"],
-  ["Bots that create and manage bots", "https://rakazo.com/docs/fleet-management.md"],
-  ["Building a plugin", "https://rakazo.com/docs/build-a-plugin.md"],
-  ["Self-hosting", "https://rakazo.com/docs/self-host.md"],
-  ["Self-hosted server configuration", "https://rakazo.com/docs/self-host-configuration.md"],
+  ["Desktop app", "https://tryrobots.app/docs/desktop-app.md"],
+  ["Mobile app", "https://tryrobots.app/docs/mobile-app.md"],
+  ["Bots that create and manage bots", "https://tryrobots.app/docs/fleet-management.md"],
+  ["Building a plugin", "https://tryrobots.app/docs/build-a-plugin.md"],
+  ["Self-hosting", "https://tryrobots.app/docs/self-host.md"],
+  ["Self-hosted server configuration", "https://tryrobots.app/docs/self-host-configuration.md"],
 ];
 
-/** Fixed URLs, so fetching one can't carry anything out of a run. */
 export const ROBOTS_DOCS_URLS = ROBOTS_DOCS.map(([, url]) => url);
 
-/**
- * Built-in Agent Skills (SKILL.md recipes) available to every user.
- * Only generic how-tos; no account-specific content.
- * Descriptions show in the / picker (truncated at 72) and inject every turn in the skills catalog.
- */
 const SKILLS: Array<{ name: string; description: string; body: string }> = [
   {
     name: "Interrogate",

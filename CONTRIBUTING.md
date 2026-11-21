@@ -130,8 +130,7 @@ capability config, fixtures, logs, or snapshots; use the encrypted secret store 
 
 ## Contact
 
-| Address                                           | Use for                                               |
-| ------------------------------------------------- | ----------------------------------------------------- |
-| [security@rakazo.com](mailto:security@rakazo.com) | Vulnerabilities only — see [SECURITY.md](SECURITY.md) |
-| [support@rakazo.com](mailto:support@rakazo.com)   | User and support questions                            |
-| [elie@rakazo.com](mailto:elie@rakazo.com)         | Maintainer                                            |
+| Where                                                                | Use for                                               |
+| -------------------------------------------------------------------- | ----------------------------------------------------- |
+| [security@tryrobots.app](mailto:security@tryrobots.app)              | Vulnerabilities only — see [SECURITY.md](SECURITY.md) |
+| [GitHub issues](https://github.com/AnalystTom/robots-app/issues)     | Bugs, user and support questions                      |

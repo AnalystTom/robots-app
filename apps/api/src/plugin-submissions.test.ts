@@ -145,7 +145,6 @@ function routes(prisma: never, email = new EmailEmulator()) {
   return { submit, claims, open, email };
 }
 
-// A returned function would run as the test's cleanup, so the mock itself must not be returned.
 beforeEach(() => {
   preview.mockReset();
 });
@@ -163,7 +162,6 @@ describe("public plugin submissions", () => {
     });
     await vi.waitFor(() => expect(email.sent).toHaveLength(2));
     const submitter = email.sent.find((message) => message.to === valid.email)!;
-    // Anyone can type any address, so the confirmation repeats nothing they wrote.
     expect(submitter.text).not.toContain(valid.name);
     const admin = email.sent.find((message) => message.to === "admin@example.test")!;
     expect(admin.subject).toContain(valid.name);
@@ -178,7 +176,6 @@ describe("public plugin submissions", () => {
     expect(again.status).toBe(200);
     expect(rows).toHaveLength(1);
     expect(rows[0]!.description).toBe("Better words.");
-    // Admins hear about the first one only.
     await vi.waitFor(() => expect(email.sent).toHaveLength(3));
     expect(email.sent.filter((message) => message.to === "admin@example.test")).toHaveLength(1);
   });
@@ -249,7 +246,6 @@ describe("reviewing submissions", () => {
     expect(result).toMatchObject({
       status: "rejected",
       reason: "The MCP server returned errors.",
-      // Admins open the branch and folder that was submitted.
       source: "https://github.com/acme/plugins/tree/main/tickets",
     });
     await vi.waitFor(() => expect(email.sent).toHaveLength(1));
@@ -433,14 +429,13 @@ describe("integration page claims", () => {
     const [confirm] = email.sent;
     expect(confirm!.to).toBe(claim.email);
     expect(confirm!.text).not.toContain(claim.name);
-    // Only the hash is stored, so a database read cannot confirm a claim.
     expect(confirm!.text).not.toContain(String(rows[0]!.confirmToken));
     expect(await listPluginSubmissions(prisma, "pending")).toEqual([]);
 
     const opened = await open(confirmLink(confirm!));
     expect(opened.status).toBe(303);
     expect(opened.headers.get("location")).toBe(
-      "https://rakazo.com/integrations/acme-tickets/claim/?confirmed",
+      "https://tryrobots.app/integrations/acme-tickets/claim/?confirmed",
     );
     expect(rows[0]).toMatchObject({ status: "pending", confirmToken: null });
     await vi.waitFor(() => expect(email.sent).toHaveLength(2));
@@ -448,10 +443,8 @@ describe("integration page claims", () => {
       to: "admin@example.test",
       subject: "New page claim: Acme Tickets",
     });
-    // The admin RPC validates its output with this schema, so a claim must pass it.
     const pending = await listPluginSubmissions(prisma, "pending");
     expect(PluginSubmissionSchema.safeParse(pending[0]).success).toBe(true);
-    // The link works once.
     expect((await open(confirmLink(confirm!))).status).toBe(404);
   });
 
@@ -463,7 +456,7 @@ describe("integration page claims", () => {
     rows[0]!.confirmExpiresAt = new Date(Date.now() - 1);
     const opened = await open(confirmLink(email.sent[0]!));
     expect(opened.headers.get("location")).toBe(
-      "https://rakazo.com/integrations/acme-tickets/claim/?expired",
+      "https://tryrobots.app/integrations/acme-tickets/claim/?expired",
     );
     expect(rows[0]!.status).toBe("unconfirmed");
   });
@@ -530,7 +523,6 @@ describe("integration page claims", () => {
       { slug: "acme-tickets", website: "https://acme.test/app" },
     ]);
     expect((await claims()).claims).toHaveLength(1);
-    // A claim never becomes an installable plugin.
     expect(await approvedPluginEntries(prisma)).toEqual([]);
   });
 });

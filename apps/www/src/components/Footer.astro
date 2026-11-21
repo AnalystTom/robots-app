@@ -19,9 +19,10 @@ import type { HomeCopy } from "../i18n/home";
 import {
   CHANGELOG_URL,
   GITHUB_URL,
-  INBOX_ZERO_URL,
   PLUGIN_SUBMIT_PATH,
   SELF_HOST_GUIDE_PATH,
+  SITE_NAME,
+  SITE_URL,
 } from "../site";
 import Logo from "./Logo.astro";
 
@@ -120,7 +121,7 @@ const columns: Array<{ heading: string; links: FooterLink[] }> = [
       </details>
     </nav>
     <span class="site-footer__legal">
-      <span>© 2026 <a href={INBOX_ZERO_URL} target="_blank" rel="noopener">Inbox Zero Inc.</a></span>
+      <span>© 2026 <a href={SITE_URL} target="_blank" rel="noopener">{SITE_NAME}</a></span>
       <span>Apache-2.0</span>
     </span>
   </div>

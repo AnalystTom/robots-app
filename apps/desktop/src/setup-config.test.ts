@@ -56,9 +56,7 @@ describe("server address normalization", () => {
     expect(normalizeServerUrl("http://[fe80::1]:3100")).toBeNull();
     expect(normalizeServerUrl("http://100.100.100.200")).toBeNull();
     expect(normalizeServerUrl("http://[fd00:ec2::254]")).toBeNull();
-    // fd::1 is 00fd::1, not unique-local.
     expect(normalizeServerUrl("http://[fd::1]:3100")).toBeNull();
-    // HTTPS to link-local still normalizes; the health probe must match RoBots.
     expect(normalizeServerUrl("https://169.254.169.254")).toBe("https://169.254.169.254");
   });
 
@@ -137,8 +135,7 @@ describe("saved setup", () => {
     });
   });
 
-  it("saves Rakazo Cloud as an existing server under the exact origin setup matches", () => {
-    // The setup window recognizes a saved Cloud choice by comparing against this constant.
+  it("saves RoBots Cloud as an existing server under the exact origin setup matches", () => {
     expect(normalizeServerUrl(ROBOTS_CLOUD_URL)).toBe(ROBOTS_CLOUD_URL);
     expect(parseSetupInput({ mode: "existing", serverUrl: ROBOTS_CLOUD_URL })).toEqual({
       mode: "existing",

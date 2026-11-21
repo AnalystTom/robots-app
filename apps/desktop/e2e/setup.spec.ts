@@ -92,7 +92,6 @@ function launch(extraEnv: Record<string, string> = {}) {
   };
   // A stale ROBOTS_WEB_URL from the developer's shell would bypass setup entirely.
   delete env.ROBOTS_WEB_URL;
-  // A first launch opens Rakazo Cloud; these specs stay offline and start in setup instead.
   if (!extraEnv.ROBOTS_WEB_URL && !existsSync(path.join(userData, "setup.json"))) {
     env.ROBOTS_FORCE_SETUP = "1";
   }
@@ -105,7 +104,7 @@ function launch(extraEnv: Record<string, string> = {}) {
   });
 }
 
-test("setup offers Rakazo Cloud first, with local and existing instances", async () => {
+test("setup offers RoBots Cloud first, with local and existing instances", async () => {
   app = await launch();
   if (process.env.ROBOTS_E2E_EXECUTABLE) {
     expect(await app.evaluate(({ app }) => app.isPackaged)).toBe(true);
@@ -114,13 +113,13 @@ test("setup offers Rakazo Cloud first, with local and existing instances", async
 
   await expect(setup.getByRole("heading", { name: "Welcome to RoBots" })).toBeVisible();
   await expect(setup.getByText("Choose where RoBots runs.")).toBeVisible();
-  await expect(setup.getByText("Rakazo Cloud", { exact: true })).toBeVisible();
+  await expect(setup.getByText("RoBots Cloud", { exact: true })).toBeVisible();
   await expect(setup.getByText("This computer", { exact: true })).toBeVisible();
   await expect(setup.getByText("Existing instance", { exact: true })).toBeVisible();
   await expect(setup.locator(".card")).toHaveCount(0);
 
   // Cloud is the default: one click opens the hosted app, with nothing to fill in.
-  await expect(setup.getByRole("radio", { name: /Rakazo Cloud/ })).toBeChecked();
+  await expect(setup.getByRole("radio", { name: /RoBots Cloud/ })).toBeChecked();
   await expect(setup.locator("#panel-new")).toBeHidden();
   await expect(setup.locator("#panel-existing")).toBeHidden();
   await expect(setup.getByRole("button", { name: "Check connection" })).toBeHidden();
@@ -198,10 +197,10 @@ test("setup lays out right to left in Hebrew", async () => {
   });
 });
 
-test("Rakazo Cloud saves the hosted address and is reselected when saved", async () => {
+test("RoBots Cloud saves the hosted address and is reselected when saved", async () => {
   app = await launch();
   const setup = await app.firstWindow();
-  await expect(setup.getByRole("radio", { name: /Rakazo Cloud/ })).toBeChecked();
+  await expect(setup.getByRole("radio", { name: /RoBots Cloud/ })).toBeChecked();
   await expect(setup.getByRole("button", { name: "Continue" })).toBeEnabled();
 
   // Capture the request instead of reaching the hosted server, so CI stays offline.
@@ -239,7 +238,7 @@ test("Rakazo Cloud saves the hosted address and is reselected when saved", async
     }));
   }, cloudUrl);
   await setup.reload();
-  await expect(setup.getByRole("radio", { name: /Rakazo Cloud/ })).toBeChecked();
+  await expect(setup.getByRole("radio", { name: /RoBots Cloud/ })).toBeChecked();
   await expect(setup.locator("#panel-existing")).toBeHidden();
 });
 

@@ -29,11 +29,11 @@ export function homeStructuredData(input: HomeStructuredDataInput) {
         legalName: LEGAL_NAME,
         url: `${SITE_URL}/`,
         logo: `${SITE_URL}/brand/robots-mark.png`,
-        email: "hello@rakazo.com",
+        email: "hello@tryrobots.app",
         contactPoint: {
           "@type": "ContactPoint",
           contactType: "customer support",
-          email: "hello@rakazo.com",
+          email: "hello@tryrobots.app",
           url: `${SITE_URL}/support/`,
           availableLanguage: input.availableLanguages,
         },
@@ -45,7 +45,7 @@ export function homeStructuredData(input: HomeStructuredDataInput) {
           postalCode: "19713",
           addressCountry: "US",
         },
-        sameAs: [GITHUB_URL, "https://www.getinboxzero.com/"],
+        sameAs: [GITHUB_URL],
       },
       {
         "@type": "WebSite",

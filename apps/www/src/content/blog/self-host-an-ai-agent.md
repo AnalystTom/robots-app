@@ -10,7 +10,7 @@ sources:
   - label: "RoBots self-hosting guide"
     href: "https://github.com/AnalystTom/robots-app/blob/main/docs/self-host.md"
   - label: "Self-hosted AI agent"
-    href: "https://rakazo.com/self-hosted-ai-agent/"
+    href: "https://tryrobots.app/self-hosted-ai-agent/"
   - label: "Self-host secrets checklist"
     href: "https://github.com/AnalystTom/robots-app/blob/main/docs/self-host-secrets.md"
 related:

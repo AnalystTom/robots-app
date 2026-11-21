@@ -248,7 +248,7 @@ ${plan.price}${plan.note ? ` (${plan.note})` : ""}
 
 ${plan.features.map((feature) => `- ${feature}`).join("\n")}
 
-[${plan.action.label}](${new URL(plan.action.href, "https://rakazo.com").href})`;
+[${plan.action.label}](${new URL(plan.action.href, "https://tryrobots.app").href})`;
 }
 
 export const PRICING_MARKDOWN = `# RoBots pricing

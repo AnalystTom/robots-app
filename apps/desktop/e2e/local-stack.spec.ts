@@ -143,7 +143,6 @@ async function launch(mode: FakeDockerMode | "missing") {
   const env: NodeJS.ProcessEnv = { ...process.env, ROBOTS_PERFORMANCE_USER_DATA: userData };
   // A stale ROBOTS_WEB_URL from the developer's shell would bypass setup entirely.
   delete env.ROBOTS_WEB_URL;
-  // A first launch opens Rakazo Cloud; these specs stay offline and start in setup instead.
   if (!existsSync(path.join(userData, "setup.json"))) env.ROBOTS_FORCE_SETUP = "1";
   return electron.launch({
     args: ["."],

@@ -3,14 +3,14 @@
   "redirects": [
     {
       "source": "/",
-      "has": [{ "type": "host", "value": { "eq": "www.rakazo.com" } }],
-      "destination": "https://rakazo.com/",
+      "has": [{ "type": "host", "value": { "eq": "www.tryrobots.app" } }],
+      "destination": "https://tryrobots.app/",
       "statusCode": 301
     },
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": { "eq": "www.rakazo.com" } }],
-      "destination": "https://rakazo.com/:path*",
+      "has": [{ "type": "host", "value": { "eq": "www.tryrobots.app" } }],
+      "destination": "https://tryrobots.app/:path*",
       "statusCode": 301
     },
     {
@@ -31,11 +31,6 @@
     {
       "source": "/github",
       "destination": "https://github.com/AnalystTom/robots-app",
-      "permanent": false
-    },
-    {
-      "source": "/discord",
-      "destination": "https://discord.gg/RWwKa2Sn7h",
       "permanent": false
     }
   ],
