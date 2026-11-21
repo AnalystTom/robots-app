@@ -23,7 +23,7 @@ function Harness({
   avatarSet: initialSet,
 }: {
   value: string;
-  avatarSet?: BotAvatarSet;
+  avatarSet: BotAvatarSet;
 }) {
   const [value, setValue] = useState(initial);
   const [avatarSet, setAvatarSet] = useState(initialSet);
@@ -68,12 +68,12 @@ function button(name: string) {
 async function click(name: string) {
   await act(async () => button(name).click());
 }
-async function render(value: string, avatarSet?: BotAvatarSet, key = "initial") {
+async function render(value: string, avatarSet: BotAvatarSet = "organic", key = "initial") {
   await act(async () => root.render(<Harness key={key} value={value} avatarSet={avatarSet} />));
 }
 
 describe("selectable bot icon sets", () => {
-  it("keeps a legacy appearance on open, saves a RoBots switch, and restores the saved set on reload", async () => {
+  it("keeps an Original bot on open, saves a RoBots switch, and restores the saved set on reload", async () => {
     await render("#10B981");
     await click("Customize bot avatar");
     expect(button("Original").getAttribute("aria-selected")).toBe("true");

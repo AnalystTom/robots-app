@@ -29,23 +29,18 @@ import { Check, Pencil, Upload, X } from "lucide-react";
 import type { ClipboardEvent, DragEvent } from "react";
 import { useRef, useState } from "react";
 
-/**
- * The shape grid and color row for a bot's look. With `organicIdentities`, the grid also offers
- * the organic body each identity draws (for a bot that has no id yet); without them, "Default"
- * restores the bot's own organic body.
- */
 export function BotLookPicker({
   value,
   identity,
   organicIdentities,
-  avatarSet = "organic",
+  avatarSet,
   onAvatarSetChange,
   onChange,
 }: {
   value: string;
   identity?: string;
   organicIdentities?: readonly string[];
-  avatarSet?: BotAvatarSet;
+  avatarSet: BotAvatarSet;
   onAvatarSetChange?: (set: BotAvatarSet, value: string) => void;
   onChange: (value: string, identity?: string) => void;
 }) {
@@ -58,7 +53,6 @@ export function BotLookPicker({
 
   return (
     <div className="space-y-4">
-      {/* Only one bot's own editor overrides the account's set; a new bot takes the default. */}
       {onAvatarSetChange ? (
         <Tabs
           value={avatarSet}
@@ -164,7 +158,7 @@ export interface AvatarStudioPopoverProps {
   value: string;
   identity?: string;
   status?: string;
-  avatarSet?: BotAvatarSet;
+  avatarSet: BotAvatarSet;
   size?: number;
   onChange: (value: string, avatarSet?: BotAvatarSet) => void;
   disabled?: boolean;
@@ -174,7 +168,7 @@ export function AvatarStudioPopover({
   value,
   identity,
   status,
-  avatarSet = "organic",
+  avatarSet,
   size = 72,
   onChange,
   disabled = false,

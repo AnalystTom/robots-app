@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   instructions: "",
   description: "",
   crossSpaceCommunication: false,
-  avatarSet: undefined as "organic" | "robots" | undefined,
+  avatarSet: "organic" as "organic" | "robots",
   focus: undefined as string | undefined,
   os: "ios",
   work: [] as unknown[],
@@ -360,7 +360,7 @@ describe("bot settings device voice menu", () => {
   let container: HTMLDivElement;
   beforeEach(() => {
     mocks.crossSpaceCommunication = false;
-    mocks.avatarSet = undefined;
+    mocks.avatarSet = "organic";
     vi.clearAllMocks();
     mocks.loadBot.mockReset();
     vi.mocked(Notifications.getPresentedNotificationsAsync).mockResolvedValue([]);
@@ -620,7 +620,7 @@ describe("bot settings device voice menu", () => {
     expect(container.textContent).not.toContain("Shape");
   });
 
-  it("keeps a legacy set until explicitly switched, saves the choice, and reloads it", async () => {
+  it("keeps an Original bot's set until explicitly switched, saves the choice, and reloads it", async () => {
     await render();
     await act(async () =>
       container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
