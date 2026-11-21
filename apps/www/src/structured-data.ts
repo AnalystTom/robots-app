@@ -45,7 +45,7 @@ export function homeStructuredData(input: HomeStructuredDataInput) {
           postalCode: "19713",
           addressCountry: "US",
         },
-        sameAs: [GITHUB_URL, "https://www.getinboxzero.com/"],
+        sameAs: [GITHUB_URL],
       },
       {
         "@type": "WebSite",

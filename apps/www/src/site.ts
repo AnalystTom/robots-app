@@ -21,5 +21,3 @@ export const PLUGIN_SUBMIT_PATH = "/plugins/submit/";
 export const OPENCLAW_ALTERNATIVE_PATH = "/openclaw-alternative/";
 export const CHANGELOG_URL = "https://github.com/AnalystTom/robots-app/releases";
 export const LATEST_RELEASE_URL = `${CHANGELOG_URL}/latest`;
-export const INBOX_ZERO_URL =
-  "https://www.getinboxzero.com/?utm_source=robots&utm_medium=website&utm_campaign=footer";
