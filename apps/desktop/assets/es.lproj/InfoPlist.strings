@@ -1,2 +1,5 @@
 "NSMicrophoneUsageDescription" = "RoBots usa el micrófono para el dictado y las llamadas de voz con tus bots.";
 "NSSpeechRecognitionUsageDescription" = "RoBots convierte lo que dices en texto para el dictado y las llamadas de voz con tus bots.";
+"NSAppleEventsUsageDescription" = "RoBots usa Mail, Mensajes, Notas, Recordatorios, Calendario y Contactos para tus bots cuando lo permites.";
+"NSLocationUsageDescription" = "RoBots comparte la ubicación de tu Mac con tus bots cuando lo permites.";
+"NSLocationWhenInUseUsageDescription" = "RoBots comparte la ubicación de tu Mac con tus bots cuando lo permites.";

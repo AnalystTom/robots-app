@@ -11,10 +11,10 @@ import {
 } from "./host-computer-protocol.js";
 import type { HostScreen } from "./host-screen.js";
 import { HostScreenError } from "./host-screen.js";
+import type { MacApps } from "./mac-apps-protocol.js";
+import { MAC_APPS_UNAVAILABLE_MESSAGE, MacAppError } from "./mac-apps-protocol.js";
 
-/** Where one request's frames go. A write may wait for the transport to drain. */
 export interface HostComputerSink {
-  /** Called once the request is accepted, before the first frame. */
   open(): void;
   write(frame: HostComputerFrame<unknown>): void | Promise<void>;
 }
@@ -24,17 +24,15 @@ export type HostComputerOutcome = "invalid" | "disabled" | "busy" | "finished";
 export interface HostComputerCall {
   readonly signal: AbortSignal;
   abort(): void;
-  /** Validates and runs one request. Nothing is written after the call is aborted. */
   run(input: unknown, sink: HostComputerSink): Promise<HostComputerOutcome>;
-  /** Releases the slot. Always call it, even when `run` was never reached. */
   end(): void;
 }
 
-/**
- * Runs host computer requests from any transport: the local HTTP listener and the outbound
- * device socket share validation, limits, cancellation, and error sanitizing.
- */
-export function createHostComputerRunner(options: { root: string; screen?: HostScreen }) {
+export function createHostComputerRunner(options: {
+  root: string;
+  screen?: HostScreen;
+  macApps?: MacApps;
+}) {
   let enabled = false;
   const active = new Map<
     AbortController,
@@ -46,7 +44,6 @@ export function createHostComputerRunner(options: { root: string; screen?: HostS
     maxFileBytes: HOST_COMPUTER_MAX_FILE_BYTES,
   });
 
-  // Reconstruct only our own workspace path. Never trust a caller's providerRef or filesystem root.
   function ref(botId: string): ComputerRef {
     const key = createHash("sha256").update(botId).digest("hex");
     return {
@@ -63,6 +60,11 @@ export function createHostComputerRunner(options: { root: string; screen?: HostS
     return options.screen;
   }
 
+  function macApps() {
+    if (!options.macApps) throw new MacAppError(MAC_APPS_UNAVAILABLE_MESSAGE);
+    return options.macApps;
+  }
+
   async function* dispatch(
     input: HostComputerRequest,
     context: AdapterContext,
@@ -75,6 +77,9 @@ export function createHostComputerRunner(options: { root: string; screen?: HostS
         break;
       case "screenAct":
         yield await screen().act(scope, input.app, input.actions);
+        break;
+      case "macApp":
+        yield await macApps().run(input.call, context.signal);
         break;
       case "environment":
         yield await provider.environment();
@@ -166,9 +171,7 @@ export function createHostComputerRunner(options: { root: string; screen?: HostS
       enabled = false;
       abortAll();
     },
-    /** Reserves a slot before the request body arrives, or null when execution capacity is full. */
     begin(): HostComputerCall | null {
-      // Keep four bounded slots for cancellation and shutdown when commands fill execution capacity.
       if (active.size >= 20) return null;
       const controller = new AbortController();
       active.set(controller, undefined);
@@ -195,7 +198,6 @@ export function createHostComputerRunner(options: { root: string; screen?: HostS
           const deadline = setTimeout(abort, hostComputerDeadlineMs(parsed.data));
           deadline.unref();
           sink.open();
-          // Quiet commands must keep clients and intermediaries from timing out between frames.
           const heartbeat = setInterval(() => {
             if (!signal.aborted) void Promise.resolve(sink.write({ heartbeat: true })).catch(abort);
           }, 30_000);
@@ -230,9 +232,8 @@ export function createHostComputerRunner(options: { root: string; screen?: HostS
   };
 }
 
-/** Only messages that reveal nothing beyond the caller's own request leave this computer. */
 function hostComputerErrorMessage(error: unknown) {
-  if (error instanceof HostScreenError) return error.message;
+  if (error instanceof HostScreenError || error instanceof MacAppError) return error.message;
   if (
     error instanceof Error &&
     (error.message === "Path escapes the computer workspace" ||

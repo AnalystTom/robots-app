@@ -1,2 +1,5 @@
 "NSMicrophoneUsageDescription" = "RoBots używa mikrofonu do dyktowania i rozmów głosowych z Twoimi botami.";
 "NSSpeechRecognitionUsageDescription" = "RoBots zamienia mowę na tekst podczas dyktowania i rozmów głosowych z Twoimi botami.";
+"NSAppleEventsUsageDescription" = "RoBots używa aplikacji Mail, Wiadomości, Notatki, Przypomnienia, Kalendarz i Kontakty dla Twoich botów, gdy na to pozwolisz.";
+"NSLocationUsageDescription" = "RoBots udostępnia lokalizację Twojego Maca Twoim botom, gdy na to pozwolisz.";
+"NSLocationWhenInUseUsageDescription" = "RoBots udostępnia lokalizację Twojego Maca Twoim botom, gdy na to pozwolisz.";

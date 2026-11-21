@@ -12,6 +12,7 @@ import type {
   DesktopSetup,
   RobotsDesktopDevice,
 } from "@robots/contracts";
+import { isMacGrantId } from "@robots/contracts";
 import type { BrowserWindow, Session } from "electron";
 import {
   app,
@@ -81,6 +82,8 @@ import {
   stackDir,
   stackResourceDir,
 } from "./local-stack.js";
+import { createDesktopMacApps } from "./mac-apps.js";
+import { automationPermissionCode } from "./mac-automation-native.js";
 import { nativeStackEligible, readServerBundle } from "./mac-runtime.js";
 import {
   configureDesktopMonitoring,
@@ -615,8 +618,26 @@ app.whenReady().then(async () => {
         return { png: fitted.toPNG(), ...fitted.getSize() };
       },
     });
+  const mac =
+    process.platform === "darwin"
+      ? createDesktopMacApps({
+          home: app.getPath("home"),
+          openSettings: (url) => shell.openExternal(url),
+          automationCode: automationPermissionCode,
+        })
+      : undefined;
+  if (mac) {
+    ipcMain.handle("desktop.macApps.permissions", (event) =>
+      fromAppFrame(permissionTarget(), event) ? mac.permissions.states() : null,
+    );
+    ipcMain.handle("desktop.macApps.allow", (event, grant: unknown) =>
+      fromAppFrame(permissionTarget(), event) && isMacGrantId(grant)
+        ? mac.permissions.allow(grant)
+        : null,
+    );
+  }
   try {
-    desktop.hostComputer = await prepareHostComputer(userDataDir, hostScreen);
+    desktop.hostComputer = await prepareHostComputer(userDataDir, hostScreen, mac?.macApps);
   } catch {
     /* Local access fails closed; Docker remains available. */
   }
@@ -644,6 +665,7 @@ app.whenReady().then(async () => {
         token,
         root: path.join(userDataDir, "computers"),
         screen: hostScreen,
+        macApps: mac?.macApps,
         ...events,
       }),
   });

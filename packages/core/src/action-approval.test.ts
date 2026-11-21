@@ -1130,4 +1130,39 @@ describe("approvalRuleEffectChoices", () => {
     ]);
     expect(approvalRuleEffectChoices(rule("category", "email"))).toEqual([]);
   });
+
+  it("never offers Allow for sending from the user's Mac, and offers it for reading", () => {
+    const rule = (matchValue: string) => ({
+      effect: "require_approval" as const,
+      matchKind: "tool" as const,
+      matchValue,
+    });
+    for (const send of ["mac_mail_send", "mac_messages_send"])
+      expect(approvalRuleEffectChoices(rule(send))).toEqual(["require_approval", "deny"]);
+    expect(approvalRuleEffectChoices(rule("mac_mail_search"))).toEqual([
+      "always_allow",
+      "require_approval",
+      "deny",
+    ]);
+  });
+});
+
+describe("Mac app tools", () => {
+  it("need approval as built-ins and count Mac Mail's writes as email", () => {
+    expect(toolRequiresApproval("mac_notes_search", false)).toBe(true);
+    expect(
+      resolveActionApproval({
+        toolName: "mac_mail_send",
+        connectorKind: "mac_mail",
+        rules: [{ effect: "deny", matchKind: "category", matchValue: "email" }],
+      }),
+    ).toBe("deny");
+    expect(
+      resolveActionApproval({
+        toolName: "mac_mail_search",
+        connectorKind: "mac_mail",
+        rules: [{ effect: "deny", matchKind: "category", matchValue: "email" }],
+      }),
+    ).toBe("allow");
+  });
 });

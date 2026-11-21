@@ -81,6 +81,7 @@ import type { ToolRequest } from "./run-tool-request.js";
 import { BUILTIN_AGENT_TOOL_NAMES, READ_ONLY_AGENT_TOOLS } from "./run-tool-selection.js";
 import { callMediaTool } from "./run-tools-files.js";
 import { callPaidService } from "./run-tools-integrations.js";
+import { macAppConnectorKind, macAppGate } from "./run-tools-mac-apps.js";
 import { USER_COMPUTER_TOOLS, userComputerGate } from "./run-tools-user-computer.js";
 import { connectorTrustKeys } from "./run-trust.js";
 import { watchFromTool } from "./schedule-tools.js";
@@ -175,7 +176,9 @@ export async function gateToolCall(
     };
   }
   const connectorProviders = ctx.tools.connectedPlugins.map((plugin) => plugin.provider);
-  const connectorKind = connectorKindFromToolName(approvalName, connectorProviders);
+  const connectorKind =
+    macAppConnectorKind(approvalName) ??
+    connectorKindFromToolName(approvalName, connectorProviders);
   const watch = name === "schedule_create" ? watchFromTool(args.watch) : undefined;
   const httpWatch = watch?.kind === "http";
   const sendsToSite =
@@ -329,28 +332,37 @@ export async function gateToolCall(
             ),
           )
         : false));
-  const plan = USER_COMPUTER_TOOLS.has(name)
-    ? await userComputerGate(
-        ctx,
-        approvalResolved.decision === "deny" || actionRule?.effect === "deny",
-        name,
-        args,
-      ).then((planned) => (planned === "allow" && actionRule?.effect === "ask" ? "ask" : planned))
-    : planActionGate({
-        resolved: approvalResolved,
-        mode,
-        mandatory: mandatoryInAnyRun,
-        steerable:
-          guardedInNeverAsk && mode === "never"
-            ? !ctx.source.ownerStartedRun || (await isRunTainted(ctx))
-            : undefined,
-        consequential: requiresApprovalByDefault,
-        reviewOnly: connectorReadGated,
-        checkerConfigured,
-        newDestination: siteGate === "new",
-        purchase: paying,
+  const macApp = macAppConnectorKind(name)
+    ? await macAppGate(ctx, name, {
+        blocked: approvalResolved.decision === "deny",
         actionRule: actionRule?.effect,
-      });
+        listSource: approvalResolved.source,
+      })
+    : undefined;
+  const plan = macApp
+    ? macApp.plan
+    : USER_COMPUTER_TOOLS.has(name)
+      ? await userComputerGate(
+          ctx,
+          approvalResolved.decision === "deny" || actionRule?.effect === "deny",
+          name,
+          args,
+        ).then((planned) => (planned === "allow" && actionRule?.effect === "ask" ? "ask" : planned))
+      : planActionGate({
+          resolved: approvalResolved,
+          mode,
+          mandatory: mandatoryInAnyRun,
+          steerable:
+            guardedInNeverAsk && mode === "never"
+              ? !ctx.source.ownerStartedRun || (await isRunTainted(ctx))
+              : undefined,
+          consequential: requiresApprovalByDefault,
+          reviewOnly: connectorReadGated,
+          checkerConfigured,
+          newDestination: siteGate === "new",
+          purchase: paying,
+          actionRule: actionRule?.effect,
+        });
   if (paying && run.trigger === "webhook" && plan !== "deny") {
     await decide({
       decision: "denied",
@@ -573,7 +585,7 @@ export async function gateToolCall(
     reviewReason,
     summary: request.fleetSummary,
     batch: connectorTool?.batch,
-    onceOnly: asksEveryTime,
+    onceOnly: asksEveryTime || Boolean(macApp?.everyTime),
   };
 
   const duplicateGate = applied?.duplicate

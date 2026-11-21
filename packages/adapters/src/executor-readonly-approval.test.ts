@@ -215,11 +215,17 @@ function fixture({
       async ({
         where,
       }: {
-        where: { kind: string; status: { in: string[] }; createdAt?: { gte: Date } };
+        where: {
+          kind: string | { in: string[] };
+          status: { in: string[] };
+          createdAt?: { gte: Date };
+        };
       }) =>
         effects.find(
           (effect) =>
-            effect.kind === where.kind &&
+            (typeof where.kind === "string"
+              ? effect.kind === where.kind
+              : where.kind.in.includes(effect.kind)) &&
             where.status.in.includes(effect.status) &&
             !(where.createdAt && createdAt.get(effect.id)! < where.createdAt.gte),
         ) ?? null,
@@ -4140,6 +4146,190 @@ describe("user computer screen control", () => {
     await f.run();
     expect(f.pauseRunForInput).not.toHaveBeenCalled();
     expect(f.results).toEqual([{ error: expect.stringMatching(/^actions\.0/) }]);
+    expect(requests).toEqual([]);
+  });
+});
+
+describe("Mac apps", () => {
+  function devices(platform = "darwin", screenOnly?: boolean) {
+    const requests: HostComputerRequest[] = [];
+    const gateway = {
+      connected: vi.fn(async (_userId: string) => ({
+        deviceId: "device-1",
+        name: "Laptop",
+        platform,
+        screenOnly,
+      })),
+      pairedSince: vi.fn(async (_userId: string) => new Date(0)),
+      async *request<T>(_userId: string, request: HostComputerRequest) {
+        requests.push(request);
+        yield { messages: [{ id: 7, subject: "Invoice" }] } as T;
+      },
+    } satisfies UserDeviceGateway;
+    return { gateway, requests };
+  }
+  const ownRun = { name: "mac_mail_search", builtin: true, sourceRole: "user" };
+  const email = { to: ["ana@example.test"], subject: "Plan", body: "See you at 5" };
+  const instruction =
+    "The user's Mail, Messages, Notes, Reminders, Calendar, Contacts and location on their Mac have their own mac_ tools; use those rather than driving those apps on screen.";
+
+  it("is offered with its guidance only with the owner's Mac connected", async () => {
+    const mac = fixture({ ...ownRun, userDevices: devices().gateway });
+    await mac.run();
+    expect(mac.offeredTools()).toEqual(
+      expect.arrayContaining(["mac_mail_search", "mac_mail_send", "mac_location_current"]),
+    );
+    expect(mac.instructions()).toContain(instruction);
+    const hostMac = fixture({ ...ownRun, userDevices: devices("darwin", true).gateway });
+    await hostMac.run();
+    expect(hostMac.offeredTools()).toContain("mac_notes_search");
+    for (const options of [
+      { userDevices: devices("win32").gateway },
+      { userDevices: devices().gateway, trigger: "routine" },
+      { userDevices: devices().gateway, disabledBuiltinTools: ["user_computer_shell"] },
+    ]) {
+      const f = fixture({ ...ownRun, ...options });
+      await f.run();
+      expect(f.offeredTools()).not.toContain("mac_mail_search");
+      expect(f.instructions()).not.toContain(instruction);
+    }
+    const oneOff = fixture({
+      ...ownRun,
+      userDevices: devices().gateway,
+      disabledBuiltinTools: ["mac_mail_send"],
+    });
+    await oneOff.run();
+    expect(oneOff.offeredTools()).toContain("mac_mail_search");
+    expect(oneOff.offeredTools()).not.toContain("mac_mail_send");
+  });
+
+  it("asks once for Mail, then searches without asking, while every send asks", async () => {
+    const { gateway, requests } = devices();
+    const f = fixture({ ...ownRun, userDevices: gateway, skipApprovals: true });
+    f.setCalls([{ name: "mac_mail_search", args: { query: "invoice" }, executionId: "call-1" }]);
+    await f.run();
+    expect(isApprovalPausedResult(f.results[0])).toBe(true);
+    expect(requests).toEqual([]);
+    expect(f.pauseRunForInput.mock.calls[0]).toEqual([
+      expect.objectContaining({
+        blocks: [
+          expect.objectContaining({
+            kind: "ask",
+            text: "Use Mail on your Mac?",
+            actions: [
+              { id: "allow", label: "Allow in this space" },
+              { id: "deny", label: "Deny" },
+            ],
+          }),
+        ],
+      }),
+    ]);
+
+    f.effects[0]!.status = "approved";
+    await f.run();
+    expect(requests).toEqual([
+      {
+        method: "macApp",
+        botId: "bot-1",
+        runId: "run-1",
+        call: {
+          tool: "mac_mail_search",
+          args: { query: "invoice", mailbox: "inbox", unread_only: false, limit: 20 },
+        },
+      },
+    ]);
+    expect(JSON.stringify(f.results.at(-1))).toContain("Invoice");
+    expect(f.effects[0]!.result).toEqual({ app: "Mail", done: "Search your email" });
+
+    f.setCalls([{ name: "mac_mail_search", args: { query: "receipt" }, executionId: "call-2" }]);
+    await f.run();
+    expect(f.pauseRunForInput).toHaveBeenCalledOnce();
+    expect(requests).toHaveLength(2);
+
+    f.setCalls([{ name: "mac_mail_send", args: email, executionId: "call-3" }]);
+    await f.run();
+    expect(f.pauseRunForInput).toHaveBeenCalledTimes(2);
+    expect(f.pauseRunForInput.mock.calls[1]).toEqual([
+      expect.objectContaining({
+        blocks: [
+          expect.objectContaining({
+            text: "Send this email from Mail on your Mac?",
+            detail: "To: ana@example.test\nSubject: Plan\n\nSee you at 5",
+            actions: [
+              { id: "allow", label: "Allow once" },
+              { id: "deny", label: "Deny" },
+            ],
+          }),
+        ],
+      }),
+    ]);
+    expect(requests).toHaveLength(2);
+    f.effects.at(-1)!.status = "approved";
+    await f.run();
+    expect(requests.at(-1)).toEqual({
+      method: "macApp",
+      botId: "bot-1",
+      runId: "run-1",
+      call: { tool: "mac_mail_send", args: { ...email, cc: [], bcc: [] } },
+    });
+
+    f.setCalls([
+      { name: "mac_mail_send", args: { ...email, body: "Second" }, executionId: "call-4" },
+    ]);
+    await f.run();
+    expect(f.pauseRunForInput).toHaveBeenCalledTimes(3);
+    expect(requests).toHaveLength(3);
+  });
+
+  it("refuses invalid arguments and blocked tools before any card or device request", async () => {
+    const { gateway, requests } = devices();
+    const invalid = fixture({ ...ownRun, userDevices: gateway });
+    invalid.setCalls([
+      { name: "mac_mail_send", args: { ...email, to: ["not-an-address"] }, executionId: "call-1" },
+    ]);
+    await invalid.run();
+    expect(invalid.results).toEqual([{ error: "to.0: must be an email address" }]);
+    expect(invalid.pauseRunForInput).not.toHaveBeenCalled();
+    expect(invalid.effects).toEqual([]);
+
+    const blocked = fixture({
+      ...ownRun,
+      userDevices: gateway,
+      rules: [{ effect: "deny", matchKind: "tool", matchValue: "mac_messages_send" }],
+    });
+    blocked.setCalls([
+      { name: "mac_messages_send", args: { to: "+15550100", text: "hi" }, executionId: "call-1" },
+    ]);
+    await blocked.run();
+    expect(blocked.results[0]).toEqual({
+      error: expect.stringContaining("is blocked in this space"),
+    });
+    expect(blocked.pauseRunForInput).not.toHaveBeenCalled();
+    expect(requests).toEqual([]);
+  });
+
+  it("tells the bot when the Mac went offline after the tool was offered", async () => {
+    const { gateway, requests } = devices();
+    const f = fixture({ ...ownRun, userDevices: gateway });
+    f.effects.push({
+      id: "earlier",
+      kind: "mac_mail_read",
+      idempotencyKey: "earlier-key",
+      status: "completed",
+      request: { id: 1 },
+    });
+    gateway.connected.mockResolvedValueOnce({
+      deviceId: "device-1",
+      name: "Laptop",
+      platform: "darwin",
+      screenOnly: undefined,
+    });
+    gateway.connected.mockResolvedValue(null as never);
+    f.setCalls([{ name: "mac_mail_search", args: {}, executionId: "call-1" }]);
+    await f.run();
+    expect(f.results).toEqual([
+      { error: expect.stringContaining("The user's Mac is not connected.") },
+    ]);
     expect(requests).toEqual([]);
   });
 });

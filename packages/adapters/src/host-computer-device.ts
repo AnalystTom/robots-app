@@ -6,12 +6,6 @@ import type { UserDevice, UserDeviceGateway } from "./user-device-protocol.js";
 
 export const HOST_COMPUTER_DEVICE_ID = "this-computer";
 
-/**
- * On the desktop app's own server, "Let bots use this computer" makes it every bot's computer.
- * This also offers its apps to the owner's own runs, through the same screen tools and per-app
- * approval as a paired computer. Its commands already run as the bot's computer, so only the
- * screen goes this way.
- */
 export function withHostComputerScreen(
   devices: UserDeviceGateway | undefined,
   options: { prisma: PrismaClient; sandboxKind: string; url?: string; token?: string },
@@ -20,7 +14,6 @@ export function withHostComputerScreen(
   if (options.sandboxKind !== "docker" || !url || !token) return devices;
   const host = new HostComputerSandbox(url, token);
 
-  // Approvals count from the latest settings change, so turning access off and on asks again.
   async function enabledSince() {
     const settings = await prisma.deploymentSettings.findUnique({
       where: { id: "default" },
@@ -47,7 +40,6 @@ export function withHostComputerScreen(
           }
         : null;
     } catch {
-      // The desktop app is closed or access was revoked on it.
       return null;
     }
   }
@@ -70,8 +62,12 @@ export function withHostComputerScreen(
         yield* devices.request<T>(userId, request, signal, deviceId);
         return;
       }
-      if (request.method !== "screenObserve" && request.method !== "screenAct")
-        throw new Error("Only screen control reaches this computer this way");
+      if (
+        request.method !== "screenObserve" &&
+        request.method !== "screenAct" &&
+        request.method !== "macApp"
+      )
+        throw new Error("Only screen control and Mac apps reach this computer this way");
       if (!(await enabledSince())) throw new UserDeviceOfflineError();
       yield* host.stream<T>(request, signal);
     },

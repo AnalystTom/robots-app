@@ -1,3 +1,5 @@
+import type { MacGrantId, MacGrantState } from "./mac-apps.js";
+
 /**
  * `unsupported` covers an unpackaged build and a repository with no published releases, which is
  * the normal state for a fork. It is not an error the user needs to act on. Automatic checks stay
@@ -117,6 +119,10 @@ export interface DesktopNetworkState {
 }
 
 export interface RobotsDesktop {
+  macApps?: {
+    permissions: () => Promise<MacGrantState[] | null>;
+    allow: (grant: MacGrantId) => Promise<MacGrantState[] | null>;
+  };
   /**
    * Opening the stack on this computer to other devices. Absent on older releases; `state`
    * answers null when the app shows a server on another computer.

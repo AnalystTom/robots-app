@@ -1,7 +1,7 @@
 import type { AgentRunRequest, ComputerRef, SemanticMemoryProvider } from "@robots/adapter-kit";
 import { DEFAULT_CONTEXT_STRATEGY } from "@robots/adapter-kit";
 import type { MessageBlock, RunStatus } from "@robots/contracts";
-import { disabledBuiltinToolSet, hasLab, resolveLabs } from "@robots/contracts";
+import { disabledBuiltinToolSet, hasLab, isMacAppTool, resolveLabs } from "@robots/contracts";
 import {
   BACKGROUND_HELPER_TRIGGER,
   botMessageAllowsSilence,
@@ -1362,6 +1362,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         let userComputer: UserComputerState;
         let userComputerShell = false;
         let userComputerScreen = false;
+        let macApps = false;
         if (
           userComputerOwnerId &&
           deps.userDevices &&
@@ -1373,6 +1374,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
             userComputerShell = !device.screenOnly;
             // The macOS and Windows desktops fetch a screen driver; Linux has none yet.
             userComputerScreen = device.platform === "darwin" || device.platform === "win32";
+            macApps = device.platform === "darwin";
           } else userComputer = "offline";
         }
         const cloudAgent = await cloudAgentPromise;
@@ -1424,6 +1426,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
             followUpFromUser: sourceMessage?.role === "user",
             userComputer: userComputerShell,
             userComputerScreen,
+            macApps,
             emailInbox,
             emailClaimable:
               Boolean(deps.inboundEmailDomain) && !emailName && run.userId === bot.userId,
@@ -1987,6 +1990,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                   trigger: run.trigger,
                 }),
                 userComputer,
+                macApps: strategicBuiltins.some((tool) => isMacAppTool(tool.name)),
               })
                 .filter((instruction): instruction is string => Boolean(instruction))
                 .join("\n\n"),
