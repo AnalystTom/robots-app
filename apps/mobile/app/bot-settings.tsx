@@ -93,7 +93,6 @@ export default function BotSettingsScreen() {
   const [credentials, setCredentials] = useState<MobileModelCredential[]>([]);
   const [catalog, setCatalog] = useState<MobileModel[]>([]);
   const [me, setMe] = useState<MobileMe | null>(null);
-  const [modelMetaReady, setModelMetaReady] = useState(false);
   const [modelMetaError, setModelMetaError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const computerMaintenanceRows = useComputerMaintenanceRows(botId);
@@ -177,6 +176,31 @@ export default function BotSettingsScreen() {
       }),
     [botId],
   );
+  const modelSave = useMemo(
+    () =>
+      createQueuedSave<{ key: string; thinking: string }>(
+        { key: "", thinking: "" },
+        {
+          save: async ({ key, thinking }) => {
+            const parsed = key ? parseModelOptionKey(key) : null;
+            const updated = await rpc("bots/update", {
+              botId,
+              modelProvider: parsed?.provider ?? null,
+              modelId: parsed?.modelId ?? null,
+              thinkingLevel: (thinking || null) as ThinkingLevel | null,
+            });
+            setBot((prev) => (prev ? { ...prev, ...updated } : prev));
+          },
+          onChange: ({ key, thinking }) => {
+            setModelKey(key);
+            setThinkingLevel(thinking);
+          },
+          onError: (err) => setError(errorText(err, t`Could not change the model`)),
+          equals: (left, right) => left.key === right.key && left.thinking === right.thinking,
+        },
+      ),
+    [botId, t],
+  );
   const nameSave = useMemo(
     () =>
       createQueuedSave<string>("", {
@@ -206,12 +230,16 @@ export default function BotSettingsScreen() {
         setColor(next.color);
         setAvatarSet(resolveBotAvatarSet(next.avatarSet));
         setComputerMode(next.computerMode);
-        setModelKey(
-          next.modelProvider && next.modelId
-            ? modelOptionKey(next.modelProvider, next.modelId)
-            : "",
-        );
-        setThinkingLevel(next.thinkingLevel ?? "");
+        const savedModel = {
+          key:
+            next.modelProvider && next.modelId
+              ? modelOptionKey(next.modelProvider, next.modelId)
+              : "",
+          thinking: next.thinkingLevel ?? "",
+        };
+        setModelKey(savedModel.key);
+        setThinkingLevel(savedModel.thinking);
+        modelSave.reset(savedModel);
         setAutoSpeak(next.autoSpeak);
         setNotifyOnFinish(next.notifyOnFinish ?? true);
         setDailyCheckIns(next.dailyCheckIns ?? true);
@@ -224,7 +252,16 @@ export default function BotSettingsScreen() {
         replyModeSave.reset(next.replyMode);
       })
       .catch((err) => setError(errorText(err, t`Could not load bot`)));
-  }, [botId, dailyCheckInsSave, crossSpaceSave, fleetSave, replyModeSave, notifySave, nameSave]);
+  }, [
+    botId,
+    dailyCheckInsSave,
+    crossSpaceSave,
+    fleetSave,
+    replyModeSave,
+    notifySave,
+    nameSave,
+    modelSave,
+  ]);
 
   useEffect(() => {
     void Promise.all([rpc("me"), rpc("models/list"), rpc("models/credentials")])
@@ -233,10 +270,8 @@ export default function BotSettingsScreen() {
         setCatalog(nextCatalog);
         setCredentials(nextCredentials);
         setModelMetaError(null);
-        setModelMetaReady(true);
       })
       .catch((err) => {
-        setModelMetaReady(false);
         setModelMetaError(errorText(err, t`Could not load model settings`));
       });
   }, [t]);
@@ -291,8 +326,8 @@ export default function BotSettingsScreen() {
 
   function selectModel(key: string) {
     if (key === selectedModelKey) return;
-    setModelKey(key);
-    setThinkingLevel("");
+    setError(null);
+    modelSave.update({ key, thinking: "" });
   }
 
   // The searchable model list hands its pick back as a one-shot route param.
@@ -401,7 +436,6 @@ export default function BotSettingsScreen() {
     setError(null);
     try {
       const profile = { description: description.trim() };
-      const selected = selectedModel;
       const input: {
         botId: string;
         description?: string;
@@ -409,9 +443,6 @@ export default function BotSettingsScreen() {
         expectedInstructions?: string;
         color?: string;
         avatarSet?: BotAvatarSet;
-        modelProvider?: string | null;
-        modelId?: string | null;
-        thinkingLevel?: ThinkingLevel | null;
         autoSpeak?: boolean;
       } = { botId };
       if (profile.description !== (bot.description ?? "")) {
@@ -423,19 +454,6 @@ export default function BotSettingsScreen() {
       }
       if (color !== bot.color) input.color = color;
       if (avatarSet !== resolveBotAvatarSet(bot.avatarSet)) input.avatarSet = avatarSet;
-      const modelChanged =
-        (selected?.provider ?? null) !== (bot.modelProvider ?? null) ||
-        (selected?.modelId ?? null) !== (bot.modelId ?? null);
-      const thinkingChanged = (thinkingLevel || null) !== (bot.thinkingLevel ?? null);
-      if (modelChanged) {
-        input.modelProvider = selected?.provider ?? null;
-        input.modelId = selected?.modelId ?? null;
-      }
-      if (modelMetaReady && (modelChanged || thinkingChanged)) {
-        input.thinkingLevel = thinkingOptions.length
-          ? ((thinkingLevel || null) as ThinkingLevel | null)
-          : null;
-      }
       if (autoSpeak !== bot.autoSpeak) input.autoSpeak = autoSpeak;
       if (computerMode !== bot.computerMode) {
         await rpc(
@@ -460,6 +478,7 @@ export default function BotSettingsScreen() {
         replyModeSave.flush(),
         notifySave.flush(),
         nameSave.flush(),
+        modelSave.flush(),
       ]);
       router.back();
     } catch (err) {
@@ -477,10 +496,7 @@ export default function BotSettingsScreen() {
       color !== bot.color ||
       avatarSet !== resolveBotAvatarSet(bot.avatarSet) ||
       computerMode !== bot.computerMode ||
-      autoSpeak !== bot.autoSpeak ||
-      (selectedModel?.provider ?? null) !== (bot.modelProvider ?? null) ||
-      (selectedModel?.modelId ?? null) !== (bot.modelId ?? null) ||
-      (thinkingLevel || null) !== (bot.thinkingLevel ?? null));
+      autoSpeak !== bot.autoSpeak);
 
   const hasVoiceMenu = !voiceError && voices.length > 1;
   const voiceRowContent = (
@@ -636,7 +652,10 @@ export default function BotSettingsScreen() {
                 <MenuPicker
                   choices={thinkingChoices}
                   label={t`Thinking`}
-                  onChange={setThinkingLevel}
+                  onChange={(thinking) => {
+                    setError(null);
+                    modelSave.update({ key: modelKey, thinking });
+                  }}
                   value={thinkingLevel}
                 />
               ) : null}

@@ -28,7 +28,7 @@ import {
   truncateSlashDescription,
 } from "@robots/core";
 import { MAX_FONT_SCALE } from "@robots/ui-tokens";
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { TextInputInstance, ViewStyle } from "react-native";
 import {
@@ -86,6 +86,7 @@ type ThreadComposerProps = {
   replyQuote: string | null;
   attachmentIds: string[];
   botId?: string;
+  modelMenu?: ReactNode;
   onCall: boolean;
   sending: boolean;
   styles: { circleButton: ViewStyle; composerFill: ViewStyle };
@@ -109,6 +110,7 @@ export function ThreadComposer({
   replyQuote,
   attachmentIds,
   botId,
+  modelMenu,
   onCall,
   sending,
   styles,
@@ -791,6 +793,7 @@ export function ThreadComposer({
               </TextInput>
             </Pressable>
           </View>
+          {onCall ? null : <View style={{ marginBottom: pillInset }}>{modelMenu}</View>}
           {onCall ? null : (
             <Pressable
               accessibilityRole="button"

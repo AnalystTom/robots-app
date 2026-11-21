@@ -18,7 +18,7 @@ import {
   parseModelOptionKey,
   resolveSelectableModelId,
 } from "@robots/core";
-import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger } from "@robots/ui-web";
+import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger, toast } from "@robots/ui-web";
 import { useQuery } from "@tanstack/react-query";
 import { Mail } from "lucide-react";
 import type { ReactNode } from "react";
@@ -43,6 +43,7 @@ import {
   ToolsGroup,
   VoiceGroup,
 } from "./bot-settings-sections";
+import { botModelChange, botModelKey } from "./composer-model-picker";
 import { ExportBotDialog } from "./export-bot-dialog";
 
 const ScratchpadSection = lazyComponent(() =>
@@ -53,16 +54,31 @@ const KnowledgeSection = lazyComponent(() =>
   import("../KnowledgeSection").then((module) => module.KnowledgeSection),
 );
 
-function advancedValues(bot: Bot) {
-  return [
-    bot.modelProvider && bot.modelId ? modelOptionKey(bot.modelProvider, bot.modelId) : "",
-    bot.thinkingLevel ?? "",
-    bot.computerMode,
-    bot.memoryScope,
-    bot.autoSpeak,
-    bot.voiceId ?? "",
-  ] as const;
-}
+type AdvancedPatch = {
+  computerMode?: ComputerMode;
+  memoryScope?: "isolated" | "shared" | null;
+  autoSpeak?: boolean;
+  voiceId?: string | null;
+  modelProvider?: string | null;
+  modelId?: string | null;
+  thinkingLevel?: ThinkingLevel | null;
+};
+
+type QueuedPatch = {
+  name?: string;
+  description?: string;
+  color?: string;
+  avatarSet?: BotAvatarSet;
+  notifyOnFinish?: boolean;
+  fleetManagement?: boolean;
+  replyMode?: ReplyMode;
+  crossSpaceCommunication?: boolean;
+  dailyCheckIns?: boolean;
+  disabledBuiltinTools?: string[];
+  baseDisabledBuiltinTools?: string[];
+  advanced?: AdvancedPatch;
+  revertAdvanced?: () => void;
+};
 
 export type BotPanelTab = "computer" | "routines" | "pages" | "settings";
 
@@ -152,9 +168,7 @@ export function BotSettings({
   const [replyMode, setReplyMode] = useState(bot.replyMode);
   useEffect(() => setReplyMode(bot.replyMode), [bot.replyMode]);
   const [voiceId, setVoiceId] = useState(bot.voiceId ?? "");
-  const [modelKey, setModelKey] = useState(
-    bot.modelProvider && bot.modelId ? modelOptionKey(bot.modelProvider, bot.modelId) : "",
-  );
+  const [modelKey, setModelKey] = useState(() => botModelKey(bot));
   const [thinkingLevel, setThinkingLevel] = useState(bot.thinkingLevel ?? "");
   const [disabledBuiltinTools, setDisabledBuiltinTools] = useState<string[]>(
     bot.disabledBuiltinTools ?? [],
@@ -178,42 +192,13 @@ export function BotSettings({
   const credentials = credentialsQuery.data ?? NO_CREDENTIALS;
   const catalog = catalogQuery.data ?? NO_CATALOG;
   const me = meQuery.data ?? null;
-  const modelMetaReady =
-    credentialsQuery.data !== undefined &&
-    catalogQuery.data !== undefined &&
-    meQuery.data !== undefined;
   const [saving, setSaving] = useState(false);
-  const [savedAdvanced, setSavedAdvanced] = useState(() => JSON.stringify(advancedValues(bot)));
-  const advancedSnapshot = JSON.stringify([
-    modelKey,
-    thinkingLevel,
-    computerMode,
-    memoryScope,
-    autoSpeak,
-    voiceId,
-  ]);
-  const dirty =
-    name.trim() !== savedNameRef.current.trim() ||
-    advancedSnapshot !== savedAdvanced ||
-    description.trim() !== savedDescriptionRef.current;
   const [error, setError] = useState<string | null>(null);
   const [exportingBot, setExportingBot] = useState(false);
   const saveQueueRef = useRef(Promise.resolve());
   const executeSaveRef = useRef<
     (
-      patchOverrides?: {
-        name?: string;
-        description?: string;
-        color?: string;
-        avatarSet?: BotAvatarSet;
-        notifyOnFinish?: boolean;
-        fleetManagement?: boolean;
-        replyMode?: ReplyMode;
-        crossSpaceCommunication?: boolean;
-        dailyCheckIns?: boolean;
-        disabledBuiltinTools?: string[];
-        baseDisabledBuiltinTools?: string[];
-      },
+      patchOverrides?: QueuedPatch,
       revisions?: { color: number; avatarSet: number; notifyOnFinish: number },
     ) => Promise<void>
   >(async () => undefined);
@@ -236,15 +221,13 @@ export function BotSettings({
       avatarSet: nextAvatarSet,
       notifyOnFinish: nextNotify,
     };
-    const saved = JSON.parse(savedAdvanced) as unknown[];
-    const next = advancedValues(bot);
-    if (modelKey === saved[0]) setModelKey(next[0]);
-    if (thinkingLevel === saved[1]) setThinkingLevel(next[1]);
-    if (computerMode === saved[2]) setComputerMode(next[2]);
-    if (memoryScope === saved[3]) setMemoryScope(next[3]);
-    if (autoSpeak === saved[4]) setAutoSpeak(next[4]);
-    if (voiceId === saved[5]) setVoiceId(next[5]);
-    setSavedAdvanced(JSON.stringify(next));
+    if (pendingSavesRef.current > 0) return;
+    setModelKey(botModelKey(bot));
+    setThinkingLevel(bot.thinkingLevel ?? "");
+    setComputerMode(bot.computerMode);
+    setMemoryScope(bot.memoryScope);
+    setAutoSpeak(bot.autoSpeak);
+    setVoiceId(bot.voiceId ?? "");
   }, [bot]);
 
   const connectedOptions = connectedModelChoices(credentials, catalog);
@@ -262,10 +245,11 @@ export function BotSettings({
   const defaultEntry = me?.defaultModel
     ? catalogEntry(catalog, me.defaultProvider, me.defaultModel)
     : undefined;
+  const defaultModelLabel = defaultEntry?.label ?? me?.defaultModel;
   const modelChoices = chatModelChoices(
     connectedOptions,
     selectedModelKey,
-    t`Space default`,
+    defaultModelLabel ? t`Space default · ${defaultModelLabel}` : t`Space default`,
     defaultEntry?.images,
   );
 
@@ -288,24 +272,16 @@ export function BotSettings({
   const defaultThinkingLevel = effectiveCredential?.thinkingLevel ?? "medium";
 
   async function executeSave(
-    patchOverrides?: {
-      name?: string;
-      description?: string;
-      color?: string;
-      avatarSet?: BotAvatarSet;
-      notifyOnFinish?: boolean;
-      fleetManagement?: boolean;
-      replyMode?: ReplyMode;
-      crossSpaceCommunication?: boolean;
-      dailyCheckIns?: boolean;
-      disabledBuiltinTools?: string[];
-      baseDisabledBuiltinTools?: string[];
-    },
+    patchOverrides?: QueuedPatch,
     revisions?: { color: number; avatarSet: number; notifyOnFinish: number },
   ) {
     try {
       setSaving(true);
       setError(null);
+      if (patchOverrides?.advanced) {
+        await onSave(patchOverrides.advanced);
+        return;
+      }
       if (patchOverrides?.crossSpaceCommunication !== undefined) {
         await onSave({ crossSpaceCommunication: patchOverrides.crossSpaceCommunication });
         return;
@@ -322,7 +298,6 @@ export function BotSettings({
         await onSave({ replyMode: patchOverrides.replyMode });
         return;
       }
-      const selected = selectedModel;
       const nextName = (patchOverrides?.name !== undefined ? patchOverrides.name : name).trim();
       const nextDescription = (
         patchOverrides?.description !== undefined ? patchOverrides.description : description
@@ -345,22 +320,6 @@ export function BotSettings({
           ? { avatarSet: nextAvatarSet }
           : {}),
         notifyOnFinish: nextNotify,
-        computerMode,
-        memoryScope,
-        autoSpeak,
-        voiceId: voiceId || null,
-        modelProvider: selected?.provider ?? null,
-        modelId: selected?.modelId ?? null,
-        ...(modelMetaReady &&
-        (thinkingOptions.length > 0 ||
-          (selected?.provider ?? null) !== bot.modelProvider ||
-          (selected?.modelId ?? null) !== bot.modelId)
-          ? {
-              thinkingLevel: thinkingOptions.length
-                ? ((thinkingLevel || null) as ThinkingLevel | null)
-                : null,
-            }
-          : {}),
       };
       const requestedTools = patchOverrides?.disabledBuiltinTools;
       const baseTools = patchOverrides?.baseDisabledBuiltinTools ?? [];
@@ -398,10 +357,11 @@ export function BotSettings({
       };
       if (nextName) savedNameRef.current = nextName;
       savedDescriptionRef.current = nextDescription;
-      setSavedAdvanced(
-        JSON.stringify([modelKey, thinkingLevel, computerMode, memoryScope, autoSpeak, voiceId]),
-      );
     } catch (err) {
+      if (patchOverrides?.advanced) {
+        patchOverrides.revertAdvanced?.();
+        toast.error(errorText(err, t`Could not save`));
+      }
       if (
         patchOverrides?.color !== undefined &&
         revisions?.color === automaticRevision.current.color
@@ -446,18 +406,11 @@ export function BotSettings({
     void enqueueSave({ disabledBuiltinTools: next });
   }
 
-  function enqueueSave(patchOverrides?: {
-    name?: string;
-    description?: string;
-    color?: string;
-    avatarSet?: BotAvatarSet;
-    notifyOnFinish?: boolean;
-    fleetManagement?: boolean;
-    replyMode?: ReplyMode;
-    crossSpaceCommunication?: boolean;
-    dailyCheckIns?: boolean;
-    disabledBuiltinTools?: string[];
-  }) {
+  function saveAdvanced(advanced: AdvancedPatch, revertAdvanced: () => void) {
+    void enqueueSave({ advanced, revertAdvanced });
+  }
+
+  function enqueueSave(patchOverrides?: Omit<QueuedPatch, "baseDisabledBuiltinTools">) {
     pendingSavesRef.current += 1;
     if (patchOverrides?.color !== undefined) automaticRevision.current.color += 1;
     if (patchOverrides?.avatarSet !== undefined) automaticRevision.current.avatarSet += 1;
@@ -561,29 +514,57 @@ export function BotSettings({
               choices={modelChoices}
               value={selectedModelKey}
               onModelChange={(key) => {
+                if (key === selectedModelKey) return;
+                const previous = { modelKey, thinkingLevel };
                 setModelKey(key);
                 setThinkingLevel("");
+                saveAdvanced({ ...botModelChange(key), thinkingLevel: null }, () => {
+                  setModelKey(previous.modelKey);
+                  setThinkingLevel(previous.thinkingLevel);
+                });
               }}
               thinkingOptions={thinkingOptions}
               thinkingLevel={thinkingLevel}
               defaultThinkingLevel={defaultThinkingLevel}
-              onThinkingLevelChange={setThinkingLevel}
+              onThinkingLevelChange={(level) => {
+                const previous = thinkingLevel;
+                setThinkingLevel(level);
+                saveAdvanced({ thinkingLevel: (level || null) as ThinkingLevel | null }, () =>
+                  setThinkingLevel(previous),
+                );
+              }}
             />
             <ComputerGroup
               computerMode={computerMode}
-              onComputerModeChange={setComputerMode}
+              onComputerModeChange={(mode) => {
+                const previous = computerMode;
+                setComputerMode(mode);
+                saveAdvanced({ computerMode: mode }, () => setComputerMode(previous));
+              }}
               memoryProviderConfigured={memoryProviderConfigured}
               memoryScope={memoryScope}
-              onMemoryScopeChange={setMemoryScope}
+              onMemoryScopeChange={(scope) => {
+                const previous = memoryScope;
+                setMemoryScope(scope);
+                saveAdvanced({ memoryScope: scope }, () => setMemoryScope(previous));
+              }}
               actions={computerActions}
             />
             <VoiceGroup
               ids={ids}
               autoSpeak={autoSpeak}
-              onAutoSpeakChange={setAutoSpeak}
+              onAutoSpeakChange={(enabled) => {
+                const previous = autoSpeak;
+                setAutoSpeak(enabled);
+                saveAdvanced({ autoSpeak: enabled }, () => setAutoSpeak(previous));
+              }}
               voices={voices}
               voiceId={voiceId}
-              onVoiceIdChange={setVoiceId}
+              onVoiceIdChange={(next) => {
+                const previous = voiceId;
+                setVoiceId(next);
+                saveAdvanced({ voiceId: next || null }, () => setVoiceId(previous));
+              }}
             />
             <PermissionsGroup
               ids={ids}
@@ -639,22 +620,6 @@ export function BotSettings({
               onClear={onClear}
             />
           </div>
-          {dirty ? (
-            <Button
-              className="sticky bottom-0 mt-5 w-full"
-              disabled={saving}
-              onClick={() => {
-                void enqueueSave({
-                  name,
-                  description,
-                  color,
-                  notifyOnFinish,
-                });
-              }}
-            >
-              <Trans>Save</Trans>
-            </Button>
-          ) : null}
         </TabsContent>
       </Tabs>
       {error ? <p className="mt-2 text-body-sm text-destructive">{error}</p> : null}

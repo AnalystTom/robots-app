@@ -15,7 +15,7 @@ import {
 } from "@robots/core";
 import { Button } from "@robots/ui-web";
 import { Box, Plus } from "lucide-react";
-import type { ClipboardEvent, ComponentProps, RefObject } from "react";
+import type { ClipboardEvent, ComponentProps, ReactNode, RefObject } from "react";
 import {
   memo,
   useEffect,
@@ -104,8 +104,10 @@ const ComposerBody = memo(function Composer({
   draftKey,
   enterToSend,
   sendColors,
+  modelPicker,
   docked = false,
 }: {
+  modelPicker?: ReactNode;
   activeName?: string;
   running: boolean;
   disabled?: boolean;
@@ -920,6 +922,7 @@ const ComposerBody = memo(function Composer({
           sendDisabled={sending || !canSend || disabled}
           stopDisabled={sending}
           sendColors={sendColors}
+          modelPicker={modelPicker}
           onSend={() => void send()}
           onStop={() => void onStop()}
         />

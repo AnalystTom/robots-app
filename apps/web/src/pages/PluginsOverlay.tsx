@@ -8,6 +8,7 @@ import type {
   McpSourcePreset,
 } from "@robots/contracts";
 import { MCP_OAUTH_CLIENT_REQUIRED, mcpServerConnection } from "@robots/contracts";
+import type { RemoteMcpApp } from "@robots/core";
 import {
   CONNECTION_CATALOG_PAGE_SIZE,
   catalogItemKey,
@@ -53,6 +54,7 @@ import { ManageView } from "./plugins/manage-view";
 import type { TileContext } from "./plugins/parts";
 import { ViewTitle } from "./plugins/parts";
 import { PluginBrowse } from "./plugins/plugin-browse";
+import { RemoteMcpAppDetail } from "./plugins/remote-mcp-app-detail";
 import type { SourceKind } from "./plugins/source-form";
 import { SourceFormView, useSourceForm } from "./plugins/source-form";
 import { PLUGIN_PAGE_SIZE, useCatalogBrowse } from "./plugins/use-catalog-browse";
@@ -88,6 +90,7 @@ export function PluginsOverlay({
   const [plugin, setPlugin] = useState<PluginSelection | null>(null);
   const [gitSource, setGitSource] = useState("");
   const [macApp, setMacApp] = useState<MacAppConnection | null>(null);
+  const [remoteApp, setRemoteApp] = useState<RemoteMcpApp | null>(null);
   const [detailKey, setDetailKey] = useState<{
     connectorId: string;
     slug: string;
@@ -181,7 +184,7 @@ export function PluginsOverlay({
     }),
   ].slice(0, 4);
 
-  const browsing = !plugin && !detailItem && !macApp && view === "browse";
+  const browsing = !plugin && !detailItem && !macApp && !remoteApp && view === "browse";
 
   function openPlugin(selection: PluginSelection) {
     setCatalogError(null);
@@ -390,10 +393,11 @@ export function PluginsOverlay({
       }}
     >
       <DialogContent showCloseButton={false} size="2xl" className="bg-card">
-        {(detailItem || macApp) && !plugin ? (
+        {(detailItem || macApp || remoteApp) && !plugin ? (
           <ConnectionPageHeader
-            title={macApp?.name ?? detailItem?.name ?? ""}
+            title={remoteApp?.name ?? macApp?.name ?? detailItem?.name ?? ""}
             onBack={() => {
+              setRemoteApp(null);
               setMacApp(null);
               closeDetail();
             }}
@@ -586,6 +590,8 @@ export function PluginsOverlay({
               onBack={() => setPlugin(null)}
               onChanged={refresh}
             />
+          ) : remoteApp ? (
+            <RemoteMcpAppDetail app={remoteApp} servers={mcpServers} botId={activeBotId} />
           ) : macApp ? (
             <MacAppDetail app={macApp} botName={botName} />
           ) : detailItem ? (
@@ -657,6 +663,7 @@ export function PluginsOverlay({
               tileContext={tileContext}
               onOpenPlugin={openPlugin}
               onOpenMacApp={setMacApp}
+              onOpenRemoteApp={setRemoteApp}
               onSearchPublic={(publicQuery) => {
                 setPublicCatalogQuery(publicQuery);
                 openAddView("browseMcp");

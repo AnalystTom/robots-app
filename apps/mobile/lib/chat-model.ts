@@ -13,8 +13,9 @@ export function chatModelPickerChoices(
   const defaultEntry = me?.defaultModel
     ? catalogEntry(catalog, me.defaultProvider, me.defaultModel)
     : undefined;
-  const spaceDefaultLabel = me?.defaultModel
-    ? `${t`Space default`} (${defaultEntry?.label ?? me.defaultModel})`
+  const defaultModelLabel = me?.defaultModel ? (defaultEntry?.label ?? me.defaultModel) : null;
+  const spaceDefaultLabel = defaultModelLabel
+    ? t`Space default · ${defaultModelLabel}`
     : t`Space default`;
   const choices = chatModelChoices(
     connectedModelChoices(credentials, catalog),

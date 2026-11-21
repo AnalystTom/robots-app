@@ -2,19 +2,25 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type {
   ConnectionCatalogItem,
   MacAppConnection,
+  McpServer,
   PluginMarketplaceEntry,
 } from "@robots/contracts";
 import {
   CATALOG_SEARCH_QUERY_MAX_LENGTH,
   MAC_APP_CONNECTIONS,
+  mcpServerConnection,
   SUBMIT_PLUGIN_URL,
 } from "@robots/contracts";
+import type { RemoteMcpApp } from "@robots/core";
 import {
   CONNECTION_CATALOG_PAGE_SIZE,
   catalogItemKey,
   isRecommendedPlugin,
   managedAppFor,
+  matchesRemoteMcpApp,
   OTHER_PLUGINS,
+  REMOTE_MCP_APPS,
+  remoteMcpAppServer,
 } from "@robots/core";
 import { Button, SectionHeading, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, Search } from "lucide-react";
@@ -35,6 +41,36 @@ import type { PluginConnections } from "./use-plugin-connections";
 
 const SECTION_SIZE = 6;
 
+function RemoteMcpApps({
+  query,
+  servers,
+  onOpen,
+}: {
+  query: string;
+  servers: readonly McpServer[];
+  onOpen: (app: RemoteMcpApp) => void;
+}) {
+  const apps = REMOTE_MCP_APPS.filter((app) => matchesRemoteMcpApp(app, query));
+  if (!apps.length) return null;
+  return (
+    <div data-testid="remote-mcp-apps" className="mb-6 grid grid-cols-2 gap-2">
+      {apps.map((app) => {
+        const server = remoteMcpAppServer(app, servers);
+        return (
+          <PluginRow
+            key={app.id}
+            name={app.name}
+            description={app.description}
+            site={app.site}
+            installed={Boolean(server && mcpServerConnection(server) === "connected")}
+            onOpen={() => onOpen(app)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 /** The browse page under the search: featured apps, plugin sections or matches, and more apps. */
 export function PluginBrowse({
   browse,
@@ -43,6 +79,7 @@ export function PluginBrowse({
   onOpenPlugin,
   onSearchPublic,
   onOpenMacApp,
+  onOpenRemoteApp,
 }: {
   browse: CatalogBrowse;
   state: PluginConnections;
@@ -51,9 +88,10 @@ export function PluginBrowse({
   /** Opens the public MCP catalog searched for the query. */
   onSearchPublic: (query: string) => void;
   onOpenMacApp: (app: MacAppConnection) => void;
+  onOpenRemoteApp: (app: RemoteMcpApp) => void;
 }) {
   const { t } = useLingui();
-  const { catalogLoaded, catalog, pluginCatalog, pluginInstalls } = state;
+  const { catalogLoaded, catalog, pluginCatalog, pluginInstalls, mcpServers } = state;
   const {
     query,
     setVisibleCount,
@@ -277,6 +315,14 @@ export function PluginBrowse({
             </div>
           )}
         </div>
+      ) : null}
+
+      {!category ? (
+        <RemoteMcpApps
+          query={showFeatured ? "" : query}
+          servers={mcpServers}
+          onOpen={onOpenRemoteApp}
+        />
       ) : null}
 
       {showFeatured && !category ? (

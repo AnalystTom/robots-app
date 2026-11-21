@@ -5,12 +5,19 @@ import type {
   ModelRoleSettings,
   SettingsScope,
 } from "@robots/contracts";
-import { backupChoiceKey, usableModelId } from "@robots/contracts";
+import {
+  backupChoiceKey,
+  canonicalPiProviderId,
+  ThinkingLevelSchema,
+  usableModelId,
+} from "@robots/contracts";
+import { pickCatalogModelId } from "@robots/core";
 import type { PrismaClient } from "@robots/db";
-import { appliedModelRole } from "@robots/db";
+import { appliedModelRole, comparePreferenceOrder, newestModelCredentialOrder } from "@robots/db";
 import { resolveAutoReviewChecker } from "./auto-review.js";
 import type { ModelChoice, ModelCredential } from "./model-selection.js";
 import { findConnectedModelCredential } from "./model-selection.js";
+import { listPiCatalog } from "./pi-models.js";
 
 /** The deployment's configuration that stands in for a member who chose nothing. */
 export type DeploymentModelDefaults = {
@@ -72,12 +79,72 @@ export type MemberMainModel = ModelRoleChoice & {
   credential: ModelCredential;
 };
 
+type MainModelClient = Pick<
+  PrismaClient,
+  "spaceModelRoleChoice" | "userModelRoleChoice" | "spaceSettingOverride"
+> &
+  Pick<PrismaClient, "userModelPreference" | "userModelCredential">;
+
+export async function memberMainChoice(
+  prisma: MainModelClient,
+  scope: { userId: string; spaceId: string },
+): Promise<ModelRoleChoice | null> {
+  const { primary } = await appliedModelRole(prisma, scope, "main");
+  return primary ?? (await connectedModelChoice(prisma, scope));
+}
+
+async function connectedModelChoice(
+  prisma: Pick<PrismaClient, "userModelPreference" | "userModelCredential">,
+  scope: { userId: string },
+): Promise<ModelRoleChoice | null> {
+  const [preferences, credentials] = await Promise.all([
+    prisma.userModelPreference.findMany({
+      where: { userId: scope.userId, modelId: { not: null } },
+      select: {
+        credentialId: true,
+        modelId: true,
+        thinkingLevel: true,
+        updatedAt: true,
+        credential: { select: { provider: true } },
+      },
+    }),
+    prisma.userModelCredential.findMany({
+      where: { userId: scope.userId },
+      orderBy: newestModelCredentialOrder,
+      select: { id: true, provider: true },
+    }),
+  ]);
+  const preferred = preferences
+    .filter((preference) => usableModelId(preference.modelId))
+    .sort(comparePreferenceOrder)[0];
+  if (preferred) {
+    const thinkingLevel = ThinkingLevelSchema.safeParse(preferred.thinkingLevel);
+    return {
+      provider: canonicalPiProviderId(preferred.credential.provider),
+      modelId: usableModelId(preferred.modelId)!,
+      credentialId: preferred.credentialId,
+      ...(thinkingLevel.success ? { thinkingLevel: thinkingLevel.data } : {}),
+    };
+  }
+  const runnable = listPiCatalog().filter((entry) => !entry.placeholder);
+  for (const credential of credentials) {
+    const modelId = pickCatalogModelId(runnable, credential.provider);
+    if (modelId)
+      return {
+        provider: canonicalPiProviderId(credential.provider),
+        modelId,
+        credentialId: credential.id,
+      };
+  }
+  return null;
+}
+
 /** The member's main model and the connection that serves it, resolved as validation does. */
 export async function resolveMemberMainModel(
   deps: { prisma: PrismaClient; secretStore: Pick<SecretStore, "load"> },
   scope: { userId: string; spaceId: string },
 ): Promise<MemberMainModel | null> {
-  const { primary } = await appliedModelRole(deps.prisma, scope, "main");
+  const primary = await memberMainChoice(deps.prisma, scope);
   if (!primary) return null;
   const credential = await findConnectedModelCredential(
     deps.prisma,

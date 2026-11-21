@@ -7,6 +7,7 @@ import {
   connectionModelSettings,
   findConnectedModelCredential,
   knownModelImageInput,
+  memberMainChoice,
   modelAcceptsImageInput,
   parseModelSecret,
   resolveMemberMainModel,
@@ -18,7 +19,7 @@ import type { Actor, MessageBlock } from "@robots/contracts";
 import { OPENAI_COMPATIBLE_PROVIDER_ID } from "@robots/contracts";
 import { MODEL_IMAGE_INPUT_ERROR, MODEL_IMAGE_INPUT_UNKNOWN } from "@robots/core";
 import type { PrismaClient } from "@robots/db";
-import { appliedModelRole, findModelCredential, findModelCredentialById } from "@robots/db";
+import { findModelCredential, findModelCredentialById } from "@robots/db";
 
 type ModelChoice = {
   modelProvider: string | null;
@@ -143,9 +144,8 @@ async function legacyImageInput(prisma: PrismaClient, actor: Actor, credentialId
   )?.supportsImages;
 }
 
-/** The main model as resolveMemberMainModel picks it, without reading secrets. */
 async function mainModelWithoutSecrets(prisma: PrismaClient, actor: Actor) {
-  const { primary } = await appliedModelRole(prisma, actor, "main");
+  const primary = await memberMainChoice(prisma, actor);
   if (!primary) return null;
   return {
     ...primary,

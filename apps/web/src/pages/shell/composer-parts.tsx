@@ -4,7 +4,7 @@ import type { ComposerMention, SLASH_ACTIONS, SlashActionId } from "@robots/core
 import { mentionChipKey, truncateSlashDescription } from "@robots/core";
 import { Button } from "@robots/ui-web";
 import { ArrowUp, Box, Paperclip, Settings, Square, X } from "lucide-react";
-import type { CSSProperties, RefObject } from "react";
+import type { CSSProperties, ReactNode, RefObject } from "react";
 import type { useHoldToTalk } from "../../components/composer/HoldToTalk";
 import { HoldToTalkControls } from "../../components/composer/HoldToTalk";
 import type { PendingAttachment } from "./chat-shared";
@@ -204,10 +204,12 @@ export function ComposerActions({
   sendDisabled,
   stopDisabled,
   sendColors,
+  modelPicker,
   onSend,
   onStop,
 }: {
   actionsRef: RefObject<HTMLDivElement | null>;
+  modelPicker?: ReactNode;
   expanded: boolean;
   talk: ReturnType<typeof useHoldToTalk>;
   running: boolean;
@@ -238,6 +240,7 @@ export function ComposerActions({
         expanded ? "row-start-2" : ""
       }`}
     >
+      {talk.recording?.locked ? null : modelPicker}
       {talk.recording?.locked ? (
         <HoldToTalkControls talk={talk} />
       ) : running ? (
