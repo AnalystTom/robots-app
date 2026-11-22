@@ -441,11 +441,10 @@ export function VaultSettings({
             {browserSessions ? (
               <DropdownMenuItem
                 data-testid="vault-import-sessions"
-                className="whitespace-nowrap"
                 onClick={() => setImportingSessions(true)}
               >
                 <Globe className="text-muted-foreground" />
-                <Trans>Import browser sign-ins</Trans>
+                <Trans>Import sign-ins</Trans>
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>
