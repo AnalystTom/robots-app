@@ -25,7 +25,6 @@ import {
 } from "./computer-provider-registry.js";
 import { manageComputerWorkspaceDirectories } from "./computer-workspace.js";
 import { credentialDigest } from "./credential-digest.js";
-import { HostBrowserImportUnavailableError } from "./host-computer-protocol.js";
 import { sandboxNotFoundError } from "./sandbox-errors.js";
 import { createSandboxProvider } from "./sandbox-factory.js";
 
@@ -357,9 +356,7 @@ export class ConfiguredSandbox implements SandboxProvider {
   }
 
   async hostBrowserProfiles(computer: ComputerRef, context: AdapterContext) {
-    const provider = await this.route(computer);
-    if (!provider.hostBrowserProfiles) throw new HostBrowserImportUnavailableError();
-    return provider.hostBrowserProfiles(computer, context);
+    return (await this.route(computer)).hostBrowserProfiles?.(computer, context);
   }
 
   async importHostBrowserSessions(
@@ -367,9 +364,7 @@ export class ConfiguredSandbox implements SandboxProvider {
     request: HostBrowserImportRequest,
     context: AdapterContext,
   ) {
-    const provider = await this.route(computer);
-    if (!provider.importHostBrowserSessions) throw new HostBrowserImportUnavailableError();
-    return provider.importHostBrowserSessions(computer, request, context);
+    return (await this.route(computer)).importHostBrowserSessions?.(computer, request, context);
   }
 
   async workspaceDirectories(

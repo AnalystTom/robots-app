@@ -71,17 +71,30 @@ start with your own bots, never from routines or other people's messages.
 ### A screen on a Linux server
 
 A self-hosted Linux server that lets its admins' bots use the server itself can also give each of
-those bots its own screen and browser there. Bots then use the page and screen tools, and admins
-can **Take control** from web, desktop and mobile as on any other computer. Everyone else keeps an
-isolated computer.
+those bots its own screen and browser there. Admins' bots use the page and screen tools, and admins
+can **Take control** from web, desktop and mobile as on any other computer. Other members' bots in
+that space can still run commands on the server, but they cannot use its screen, browser or
+sign-ins.
 
 The host computer service needs Xvfb, x11vnc, fluxbox, xdotool, wmctrl, scrot, xterm, xdpyinfo,
-websockify and Chromium on its `PATH`, and pass `createHostDesktop` a tools folder whose
-`share/novnc` holds noVNC with this repository's `embed.html`, `clipboard-bridge.js` and
-`mobile-keyboard.js`, and whose `bin` holds `robots-page-browser`, `page_secrets.py` and
-`agent-browser`. Each bot's browser keeps its own profile beside the bots' folders and stores its
-sign-ins with the desktop keyring, not the public key the isolated computers use.
+websockify and Chromium on its `PATH`. It takes its settings from these environment variables:
+
+- `ROBOTS_HOST_TOOLS_DIR`: the tools folder, default `host-tools` in the service's data folder. Its
+  `share/novnc` holds noVNC with this repository's `embed.html`, `clipboard-bridge.js` and
+  `mobile-keyboard.js`, and its `bin` holds `robots-page-browser`, `page_secrets.py` and
+  `agent-browser`.
+- `ROBOTS_HOST_DISPLAY_START`: the first X display number for bot screens, default `100`. Pick
+  numbers no other X server on the machine uses.
+- `ROBOTS_HOST_SCREEN_PORT_START`: the first port of the screen gateway, default `6180`.
+
+Each bot's browser keeps its own profile beside the bots' folders and stores its sign-ins with the
+desktop keyring, not the public key the isolated computers use.
+
+The browser's remote debugging port listens on `127.0.0.1` at 9221 plus the bot's display number.
+Any other account or process on the server can reach it, so run this only on a server with a single
+human login account.
 
 **Sign in from this computer**, on that screen, copies the sessions of the sites you pick from a
-Chrome or Chromium profile on the server into the bot's browser. Only admins see it, and cookie
-values never leave the server.
+Chrome or Chromium profile on the server into the bot's browser. Only admins can use it. If a site
+has no current sign-in in that profile, the import is refused and names the site. Cookie values
+never leave the server.

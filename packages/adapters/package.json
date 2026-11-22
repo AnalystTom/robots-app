@@ -8,6 +8,7 @@
     "./agent-desktop-host-screen": "./src/agent-desktop-host-screen.ts",
     "./cua-host-screen": "./src/cua-host-screen.ts",
     "./host-computer-server": "./src/host-computer-server.ts",
+    "./host-desktop": "./src/host-desktop.ts",
     "./host-screen": "./src/host-screen.ts",
     "./mac-apps-protocol": "./src/mac-apps-protocol.ts",
     "./model-json": "./src/model-json.ts",

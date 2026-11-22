@@ -13,6 +13,7 @@ import {
   readHostBrowserCookies,
   siteNames,
 } from "./host-browser-cookies.js";
+import { createHostDesktop } from "./host-desktop.js";
 
 const KEYRING_PASSWORD = "fake-keyring-password";
 const NOW = Date.parse("2026-11-22T00:00:00Z");
@@ -163,10 +164,34 @@ describe("host browser cookies", () => {
     });
   });
 
-  it("reads databases from before the host hash prefix", async () => {
+  it("refuses databases from before the host hash prefix instead of trusting unauthenticated values", async () => {
     await profile([{ host: ".x.com", name: "auth_token", value: "old-token" }], { dbVersion: 23 });
+    await expect(
+      readHostBrowserCookies(home, "chrome:Default", ["x.com"], keyring(), NOW),
+    ).rejects.toThrow("too old to import from");
+  });
+
+  it("reports a site whose sign-ins have all expired as having no cookies", async () => {
+    await profile([
+      { host: ".x.com", name: "auth_token", value: "old", expires: PAST_CHROME_TIME },
+    ]);
     const [x] = await readHostBrowserCookies(home, "chrome:Default", ["x.com"], keyring(), NOW);
-    expect(x?.cookies.map((cookie) => cookie.value)).toEqual(["old-token"]);
+    expect(x).toEqual({ site: "x.com", cookies: [] });
+  });
+
+  it("refuses an import whose chosen site has no current sign-in, naming the site", async () => {
+    await profile([
+      { host: ".x.com", name: "auth_token", value: "old", expires: PAST_CHROME_TIME },
+    ]);
+    const desktop = createHostDesktop(
+      home,
+      { displayStart: 100, port: 6180, toolsDir: home },
+      keyring(),
+      home,
+    );
+    await expect(
+      desktop.importSessions("screen", "chrome:Default", ["x.com"], AbortSignal.timeout(5_000)),
+    ).rejects.toThrow("No current sign-in for x.com in that profile");
   });
 
   it("refuses a value whose host hash does not match its host", async () => {

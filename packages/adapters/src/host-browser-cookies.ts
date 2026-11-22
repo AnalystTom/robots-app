@@ -12,8 +12,7 @@ const BROWSERS = [
 ] as const;
 
 const PUBLIC_PASSWORD = "peanuts";
-const HOST_HASH_DB_VERSION = 24;
-const OLDEST_DB_VERSION = 18;
+const MIN_DB_VERSION = 24;
 const CHROME_EPOCH_OFFSET_SECONDS = 11_644_473_600;
 const KEYRING_TIMEOUT_MS = 5_000;
 
@@ -90,7 +89,7 @@ export function cookieKey(password: string) {
   return pbkdf2Sync(password, "saltysalt", 1, 16, "sha1");
 }
 
-export function decryptCookieValue(row: CookieRow, dbVersion: number, keys: CookieKeys): string {
+export function decryptCookieValue(row: CookieRow, keys: CookieKeys): string {
   const encrypted = Buffer.from(row.encrypted_value);
   if (encrypted.length === 0) return row.value;
   const prefix = encrypted.subarray(0, 3).toString("latin1");
@@ -102,7 +101,6 @@ export function decryptCookieValue(row: CookieRow, dbVersion: number, keys: Cook
   for (const key of candidates) {
     const plain = decryptWith(key, encrypted.subarray(3));
     if (!plain) continue;
-    if (dbVersion < HOST_HASH_DB_VERSION) return plain.toString("utf8");
     const hostHash = createHash("sha256").update(row.host_key).digest();
     if (plain.length >= 32 && plain.subarray(0, 32).equals(hostHash))
       return plain.subarray(32).toString("utf8");
@@ -255,14 +253,13 @@ async function withCookieSnapshot<T>(cookies: string, read: (db: DatabaseSync) =
   }
 }
 
-function dbVersion(db: DatabaseSync) {
+function requireCurrentDbVersion(db: DatabaseSync) {
   const row = db.prepare("SELECT value FROM meta WHERE key = 'version'").get() as
     | { value?: unknown }
     | undefined;
   const version = Number(row?.value);
-  if (!Number.isInteger(version) || version < OLDEST_DB_VERSION)
+  if (!Number.isInteger(version) || version < MIN_DB_VERSION)
     throw new HostBrowserCookieError("This browser profile is too old to import from");
-  return version;
 }
 
 function cookieRows(db: DatabaseSync) {
@@ -299,10 +296,10 @@ export async function readHostBrowserCookies(
   const profile = (await profileDirs(home)).find((candidate) => candidate.id === profileId);
   if (!profile) throw new HostBrowserCookieError("That browser profile is not on this computer");
   const sites = [...new Set(requestedSites.map(normalizeSite))];
-  const { version, rows } = await withCookieSnapshot(profile.cookies, (db) => ({
-    version: dbVersion(db),
-    rows: cookieRows(db),
-  }));
+  const rows = await withCookieSnapshot(profile.cookies, (db) => {
+    requireCurrentDbVersion(db);
+    return cookieRows(db);
+  });
   const chosen = rows.filter((row) =>
     sites.some((site) => cookieBelongsToSite(row.host_key, site)),
   );
@@ -321,7 +318,7 @@ export async function readHostBrowserCookies(
     cookies: chosen
       .filter((row) => cookieBelongsToSite(row.host_key, site))
       .flatMap((row) => {
-        const cookie = toBrowserCookie(row, decryptCookieValue(row, version, keys), nowSeconds);
+        const cookie = toBrowserCookie(row, decryptCookieValue(row, keys), nowSeconds);
         return cookie ? [cookie] : [];
       }),
   }));

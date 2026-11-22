@@ -118,12 +118,12 @@ export interface SandboxProvider {
   hostBrowserProfiles?(
     computer: ComputerRef,
     context: AdapterContext,
-  ): Promise<HostBrowserProfile[]>;
+  ): Promise<HostBrowserProfile[] | undefined>;
   importHostBrowserSessions?(
     computer: ComputerRef,
     request: HostBrowserImportRequest,
     context: AdapterContext,
-  ): Promise<HostBrowserImportResult>;
+  ): Promise<HostBrowserImportResult | undefined>;
   pageBrowser?(
     computer: ComputerRef,
     request: PageBrowserCommand,

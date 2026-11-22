@@ -48,6 +48,7 @@ export function HostBrowserSignInDialog({
   const shownSites = (profile?.sites ?? []).filter((site) =>
     site.includes(filter.trim().toLowerCase()),
   );
+  const chosenSites = shownSites.filter((site) => sites.has(site));
 
   function close() {
     onOpenChange(false);
@@ -83,8 +84,8 @@ export function HostBrowserSignInDialog({
           className="contents"
           onSubmit={(event) => {
             event.preventDefault();
-            if (profile && sites.size > 0)
-              signIn.run({ profile: profile.id, sites: [...sites].sort() });
+            if (profile && chosenSites.length > 0)
+              signIn.run({ profile: profile.id, sites: chosenSites });
           }}
         >
           {profilesQuery.error ? (
@@ -141,7 +142,7 @@ export function HostBrowserSignInDialog({
           )}
           <FieldError>{signIn.error ? errorText(signIn.error) : null}</FieldError>
           <DialogFooter>
-            <Button type="submit" disabled={signIn.pending || !profile || sites.size === 0}>
+            <Button type="submit" disabled={signIn.pending || !profile || chosenSites.length === 0}>
               <Trans>Sign in</Trans>
             </Button>
           </DialogFooter>

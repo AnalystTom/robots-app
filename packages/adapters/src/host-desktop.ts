@@ -127,26 +127,27 @@ export function createHostDesktop(
     sites: string[],
     signal: AbortSignal,
   ): Promise<HostBrowserImportResult> {
-    const port = await debugPort(screenId);
     const found = await readHostBrowserCookies(home, profile, sites, keyring);
+    const missing = found.find(({ cookies }) => cookies.length === 0);
+    if (missing)
+      throw new HostBrowserCookieError(`No current sign-in for ${missing.site} in that profile`);
+    const port = await debugPort(screenId);
     const cookies = found.flatMap((site) => site.cookies);
-    if (cookies.length > 0) {
-      await setBrowserCookies(port, cookies, signal);
-      const expected = cookies.map(importedCookieIdentity);
-      const userDataDir = browserProfilePathForScreen(screenId, environment(home));
-      await pollUntil(
-        async () => {
-          const saved = await savedCookieNames(userDataDir);
-          return expected.every((cookie) => saved.has(cookie));
-        },
-        {
-          intervalMs: 2_000,
-          timeoutMs: SAVE_TIMEOUT_MS,
-          signal,
-          waitingFor: "the bot's browser to save the sign-ins",
-        },
-      );
-    }
+    await setBrowserCookies(port, cookies, signal);
+    const expected = cookies.map(importedCookieIdentity);
+    const userDataDir = browserProfilePathForScreen(screenId, environment(home));
+    await pollUntil(
+      async () => {
+        const saved = await savedCookieNames(userDataDir);
+        return expected.every((cookie) => saved.has(cookie));
+      },
+      {
+        intervalMs: 2_000,
+        timeoutMs: SAVE_TIMEOUT_MS,
+        signal,
+        waitingFor: "the bot's browser to save the sign-ins",
+      },
+    );
     return { sites: found.map(({ site, cookies }) => ({ site, cookies: cookies.length })) };
   }
 
