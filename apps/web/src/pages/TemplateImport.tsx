@@ -34,6 +34,9 @@ export function TemplateImportPage() {
         navigate(TEMPLATE_GALLERY_PATH, { replace: true });
       }}
     >
+      <Button type="button" className={submitClass} onClick={() => void imported.refetch()}>
+        <Trans>Retry</Trans>
+      </Button>
       <Button type="submit" className={submitClass}>
         <Trans>Browse templates</Trans>
       </Button>

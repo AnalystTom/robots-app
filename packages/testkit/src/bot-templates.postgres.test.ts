@@ -186,6 +186,54 @@ describeIntegration("bot templates", () => {
     );
   });
 
+  it("keeps the members that were made when one fails, and finishes the team on retry", async () => {
+    const cookie = await signup(app, `template-partial-${stamp}@robots.test`);
+    const owner = await ownerOf(cookie);
+    const team = findBotTemplateTeam("team-autopilot")!;
+    const salesIndex = team.templateIds.indexOf("sales");
+    const salesName = findBotTemplate("sales")!.name;
+    await db.$executeRawUnsafe(`
+      CREATE OR REPLACE FUNCTION fail_team_member_insert() RETURNS trigger AS $$
+      BEGIN RAISE EXCEPTION 'injected member failure'; END;
+      $$ LANGUAGE plpgsql;
+      CREATE TRIGGER fail_team_member_insert BEFORE INSERT ON bots FOR EACH ROW
+      WHEN (NEW."spaceId" = '${owner.spaceId}' AND NEW.name = '${salesName}')
+      EXECUTE FUNCTION fail_team_member_insert();
+    `);
+
+    let partial: { bots: Bot[]; failed: string[] };
+    try {
+      partial = await rpc<{ bots: Bot[]; failed: string[] }>(
+        app,
+        cookie,
+        "bots/createTeamFromTemplate",
+        { teamId: team.id },
+      );
+    } finally {
+      await db.$executeRawUnsafe(`DROP TRIGGER fail_team_member_insert ON bots`);
+    }
+    expect(partial.failed).toEqual(["sales"]);
+    expect(partial.bots.map((bot) => bot.name)).toEqual(
+      team.templateIds
+        .filter((id) => id !== "sales")
+        .map((id) => findBotTemplate(id)!.name),
+    );
+    expect(await db.bot.count({ where: owner })).toBe(team.templateIds.length - 1);
+
+    const retried = await rpc<{ bots: Bot[]; failed: string[] }>(
+      app,
+      cookie,
+      "bots/createTeamFromTemplate",
+      { teamId: team.id },
+    );
+    expect(retried.failed).toEqual([]);
+    expect(retried.bots.filter((_, index) => index !== salesIndex).map((bot) => bot.id)).toEqual(
+      partial.bots.map((bot) => bot.id),
+    );
+    expect(retried.bots[salesIndex]!.name).toBe(salesName);
+    expect(await db.bot.count({ where: owner })).toBe(team.templateIds.length);
+  });
+
   it("renames its skill on a clash and points the routine at the new name", async () => {
     const cookie = await signup(app, `template-clash-${stamp}@robots.test`);
     const existing = buildSkillMd({ name: "Inbox triage", description: "Mine", body: "Mine." });

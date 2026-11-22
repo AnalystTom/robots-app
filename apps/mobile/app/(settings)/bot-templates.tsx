@@ -43,7 +43,13 @@ export default function BotTemplatesScreen() {
   const open = useSave({
     save: async (pick: TemplatePick, send): Promise<Bot> => {
       if (pick.kind === "team") {
-        const { bots } = await send("bots/createTeamFromTemplate", { teamId: pick.teamId });
+        const { bots, failed } = await send("bots/createTeamFromTemplate", {
+          teamId: pick.teamId,
+        });
+        if (failed.length)
+          throw new Error(
+            t`Created ${bots.length} of ${bots.length + failed.length} bots. Try again to finish the team.`,
+          );
         return bots[0]!;
       }
       const { template } = pick;
@@ -75,6 +81,12 @@ export default function BotTemplatesScreen() {
       else if (isBotTemplateChanged(cause)) {
         Alert.alert(t`This template was just updated. Try again.`);
         void refetch();
+      } else if (pick.kind === "team") {
+        void refetch();
+        Alert.alert(t`Could not create the team`, errorText(cause, t`Try again.`), [
+          { text: t`Retry`, onPress: () => open.run(pick) },
+          { text: t`Cancel`, style: "cancel" },
+        ]);
       } else Alert.alert(t`Could not create the bot`, errorText(cause, t`Try again.`));
     },
   });

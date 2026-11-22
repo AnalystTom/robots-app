@@ -270,6 +270,25 @@ it("creates the whole team in one tap and opens its lead", async () => {
     "bots/createTeamFromTemplate",
     { teamId: "team-autopilot" },
   ]);
-  await create.finish({ bots: [bot, { id: "bot-10", name: "Dev" }] });
+  await create.finish({ bots: [bot, { id: "bot-10", name: "Dev" }], failed: [] });
   expectOpened();
+});
+
+it("says how many team bots were made when one fails, and retries the whole team", async () => {
+  const create = hold("bots/createTeamFromTemplate");
+  await render();
+  await act(async () => teamAction().click());
+  await create.finish({ bots: [bot], failed: ["sales"] });
+  expectNothingOpened();
+  const [title, message, buttons] = mocks.alert.mock.calls[0]!;
+  expect([title, message]).toEqual([
+    "Could not create the team",
+    "Created 1 of 2 bots. Try again to finish the team.",
+  ]);
+  await act(async () => buttons[0].onPress());
+  expect(create.calls()).toHaveLength(2);
+  expect(create.calls()[1]?.slice(0, 2)).toEqual([
+    "bots/createTeamFromTemplate",
+    { teamId: "team-autopilot" },
+  ]);
 });

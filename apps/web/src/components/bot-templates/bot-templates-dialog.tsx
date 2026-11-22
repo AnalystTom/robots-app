@@ -14,6 +14,7 @@ import {
 } from "@robots/ui-web";
 import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
+import { teamIncompleteError } from "../../lib/import-bot-template";
 import { useSave, useSpaceQueries } from "../../lib/query";
 import { errorDetails } from "../../lib/user-error";
 import { ErrorNotice } from "../ErrorNotice";
@@ -39,7 +40,8 @@ export function BotTemplatesDialog({
   const open = useSave({
     save: async (pick: TemplatePick, client): Promise<Bot> => {
       if (pick.kind === "team") {
-        const { bots } = await client.bots.createTeamFromTemplate({ teamId: pick.teamId });
+        const { bots, failed } = await client.bots.createTeamFromTemplate({ teamId: pick.teamId });
+        if (failed.length) throw teamIncompleteError(bots.length, bots.length + failed.length);
         return bots[0]!;
       }
       const { template } = pick;
@@ -54,8 +56,8 @@ export function BotTemplatesDialog({
     stale: [queries.bots.templates.queryKey()],
     closesScreen: true,
     onSaved: onOpenBot,
-    onFailed: (error) => {
-      if (isBotTemplateChanged(error)) void templates.refetch();
+    onFailed: (error, pick) => {
+      if (isBotTemplateChanged(error) || pick.kind === "team") void templates.refetch();
     },
   });
 
@@ -86,7 +88,18 @@ export function BotTemplatesDialog({
                 ? t`Could not open the bot`
                 : t`Could not create the bot`,
             )}
-          />
+          >
+            {open.input?.kind === "team" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={open.pending}
+                onClick={() => open.run(open.input!)}
+              >
+                <Trans>Retry</Trans>
+              </Button>
+            ) : null}
+          </ErrorNotice>
         ) : null}
         {BOT_TEMPLATE_TEAMS.map((team) => (
           <TeamCard

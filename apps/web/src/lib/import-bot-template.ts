@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { findBotTemplate, findBotTemplateTeam } from "@robots/core";
 import { rpc } from "./rpc";
 
@@ -7,9 +8,14 @@ export function isBotTemplateLink(templateId: string): boolean {
   return Boolean(findBotTemplateTeam(templateId) ?? findBotTemplate(templateId));
 }
 
+export function teamIncompleteError(created: number, total: number): Error {
+  return new Error(t`Created ${created} of ${total} bots. Try again to finish the team.`);
+}
+
 export async function importBotTemplate(templateId: string): Promise<string | null> {
   if (findBotTemplateTeam(templateId)) {
-    const { bots } = await rpc.bots.createTeamFromTemplate({ teamId: templateId });
+    const { bots, failed } = await rpc.bots.createTeamFromTemplate({ teamId: templateId });
+    if (failed.length) throw teamIncompleteError(bots.length, bots.length + failed.length);
     return bots[0]!.id;
   }
   const templates = await rpc.bots.templates();

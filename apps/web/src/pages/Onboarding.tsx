@@ -6,6 +6,7 @@ import { PageLoading } from "../components/PageLoading";
 import { SignupSurvey } from "../components/SignupSurvey";
 import { importBotTemplate, isBotTemplateLink } from "../lib/import-bot-template";
 import type { ModelCatalogEntry } from "../lib/model-auth";
+import { reportClientError } from "../lib/monitoring";
 import { rpc } from "../lib/rpc";
 import { onboardingTemplate } from "../lib/sign-in-next";
 import { useSignOut } from "../lib/sign-out";
@@ -20,7 +21,9 @@ async function startOnboardingChat(botId: string) {
     .then(() => true)
     .catch(() => false);
   if (started) {
-    await rpc.onboarding.promptFocus({ botId }).catch(() => undefined);
+    await rpc.onboarding
+      .promptFocus({ botId })
+      .catch((error: unknown) => reportClientError(error, "rpc.transport"));
   }
 }
 

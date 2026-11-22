@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import type {
   Actor,
   AgentImportPlan,
+  Bot,
   BotTemplate,
   BotTemplateListing,
   ConnectionCatalogItem,
@@ -241,19 +242,27 @@ export async function createBotTeamFromTemplate<PreparedKey>(
   if (!team) throw new ORPCError("NOT_FOUND", { message: "No team has that id." });
   let catalog: Promise<ConnectionCatalogItem[]> | undefined;
   const sharedCatalog = () => (catalog ??= appCatalog());
-  const bots = [];
+  const bots: Bot[] = [];
+  const failed: string[] = [];
+  let firstError: unknown;
   for (const templateId of team.templateIds) {
     const template = findBotTemplate(templateId)!;
-    const { bot } = await createBotFromTemplate(
-      services,
-      sharedCatalog,
-      actor,
-      { templateId, version: template.version },
-      signal,
-    );
-    bots.push(bot);
+    try {
+      const { bot } = await createBotFromTemplate(
+        services,
+        sharedCatalog,
+        actor,
+        { templateId, version: template.version },
+        signal,
+      );
+      bots.push(bot);
+    } catch (error) {
+      failed.push(templateId);
+      firstError ??= error;
+    }
   }
-  return { bots };
+  if (!bots.length) throw firstError;
+  return { bots, failed };
 }
 
 function escapeRegExp(value: string): string {
