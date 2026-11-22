@@ -2,6 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import type { Bot, BotTemplateListing } from "@robots/contracts";
 import { isBotTemplateChanged } from "@robots/contracts";
 import { BOT_TEMPLATE_TEAMS, botTemplateAppMarks } from "@robots/core";
+import { botTeamIncompleteError } from "@robots/i18n/bot-team";
 import { useQuery } from "@tanstack/react-query";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useCallback } from "react";
@@ -46,10 +47,7 @@ export default function BotTemplatesScreen() {
         const { bots, failed } = await send("bots/createTeamFromTemplate", {
           teamId: pick.teamId,
         });
-        if (failed.length)
-          throw new Error(
-            t`Created ${bots.length} of ${bots.length + failed.length} bots. Try again to finish the team.`,
-          );
+        if (failed.length) throw botTeamIncompleteError(bots.length, bots.length + failed.length);
         return bots[0]!;
       }
       const { template } = pick;
@@ -82,7 +80,11 @@ export default function BotTemplatesScreen() {
         Alert.alert(t`This template was just updated. Try again.`);
         void refetch();
       } else if (pick.kind === "team") {
-        void refetch();
+        void Promise.allSettled(
+          [rpcQuery("bots/templates").queryKey, rpcQuery("bots/list").queryKey].map((queryKey) =>
+            queryClient.invalidateQueries({ queryKey }),
+          ),
+        );
         Alert.alert(t`Could not create the team`, errorText(cause, t`Try again.`), [
           { text: t`Retry`, onPress: () => open.run(pick) },
           { text: t`Cancel`, style: "cancel" },

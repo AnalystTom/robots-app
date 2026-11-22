@@ -2,6 +2,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type { Bot, BotTemplateListing, ConnectionCatalogItem } from "@robots/contracts";
 import { isBotTemplateChanged } from "@robots/contracts";
 import { BOT_TEMPLATE_TEAMS, botTemplateAppMarks } from "@robots/core";
+import { botTeamIncompleteError } from "@robots/i18n/bot-team";
 import {
   BotAvatar,
   Button,
@@ -12,9 +13,8 @@ import {
   DialogTitle,
   Spinner,
 } from "@robots/ui-web";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
-import { teamIncompleteError } from "../../lib/import-bot-template";
 import { useSave, useSpaceQueries } from "../../lib/query";
 import { errorDetails } from "../../lib/user-error";
 import { ErrorNotice } from "../ErrorNotice";
@@ -34,6 +34,7 @@ export function BotTemplatesDialog({
 }) {
   const { t } = useLingui();
   const queries = useSpaceQueries();
+  const queryClient = useQueryClient();
   const copy = useBotTemplateCopy();
   const templates = useQuery({ ...queries.bots.templates.queryOptions(), staleTime: 0 });
   const catalog = useQuery(queries.connections.catalog.queryOptions({ input: {} }));
@@ -41,7 +42,7 @@ export function BotTemplatesDialog({
     save: async (pick: TemplatePick, client): Promise<Bot> => {
       if (pick.kind === "team") {
         const { bots, failed } = await client.bots.createTeamFromTemplate({ teamId: pick.teamId });
-        if (failed.length) throw teamIncompleteError(bots.length, bots.length + failed.length);
+        if (failed.length) throw botTeamIncompleteError(bots.length, bots.length + failed.length);
         return bots[0]!;
       }
       const { template } = pick;
@@ -57,7 +58,13 @@ export function BotTemplatesDialog({
     closesScreen: true,
     onSaved: onOpenBot,
     onFailed: (error, pick) => {
-      if (isBotTemplateChanged(error) || pick.kind === "team") void templates.refetch();
+      if (pick.kind === "team") {
+        void Promise.allSettled(
+          [queries.bots.templates.queryKey(), queries.bots.list.queryKey()].map((queryKey) =>
+            queryClient.invalidateQueries({ queryKey }),
+          ),
+        );
+      } else if (isBotTemplateChanged(error)) void templates.refetch();
     },
   });
 

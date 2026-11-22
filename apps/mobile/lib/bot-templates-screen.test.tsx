@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { i18n } from "@lingui/core";
 import type { ReactNode } from "react";
 import { act, useEffect } from "react";
 import type { Root } from "react-dom/client";
@@ -6,6 +7,9 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import BotTemplatesScreen from "../app/(settings)/bot-templates";
 import { queryClient } from "./query";
+
+i18n.load("en", {});
+i18n.activate("en");
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
