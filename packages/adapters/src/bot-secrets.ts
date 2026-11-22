@@ -1352,7 +1352,7 @@ export async function newVaultItemName(
 function policyField(auth: unknown, policy: VaultPolicy | undefined) {
   if (!policy) return {};
   const type = BotSecretAuth.safeParse(auth).data?.type;
-  if (type === "contact" || type === "session" || (policy === "ask" && type !== "login"))
+  if (type === "contact" || (policy === "ask" && type !== "login"))
     throw new Error(UNSUPPORTED_ACCESS);
   return { policy };
 }
@@ -1405,7 +1405,6 @@ export async function relabelVaultItem(
       select: { id: true, auth: true, origin: true },
     });
     if (!row) return false;
-    if (isSessionAuth(row.auth) && labels.bots) throw new Error(UNSUPPORTED_ACCESS);
     await tx.vaultCredential.update({
       where: { id: row.id },
       data: {

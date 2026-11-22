@@ -180,6 +180,10 @@ async function assertRoomFor(
   }
 }
 
+function receivingKey(origin: string, botId: string): string {
+  return JSON.stringify([origin, botId]);
+}
+
 export async function signingOutSites(
   prisma: PrismaClient,
   scope: BotSecretScope,
@@ -187,19 +191,24 @@ export async function signingOutSites(
   const [applied, live] = await Promise.all([
     prisma.browserSessionSite.findMany({
       where: { userId: scope.userId, spaceId: scope.spaceId },
-      distinct: ["site"],
-      select: { site: true },
+      select: { botId: true, site: true },
     }),
     prisma.vaultCredential.findMany({
-      where: { ...(await vaultFields(prisma, scope)), auth: SESSION_TYPE },
-      select: { origin: true },
+      where: {
+        ...(await vaultFields(prisma, scope)),
+        auth: SESSION_TYPE,
+        policy: { not: "off" },
+      },
+      select: { origin: true, bots: { select: { botId: true } } },
     }),
   ]);
-  const liveOrigins = new Set(live.map((row) => row.origin));
-  return applied
-    .map((row) => row.site)
-    .filter((site) => !liveOrigins.has(sessionSiteOrigin(site)))
-    .sort();
+  const receiving = new Set(
+    live.flatMap((row) => row.bots.map((bot) => receivingKey(row.origin, bot.botId))),
+  );
+  const pending = applied.filter(
+    (row) => !receiving.has(receivingKey(sessionSiteOrigin(row.site), row.botId)),
+  );
+  return [...new Set(pending.map((row) => row.site))].sort();
 }
 
 export async function sessionItemBots(

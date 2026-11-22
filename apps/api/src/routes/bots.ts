@@ -19,6 +19,7 @@ import {
   relabelVaultItem,
   revealBotSecret,
   SAVED_LOGIN_UNREADABLE,
+  sessionItemBots,
   signingOutSites,
   SPACE_VAULT_NOT_IN_USE,
   stopCancelledGroupRuns,
@@ -175,6 +176,7 @@ async function saveVaultCredential(
   const bots = { allBots: input.allBots, botIds: input.botIds };
   if (input.value === undefined) {
     if (!name) throw new ORPCError("BAD_REQUEST", { message: "A new item needs its value" });
+    const previousBots = await sessionItemBots(deps.prisma, scope, name);
     try {
       const labels = {
         title: input.title,
@@ -189,6 +191,7 @@ async function saveVaultCredential(
     } catch (error) {
       throw mapBotSecretStoreError(error);
     }
+    signOutRemovedSessions(deps, previousBots);
     return vaultItemDto(deps, scope, name);
   }
   const { value } = input;

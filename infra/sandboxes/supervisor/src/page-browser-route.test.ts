@@ -120,6 +120,12 @@ it("accepts a site with more cookies than one request used to allow", async () =
   });
   expect(response.status).toBe(200);
   expect(await response.json()).toMatchObject({ ok: true });
+  const sent = JSON.parse(mock.stdin.join("").trim()) as {
+    sites: Array<{ cookies: Array<{ name: string }> }>;
+  };
+  expect(sent.sites[0]!.cookies.map((cookie) => cookie.name)).toEqual(
+    cookies.map((cookie) => cookie.name),
+  );
 });
 
 it("rejects another computer identity before any command executes", async () => {

@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { captureScreenshot, completeOnboarding, openUserSettings, rpc, signup } from "./helpers";
+import {
+  activeBotId,
+  captureScreenshot,
+  completeOnboarding,
+  openUserSettings,
+  rpc,
+  signup,
+} from "./helpers";
 
 type VaultRow = { name: string; title: string; note: string; auth: { type: string } | null };
 
@@ -66,6 +73,8 @@ test("imports a browser sign-in from the desktop app into the vault and removes 
   const stamp = Date.now();
   await signup(page, `session-import-${stamp}@robots.test`, "password12", "Session Tester");
   await completeOnboarding(page);
+  const botId = activeBotId(page);
+  await rpc(page, "computer/boot", { botId });
   const settings = await openUserSettings(page, "vault");
   await settings.getByTestId("vault-new").click();
   await captureScreenshot(page, testInfo, "vault-new-menu-desktop");
@@ -105,6 +114,7 @@ test("imports a browser sign-in from the desktop app into the vault and removes 
   await expect(detail.getByTestId("vault-item-edit")).toHaveCount(0);
   await expect(detail.getByTestId("vault-item-show")).toHaveCount(0);
   await captureScreenshot(page, testInfo, "vault-session-detail");
+  await rpc(page, "computer/stop", { botId });
   await detail.getByTestId("vault-item-remove").click();
   await detail.getByTestId("vault-item-remove-confirm").click();
   await expect(
@@ -112,8 +122,14 @@ test("imports a browser sign-in from the desktop app into the vault and removes 
   ).toHaveCount(0);
   const after = await rpc<VaultRow[]>(page, "vault/list", {});
   expect(after.some((entry) => entry.auth?.type === "session")).toBe(false);
+  const signingOut = settings.getByTestId("vault-signing-out-row");
+  await expect(signingOut).toHaveCount(1);
+  await expect(signingOut).toContainText("x.com");
+  await expect(signingOut).toContainText("Signing out");
+  expect(await rpc<string[]>(page, "vault/signingOut", {})).toEqual(["x.com"]);
+  await rpc(page, "computer/boot", { botId });
+  await expect(signingOut).toHaveCount(0);
   expect(await rpc<string[]>(page, "vault/signingOut", {})).toEqual([]);
-  await expect(settings.getByTestId("vault-signing-out-row")).toHaveCount(0);
 });
 
 test("the web app offers no browser sign-in import", async ({ page }) => {
