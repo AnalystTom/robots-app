@@ -17,21 +17,22 @@ sign-in or an app to connect.
 
 ### Start from a template
 
-**Bot templates** are ready-made bots for common jobs: a morning briefing, inbox triage, pull
-request reviews, and a weekly digest of topics you follow. Open them with **Templates** in
-**Connect apps** or **Skills**. Each card shows the bot's robot, its name, a one-line job and the
-apps it works with. Choose **Create** on a card to add that bot, or **Create team** to add the
-Autopilot team, which adds its members in one step.
+**Bot templates** are ready-made bots. The gallery starts with the crew: Chief of Staff, Dev,
+Researcher, Sales, GTM and Refund Bot. Below them are bots for common jobs, such as a morning
+briefing, inbox triage, pull request reviews, and a weekly digest of topics you follow. Open the
+gallery with **Templates** in **Connect apps** or **Skills**. Each card shows the bot's robot, its
+name, a one-line job and the apps it works with. Choose **Create** on a card to add that bot, or
+**Create team** to add the Autopilot team, which adds its members in one step.
 
 A template adds the bot's instructions, a skill to your library, and a routine that stays paused
 until you turn it on. Nothing is connected for you: the new chat asks for the apps the bot works
 with, and it still works without them where it can. Creating the same template again opens the bot
 you already made.
 
-A website can link straight to a template with `/sign-in?template=<id>`. The ids are `chief-of-staff`,
-`developer`, `researcher`, `sales`, `gtm`, `refund-bot`, and `team-autopilot` for the whole team. After
-sign-in, that bot (or the team, led by Chief of Staff) is created and opened. A new account gets it as
-its first bot after onboarding. An unknown id opens the template gallery.
+A website can link straight to a template with `/sign-in?template=<id>`. The ids are
+`chief-of-staff`, `developer`, `researcher`, `sales`, `gtm`, `refund-bot`, and `team-autopilot` for
+the whole team. After sign-in, that bot (or the team, led by Chief of Staff) is created and opened.
+A new account gets it as its first bot after onboarding. An unknown id opens the template gallery.
 
 ## Talk to it
 
