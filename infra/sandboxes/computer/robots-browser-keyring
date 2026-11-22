@@ -20,7 +20,7 @@ secrets_owned() {
 }
 
 seeded() {
-  for app in chromium chrome brave; do
+  for app in chromium chrome; do
     found=$(timeout 5 secret-tool lookup application "$app" 2>/dev/null) || return 1
     [ "$found" = "$key" ] || return 1
   done
@@ -45,7 +45,7 @@ if ! secrets_owned; then
   done
 fi
 
-for app in chromium chrome brave; do
+for app in chromium chrome; do
   printf '%s' "$key" | timeout 5 secret-tool store --label="Chromium Safe Storage" \
     xdg:schema chrome_libsecret_os_crypt_password_v2 application "$app"
 done

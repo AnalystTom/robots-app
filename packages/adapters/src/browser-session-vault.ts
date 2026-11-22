@@ -7,12 +7,13 @@ import type {
   SiteSession,
 } from "@robots/contracts";
 import {
+  SESSION_SITES_PER_REQUEST,
   SessionSiteCookies,
   sessionOriginSite,
   sessionSiteOrigin,
   VAULT_ITEM_LIMIT,
 } from "@robots/contracts";
-import type { PrismaClient } from "@robots/db";
+import type { PrismaClient, ThreadEvents } from "@robots/db";
 import { runAsSystem, runAsTenant, spaceIsShared, withTransactionRetry } from "@robots/db";
 import { getLogger } from "@robots/logging";
 import type { BotSecretScope } from "./bot-secrets.js";
@@ -46,6 +47,7 @@ export interface SessionVaultDeps {
 
 export interface SessionSyncDeps extends SessionVaultDeps {
   sandbox: Pick<SandboxProvider, "pageBrowser">;
+  events?: Pick<ThreadEvents, "publishSpaceChange">;
 }
 
 function sealContext(scope: BotSecretScope, id: string): AdapterContext {
@@ -178,6 +180,28 @@ async function assertRoomFor(
   }
 }
 
+export async function signingOutSites(
+  prisma: PrismaClient,
+  scope: BotSecretScope,
+): Promise<string[]> {
+  const [applied, live] = await Promise.all([
+    prisma.browserSessionSite.findMany({
+      where: { userId: scope.userId, spaceId: scope.spaceId },
+      distinct: ["site"],
+      select: { site: true },
+    }),
+    prisma.vaultCredential.findMany({
+      where: { ...(await vaultFields(prisma, scope)), auth: SESSION_TYPE },
+      select: { origin: true },
+    }),
+  ]);
+  const liveOrigins = new Set(live.map((row) => row.origin));
+  return applied
+    .map((row) => row.site)
+    .filter((site) => !liveOrigins.has(sessionSiteOrigin(site)))
+    .sort();
+}
+
 export async function sessionItemBots(
   prisma: PrismaClient,
   scope: BotSecretScope,
@@ -240,7 +264,8 @@ function batches(sites: SiteSession[]): SiteSession[][] {
   let size = 0;
   for (const site of sites) {
     const bytes = Buffer.byteLength(JSON.stringify(site));
-    if (current.length && size + bytes > MAX_BATCH_BYTES) {
+    const full = current.length >= SESSION_SITES_PER_REQUEST || size + bytes > MAX_BATCH_BYTES;
+    if (current.length && full) {
       out.push(current);
       current = [];
       size = 0;
@@ -323,6 +348,7 @@ export async function syncBotBrowserSessions(
         })),
       });
     });
+    if (toClear.length) await deps.events?.publishSpaceChange?.(bot.spaceId, "vault");
     getLogger().info("browser_sessions.synced", {
       "bot.id": bot.id,
       set: toSet.length,

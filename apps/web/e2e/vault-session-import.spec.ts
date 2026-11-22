@@ -112,6 +112,8 @@ test("imports a browser sign-in from the desktop app into the vault and removes 
   ).toHaveCount(0);
   const after = await rpc<VaultRow[]>(page, "vault/list", {});
   expect(after.some((entry) => entry.auth?.type === "session")).toBe(false);
+  expect(await rpc<string[]>(page, "vault/signingOut", {})).toEqual([]);
+  await expect(settings.getByTestId("vault-signing-out-row")).toHaveCount(0);
 });
 
 test("the web app offers no browser sign-in import", async ({ page }) => {

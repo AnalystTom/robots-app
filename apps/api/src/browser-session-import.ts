@@ -16,10 +16,15 @@ import { recordSecurityEvent } from "@robots/db";
 import { bestEffort } from "@robots/logging";
 import type { RouterDeps } from "./router.js";
 
-type SessionDeps = Pick<RouterDeps, "prisma" | "secrets" | "sandbox">;
+type SessionDeps = Pick<RouterDeps, "prisma" | "secrets" | "sandbox" | "events">;
 
 function syncDeps(deps: SessionDeps) {
-  return { prisma: deps.prisma, secretStore: deps.secrets, sandbox: deps.sandbox };
+  return {
+    prisma: deps.prisma,
+    secretStore: deps.secrets,
+    sandbox: deps.sandbox,
+    events: deps.events,
+  };
 }
 
 function syncContext() {

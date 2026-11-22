@@ -10,6 +10,7 @@ import {
   SESSIONS_NEED_OWN_SPACE,
   SESSIONS_NOT_ON_THIS_COMPUTER,
   sessionItemBots,
+  signingOutSites,
   syncBotBrowserSessions,
   syncComputerBrowserSessions,
 } from "./browser-session-vault.js";
@@ -301,12 +302,94 @@ describePostgres("imported browser sessions (PostgreSQL)", () => {
     expect(await applied()).toEqual(["x.com"]);
     const [row] = await system.vaultCredential.findMany({ where: { userId: owner } });
     await asOwner(() => forgetBotSecret(db.prisma, scope, row!.name));
+    expect(await asOwner(() => signingOutSites(db.prisma, scope))).toEqual(["x.com"]);
     browserRefuses = true;
     try {
       expect(await sync()).toBe("failed");
       expect(await applied()).toEqual(["x.com"]);
+      expect(await asOwner(() => signingOutSites(db.prisma, scope))).toEqual(["x.com"]);
     } finally {
       browserRefuses = false;
+    }
+    expect(await sync()).toBe("signed_in");
+    expect(await applied()).toEqual([]);
+    expect(await asOwner(() => signingOutSites(db.prisma, scope))).toEqual([]);
+  });
+
+  it("tells the Space when a browser takes a sign-out, and only then", async () => {
+    await asOwner(() =>
+      importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
+        source: "Thomas in Chrome",
+        botIds: [botId],
+        sessions: [session(TOKEN)],
+      }),
+    );
+    expect(await sync()).toBe("signed_in");
+    const signals: Array<[string, string]> = [];
+    const withEvents = {
+      ...deps(),
+      events: {
+        publishSpaceChange: async (spaceId: string, kind: string) => {
+          signals.push([spaceId, kind]);
+        },
+      },
+    };
+    const [row] = await system.vaultCredential.findMany({ where: { userId: owner } });
+    await asOwner(() => forgetBotSecret(db.prisma, scope, row!.name));
+    browserRefuses = true;
+    try {
+      expect(await syncBotBrowserSessions(withEvents, botId, context())).toBe("failed");
+    } finally {
+      browserRefuses = false;
+    }
+    expect(signals).toEqual([]);
+    expect(await syncBotBrowserSessions(withEvents, botId, context())).toBe("signed_in");
+    expect(signals).toEqual([[owner, "vault"]]);
+  });
+
+  it("delivers every cookie of a site, however many it has", async () => {
+    const [first] = session(TOKEN).cookies;
+    const cookies = Array.from({ length: 151 }, (_, index) => ({
+      ...first!,
+      name: `cookie_${index}`,
+    }));
+    await asOwner(() =>
+      importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
+        source: "Thomas in Chrome",
+        botIds: [botId],
+        sessions: [{ site: "x.com", cookies }],
+      }),
+    );
+    expect(await sync()).toBe("signed_in");
+    const sent = calls.at(-1)!.request as Extract<PageBrowserCommand, { command: "sessions" }>;
+    expect(sent.sites.map((entry) => entry.cookies.map((cookie) => cookie.name))).toEqual([
+      cookies.map((cookie) => cookie.name),
+    ]);
+    expect(await applied()).toEqual(["x.com"]);
+    const [row] = await system.vaultCredential.findMany({ where: { userId: owner } });
+    await asOwner(() => forgetBotSecret(db.prisma, scope, row!.name));
+    expect(await sync()).toBe("signed_in");
+  });
+
+  it("splits a bot's sign-ins into several browser requests past fifty sites", async () => {
+    const sites = Array.from({ length: 51 }, (_, index) => `site-${index}.example.test`);
+    for (const batch of [sites.slice(0, 50), sites.slice(50)]) {
+      await asOwner(() =>
+        importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
+          source: "Thomas in Chrome",
+          botIds: [botId],
+          sessions: batch.map((site) => session(TOKEN, site)),
+        }),
+      );
+    }
+    expect(await sync()).toBe("signed_in");
+    const requests = calls
+      .slice(-2)
+      .map((call) => (call.request as Extract<PageBrowserCommand, { command: "sessions" }>).sites);
+    expect(requests.map((group) => group.length)).toEqual([50, 1]);
+    expect((await applied()).sort()).toEqual([...sites].sort());
+    for (const row of await system.vaultCredential.findMany({ where: { userId: owner } })) {
+      await asOwner(() => forgetBotSecret(db.prisma, scope, row.name));
     }
     expect(await sync()).toBe("signed_in");
     expect(await applied()).toEqual([]);
