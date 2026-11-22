@@ -16,6 +16,7 @@ import {
   ORGANIC_AVATAR_VIEWBOX,
   organicAvatarEyeTilt,
   organicAvatarPath,
+  organicAvatarValue,
   resolvePersonaColorDef,
   robotCharacterDataUri,
   SHIPPED_BOT_AVATAR_EYES,
@@ -55,8 +56,6 @@ export function parseBotAvatar(
   imageUrl?: string;
 } {
   if (!rawColor) return { color: "#F97316", isImage: false };
-  // Only data: image URLs are rendered. Arbitrary http(s)/blob values in `color`
-  // must not become <img src> (SSRF / tracking when other members view the bot).
   if (rawColor.startsWith("data:image/")) {
     return { color: "#F97316", isImage: true, imageUrl: rawColor };
   }
@@ -115,7 +114,8 @@ export const BotAvatar = memo(function BotAvatar({
   const id = useId().replace(/[^a-zA-Z0-9-_]/g, "");
   const isWorking = ACTIVE_RUN_STATUSES.some((s) => s === status);
 
-  const parsed = useMemo(() => parseBotAvatar(color, identity), [color, identity]);
+  const drawn = organicAvatarValue(color, avatarSet);
+  const parsed = useMemo(() => parseBotAvatar(drawn, identity), [drawn, identity]);
   const effectiveId = identity || parsed.color || "agent";
 
   const colorDef = useMemo(

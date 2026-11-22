@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { parseRobotCharacter } from "@robots/contracts";
+import { BOT_COLORS, parseRobotCharacter } from "@robots/contracts";
 import {
   newClientId,
   ORGANIC_AVATAR_FAMILY_COUNT,
@@ -257,7 +257,7 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       repos.createBot(actor(), botInput("Original account")),
     );
     expect(keptOriginal).toMatchObject({ avatarSet: "organic" });
-    expect(parseRobotCharacter(keptOriginal.color)).not.toBeNull();
+    expect(BOT_COLORS).toContain(keptOriginal.color);
     await system.user.update({ where: { id: owner.userId }, data: { botAvatarSet: "robots" } });
     for (const color of ["#8B5CF6", "#8B5CF6::shape_3", "data:image/png;base64,aGVsbG8="]) {
       const original = await runAsTenant(owner, () =>

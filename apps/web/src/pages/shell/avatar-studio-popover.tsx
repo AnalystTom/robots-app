@@ -346,7 +346,10 @@ export function AvatarStudioPopover({
                   setPickedSet(set);
                   onChange(next, set);
                 }}
-                onAvatarSetChange={setPickedSet}
+                onAvatarSetChange={(set) => {
+                  setPickedSet(set);
+                  onChange(value, set);
+                }}
               />
             </TabsContent>
             <TabsContent value="upload">

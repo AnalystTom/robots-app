@@ -882,10 +882,9 @@ export default function BotSettingsScreen() {
               ]}
               value={styleSet}
               onChange={(next) => {
-                if (!bot) return;
-                setStyleSet(resolveBotAvatarSet(next));
-                setColor(bot.color);
-                setAvatarSet(resolveBotAvatarSet(bot.avatarSet));
+                const set = resolveBotAvatarSet(next);
+                setStyleSet(set);
+                setAvatarSet(set);
               }}
               plain
             />

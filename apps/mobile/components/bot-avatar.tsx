@@ -22,6 +22,7 @@ import {
   ORGANIC_AVATAR_VIEWBOX,
   organicAvatarEyeTilt,
   organicAvatarPath,
+  organicAvatarValue,
   robotCharacterSvg,
   SHIPPED_BOT_AVATAR_EYES,
   SHIPPED_BOT_AVATAR_VIEWBOX,
@@ -128,12 +129,12 @@ export interface BotAvatarProps {
   pokeable?: boolean;
 }
 
-/** Missing set metadata deliberately preserves every existing avatar. */
 export const BotAvatar = memo(function BotAvatar(props: BotAvatarProps) {
-  if (usesLogoAvatar(props)) {
-    return <RobotsBotAvatar {...props} />;
+  const drawn = { ...props, color: organicAvatarValue(props.color, props.avatarSet) };
+  if (usesLogoAvatar(drawn)) {
+    return <RobotsBotAvatar {...drawn} />;
   }
-  return <LegacyBotAvatar {...props} />;
+  return <LegacyBotAvatar {...drawn} />;
 });
 
 function RobotsBotAvatar({

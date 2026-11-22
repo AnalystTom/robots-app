@@ -1,3 +1,4 @@
+import type { BotAvatarSet } from "@robots/contracts";
 import {
   avatarEyeRects,
   avatarIdentitySeed,
@@ -6,6 +7,7 @@ import {
   ORGANIC_AVATAR_VIEWBOX,
   organicAvatarEyeTilt,
   organicAvatarPath,
+  organicAvatarValue,
   SHIPPED_BOT_AVATAR_EYES,
   SHIPPED_BOT_AVATAR_VIEWBOX,
 } from "@robots/core";
@@ -35,7 +37,7 @@ import {
 } from "../lib/group-seats";
 import { native, useMobileTokens, useResolvedAppearance } from "../lib/native";
 
-type SeatMember = { botId?: string; name?: string; color: string };
+type SeatMember = { botId?: string; name?: string; color: string; avatarSet?: BotAvatarSet };
 
 type Paint = { fill: ColorValue; stroke?: string; strokeWidth?: number };
 
@@ -157,7 +159,7 @@ function seatArt(
   key: string,
   page: { background: string; foreground: string },
 ): SeatArt {
-  const parsed = mobileBotAvatarPresentation(member.color);
+  const parsed = mobileBotAvatarPresentation(organicAvatarValue(member.color, member.avatarSet));
   const r = size / 2;
   if (parsed.kind === "image" && parsed.imageUrl) {
     // Drawn in points, so the photo keeps its full resolution.
