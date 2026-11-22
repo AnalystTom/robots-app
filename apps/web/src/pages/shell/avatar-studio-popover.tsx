@@ -45,7 +45,7 @@ export function BotLookPicker({
   identity?: string;
   organicIdentities?: readonly string[];
   avatarSet: BotAvatarSet;
-  onAvatarSetChange?: (set: BotAvatarSet, value: string) => void;
+  onAvatarSetChange?: (set: BotAvatarSet) => void;
   onChange: (value: string, identity?: string) => void;
 }) {
   const {
@@ -68,9 +68,7 @@ export function BotLookPicker({
         {onAvatarSetChange ? (
           <Tabs
             value={avatarSet}
-            onValueChange={(next) =>
-              onAvatarSetChange(resolveBotAvatarSet(next), defaultBotAvatarValue(value))
-            }
+            onValueChange={(next) => onAvatarSetChange(resolveBotAvatarSet(next))}
           >
             <TabsList className="w-full" aria-label={t`Icon set`}>
               <TabsTrigger value="organic" className="flex-1">
@@ -187,6 +185,7 @@ export function AvatarStudioPopover({
   disabled = false,
 }: AvatarStudioPopoverProps) {
   const [open, setOpen] = useState(false);
+  const [pickedSet, setPickedSet] = useState<BotAvatarSet>(avatarSet);
   const [activeTab, setActiveTab] = useState<"bot" | "upload">("bot");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -254,7 +253,10 @@ export function AvatarStudioPopover({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setPickedSet(avatarSet);
+          setOpen(true);
+        }}
         className="group relative cursor-pointer rounded-2xl outline-none transition-transform hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-ring"
         aria-label={t`Customize bot avatar`}
         data-testid="avatar-studio-trigger"
@@ -302,7 +304,7 @@ export function AvatarStudioPopover({
               identity={identity}
               size={78}
               status={status}
-              avatarSet={avatarSet}
+              avatarSet={pickedSet}
             />
           </div>
 
@@ -338,9 +340,9 @@ export function AvatarStudioPopover({
               <BotLookPicker
                 value={value}
                 identity={identity}
-                avatarSet={avatarSet}
-                onChange={(next) => onChange(next)}
-                onAvatarSetChange={(set, next) => onChange(next, set)}
+                avatarSet={pickedSet}
+                onChange={(next) => onChange(next, pickedSet)}
+                onAvatarSetChange={setPickedSet}
               />
             </TabsContent>
             <TabsContent value="upload">

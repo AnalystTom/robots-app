@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 
 import type { BotAvatarSet } from "@robots/contracts";
-import { DEFAULT_BOT_AVATAR_COLOR } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { act, useState } from "react";
 import type { Root } from "react-dom/client";
@@ -75,25 +74,23 @@ async function render(value: string, avatarSet: BotAvatarSet = "organic", key = 
 }
 
 describe("selectable bot icon sets", () => {
-  it("keeps an Original bot on open, saves a RoBots switch, and restores the saved set on reload", async () => {
+  it("keeps an Original bot on open, saves a RoBots pick, and restores the saved set on reload", async () => {
     await render("#10B981");
     await click("Customize bot avatar");
     expect(button("Original").getAttribute("aria-selected")).toBe("true");
     expect(document.querySelector(".robots-organic-avatar")).not.toBeNull();
     expect(changed).not.toHaveBeenCalled();
     await click("RoBots");
-    expect(changed).toHaveBeenLastCalledWith("#10B981", "robots");
+    expect(changed).not.toHaveBeenCalled();
     expect(document.querySelector(".robots-logo-avatar")).not.toBeNull();
-    await render("#10B981", "robots", "reload");
+    await click("Color #00C972");
+    expect(changed).toHaveBeenLastCalledWith("#00C972", "robots");
+    await render("#00C972", "robots", "reload");
     await click("Customize bot avatar");
     expect(button("RoBots").getAttribute("aria-selected")).toBe("true");
-    await click("Original");
-    expect(changed).toHaveBeenLastCalledWith("#10B981", "organic");
-    expect(document.querySelector(".robots-organic-avatar")).not.toBeNull();
-    expect(button("wedge")).toBeDefined();
   });
 
-  it("leaves a photo intact until the user explicitly selects another set", async () => {
+  it("leaves a photo intact until the user explicitly picks a look", async () => {
     const photo = "data:image/png;base64,abc";
     await render(photo);
     expect(document.querySelector(`img[src="${photo}"]`)).not.toBeNull();
@@ -101,7 +98,13 @@ describe("selectable bot icon sets", () => {
     expect(changed).not.toHaveBeenCalled();
     expect(document.querySelector(`img[src="${photo}"]`)).not.toBeNull();
     await click("RoBots");
-    expect(changed).toHaveBeenLastCalledWith(DEFAULT_BOT_AVATAR_COLOR, "robots");
+    expect(changed).not.toHaveBeenCalled();
+    expect(document.querySelector(`img[src="${photo}"]`)).not.toBeNull();
+    await click("Detective");
+    expect(changed).toHaveBeenLastCalledWith(
+      "robot:purple.deerstalker.magnifier.cape.none",
+      "robots",
+    );
     expect(document.querySelector(`img[src="${photo}"]`)).toBeNull();
   });
 
@@ -110,10 +113,12 @@ describe("selectable bot icon sets", () => {
     await click("Customize bot avatar");
     expect(changed).not.toHaveBeenCalled();
     await click("Color #00C972");
-    expect(changed).toHaveBeenLastCalledWith("#00C972::shape_2", undefined);
+    expect(changed).toHaveBeenLastCalledWith("#00C972::shape_2", "organic");
     expect(button("Original").getAttribute("aria-selected")).toBe("true");
     await click("RoBots");
-    expect(changed).toHaveBeenLastCalledWith("#00C972", "robots");
+    expect(changed).toHaveBeenCalledTimes(1);
+    await click("Color #00C972");
+    expect(changed).toHaveBeenLastCalledWith("#00C972::shape_2", "robots");
   });
 });
 
@@ -164,7 +169,7 @@ describe("robot character picker", () => {
     expect(changed).toHaveBeenCalledTimes(1);
     expect(changed).toHaveBeenLastCalledWith(
       "robot:purple.deerstalker.magnifier.cape.none",
-      undefined,
+      "robots",
     );
 
     const afterPick = characterTiles();
@@ -174,5 +179,22 @@ describe("robot character picker", () => {
         .find((tile) => tile.getAttribute("aria-checked") === "true")
         ?.getAttribute("aria-label"),
     ).toBe("Detective");
+  });
+
+  it("keeps a stored robot look through a Bot style round trip and saves only an explicit pick", async () => {
+    await render("robot:purple.deerstalker.magnifier.cape.none", "robots");
+    await click("Customize bot avatar");
+    await click("Original");
+    await click("RoBots");
+    expect(changed).not.toHaveBeenCalled();
+    expect(
+      characterTiles()
+        .find((tile) => tile.getAttribute("aria-checked") === "true")
+        ?.getAttribute("aria-label"),
+    ).toBe("Detective");
+
+    await click("Hero");
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(changed).toHaveBeenLastCalledWith("robot:red.antenna.aviators.cape.confetti", "robots");
   });
 });
