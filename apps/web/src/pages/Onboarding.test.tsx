@@ -11,6 +11,7 @@ const account = vi.hoisted(() => ({ load: (_me: unknown) => {}, fail: (_error: E
 
 vi.mock("../lib/rpc", () => ({
   selectedSpaceId: () => null,
+  createSpaceRpc: () => ({}),
   rpc: {
     me: vi.fn(
       () =>
