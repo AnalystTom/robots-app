@@ -9,6 +9,7 @@ import {
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
 } from "@robots/core";
+import { bestEffort } from "@robots/logging";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler, ScrollView, Text, TextInput, View } from "react-native";
@@ -44,8 +45,10 @@ export default function NewBot() {
 
   const readAccountSet = useCallback(() => {
     setAccountFailed(false);
-    return Promise.all([rpc("me"), rpc("bots/list")])
-      .then(([me, bots]) => {
+    const botsRead = bestEffort("read bots for the new bot's look", rpc("bots/list"));
+    return rpc("me")
+      .then(async (me) => {
+        const bots = (await botsRead) ?? [];
         if (gone.current) return;
         const set = resolveBotAvatarSet(me.botAvatarSet);
         const ownColors = bots.filter((bot) => bot.userId === me.userId).map((bot) => bot.color);

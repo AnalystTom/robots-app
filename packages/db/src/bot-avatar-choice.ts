@@ -1,18 +1,19 @@
 import { randomInt } from "node:crypto";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_COLORS, parseBotAvatarValue } from "@robots/contracts";
+import type { Random } from "@robots/core";
 import {
-  leastWornRobotValue,
   ORGANIC_AVATAR_HEART_FAMILY,
   ORGANIC_AVATAR_LOOKS,
   organicAvatarFamily,
   organicAvatarLook,
+  pickLeastUsed,
+  ROBOT_PRESET_IDS,
   resolvePersonaColorDef,
+  robotPresetValue,
   seededLogoAvatarColor,
+  wornRobotPresetIds,
 } from "@robots/core";
-
-/** A uniform number in [0, 1). */
-export type Random = () => number;
 
 const RANDOM_RANGE = 2 ** 32;
 const cryptoRandom: Random = () => randomInt(RANDOM_RANGE) / RANDOM_RANGE;
@@ -20,28 +21,12 @@ const cryptoRandom: Random = () => randomInt(RANDOM_RANGE) / RANDOM_RANGE;
 /** Tries before settling for a non-heart id; each try matches the wanted family about 1 in 10. */
 export const BOT_ID_ATTEMPTS = 200;
 
-/** One of the options the existing values use least, at random among ties, preferring any not in `avoid`. */
-export function pickLeastUsed<T>(
-  options: readonly T[],
-  used: readonly T[],
-  random: Random,
-  avoid: readonly T[] = [],
-): T {
-  const counts = options.map((option) => used.filter((value) => value === option).length);
-  const fewest = Math.min(...counts);
-  const least = options.filter((_, index) => counts[index] === fewest);
-  const preferred = least.filter((option) => !avoid.includes(option));
-  const candidates = preferred.length > 0 ? preferred : least;
-  return candidates[Math.floor(random() * candidates.length)] ?? options[0]!;
-}
-
 export function chooseRobotCharacter(
   existing: readonly { color: string }[],
   random: Random = cryptoRandom,
 ): string {
-  return leastWornRobotValue(
-    existing.map((bot) => bot.color),
-    random,
+  return robotPresetValue(
+    pickLeastUsed(ROBOT_PRESET_IDS, wornRobotPresetIds(existing.map((bot) => bot.color)), random),
   );
 }
 

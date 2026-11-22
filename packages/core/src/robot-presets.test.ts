@@ -1,11 +1,6 @@
 import { isBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
-import {
-  leastWornRobotValue,
-  ROBOT_PRESETS,
-  robotPresetOf,
-  robotPresetValue,
-} from "./robot-presets.js";
+import { ROBOT_PRESETS, robotPresetOf, robotPresetValue } from "./robot-presets.js";
 
 const EXPECTED_ROBOTS = [
   ["assistant", "robot:green.antenna.happy.vest.none"],
@@ -39,15 +34,6 @@ describe("robot presets", () => {
       expect(isBotAvatarValue(robotPresetValue(preset.id))).toBe(true);
       expect(robotPresetOf(preset.look)).toBe(preset.id);
     }
-  });
-
-  it("picks the listed robot the given bots wear least, ignoring other looks", () => {
-    const everyRobotButHero = ROBOT_PRESETS.filter((preset) => preset.id !== "hero").map((preset) =>
-      robotPresetValue(preset.id),
-    );
-    const worn = [...everyRobotButHero, "#8B5CF6"];
-    expect(leastWornRobotValue(worn, () => 0.5)).toBe(robotPresetValue("hero"));
-    expect(leastWornRobotValue([], () => 0)).toBe("robot:green.antenna.happy.vest.none");
   });
 
   it("do not claim a recoloured or reassembled robot", () => {
