@@ -419,6 +419,7 @@ export function createRouterContext(deps: RouterDeps) {
     sandbox: deps.sandbox,
     home: deps.home,
     dataDir: deps.dataDir,
+    secretStore: deps.secrets,
   });
   const agentSkills = createAgentSkillsService(deps.prisma);
 

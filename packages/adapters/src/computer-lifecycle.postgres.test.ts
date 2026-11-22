@@ -25,6 +25,7 @@ import {
 import { checkpointAndStopComputer, checkpointRunComputerWorkspace } from "./computer-workspace.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
 import { LocalAgentHomeStore } from "./home.js";
+import { testSecretStore } from "./secret-store.test-support.js";
 import { takeoverContinuePlan } from "./takeover-resume.js";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -123,7 +124,11 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
           where: { id: computerId },
           data: { kind: "fake", state: "stopped", providerRef: null, restorePending: false },
         });
-        const first = await provisionComputer(deps, computerId, context);
+        const first = await provisionComputer(
+          { ...deps, secretStore: testSecretStore },
+          computerId,
+          context,
+        );
         for (const name of ["a.txt", "b.txt"]) {
           await sandbox.writeFile(
             first,
@@ -131,7 +136,12 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
             context,
           );
         }
-        await replaceComputer(deps, computerId, "update", context);
+        await replaceComputer(
+          { ...deps, secretStore: testSecretStore },
+          computerId,
+          "update",
+          context,
+        );
         expect(await homeFiles()).toEqual(["a.txt", "b.txt"]);
 
         if (next === "crashed" || next === "lost") {
@@ -167,7 +177,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
               await new Promise(() => undefined);
             });
           }
-          void provisionComputer(deps, computerId, context);
+          void provisionComputer({ ...deps, secretStore: testSecretStore }, computerId, context);
           await started;
           await prisma.computer.update({
             where: { id: computerId },
@@ -175,21 +185,27 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
           });
           // Reclaiming the abandoned start retries the restore; this one is interrupted too.
           failRestore();
-          await expect(provisionComputer(deps, computerId, context)).rejects.toThrow();
+          await expect(
+            provisionComputer({ ...deps, secretStore: testSecretStore }, computerId, context),
+          ).rejects.toThrow();
         } else if (next === "unprepared") {
           // The machine disappears and is recreated under the same name, setting it up fails before
           // any restore, and it cannot be deleted.
           sandbox.boxes.delete(first.id);
           vi.spyOn(sandbox, "prepare").mockRejectedValueOnce(new Error("setup failed"));
           vi.spyOn(sandbox, "destroy").mockRejectedValueOnce(new Error("provider deletion failed"));
-          await expect(provisionComputer(deps, computerId, context)).rejects.toThrow();
+          await expect(
+            provisionComputer({ ...deps, secretStore: testSecretStore }, computerId, context),
+          ).rejects.toThrow();
         } else if (next === "vanished") {
           // The running machine disappears; the provider recreates it under the same name, the
           // restore fails, and the new machine cannot be deleted.
           sandbox.boxes.delete(first.id);
           failRestore();
           vi.spyOn(sandbox, "destroy").mockRejectedValueOnce(new Error("provider deletion failed"));
-          await expect(provisionComputer(deps, computerId, context)).rejects.toThrow();
+          await expect(
+            provisionComputer({ ...deps, secretStore: testSecretStore }, computerId, context),
+          ).rejects.toThrow();
         } else {
           // The next update's restore fails, and the broken replacement cannot be deleted.
           failRestore();
@@ -197,7 +213,14 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
           vi.spyOn(sandbox, "destroy")
             .mockImplementationOnce(destroy)
             .mockRejectedValueOnce(new Error("provider deletion failed"));
-          await expect(replaceComputer(deps, computerId, "update", context)).rejects.toThrow();
+          await expect(
+            replaceComputer(
+              { ...deps, secretStore: testSecretStore },
+              computerId,
+              "update",
+              context,
+            ),
+          ).rejects.toThrow();
         }
         expect(await row()).toMatchObject({
           state: "error",
@@ -208,7 +231,11 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
 
         const expected = ["a.txt", "b.txt"];
         if (next === "start") {
-          const started = await provisionComputer(deps, computerId, context);
+          const started = await provisionComputer(
+            { ...deps, secretStore: testSecretStore },
+            computerId,
+            context,
+          );
           await sandbox.writeFile(
             started,
             { path: "c.txt", content: new TextEncoder().encode("c.txt") },
@@ -227,7 +254,9 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
             data: { state: "suspending", updatedAt: new Date(0) },
           });
           failRestore();
-          await expect(provisionComputer(deps, computerId, context)).rejects.toThrow();
+          await expect(
+            provisionComputer({ ...deps, secretStore: testSecretStore }, computerId, context),
+          ).rejects.toThrow();
           expect(await row()).toMatchObject({ state: "error", restorePending: true });
           // Idle sleep stops an abandoned claim on it without saving.
           await prisma.computer.update({
@@ -242,7 +271,11 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
             homeRevisionAt: savedAt,
           });
         } else if (next === "crashed" || next === "lost") {
-          const started = await provisionComputer(deps, computerId, context);
+          const started = await provisionComputer(
+            { ...deps, secretStore: testSecretStore },
+            computerId,
+            context,
+          );
           expect([...sandbox.boxes.get(started.id)!.files.keys()].sort()).toEqual(expected);
           expect(await homeFiles()).toEqual(expected);
         } else if (next === "vanished") {
@@ -255,15 +288,28 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
           await sleepComputerIfIdle(deps, computerId);
           expect(await homeFiles()).toEqual(expected);
           expect(await row()).toMatchObject({ restorePending: true, homeRevisionAt: savedAt });
-          const started = await provisionComputer(deps, computerId, context);
+          const started = await provisionComputer(
+            { ...deps, secretStore: testSecretStore },
+            computerId,
+            context,
+          );
           expect([...sandbox.boxes.get(started.id)!.files.keys()].sort()).toEqual(expected);
         } else if (next === "running") {
           // An older release running beside this one activated it without clearing the mark.
           await prisma.computer.update({ where: { id: computerId }, data: { state: "running" } });
-          const started = await provisionComputer(deps, computerId, context);
+          const started = await provisionComputer(
+            { ...deps, secretStore: testSecretStore },
+            computerId,
+            context,
+          );
           expect([...sandbox.boxes.get(started.id)!.files.keys()].sort()).toEqual(expected);
         }
-        const replacement = await replaceComputer(deps, computerId, "update", context);
+        const replacement = await replaceComputer(
+          { ...deps, secretStore: testSecretStore },
+          computerId,
+          "update",
+          context,
+        );
         expect(await homeFiles()).toEqual(expected);
         if (next === "update") expect((await row()).homeRevisionAt).toEqual(savedAt);
         expect([...sandbox.boxes.get(replacement.id)!.files.keys()].sort()).toEqual(expected);
@@ -313,7 +359,11 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
             restorePending: false,
           },
         });
-        const first = await provisionComputer(deps, computerId, context);
+        const first = await provisionComputer(
+          { ...deps, secretStore: testSecretStore },
+          computerId,
+          context,
+        );
         for (const name of ["a.txt", "b.txt"]) {
           await sandbox.writeFile(
             first,
@@ -321,7 +371,12 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
             context,
           );
         }
-        const running = await replaceComputer(deps, computerId, "update", context);
+        const running = await replaceComputer(
+          { ...deps, secretStore: testSecretStore },
+          computerId,
+          "update",
+          context,
+        );
         const saved = await prisma.computer.findUniqueOrThrow({ where: { id: computerId } });
         expect(await homeFiles(saved.homeKey)).toEqual(["a.txt", "b.txt"]);
 
@@ -342,7 +397,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
           });
         let start: Promise<unknown> | undefined;
         const begin = () => {
-          start = provisionComputer(deps, computerId, context);
+          start = provisionComputer({ ...deps, secretStore: testSecretStore }, computerId, context);
         };
         if (when === "before") {
           begin();
@@ -402,7 +457,11 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
         where: { id: computerId },
         data: { kind: "fake", state: "stopped", providerRef: null, restorePending: false },
       });
-      const first = await provisionComputer(deps, computerId, context);
+      const first = await provisionComputer(
+        { ...deps, secretStore: testSecretStore },
+        computerId,
+        context,
+      );
       for (const name of ["a.txt", "b.txt"]) {
         await sandbox.writeFile(
           first,
@@ -410,7 +469,12 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
           context,
         );
       }
-      const running = await replaceComputer(deps, computerId, "update", context);
+      const running = await replaceComputer(
+        { ...deps, secretStore: testSecretStore },
+        computerId,
+        "update",
+        context,
+      );
       // An older start claimed the computer long ago, the provider recreated its machine under
       // the same name, and only part of the restore has landed yet.
       sandbox.boxes.get(running.id)!.files.delete("b.txt");
@@ -429,9 +493,9 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
           });
           return findRun(args);
         }) as never);
-      await expect(provisionComputer(deps, computerId, context)).rejects.toBeInstanceOf(
-        ComputerBusyError,
-      );
+      await expect(
+        provisionComputer({ ...deps, secretStore: testSecretStore }, computerId, context),
+      ).rejects.toBeInstanceOf(ComputerBusyError);
       vi.restoreAllMocks();
       expect(await prisma.computer.findUniqueOrThrow({ where: { id: computerId } })).toMatchObject({
         state: "booting",
@@ -440,7 +504,11 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
 
       // The older start fails and leaves it marked; the next start restores it.
       await prisma.computer.update({ where: { id: computerId }, data: { state: "error" } });
-      const restored = await provisionComputer(deps, computerId, context);
+      const restored = await provisionComputer(
+        { ...deps, secretStore: testSecretStore },
+        computerId,
+        context,
+      );
       expect([...sandbox.boxes.get(restored.id)!.files.keys()].sort()).toEqual(["a.txt", "b.txt"]);
     } finally {
       vi.restoreAllMocks();
@@ -486,7 +554,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
         where: { id: computerId },
         data: { kind: "fake", state: "stopped", providerRef: null, restorePending: false },
       });
-      await provisionComputer(deps, computerId, context);
+      await provisionComputer({ ...deps, secretStore: testSecretStore }, computerId, context);
       await prisma.computer.update({
         where: { id: computerId },
         data: { maintenanceId: context.operationId },
@@ -494,7 +562,9 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
       await expect(
         acquireComputerExecutionLease(prisma, { computerId, botId, runId: run.id }),
       ).rejects.toBeInstanceOf(ComputerBusyError);
-      await expect(replaceComputer(deps, computerId, "update", context)).resolves.toBeTruthy();
+      await expect(
+        replaceComputer({ ...deps, secretStore: testSecretStore }, computerId, "update", context),
+      ).resolves.toBeTruthy();
 
       await prisma.computerExecutionLease.upsert({
         where: { computerId_botId: { computerId, botId } },
@@ -507,9 +577,9 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
         },
         update: { runId: run.id, expiresAt: new Date(Date.now() + 60_000) },
       });
-      await expect(replaceComputer(deps, computerId, "update", context)).rejects.toBeInstanceOf(
-        ComputerBusyError,
-      );
+      await expect(
+        replaceComputer({ ...deps, secretStore: testSecretStore }, computerId, "update", context),
+      ).rejects.toBeInstanceOf(ComputerBusyError);
     } finally {
       await prisma.computerExecutionLease.updateMany({
         where: { computerId },
@@ -574,7 +644,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
     // A start that is not refused waits for the abandoned boot like any start; stop it there.
     const startPastAbandonedBoot = async () => {
       const waiting = new AbortController();
-      const outcome = provisionComputer(deps, computerId, {
+      const outcome = provisionComputer({ ...deps, secretStore: testSecretStore }, computerId, {
         ...context,
         signal: waiting.signal,
       }).then(
@@ -588,20 +658,24 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
       await abandonedBoot();
       expect(await startPastAbandonedBoot()).not.toBe("busy");
       await abandonedBoot();
-      await expect(replaceComputer(deps, computerId, "reset", context)).resolves.toBeTruthy();
-      await expect(replaceComputer(deps, computerId, "reset", context)).resolves.toBeTruthy();
+      await expect(
+        replaceComputer({ ...deps, secretStore: testSecretStore }, computerId, "reset", context),
+      ).resolves.toBeTruthy();
+      await expect(
+        replaceComputer({ ...deps, secretStore: testSecretStore }, computerId, "reset", context),
+      ).resolves.toBeTruthy();
 
       // The same run as the bot's own turn still holds every one of them.
       await prisma.run.update({ where: { id: helper.id }, data: { trigger: "user" } });
       await abandonedBoot();
       expect(await startPastAbandonedBoot()).toBe("busy");
-      await expect(replaceComputer(deps, computerId, "reset", context)).rejects.toBeInstanceOf(
-        ComputerBusyError,
-      );
+      await expect(
+        replaceComputer({ ...deps, secretStore: testSecretStore }, computerId, "reset", context),
+      ).rejects.toBeInstanceOf(ComputerBusyError);
       await prisma.computer.update({ where: { id: computerId }, data: { state: "running" } });
-      await expect(replaceComputer(deps, computerId, "reset", context)).rejects.toBeInstanceOf(
-        ComputerBusyError,
-      );
+      await expect(
+        replaceComputer({ ...deps, secretStore: testSecretStore }, computerId, "reset", context),
+      ).rejects.toBeInstanceOf(ComputerBusyError);
     } finally {
       await prisma.run.update({ where: { id: helper.id }, data: { status: "cancelled" } });
       await prisma.thread.delete({ where: { id: helperThread.id } });
@@ -676,7 +750,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
       expect(await computer()).toEqual({ state: "error", maintenanceId: null });
 
       const recover = await queueComputerUpdate(deps, computerId, botId, "recover");
-      await performComputerUpdate(deps, recover.id);
+      await performComputerUpdate({ ...deps, secretStore: testSecretStore }, recover.id);
       expect(await status(recover.id)).toBe("completed");
       expect(await computer()).toEqual({ state: "running", maintenanceId: null });
     } finally {
@@ -837,13 +911,17 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
         where: { id: computerId },
         data: { kind: "fake", state: "stopped", providerRef: null, restorePending: false },
       });
-      await provisionComputer({ ...deps, prisma }, computerId, context);
+      await provisionComputer(
+        { secretStore: testSecretStore, ...deps, prisma },
+        computerId,
+        context,
+      );
       const update = await prisma.computerUpdate.create({
         data: { computerId, botId, action: "recover" },
       });
       const destroy = vi.spyOn(sandbox, "destroy");
 
-      await performComputerUpdate(deps, update.id);
+      await performComputerUpdate({ ...deps, secretStore: testSecretStore }, update.id);
 
       expect(destroy).not.toHaveBeenCalled();
       // Calling the deletion off lets reconciliation run it as if it had never started.
@@ -912,7 +990,7 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
           where: { id: computerId },
           data: { kind: "fake", state: "stopped", providerRef: null, restorePending: false },
         });
-        await provisionComputer(deps, computerId, context);
+        await provisionComputer({ ...deps, secretStore: testSecretStore }, computerId, context);
         const update = await prisma.computerUpdate.create({
           data: { computerId, botId, action: "recover" },
         });
@@ -933,8 +1011,13 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
         await claim.holding;
         const working = (
           operation === "reset"
-            ? replaceComputer(deps, computerId, "reset", context)
-            : performComputerUpdate(deps, update.id)
+            ? replaceComputer(
+                { ...deps, secretStore: testSecretStore },
+                computerId,
+                "reset",
+                context,
+              )
+            : performComputerUpdate({ ...deps, secretStore: testSecretStore }, update.id)
         ).catch(() => undefined);
         await pause();
         claim.release();
@@ -989,7 +1072,11 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
         where: { id: computerId },
         data: { kind: "fake", state: "stopped", providerRef: null, restorePending: false },
       });
-      const ref = await provisionComputer(deps, computerId, context);
+      const ref = await provisionComputer(
+        { ...deps, secretStore: testSecretStore },
+        computerId,
+        context,
+      );
       const update = await prisma.computerUpdate.create({
         data: { computerId, botId, action: "recover" },
       });
@@ -999,10 +1086,10 @@ describePostgres("Team Computer takeover recovery (PostgreSQL)", () => {
       });
       const destroy = vi.spyOn(sandbox, "destroy");
 
-      await performComputerUpdate(deps, update.id);
-      await expect(replaceComputer(deps, computerId, "reset", context)).rejects.toBeInstanceOf(
-        ComputerBusyError,
-      );
+      await performComputerUpdate({ ...deps, secretStore: testSecretStore }, update.id);
+      await expect(
+        replaceComputer({ ...deps, secretStore: testSecretStore }, computerId, "reset", context),
+      ).rejects.toBeInstanceOf(ComputerBusyError);
 
       await expect(
         prisma.computerUpdate.findUniqueOrThrow({ where: { id: update.id } }),

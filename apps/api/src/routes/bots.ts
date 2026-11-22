@@ -19,9 +19,9 @@ import {
   relabelVaultItem,
   revealBotSecret,
   SAVED_LOGIN_UNREADABLE,
+  SPACE_VAULT_NOT_IN_USE,
   sessionItemBots,
   signingOutSites,
-  SPACE_VAULT_NOT_IN_USE,
   stopCancelledGroupRuns,
   storeBotSecret,
   toComputerRef,
@@ -80,11 +80,7 @@ import { botEmailAddress, botEmailAddresses, claimBotEmailAddress } from "../bot
 import { loadBotForRemoval } from "../bot-removal.js";
 import { changedBotSettings } from "../bot-setting-analytics.js";
 import { createBotFromTemplate, listBotTemplates } from "../bot-templates.js";
-import {
-  importSessions,
-  removedSessionBots,
-  signOutRemovedSessions,
-} from "../browser-session-import.js";
+import { importSessions, removedSessionBots, syncSessionBots } from "../browser-session-import.js";
 import { requireIdentityConfirmation } from "../identity-confirmation.js";
 import { managedAppCatalog } from "../onboarding.js";
 import type { RouterDeps } from "../router.js";
@@ -191,7 +187,8 @@ async function saveVaultCredential(
     } catch (error) {
       throw mapBotSecretStoreError(error);
     }
-    signOutRemovedSessions(deps, previousBots);
+    const currentBots = await sessionItemBots(deps.prisma, scope, name);
+    syncSessionBots(deps, [...previousBots, ...currentBots]);
     return vaultItemDto(deps, scope, name);
   }
   const { value } = input;
@@ -1088,7 +1085,7 @@ export function botsRoutes(ctx: RouterContext) {
         const scope = vaultScope(context.actor, input.scope);
         const signedInBots = await removedSessionBots(deps, scope, input.name);
         await forgetBotSecret(deps.prisma, scope, input.name);
-        signOutRemovedSessions(deps, signedInBots);
+        syncSessionBots(deps, signedInBots);
         return { ok: true as const };
       }),
     },

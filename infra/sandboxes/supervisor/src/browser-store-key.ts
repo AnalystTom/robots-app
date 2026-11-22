@@ -1,6 +1,7 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { retry } from "@robots/core";
 import type Docker from "dockerode";
 import { runContainerCommand } from "./exec.js";
 
@@ -43,12 +44,10 @@ export function computerStoreKeyId(labels: Record<string, string> | undefined, f
   return labels?.["robots.botId"] || fallback;
 }
 
-export async function deliverBrowserStoreKey(
-  container: Docker.Container,
-  dataDir: string,
-  computerKey: string,
-): Promise<void> {
-  const key = await browserStoreKey(dataDir, computerKey);
+const DELIVERY_ATTEMPTS = 4;
+const DELIVERY_BACKOFF_MS = 500;
+
+async function writeBrowserStoreKey(container: Docker.Container, key: string): Promise<void> {
   const result = await runContainerCommand(
     container,
     [
@@ -60,4 +59,17 @@ export async function deliverBrowserStoreKey(
     { signal: new AbortController().signal, stdin: `${key}\n`, timeoutMs: 10_000 },
   );
   if (result.code !== 0) throw new Error("The browser's key could not be delivered.");
+}
+
+export async function deliverBrowserStoreKey(
+  container: Docker.Container,
+  dataDir: string,
+  computerKey: string,
+): Promise<void> {
+  const key = await browserStoreKey(dataDir, computerKey);
+  await retry(() => writeBrowserStoreKey(container, key), {
+    attempts: DELIVERY_ATTEMPTS,
+    retryable: () => true,
+    delayMs: (attempt) => DELIVERY_BACKOFF_MS * 2 ** attempt,
+  });
 }

@@ -217,13 +217,13 @@ function applyBrowserSessionsAfterStart(
   deps: {
     prisma: PrismaClient;
     sandbox: SandboxProvider;
-    secretStore?: SecretStore;
+    secretStore: SecretStore;
     events: ThreadEvents;
   },
   computerId: string,
   context: AdapterContext,
 ) {
-  if (!deps.secretStore || !deps.sandbox.pageBrowser) return;
+  if (!deps.sandbox.pageBrowser) return;
   void bestEffort(
     "browser sessions after computer start",
     syncComputerBrowserSessions(
@@ -251,7 +251,7 @@ export async function provisionComputer(
     jobs: JobPublisher;
     events: ThreadEvents;
     dataDir?: string;
-    secretStore?: SecretStore;
+    secretStore: SecretStore;
   },
   computerId: string,
   context: AdapterContext,
@@ -1090,6 +1090,7 @@ export async function replaceComputer(
     jobs: JobPublisher;
     events: ThreadEvents;
     dataDir?: string;
+    secretStore: SecretStore;
   },
   computerId: string,
   mode: ComputerReplaceMode,

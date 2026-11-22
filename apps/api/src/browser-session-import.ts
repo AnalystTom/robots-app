@@ -93,14 +93,14 @@ export function removedSessionBots(
   return sessionItemBots(deps.prisma, scope, name);
 }
 
-export function signOutRemovedSessions(deps: SessionDeps, botIds: readonly string[]): void {
-  for (const botId of botIds) {
+export function syncSessionBots(deps: SessionDeps, botIds: readonly string[]): void {
+  for (const botId of new Set(botIds)) {
     void bestEffort(
-      "sign a removed session out of its bot's browser",
+      "sync a sign-in item to its bot's browser",
       retry(
         async () => {
           if ((await syncBotBrowserSessions(syncDeps(deps), botId, syncContext())) === "failed") {
-            throw new Error("The bot's browser did not take the sign-out.");
+            throw new Error("The bot's browser did not take the sign-in change.");
           }
         },
         { attempts: SIGN_OUT_ATTEMPTS, retryable: () => true },

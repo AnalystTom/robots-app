@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeBoatApi, fakeBoatProvider } from "./boat-sandbox.test-support.js";
 import { provisionComputer } from "./computer-lifecycle.js";
 import { LocalAgentHomeStore } from "./home.js";
+import { testSecretStore } from "./secret-store.test-support.js";
 import { InMemoryJobQueue } from "./wakeup.js";
 
 // Boat's polling waits advance a virtual clock instead of sleeping.
@@ -133,7 +134,7 @@ describe("a computer whose system is damaged", () => {
     installLogger(createLogger({ service: "test", sinks: [sink] }));
     const { api, deps, row, first, stop } = await damagedComputer();
 
-    const ref = await provisionComputer(deps, row.id, context);
+    const ref = await provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context);
 
     expect(ref).toMatchObject({ providerRef: first.providerRef, fresh: false, started: true });
     expect(stop).toHaveBeenLastCalledWith(
@@ -155,7 +156,7 @@ describe("a computer whose system is damaged", () => {
     const { api, deps, row, first } = await damagedComputer();
     row.homeRevisionAt = new Date();
 
-    const ref = await provisionComputer(deps, row.id, context);
+    const ref = await provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context);
 
     expect(ref.fresh).toBe(true);
     expect(ref.providerRef).not.toBe(first.providerRef);
@@ -183,7 +184,7 @@ describe("a computer whose system is damaged", () => {
     api.delete(first.id);
     const destroy = vi.spyOn(deps.sandbox, "destroy");
 
-    const ref = await provisionComputer(deps, row.id, context);
+    const ref = await provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context);
 
     expect(created).toBe(3);
     expect(destroy).toHaveBeenCalledOnce();
@@ -197,9 +198,9 @@ describe("a computer whose system is damaged", () => {
     installLogger(createLogger({ service: "test", sinks: [sink] }));
     const { deps, row, first, stop, resume } = await damagedComputer("persists");
 
-    await expect(provisionComputer(deps, row.id, context)).rejects.toBeInstanceOf(
-      SandboxDamagedError,
-    );
+    await expect(
+      provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context),
+    ).rejects.toBeInstanceOf(SandboxDamagedError);
     expect(recoverySteps(sink)).toEqual([
       ["warn", "stop"],
       ["warn", "failed"],
@@ -210,9 +211,9 @@ describe("a computer whose system is damaged", () => {
     expect(stops).toBeGreaterThan(0);
     expect(resumes).toBe(1);
 
-    await expect(provisionComputer(deps, row.id, context)).rejects.toBeInstanceOf(
-      SandboxDamagedError,
-    );
+    await expect(
+      provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context),
+    ).rejects.toBeInstanceOf(SandboxDamagedError);
     expect(stop).toHaveBeenCalledTimes(stops);
     expect(resume).toHaveBeenCalledTimes(resumes);
     expect(recoverySteps(sink)).toHaveLength(2);
@@ -222,7 +223,9 @@ describe("a computer whose system is damaged", () => {
     const { deps, row } = await damagedComputer();
     row.autoRecoveredAt = new Date(row.homeRevisionAt.getTime() - 60_000);
 
-    await expect(provisionComputer(deps, row.id, context)).resolves.toMatchObject({
+    await expect(
+      provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context),
+    ).resolves.toMatchObject({
       started: true,
     });
     expect(row.autoRecoveredAt.getTime()).toBeGreaterThan(row.homeRevisionAt.getTime());

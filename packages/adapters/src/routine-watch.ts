@@ -74,7 +74,7 @@ export type RoutineWatchDeps = {
   /** The shell tool's desktop-protection guard: why a command is refused on a graphical computer. */
   commandRefusal?: (command: string) => string | undefined;
   /** Decrypts Vault credentials. Absent, a command watch runs without them. */
-  secretStore?: SecretStore;
+  secretStore: SecretStore;
   paymentWallet?: PaymentWalletProvider | null;
   /** HTTP transport and DNS boundary; destination checks and limits always stay enabled. */
   http?: Pick<SafeWebFetchOptions, "fetch" | "resolveHostname">;

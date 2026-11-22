@@ -37,6 +37,7 @@ import { checkpointComputerWorkspace } from "./computer-workspace.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
 import { LocalAgentHomeStore } from "./home.js";
 import { SandboxUnsafeStopError } from "./sandbox-errors.js";
+import { testSecretStore } from "./secret-store.test-support.js";
 
 // The plan's size is read from billing, which these Prisma doubles do not model.
 vi.mock("@robots/db", async (importOriginal) => ({
@@ -109,6 +110,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: {} as AgentHomeStore,
@@ -164,6 +166,7 @@ describe("computer provisioning", () => {
       } as unknown as SandboxProvider;
       await provisionComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox,
           home: {} as AgentHomeStore,
@@ -252,6 +255,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: {} as AgentHomeStore,
@@ -345,9 +349,9 @@ describe("computer provisioning", () => {
     vi.stubGlobal("setTimeout", ((fn: (...args: never[]) => void, _ms?: number, ...args: never[]) =>
       setTimeoutReal(fn, 0, ...args)) as unknown as typeof setTimeout);
     try {
-      await expect(provisionComputer(deps, "computer-1", context)).rejects.toBeInstanceOf(
-        ComputerBusyError,
-      );
+      await expect(
+        provisionComputer({ ...deps, secretStore: testSecretStore }, "computer-1", context),
+      ).rejects.toBeInstanceOf(ComputerBusyError);
     } finally {
       vi.unstubAllGlobals();
     }
@@ -383,7 +387,7 @@ describe("computer provisioning", () => {
       setTimeoutReal2(fn, 0, ...args)) as unknown as typeof setTimeout);
     try {
       await expect(
-        provisionComputer(deps, "computer-1", {
+        provisionComputer({ ...deps, secretStore: testSecretStore }, "computer-1", {
           ...context,
           screenLeaseId: "run-1:3",
         }),
@@ -453,6 +457,7 @@ describe("computer provisioning", () => {
     try {
       await provisionComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox,
           home: new LocalAgentHomeStore(dataDir),
@@ -511,6 +516,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox: {} as SandboxProvider,
             home: {} as AgentHomeStore,
@@ -558,6 +564,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox: {} as SandboxProvider,
             home: {} as AgentHomeStore,
@@ -614,9 +621,9 @@ describe("computer provisioning", () => {
     vi.stubGlobal("setTimeout", ((fn: (...args: never[]) => void, _ms?: number, ...args: never[]) =>
       setTimeoutReal(fn, 0, ...args)) as unknown as typeof setTimeout);
     try {
-      await expect(provisionComputer(deps, "computer-1", context)).rejects.toBeInstanceOf(
-        ComputerBusyError,
-      );
+      await expect(
+        provisionComputer({ ...deps, secretStore: testSecretStore }, "computer-1", context),
+      ).rejects.toBeInstanceOf(ComputerBusyError);
       expect(updateMany).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllGlobals();
@@ -660,6 +667,7 @@ describe("computer provisioning", () => {
     try {
       await provisionComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox,
           home: new LocalAgentHomeStore(dataDir),
@@ -737,6 +745,7 @@ describe("computer provisioning", () => {
     try {
       await provisionComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox,
           home: new LocalAgentHomeStore(dataDir),
@@ -798,6 +807,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: new LocalAgentHomeStore(dataDir),
@@ -854,6 +864,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: new LocalAgentHomeStore(dataDir),
@@ -921,6 +932,7 @@ describe("computer provisioning", () => {
     try {
       const ref = await provisionComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox,
           home: new LocalAgentHomeStore(dataDir),
@@ -1050,7 +1062,10 @@ describe("computer provisioning", () => {
       try {
         if (status.startsWith("cancelled")) {
           await expect(
-            provisionComputer(deps, "computer-1", { ...context, signal: abort.signal }),
+            provisionComputer({ ...deps, secretStore: testSecretStore }, "computer-1", {
+              ...context,
+              signal: abort.signal,
+            }),
           ).rejects.toThrow("run cancelled");
           expect(isRunning).toHaveBeenCalledOnce();
           expect(provision).not.toHaveBeenCalled();
@@ -1058,7 +1073,7 @@ describe("computer provisioning", () => {
           expect(row.screenGeneration).toBe(3);
           return;
         }
-        await provisionComputer(deps, "computer-1", context);
+        await provisionComputer({ ...deps, secretStore: testSecretStore }, "computer-1", context);
         if (status === "unknown") {
           expect(checkedAt[1]! - checkedAt[0]!).toBeGreaterThanOrEqual(200);
           expect(checkedAt[2]! - checkedAt[1]!).toBeGreaterThanOrEqual(600);
@@ -1074,7 +1089,10 @@ describe("computer provisioning", () => {
         }
         await Promise.all(
           ["bot-1", "bot-2"].map((botId) =>
-            provisionComputer(deps, "computer-1", { ...context, botId }),
+            provisionComputer({ ...deps, secretStore: testSecretStore }, "computer-1", {
+              ...context,
+              botId,
+            }),
           ),
         );
 
@@ -1146,6 +1164,7 @@ describe("computer provisioning", () => {
       try {
         const result = provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: new LocalAgentHomeStore(dataDir),
@@ -1241,6 +1260,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: new LocalAgentHomeStore(dataDir),
@@ -1302,6 +1322,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: new LocalAgentHomeStore(dataDir),
@@ -1362,6 +1383,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: new LocalAgentHomeStore(dataDir),
@@ -1432,6 +1454,7 @@ describe("computer provisioning", () => {
         vi.useFakeTimers({ toFake: ["setTimeout"] });
         const started = provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home,
@@ -1559,6 +1582,7 @@ describe("computer provisioning", () => {
     try {
       await provisionComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox,
           home,
@@ -1620,6 +1644,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: {} as AgentHomeStore,
@@ -1685,6 +1710,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: {} as AgentHomeStore,
@@ -1750,6 +1776,7 @@ describe("computer provisioning", () => {
       try {
         const result = provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: {} as AgentHomeStore,
@@ -1825,6 +1852,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: {} as AgentHomeStore,
@@ -1891,6 +1919,7 @@ describe("computer provisioning", () => {
       try {
         const result = provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: {} as AgentHomeStore,
@@ -1958,6 +1987,7 @@ describe("computer provisioning", () => {
       await expect(
         provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home: { exportHome } as unknown as AgentHomeStore,
@@ -2055,6 +2085,7 @@ describe("the record of a machine a start created", () => {
       try {
         return await provisionComputer(
           {
+            secretStore: testSecretStore,
             prisma: client as unknown as PrismaClient,
             sandbox,
             home: new LocalAgentHomeStore(dataDir),
@@ -2165,6 +2196,7 @@ describe("Team Computer wake", () => {
     try {
       return await provisionComputer(
         {
+          secretStore: testSecretStore,
           prisma: harness.prisma,
           sandbox: harness.sandbox,
           home: {
@@ -3167,6 +3199,7 @@ describe("computer replacement", () => {
     try {
       const ref = await replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox,
           home,
@@ -3221,6 +3254,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3258,6 +3292,7 @@ describe("computer replacement", () => {
       await expect(
         replaceComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox: new FakeSandboxProvider(),
             home: {} as AgentHomeStore,
@@ -3302,6 +3337,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3346,6 +3382,7 @@ describe("computer replacement", () => {
       await expect(
         replaceComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox: new FakeSandboxProvider(),
             home: {} as AgentHomeStore,
@@ -3386,6 +3423,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3428,6 +3466,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3469,6 +3508,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3511,6 +3551,7 @@ describe("computer replacement", () => {
       await expect(
         replaceComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox: new FakeSandboxProvider(),
             home: {} as AgentHomeStore,
@@ -3553,6 +3594,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3592,6 +3634,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3625,6 +3668,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3658,6 +3702,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3718,6 +3763,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3758,9 +3804,17 @@ describe("computer replacement", () => {
 
     const deps = replaceDeps(prisma, { setScreenControl, destroy });
     await expect(
-      replaceComputer(deps, "computer-1", "reset", context, "none", undefined, {
-        handBackIdleTakeover: true,
-      }),
+      replaceComputer(
+        { ...deps, secretStore: testSecretStore },
+        "computer-1",
+        "reset",
+        context,
+        "none",
+        undefined,
+        {
+          handBackIdleTakeover: true,
+        },
+      ),
     ).rejects.toBeInstanceOf(ComputerBusyError);
 
     expect(destroy).not.toHaveBeenCalled();
@@ -3809,7 +3863,7 @@ describe("computer replacement", () => {
 
     await expect(
       replaceComputer(
-        replaceDeps(prisma, { setScreenControl }),
+        { ...replaceDeps(prisma, { setScreenControl }), secretStore: testSecretStore },
         "computer-1",
         "reset",
         context,
@@ -3857,6 +3911,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox,
           home: {} as AgentHomeStore,
@@ -3902,6 +3957,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -3957,6 +4013,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -4013,6 +4070,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -4082,6 +4140,7 @@ describe("computer replacement", () => {
     try {
       await replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox,
           home: new LocalAgentHomeStore(dataDir),
@@ -4128,6 +4187,7 @@ describe("computer replacement", () => {
     await expect(
       replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: new FakeSandboxProvider(),
           home: {} as AgentHomeStore,
@@ -4192,6 +4252,7 @@ describe("computer replacement", () => {
     try {
       const ref = await replaceComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox,
           home,
@@ -4257,6 +4318,7 @@ describe("computer replacement", () => {
       await expect(
         replaceComputer(
           {
+            secretStore: testSecretStore,
             prisma,
             sandbox,
             home,

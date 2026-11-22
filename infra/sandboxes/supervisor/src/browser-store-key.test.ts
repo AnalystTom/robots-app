@@ -1,8 +1,16 @@
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { browserStoreKey, computerStoreKeyId } from "./browser-store-key.js";
+import type Docker from "dockerode";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  browserStoreKey,
+  computerStoreKeyId,
+  deliverBrowserStoreKey,
+} from "./browser-store-key.js";
+import { runContainerCommand } from "./exec.js";
+
+vi.mock("./exec.js", () => ({ runContainerCommand: vi.fn() }));
 
 let dataDir: string;
 
@@ -34,4 +42,28 @@ describe("browser store key", () => {
     expect(computerStoreKeyId({ "robots.botId": "home-1" }, "container-id")).toBe("home-1");
     expect(computerStoreKeyId(undefined, "container-id")).toBe("container-id");
   });
+
+  it("retries a failed key delivery with backoff until the computer takes the key", async () => {
+    const exec = vi.mocked(runContainerCommand);
+    exec.mockReset();
+    exec
+      .mockResolvedValueOnce({ code: 1, stdout: "", stderr: "" })
+      .mockResolvedValueOnce({ code: 1, stdout: "", stderr: "" })
+      .mockResolvedValueOnce({ code: 0, stdout: "", stderr: "" });
+    await deliverBrowserStoreKey({} as Docker.Container, dataDir, "computer-a");
+    expect(exec).toHaveBeenCalledTimes(3);
+    expect(exec.mock.calls[2]?.[2]?.stdin).toBe(
+      `${await browserStoreKey(dataDir, "computer-a")}\n`,
+    );
+  }, 20_000);
+
+  it("fails after every attempt when the computer never takes the key", async () => {
+    const exec = vi.mocked(runContainerCommand);
+    exec.mockReset();
+    exec.mockResolvedValue({ code: 1, stdout: "", stderr: "" });
+    await expect(
+      deliverBrowserStoreKey({} as Docker.Container, dataDir, "computer-a"),
+    ).rejects.toThrow("The browser's key could not be delivered.");
+    expect(exec).toHaveBeenCalledTimes(4);
+  }, 20_000);
 });

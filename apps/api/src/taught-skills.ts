@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { ORPCError } from "@orpc/server";
-import type { AgentHomeStore, JobPublisher, SandboxProvider } from "@robots/adapter-kit";
+import type {
+  AgentHomeStore,
+  JobPublisher,
+  SandboxProvider,
+  SecretStore,
+} from "@robots/adapter-kit";
 import {
   createAdapterContext,
   skillTeachingExpireJob,
@@ -55,6 +60,7 @@ export interface TaughtSkillsDeps {
   sandbox: SandboxProvider;
   home: AgentHomeStore;
   dataDir: string;
+  secretStore: SecretStore;
 }
 
 /**

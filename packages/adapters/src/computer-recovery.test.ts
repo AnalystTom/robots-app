@@ -19,6 +19,7 @@ import { LocalAgentHomeStore } from "./home.js";
 import type { AgentHomeRecords, StoredHome } from "./home-object-store.js";
 import { ObjectAgentHomeStore } from "./home-object-store.js";
 import { MemoryObjectStorage } from "./object-storage.test-support.js";
+import { testSecretStore } from "./secret-store.test-support.js";
 import { InMemoryJobQueue } from "./wakeup.js";
 
 // The plan's size is read from billing, which these Prisma doubles do not model.
@@ -162,7 +163,7 @@ async function dockerBoot({
     await store.commit("bot", src, context);
   };
   const start = async () => {
-    await provisionComputer({ ...deps, home }, row.id, context);
+    await provisionComputer({ secretStore: testSecretStore, ...deps, home }, row.id, context);
     return booted;
   };
   return { home, otherHost, save, start };
@@ -175,9 +176,9 @@ describe("computer recovery preserves live work", () => {
     const provision = vi.spyOn(deps.sandbox, "provision");
     const before = { ...row };
 
-    await expect(provisionComputer(deps, row.id, context)).rejects.toBeInstanceOf(
-      ComputerRecoveryRequiredError,
-    );
+    await expect(
+      provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context),
+    ).rejects.toBeInstanceOf(ComputerRecoveryRequiredError);
     expect(row).toEqual(before);
     expect(provision).not.toHaveBeenCalled();
     expect(computer.update).not.toHaveBeenCalled();
@@ -195,7 +196,7 @@ describe("computer recovery preserves live work", () => {
     const hydrate = vi.spyOn(home, "hydrate");
     const provision = vi.spyOn(deps.sandbox, "provision");
 
-    await provisionComputer({ ...deps, home }, row.id, context);
+    await provisionComputer({ secretStore: testSecretStore, ...deps, home }, row.id, context);
 
     expect(hydrate).toHaveBeenCalledWith("bot", { keepLiveCache: false });
     expect(hydrate.mock.invocationCallOrder[0]).toBeLessThan(
@@ -214,7 +215,7 @@ describe("computer recovery preserves live work", () => {
     const hydrate = vi.spyOn(home, "hydrate");
     const provision = vi.spyOn(deps.sandbox, "provision");
 
-    await provisionComputer({ ...deps, home }, row.id, context);
+    await provisionComputer({ secretStore: testSecretStore, ...deps, home }, row.id, context);
 
     expect(hydrate).toHaveBeenCalledWith("bot", { keepLiveCache: false });
     expect(hydrate.mock.invocationCallOrder[0]).toBeLessThan(
@@ -243,15 +244,15 @@ describe("computer recovery preserves live work", () => {
     await rm(home.pathFor("bot"), { recursive: true });
     const hydrate = vi.spyOn(home, "hydrate");
 
-    await expect(provisionComputer({ ...deps, home }, row.id, context)).rejects.toThrow(
-      "Computer host changed while it was starting",
-    );
+    await expect(
+      provisionComputer({ secretStore: testSecretStore, ...deps, home }, row.id, context),
+    ).rejects.toThrow("Computer host changed while it was starting");
     expect(hydrate).not.toHaveBeenCalled();
     expect(destroy).toHaveBeenCalledOnce();
     expect(row.state).toBe("error");
 
     deps.sandbox.provisionKind = async () => "docker";
-    await provisionComputer({ ...deps, home }, row.id, context);
+    await provisionComputer({ secretStore: testSecretStore, ...deps, home }, row.id, context);
     expect(hydrate).toHaveBeenCalledOnce();
     expect(mounted).toEqual(["notes.txt"]);
     expect(row).toMatchObject({ state: "running", kind: "docker" });
@@ -267,9 +268,9 @@ describe("computer recovery preserves live work", () => {
     const forget = vi.spyOn(home, "forgetMissingCache");
     computer.updateMany.mockResolvedValueOnce({ count: 0 });
 
-    await expect(provisionComputer({ ...deps, home }, row.id, context)).rejects.toBeInstanceOf(
-      ComputerBusyError,
-    );
+    await expect(
+      provisionComputer({ secretStore: testSecretStore, ...deps, home }, row.id, context),
+    ).rejects.toBeInstanceOf(ComputerBusyError);
     expect(forget).not.toHaveBeenCalled();
   });
 
@@ -291,12 +292,12 @@ describe("computer recovery preserves live work", () => {
     await home.writeFile("bot", "notes.txt", "saved", context);
     await rm(home.pathFor("bot"), { recursive: true });
 
-    await expect(provisionComputer({ ...deps, home }, row.id, context)).rejects.toThrow(
-      "Local computer unavailable",
-    );
+    await expect(
+      provisionComputer({ secretStore: testSecretStore, ...deps, home }, row.id, context),
+    ).rejects.toThrow("Local computer unavailable");
     expect(row).toMatchObject({ state: "running", kind: "docker" });
     deps.sandbox.provisionKind = async () => "docker";
-    await provisionComputer({ ...deps, home }, row.id, context);
+    await provisionComputer({ secretStore: testSecretStore, ...deps, home }, row.id, context);
     expect(mounted).toEqual(["notes.txt"]);
   });
 
@@ -313,7 +314,11 @@ describe("computer recovery preserves live work", () => {
     const destroy = vi.spyOn(deps.sandbox, "destroy");
 
     await expect(
-      provisionComputer({ ...deps, home: objectHome(root) }, row.id, context),
+      provisionComputer(
+        { secretStore: testSecretStore, ...deps, home: objectHome(root) },
+        row.id,
+        context,
+      ),
     ).rejects.toThrow("Computer host changed while it was starting");
     expect(stop).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ kind: "docker", fresh: false }),
@@ -341,9 +346,9 @@ describe("computer recovery preserves live work", () => {
     const home = objectHome(root);
     const hydrate = vi.spyOn(home, "hydrate");
 
-    await expect(provisionComputer({ ...deps, home }, row.id, context)).rejects.toThrow(
-      "Computer host changed while it was starting",
-    );
+    await expect(
+      provisionComputer({ secretStore: testSecretStore, ...deps, home }, row.id, context),
+    ).rejects.toThrow("Computer host changed while it was starting");
     expect(provision).toHaveBeenCalledTimes(2);
     expect(hydrate).not.toHaveBeenCalled();
     expect(stop).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "docker" }), context);
@@ -358,7 +363,11 @@ describe("computer recovery preserves live work", () => {
     const hydrate = vi.spyOn(home, "hydrate");
     const provision = vi.spyOn(deps.sandbox, "provision");
 
-    const resumed = await provisionComputer({ ...deps, home }, row.id, context);
+    const resumed = await provisionComputer(
+      { secretStore: testSecretStore, ...deps, home },
+      row.id,
+      context,
+    );
 
     expect(provision).toHaveBeenCalledOnce();
     expect(hydrate).not.toHaveBeenCalled();
@@ -378,7 +387,11 @@ describe("computer recovery preserves live work", () => {
     const hydrate = vi.spyOn(home, "hydrate");
     const provision = vi.spyOn(deps.sandbox, "provision");
 
-    const replaced = await provisionComputer({ ...deps, home }, row.id, context);
+    const replaced = await provisionComputer(
+      { secretStore: testSecretStore, ...deps, home },
+      row.id,
+      context,
+    );
 
     expect(replaced.fresh).toBe(true);
     expect(hydrate).toHaveBeenCalledOnce();
@@ -399,7 +412,11 @@ describe("computer recovery preserves live work", () => {
     await home.writeFile("bot", "notes.txt", "saved", context);
     await rm(home.pathFor("bot"), { recursive: true });
 
-    const replaced = await provisionComputer({ ...deps, home }, row.id, context);
+    const replaced = await provisionComputer(
+      { secretStore: testSecretStore, ...deps, home },
+      row.id,
+      context,
+    );
 
     expect(
       new TextDecoder().decode(await deps.sandbox.readFile(replaced, "notes.txt", context)),
@@ -460,13 +477,13 @@ describe("computer recovery preserves live work", () => {
     row.maintenanceId = "other-update";
     const destroy = vi.spyOn(deps.sandbox, "destroy");
     const provision = vi.spyOn(deps.sandbox, "provision");
-    await expect(provisionComputer(deps, row.id, context)).rejects.toBeInstanceOf(
-      ComputerBusyError,
-    );
+    await expect(
+      provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context),
+    ).rejects.toBeInstanceOf(ComputerBusyError);
     for (const mode of ["update", "recover", "reset"] as const) {
-      await expect(replaceComputer(deps, row.id, mode, context)).rejects.toBeInstanceOf(
-        ComputerBusyError,
-      );
+      await expect(
+        replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, mode, context),
+      ).rejects.toBeInstanceOf(ComputerBusyError);
     }
     expect(destroy).not.toHaveBeenCalled();
     expect(provision).not.toHaveBeenCalled();
@@ -488,8 +505,11 @@ describe("computer recovery preserves live work", () => {
     const provision = vi.spyOn(deps.sandbox, "provision");
     const restore = vi.spyOn(deps.sandbox, "importWorkspace");
     const results = await Promise.allSettled([
-      provisionComputer(deps, row.id, context),
-      provisionComputer(deps, row.id, { ...context, botId: "other-bot" }),
+      provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context),
+      provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, {
+        ...context,
+        botId: "other-bot",
+      }),
     ]);
     const successful = results.filter((result) => result.status === "fulfilled");
     const rejected = results.filter((result) => result.status === "rejected");
@@ -507,7 +527,11 @@ describe("computer recovery preserves live work", () => {
     await deps.sandbox.destroy(first, context);
     row.providerRef = "missing-provider";
     const stale = { ...row };
-    const winner = await provisionComputer(deps, row.id, context);
+    const winner = await provisionComputer(
+      { ...deps, secretStore: testSecretStore },
+      row.id,
+      context,
+    );
     await deps.sandbox.writeFile(
       winner,
       { path: "notes.txt", content: new TextEncoder().encode("winner work") },
@@ -515,9 +539,9 @@ describe("computer recovery preserves live work", () => {
     );
     computer.findUniqueOrThrow.mockResolvedValue(stale);
     const provision = vi.spyOn(deps.sandbox, "provision");
-    await expect(provisionComputer(deps, row.id, context)).rejects.toBeInstanceOf(
-      ComputerBusyError,
-    );
+    await expect(
+      provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context),
+    ).rejects.toBeInstanceOf(ComputerBusyError);
     expect(provision).not.toHaveBeenCalled();
     expect(row.providerRef).toBe(winner.providerRef);
     expect(
@@ -543,8 +567,11 @@ describe("computer recovery preserves live work", () => {
       setTimeoutReal(fn, 0, ...args)) as unknown as typeof setTimeout);
     try {
       const results = await Promise.allSettled([
-        provisionComputer(deps, row.id, context),
-        provisionComputer(deps, row.id, { ...context, botId: "other-bot" }),
+        provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context),
+        provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, {
+          ...context,
+          botId: "other-bot",
+        }),
       ]);
       const successful = results.filter((result) => result.status === "fulfilled");
       const rejected = results.filter((result) => result.status === "rejected");
@@ -566,9 +593,15 @@ describe("computer recovery preserves live work", () => {
     vi.spyOn(deps.sandbox, "provision").mockRejectedValueOnce(error);
     const restore = vi.spyOn(deps.sandbox, "importWorkspace");
     const destroy = vi.spyOn(deps.sandbox, "destroy");
-    await expect(provisionComputer(deps, row.id, context)).rejects.toBe(error);
+    await expect(
+      provisionComputer({ ...deps, secretStore: testSecretStore }, row.id, context),
+    ).rejects.toBe(error);
     expect(row).toMatchObject({ state: "running", providerRef: first.providerRef });
-    const reconnected = await provisionComputer(deps, row.id, context);
+    const reconnected = await provisionComputer(
+      { ...deps, secretStore: testSecretStore },
+      row.id,
+      context,
+    );
     expect(reconnected).toMatchObject({ providerRef: first.providerRef, fresh: false });
     expect(restore).not.toHaveBeenCalled();
     expect(destroy).not.toHaveBeenCalled();
@@ -584,7 +617,11 @@ describe("computer recovery preserves live work", () => {
       row.state = state;
       deps.sandbox = new DesktopSandboxProvider({ root });
       const restore = vi.spyOn(deps.sandbox, "importWorkspace");
-      const reconnected = await provisionComputer(deps, row.id, context);
+      const reconnected = await provisionComputer(
+        { ...deps, secretStore: testSecretStore },
+        row.id,
+        context,
+      );
       expect(reconnected).toMatchObject({ providerRef: first.providerRef, fresh: false });
       expect(restore).not.toHaveBeenCalled();
       expect(
@@ -598,7 +635,11 @@ describe("computer recovery preserves live work", () => {
     deps.sandbox = new DesktopSandboxProvider({ root });
     const provision = vi.spyOn(deps.sandbox, "provision");
 
-    const reused = await provisionComputer(deps, row.id, context);
+    const reused = await provisionComputer(
+      { ...deps, secretStore: testSecretStore },
+      row.id,
+      context,
+    );
 
     expect(provision).not.toHaveBeenCalled();
     expect(reused.providerRef).toBe(first.providerRef);
@@ -618,7 +659,11 @@ describe("computer recovery preserves live work", () => {
       expect(first.fresh).toBe(true);
       await rm(first.providerRef, { recursive: true });
       if (provider === "restarted") deps.sandbox = new DesktopSandboxProvider({ root });
-      const reconnected = await provisionComputer(deps, row.id, context);
+      const reconnected = await provisionComputer(
+        { ...deps, secretStore: testSecretStore },
+        row.id,
+        context,
+      );
       expect(reconnected).toMatchObject({ providerRef: first.providerRef, fresh: true });
       expect(
         new TextDecoder().decode(await deps.sandbox.readFile(reconnected, "notes.txt", context)),
@@ -643,7 +688,9 @@ describe("computer recovery preserves live work", () => {
     const destroy = vi.spyOn(deps.sandbox, "destroy");
     const provision = vi.spyOn(deps.sandbox, "provision");
     for (let attempt = 0; attempt < 2; attempt++) {
-      await expect(replaceComputer(deps, row.id, "update", context)).rejects.toBe(error);
+      await expect(
+        replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, "update", context),
+      ).rejects.toBe(error);
       expect(row).toMatchObject({
         state: "running",
         providerRef: first.providerRef,
@@ -664,7 +711,12 @@ describe("computer recovery preserves live work", () => {
       yield { path: "notes.txt", content: new TextEncoder().encode("incomplete checkpoint") };
       throw Object.assign(new Error("Sandbox not found"), { name: "SandboxNotFoundError" });
     });
-    const updated = await replaceComputer(deps, row.id, "update", context);
+    const updated = await replaceComputer(
+      { ...deps, secretStore: testSecretStore },
+      row.id,
+      "update",
+      context,
+    );
     expect(updated.fresh).toBe(true);
     expect(row).toMatchObject({ state: "running", providerRef: updated.providerRef });
     expect(
@@ -678,7 +730,12 @@ describe("computer recovery preserves live work", () => {
     async (state) => {
       const { deps, row } = await fixture();
       row.state = state;
-      const updated = await replaceComputer(deps, row.id, "update", context);
+      const updated = await replaceComputer(
+        { ...deps, secretStore: testSecretStore },
+        row.id,
+        "update",
+        context,
+      );
       expect(updated.fresh).toBe(true);
       expect(row).toMatchObject({ state: "running", providerRef: updated.providerRef });
       expect(
@@ -691,7 +748,12 @@ describe("computer recovery preserves live work", () => {
   it("resets a computer stuck suspending after a hung stop", async () => {
     const { deps, row } = await fixture();
     row.state = "suspending";
-    const updated = await replaceComputer(deps, row.id, "reset", context);
+    const updated = await replaceComputer(
+      { ...deps, secretStore: testSecretStore },
+      row.id,
+      "reset",
+      context,
+    );
     expect(updated.fresh).toBe(true);
     expect(row).toMatchObject({ state: "running", providerRef: updated.providerRef });
     expect(
@@ -704,9 +766,9 @@ describe("computer recovery preserves live work", () => {
     row.state = "suspending";
     row.updatedAt = new Date();
     const destroy = vi.spyOn(deps.sandbox, "destroy");
-    await expect(replaceComputer(deps, row.id, "reset", context)).rejects.toBeInstanceOf(
-      ComputerBusyError,
-    );
+    await expect(
+      replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, "reset", context),
+    ).rejects.toBeInstanceOf(ComputerBusyError);
     expect(destroy).not.toHaveBeenCalled();
     expect(computer.updateMany).not.toHaveBeenCalled();
     expect(row.state).toBe("suspending");
@@ -715,7 +777,12 @@ describe("computer recovery preserves live work", () => {
   it("resets a missing computer after idempotent provider teardown", async () => {
     const { deps, row, first } = await fixture();
     await deps.sandbox.destroy(first, context);
-    const updated = await replaceComputer(deps, row.id, "reset", context);
+    const updated = await replaceComputer(
+      { ...deps, secretStore: testSecretStore },
+      row.id,
+      "reset",
+      context,
+    );
     expect(updated.fresh).toBe(true);
     expect(row).toMatchObject({ state: "running", providerRef: updated.providerRef });
     expect(
@@ -728,7 +795,9 @@ describe("computer recovery preserves live work", () => {
     const failure = new Error("404: configuration file not found");
     vi.spyOn(deps.sandbox, "destroy").mockRejectedValue(failure);
     const provision = vi.spyOn(deps.sandbox, "provision");
-    await expect(replaceComputer(deps, row.id, "reset", context)).rejects.toBe(failure);
+    await expect(
+      replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, "reset", context),
+    ).rejects.toBe(failure);
     expect(provision).not.toHaveBeenCalled();
     expect(row.providerRef).toBe(first.providerRef);
   });
@@ -740,10 +809,17 @@ describe("computer recovery preserves live work", () => {
       yield { path: "notes.txt", content: new TextEncoder().encode("incomplete checkpoint") };
       throw failure;
     });
-    await expect(replaceComputer(deps, row.id, "update", context)).rejects.toBe(failure);
+    await expect(
+      replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, "update", context),
+    ).rejects.toBe(failure);
     expect(row).toMatchObject({ state: "running", providerRef: first.providerRef });
 
-    const recovered = await replaceComputer(deps, row.id, "recover", context);
+    const recovered = await replaceComputer(
+      { ...deps, secretStore: testSecretStore },
+      row.id,
+      "recover",
+      context,
+    );
     expect(row).toMatchObject({ state: "running", providerRef: recovered.providerRef });
     expect(await deps.home.readFile("bot", "notes.txt", context)).toBe("live work");
     expect(
@@ -756,9 +832,16 @@ describe("computer recovery preserves live work", () => {
     const interrupted = new Error("Computer update interrupted");
     const destroy = vi.spyOn(deps.sandbox, "destroy");
     await expect(
-      replaceComputer(deps, row.id, "update", context, "none", async (stage) => {
-        if (stage === "recreating") throw interrupted;
-      }),
+      replaceComputer(
+        { ...deps, secretStore: testSecretStore },
+        row.id,
+        "update",
+        context,
+        "none",
+        async (stage) => {
+          if (stage === "recreating") throw interrupted;
+        },
+      ),
     ).rejects.toBe(interrupted);
     expect(destroy).not.toHaveBeenCalled();
     expect(row).toMatchObject({ state: "running", providerRef: first.providerRef });
@@ -770,9 +853,16 @@ describe("computer recovery preserves live work", () => {
     const exportWorkspace = vi.spyOn(deps.sandbox, "exportWorkspace");
     const destroy = vi.spyOn(deps.sandbox, "destroy");
     await expect(
-      replaceComputer(deps, row.id, "recover", context, "none", async (stage) => {
-        if (stage === "saving") throw blip;
-      }),
+      replaceComputer(
+        { ...deps, secretStore: testSecretStore },
+        row.id,
+        "recover",
+        context,
+        "none",
+        async (stage) => {
+          if (stage === "saving") throw blip;
+        },
+      ),
     ).rejects.toBe(blip);
     expect(exportWorkspace).not.toHaveBeenCalled();
     expect(destroy).not.toHaveBeenCalled();
@@ -791,7 +881,9 @@ describe("computer recovery preserves live work", () => {
       return record(args);
     });
     const destroy = vi.spyOn(deps.sandbox, "destroy");
-    await expect(replaceComputer(deps, row.id, "recover", context)).rejects.toBe(blip);
+    await expect(
+      replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, "recover", context),
+    ).rejects.toBe(blip);
     expect(destroy).not.toHaveBeenCalled();
     expect(row).toMatchObject({ state: "running", providerRef: first.providerRef });
     expect(new TextDecoder().decode(await deps.sandbox.readFile(first, "notes.txt", context))).toBe(
@@ -805,7 +897,12 @@ describe("computer recovery preserves live work", () => {
       yield { path: "notes.txt", content: new TextEncoder().encode("incomplete checkpoint") };
       throw new Error("export process killed");
     });
-    const recovered = await replaceComputer(deps, row.id, "recover", context);
+    const recovered = await replaceComputer(
+      { ...deps, secretStore: testSecretStore },
+      row.id,
+      "recover",
+      context,
+    );
     expect(row).toMatchObject({ state: "running", providerRef: recovered.providerRef });
     for (const [args] of computer.updateMany.mock.calls) {
       expect(args.data).not.toHaveProperty("homeRevisionAt");
@@ -818,7 +915,9 @@ describe("computer recovery preserves live work", () => {
     const blip = new Error("object storage unavailable");
     vi.spyOn(deps.home, "commit").mockRejectedValueOnce(blip);
     const destroy = vi.spyOn(deps.sandbox, "destroy");
-    await expect(replaceComputer(deps, row.id, "recover", context)).rejects.toBe(blip);
+    await expect(
+      replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, "recover", context),
+    ).rejects.toBe(blip);
     expect(destroy).not.toHaveBeenCalled();
     expect(row).toMatchObject({ state: "running", providerRef: first.providerRef });
     expect(new TextDecoder().decode(await deps.sandbox.readFile(first, "notes.txt", context))).toBe(
@@ -833,9 +932,9 @@ describe("computer recovery preserves live work", () => {
       "homeRevision" in args.data ? { count: 0 } : record(args),
     );
     const destroy = vi.spyOn(deps.sandbox, "destroy");
-    await expect(replaceComputer(deps, row.id, "recover", context)).rejects.toBeInstanceOf(
-      ComputerBusyError,
-    );
+    await expect(
+      replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, "recover", context),
+    ).rejects.toBeInstanceOf(ComputerBusyError);
     expect(destroy).not.toHaveBeenCalled();
     expect(row).toMatchObject({ state: "running", providerRef: first.providerRef });
   });
@@ -848,7 +947,9 @@ describe("computer recovery preserves live work", () => {
       botDeletion: { findMany: vi.fn().mockRejectedValue(blip) },
     });
     const destroy = vi.spyOn(deps.sandbox, "destroy");
-    await expect(replaceComputer(deps, row.id, "recover", context)).rejects.toBe(blip);
+    await expect(
+      replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, "recover", context),
+    ).rejects.toBe(blip);
     expect(destroy).not.toHaveBeenCalled();
     expect(row).toMatchObject({ state: "running", providerRef: first.providerRef });
   });
@@ -857,7 +958,9 @@ describe("computer recovery preserves live work", () => {
     const { deps, row, first } = await fixture();
     const failure = new Error("sandbox destroy failed: 500");
     vi.spyOn(deps.sandbox, "destroy").mockRejectedValueOnce(failure);
-    await expect(replaceComputer(deps, row.id, "update", context)).rejects.toBe(failure);
+    await expect(
+      replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, "update", context),
+    ).rejects.toBe(failure);
     expect(row).toMatchObject({ state: "error", providerRef: first.providerRef });
   });
 
@@ -866,11 +969,18 @@ describe("computer recovery preserves live work", () => {
     const failure = new Error("sandbox destroy failed: 500");
     const destroy = vi.spyOn(deps.sandbox, "destroy").mockRejectedValueOnce(failure);
     const provision = vi.spyOn(deps.sandbox, "provision");
-    await expect(replaceComputer(deps, row.id, "recover", context)).rejects.toBe(failure);
+    await expect(
+      replaceComputer({ ...deps, secretStore: testSecretStore }, row.id, "recover", context),
+    ).rejects.toBe(failure);
     expect(provision).not.toHaveBeenCalled();
     expect(row).toMatchObject({ state: "error", providerRef: first.providerRef });
 
-    const recovered = await replaceComputer(deps, row.id, "recover", context);
+    const recovered = await replaceComputer(
+      { ...deps, secretStore: testSecretStore },
+      row.id,
+      "recover",
+      context,
+    );
     expect(destroy).toHaveBeenCalledTimes(2);
     expect(provision).toHaveBeenCalledOnce();
     expect(row).toMatchObject({ state: "running", providerRef: recovered.providerRef });
@@ -881,7 +991,12 @@ describe("computer recovery preserves live work", () => {
     const gone = Object.assign(new Error("gone"), { name: "SandboxNotFoundError" });
     vi.spyOn(deps.sandbox, "destroy").mockRejectedValue(gone);
     const provision = vi.spyOn(deps.sandbox, "provision");
-    const recovered = await replaceComputer(deps, row.id, "recover", context);
+    const recovered = await replaceComputer(
+      { ...deps, secretStore: testSecretStore },
+      row.id,
+      "recover",
+      context,
+    );
     expect(provision).toHaveBeenCalledOnce();
     expect(row).toMatchObject({ state: "running", providerRef: recovered.providerRef });
   });

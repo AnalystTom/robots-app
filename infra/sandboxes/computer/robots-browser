@@ -459,19 +459,16 @@ for arg in "$@"; do
   esac
 done
 mkdir -p /tmp/robots "$ACTUAL_PROFILE" 2>/dev/null || true
-PASSWORD_STORE=basic
 STORE_MARK="$ACTUAL_PROFILE/.robots-password-store"
 KEYRING="$(command -v robots-browser-keyring || true)"
-if [ -n "$KEYRING" ] && "$KEYRING" 2>>/tmp/robots/browser-keyring.log; then
-  PASSWORD_STORE=gnome-libsecret
-  printf 'gnome-libsecret\n' > "$STORE_MARK"
-  nohup /usr/bin/python3 -I /usr/local/lib/robots/browser_sessions.py reseal "$ACTUAL_PROFILE" "$ACTUAL_PORT" \
-    >>/tmp/robots/browser-reseal.log 2>&1 </dev/null &
-elif [ "$(cat "$STORE_MARK" 2>/dev/null || true)" = gnome-libsecret ]; then
-  echo "the browser's key is not ready, so its profile stays closed" >&2
+if [ -z "$KEYRING" ] || ! "$KEYRING" 2>>/tmp/robots/browser-keyring.log; then
+  echo "Browser could not start securely - try restarting the computer" >&2
   exit 1
 fi
-FLAGS="--test-type --no-sandbox --disable-dev-shm-usage --disable-gpu --enable-unsafe-swiftshader $LANGUAGE_FLAGS --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=$PASSWORD_STORE --restore-last-session --start-maximized --remote-debugging-address=127.0.0.1 --remote-debugging-port=$DEBUG_PORT"
+printf 'gnome-libsecret\n' > "$STORE_MARK"
+nohup /usr/bin/python3 -I /usr/local/lib/robots/browser_sessions.py reseal "$ACTUAL_PROFILE" "$ACTUAL_PORT" \
+  >>/tmp/robots/browser-reseal.log 2>&1 </dev/null &
+FLAGS="--test-type --no-sandbox --disable-dev-shm-usage --disable-gpu --enable-unsafe-swiftshader $LANGUAGE_FLAGS --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=gnome-libsecret --restore-last-session --start-maximized --remote-debugging-address=127.0.0.1 --remote-debugging-port=$DEBUG_PORT"
 if [ "$USER_DATA_DIR_SET" -eq 0 ]; then
   exec "$BIN" $FLAGS --user-data-dir="$PROFILE" "$@"
 fi

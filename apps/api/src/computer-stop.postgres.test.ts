@@ -6,6 +6,7 @@ import type { AdapterContext, ComputerRef, JobPublisher, PortableFile } from "@r
 import { SandboxDamagedError, SandboxRateLimitError } from "@robots/adapter-kit";
 import {
   createIdleComputerSweeper,
+  EncryptedSecretStore,
   FakeSandboxProvider,
   LocalAgentHomeStore,
   provisionComputer,
@@ -116,13 +117,25 @@ describePostgres("computer stop (PostgreSQL)", () => {
     };
     const boot = () =>
       runAsTenant(actor, () =>
-        provisionComputer({ prisma, sandbox, home, jobs, events, dataDir }, computer.id, {
-          ...actor,
-          botId: bot.id,
-          operationId: "fixture",
-          traceId: "fixture",
-          signal: new AbortController().signal,
-        }),
+        provisionComputer(
+          {
+            prisma,
+            sandbox,
+            home,
+            jobs,
+            events,
+            dataDir,
+            secretStore: new EncryptedSecretStore("test-only-encryption-key"),
+          },
+          computer.id,
+          {
+            ...actor,
+            botId: bot.id,
+            operationId: "fixture",
+            traceId: "fixture",
+            signal: new AbortController().signal,
+          },
+        ),
       );
     await boot();
     // Runs once, right after Stop reads the bot and its computer.

@@ -4,6 +4,7 @@ import path from "node:path";
 import { RPCHandler } from "@orpc/server/fetch";
 import type { AdapterContext } from "@robots/adapter-kit";
 import {
+  EncryptedSecretStore,
   FakeSandboxProvider,
   InMemoryJobQueue,
   LocalAgentHomeStore,
@@ -132,7 +133,11 @@ describe("Stop during a computer reconnect", () => {
           screenProxySecret: "test-secret",
         },
       } as unknown as RouterDeps;
-      const boot = provisionComputer(deps, row.id, context);
+      const boot = provisionComputer(
+        { ...deps, secretStore: new EncryptedSecretStore("test-only-encryption-key") },
+        row.id,
+        context,
+      );
       // Attach both handlers before releasing the provider so failures are never unhandled.
       const bootResult = boot.then(
         () => null,
