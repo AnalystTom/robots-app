@@ -10,6 +10,10 @@ async function sendAsNewUser(page: Page, name: string, message: string) {
 }
 
 test("reads an ordinary public page without asking", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem("robots.showToolActivity") == null)
+      localStorage.setItem("robots.showToolActivity", "on");
+  });
   await sendAsNewUser(page, "public-fetch", "read the public fixture page");
 
   await expect(page.getByTestId("transcript").getByText("done.", { exact: true })).toBeVisible({
@@ -17,6 +21,10 @@ test("reads an ordinary public page without asking", async ({ page }, testInfo) 
   });
   await expect(page.getByRole("button", { name: "Allow once", exact: true })).toHaveCount(0);
   await expect(page.getByText("url: https://example.com/")).toHaveCount(0);
+  const card = page.getByTestId("tool-activity");
+  await expect(card).toHaveCount(1);
+  await card.locator("button[aria-expanded]").click();
+  await expect(page.getByTestId("tool-rows")).toContainText("Web fetch");
   await captureScreenshot(page, testInfo, "web-fetch-public-page");
 });
 

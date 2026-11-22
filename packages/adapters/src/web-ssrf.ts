@@ -276,10 +276,10 @@ async function followRedirects(
       throw new Error("Redirect missing Location header");
     }
     const next = new URL(location, validated.href);
-    state.checkRedirect?.(next.href);
     const headers = next.origin === validated.origin ? state.headers : undefined;
     // Release this hop before following — do not leave the body open across recursion.
     await cancelResponseBody(response, state.signal);
+    state.checkRedirect?.(next.href);
     return followRedirects(next.href, {
       ...state,
       headers,

@@ -120,7 +120,7 @@ export function isRiskyFetchTarget(input: string): boolean {
   const url = httpUrl(input);
   if (!url) return true;
   if (url.username || url.password) return true;
-  if (DOWNLOAD_EXTENSIONS.has(pathExtension(url.pathname))) return true;
+  if (isDownloadPath(url.pathname)) return true;
   const host = normalizedHost(url.hostname);
   if (!host) return true;
   if (ipVersion(host) !== 0) return isNonPublicAddress(host);
@@ -129,14 +129,19 @@ export function isRiskyFetchTarget(input: string): boolean {
   return !parsed.domain || !(parsed.isIcann || parsed.isPrivate);
 }
 
-function pathExtension(pathname: string): string {
-  const decoded = pathname
+function isDownloadPath(pathname: string): boolean {
+  const segment = pathname
     .slice(pathname.lastIndexOf("/") + 1)
-    .replace(/%([0-9a-f]{2})/gi, (_, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)))
-    .replace(/[;\0].*$/, "")
-    .replace(/[\s.]+$/, "");
-  const dot = decoded.lastIndexOf(".");
-  return dot < 0 ? "" : decoded.slice(dot + 1).toLowerCase();
+    .replace(/%([0-9a-f]{2})/gi, (_, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)));
+  return [segment, segment.replace(/[;\0].*$/, "")].some((name) =>
+    DOWNLOAD_EXTENSIONS.has(extensionOf(name)),
+  );
+}
+
+function extensionOf(name: string): string {
+  const trimmed = name.replace(/[\s.]+$/, "");
+  const dot = trimmed.lastIndexOf(".");
+  return dot < 0 ? "" : trimmed.slice(dot + 1).toLowerCase();
 }
 
 function httpUrl(input: string): URL | undefined {

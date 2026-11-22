@@ -110,16 +110,21 @@ describe("keyless HTTP web provider", () => {
     },
   );
 
-  it("refuses a redirect to a download without requesting it", async () => {
+  it("refuses a redirect to a download without requesting it, and releases the redirect response", async () => {
     const requested: string[] = [];
+    let redirectBodyReleased = false;
     const provider = new KeylessHttpWebProvider({
       fetch: async (input) => {
         requested.push(String(input));
         return String(input).endsWith("/start")
-          ? new Response(null, {
-              status: 302,
-              headers: { location: "https://example.com/setup.exe" },
-            })
+          ? new Response(
+              new ReadableStream({
+                cancel() {
+                  redirectBodyReleased = true;
+                },
+              }),
+              { status: 302, headers: { location: "https://example.com/setup.exe" } },
+            )
           : new Response("MZ", { headers: { "content-type": "application/octet-stream" } });
       },
       resolveHostname: publicResolver,
@@ -131,6 +136,7 @@ describe("keyless HTTP web provider", () => {
         "The page redirected to https://example.com/setup.exe, which needs approval. Ask the user, or fetch that URL directly so they can approve it.",
     });
     expect(requested).toEqual(["https://example.com/start"]);
+    expect(redirectBodyReleased).toBe(true);
   });
 
   it("reads a redirect to an ordinary public page", async () => {
