@@ -115,9 +115,6 @@ export function CreateBotDialog({
               setLook((current) => ({ ...current, color: robotPresetValue(next) }));
             }}
           />
-          <p className="text-center text-caption text-muted-foreground">
-            <Trans>You can fine-tune the look later in the bot's settings.</Trans>
-          </p>
           <DialogFooter>
             <Button type="button" variant="outline" disabled={submitting} onClick={onCancel}>
               <Trans>Cancel</Trans>
