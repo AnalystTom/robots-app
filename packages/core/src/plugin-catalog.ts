@@ -182,7 +182,7 @@ const CURATED_COPY = new Map(
   ).map(([name, description]) => [brandKey(name), description]),
 );
 
-const AGENT_PRODUCT = /\b(?:Grok|Claude|Cursor|Codex|Copilot|Gemini|Windsurf|ChatGPT|OpenCode)\b/;
+const AGENT_PRODUCT = /\b(?:Grok|Claude|Cursor|Codex|Copilot|Gemini|Windsurf|ChatGPT|OpenCode)\b/i;
 
 export function namesAgentProduct(text: string): boolean {
   return AGENT_PRODUCT.test(text);

@@ -18,6 +18,11 @@ const CURSOR_FILES: Record<string, string> = {
   "planning-notes/mcp.json": fixtureMcp,
   "planning-notes/skills/planning-notes/SKILL.md":
     "---\nname: planning-notes\ndescription: Organize a daily plan\n---\n\nUse the notes integration to record the plan.\n",
+  "stripe/.cursor-plugin/plugin.json": JSON.stringify({
+    name: "stripe",
+    displayName: "Stripe",
+  }),
+  "stripe/mcp.json": fixtureMcp,
   "review-kit/.cursor-plugin/plugin.json": JSON.stringify({
     name: "review-kit",
     displayName: "Review Kit",
@@ -69,6 +74,12 @@ export class PluginMarketplaceFixture {
             category: "productivity",
           },
           { name: "review-kit", source: "review-kit", description: "Review drafts" },
+          {
+            name: "stripe",
+            source: "stripe",
+            description: "Stripe development plugin for Cursor: payments and subscriptions.",
+            category: "finance",
+          },
         ],
       });
     if (url.startsWith("https://api.github.com/repos/cursor/plugins/git/trees/"))

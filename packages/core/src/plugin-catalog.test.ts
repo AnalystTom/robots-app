@@ -165,6 +165,7 @@ describe("curated app copy", () => {
     ["Launch and manage campaigns from Claude Code.", true],
     ["Plan work and write notes", false],
     ["Use Claude to write docs.", true],
+    ["Sync logs for claude code.", true],
   ])("detects another agent product in %j", (description, named) => {
     expect(namesAgentProduct(description)).toBe(named);
   });

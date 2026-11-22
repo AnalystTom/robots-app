@@ -142,6 +142,29 @@ test("Integrations installs a plugin, completes real broker OAuth against a fake
   expect(await skillNames()).not.toContain("planning-notes");
 });
 
+test("Recommended plugin rows and details show RoBots copy, not another product's registry text", async ({
+  page,
+}) => {
+  await signup(page, `recommended-${Date.now()}@robots.test`, "password12", "Recommended Test");
+  await completeOnboarding(page);
+  await page.getByRole("button", { name: "Connect apps", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Integrations", exact: true });
+  const available = dialog
+    .getByTestId("featured-connectors")
+    .getByTestId("plugin-row")
+    .filter({ hasText: "Stripe" });
+  await expect(
+    available.getByText("Look up payments, customers and subscriptions.", { exact: true }),
+  ).toBeVisible();
+  await expect(available).not.toContainText("Cursor");
+  await available.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(dialog.getByRole("heading", { name: "Stripe", exact: true })).toBeVisible();
+  await expect(
+    dialog.getByText("Look up payments, customers and subscriptions.", { exact: true }),
+  ).toBeVisible();
+  await expect(dialog.getByText("Stripe development plugin for Cursor")).toHaveCount(0);
+});
+
 test("shows directly registered MCP servers in Integrations without catalog connections", async ({
   page,
 }, testInfo) => {
