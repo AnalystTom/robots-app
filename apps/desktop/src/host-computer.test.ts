@@ -54,10 +54,14 @@ describe("desktop local computer consent", () => {
       1,
       expect.objectContaining({ port, token: previous.token }),
     );
-    expect(start).toHaveBeenNthCalledWith(2, {
-      root: path.join(root, "computers"),
-      token: computer.connection.token,
-    });
+    expect(start).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        root: path.join(root, "computers"),
+        token: computer.connection.token,
+        desktop: expect.objectContaining({ run: expect.any(Function) }),
+      }),
+    );
     expect(computer.connection.token).not.toBe(previous.token);
     const saved = JSON.parse(await readFile(path.join(root, "host-computer.json"), "utf8"));
     expect(saved).toEqual({

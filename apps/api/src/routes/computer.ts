@@ -681,8 +681,8 @@ export function computerRoutes(ctx: RouterContext) {
           getLogger().info("computer.host_browser_sessions_imported", {
             botId,
             userId: context.actor.userId,
-            profile: input.profile,
-            sites: imported.sites,
+            siteCount: imported.sites.length,
+            cookieCount: imported.sites.reduce((total, site) => total + site.cookies, 0),
           });
           return imported;
         },

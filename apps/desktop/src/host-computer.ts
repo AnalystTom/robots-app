@@ -2,9 +2,39 @@ import { randomBytes } from "node:crypto";
 import { rm } from "node:fs/promises";
 import path from "node:path";
 import { startHostComputerServer } from "@robots/adapters/host-computer-server";
+import { createHostDesktop } from "@robots/adapters/host-desktop";
 import type { HostScreen } from "@robots/adapters/host-screen";
 import type { MacApps } from "@robots/adapters/mac-apps-protocol";
 import { readPrivateFile, writePrivateFile } from "./setup-store.js";
+
+const DEFAULT_DISPLAY_START = 100;
+const DEFAULT_SCREEN_PORT_START = 6180;
+
+function wholeNumber(value: string | undefined, name: string, fallback: number, max: number) {
+  if (value === undefined || value.trim() === "") return fallback;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > max)
+    throw new Error(`${name} must be a whole number from 0 to ${max}`);
+  return parsed;
+}
+
+function hostDesktopOptions(userDataDir: string, env: NodeJS.ProcessEnv) {
+  return {
+    toolsDir: env.ROBOTS_HOST_TOOLS_DIR || path.join(userDataDir, "host-tools"),
+    displayStart: wholeNumber(
+      env.ROBOTS_HOST_DISPLAY_START,
+      "ROBOTS_HOST_DISPLAY_START",
+      DEFAULT_DISPLAY_START,
+      65535 - 9221,
+    ),
+    port: wholeNumber(
+      env.ROBOTS_HOST_SCREEN_PORT_START,
+      "ROBOTS_HOST_SCREEN_PORT_START",
+      DEFAULT_SCREEN_PORT_START,
+      65535,
+    ),
+  };
+}
 
 export async function prepareHostComputer(
   userDataDir: string,
@@ -23,7 +53,9 @@ export async function prepareHostComputer(
       port = saved.port;
   } catch {}
   let server: Awaited<ReturnType<typeof startHostComputerServer>>;
-  const options = { root: path.join(userDataDir, "computers"), token, screen, macApps };
+  const root = path.join(userDataDir, "computers");
+  const desktop = createHostDesktop(root, hostDesktopOptions(userDataDir, process.env));
+  const options = { root, token, screen, macApps, desktop };
   try {
     server = await startHostComputerServer({ ...options, port });
   } catch (error) {

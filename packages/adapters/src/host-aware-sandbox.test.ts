@@ -9,6 +9,7 @@ import { DesktopSandboxProvider } from "./desktop-sandbox.js";
 import { DockerSandboxProvider } from "./docker-sandbox.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
 import { createRunSandbox, HostAwareSandbox, sandboxKindForBot } from "./host-aware-sandbox.js";
+import { HostComputerAccessDeniedError } from "./host-computer-access.js";
 import { HostComputerSandbox } from "./host-computer-sandbox.js";
 
 const ctx = {
@@ -117,6 +118,33 @@ describe("host-aware sandbox", () => {
     expect(new DockerSandboxProvider("http://supervisor.test", "test-token")).not.toHaveProperty(
       "billsWhileRunning",
     );
+  });
+
+  it("lets only deployment admins reach this computer's screen and page tools", async () => {
+    const host: SandboxProvider = new FakeSandboxProvider();
+    host.pageBrowser = async () => ({ ok: true, url: "", title: "", tree: "", elements: [] });
+    const provisioned = await host.provision({ botId: "member-bot", homePath: "" }, ctx);
+    const computer: ComputerRef = { ...provisioned, kind: "desktop" };
+    const observe = vi.spyOn(host, "observe");
+    const memberSandbox = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => true,
+      forUser: async () => null,
+    });
+    await expect(memberSandbox.observe(computer, ctx)).rejects.toBeInstanceOf(
+      HostComputerAccessDeniedError,
+    );
+    await expect(
+      memberSandbox.pageBrowser!(computer, { command: "snapshot" }, ctx),
+    ).rejects.toBeInstanceOf(HostComputerAccessDeniedError);
+    expect(observe).not.toHaveBeenCalled();
+
+    const adminSandbox = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => true,
+      forUser: async () => new Date(0),
+    });
+    await expect(adminSandbox.observe(computer, ctx)).resolves.toBeDefined();
+    expect(observe).toHaveBeenCalledWith(computer, ctx);
+    await host.destroy(computer, ctx);
   });
 
   it("does not expose page commands when neither provider supports them", () => {
