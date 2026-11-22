@@ -42,6 +42,13 @@ mode. **Preview** shows what would happen for a given tool before you change any
 To stop one bot from ever using a tool, open the bot's settings, expand **Advanced**, and use
 **Disable a tool** under **Tools**.
 
+## Reading web pages
+
+Bots read public web pages without asking. In **Ask** and **Auto**, they still ask before reading
+an IP address, a local or internal name such as `localhost` or `printer.local`, a cloud metadata
+host, a link with a password in it, or a program or archive download. To approve every page
+yourself, add an **Ask** rule for `web_fetch`.
+
 ## What always asks
 
 In **Auto** and **Ask**, these always show a card, and **Always allow** doesn't skip it:

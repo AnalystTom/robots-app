@@ -313,13 +313,6 @@ export async function memoryWriteNeedsApproval(
   return MEMORY_WRITE_TOOLS.has(toolName) && (await actionTainted());
 }
 
-/**
- * web_fetch sends its whole URL, query string included, to the site it names, so a site this run
- * was not given is a new destination that injected text could have picked. Trusted sites (named in
- * the owner's own words, approved earlier in the run, or the exact URL of a search result) and
- * sites with an always-allow rule go through. Anything else is new: planActionGate decides who
- * judges it, and newSiteOutcome what happens when nobody passed it.
- */
 export function outboundSiteGate(input: {
   site: string;
   trusted: boolean;

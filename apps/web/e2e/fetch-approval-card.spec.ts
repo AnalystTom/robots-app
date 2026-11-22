@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { captureScreenshot, completeOnboarding, signup } from "./helpers";
 
-test("asks before fetching a site the message did not name", async ({ page }, testInfo) => {
+test("asks before fetching a site outside the public suffix list", async ({ page }, testInfo) => {
   const stamp = Date.now();
   await signup(page, `fetch-approval-${stamp}@robots.test`, "password12", "Fetch Approval");
   await completeOnboarding(page);
