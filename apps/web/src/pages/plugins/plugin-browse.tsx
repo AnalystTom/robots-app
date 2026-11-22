@@ -19,7 +19,6 @@ import {
   isRecommendedPlugin,
   managedAppFor,
   matchesRemoteMcpApp,
-  namesAgentProduct,
   OTHER_PLUGINS,
   REMOTE_MCP_APPS,
   recommendedPluginCopy,
@@ -31,6 +30,7 @@ import type { ReactNode } from "react";
 import { MacAppIcon } from "../../components/integrations/mac-app-icon";
 import type { PluginSelection } from "../../components/integrations/plugin-marketplace";
 import {
+  displayDescription,
   IntegrationRow,
   PluginLogo,
   PluginRow,
@@ -192,12 +192,6 @@ export function PluginBrowse({
     : plugins;
   const moreApps = rendered.filter((item) => !shownItems.has(catalogItemKey(item)));
 
-  function rowDescription(curated: string | undefined, registry: string | undefined, name: string) {
-    if (curated) return curated;
-    if (registry && !namesAgentProduct(registry)) return registry;
-    return t`Connect ${name} to your bots.`;
-  }
-
   function catalogTile(
     item: ConnectionCatalogItem,
     label: string,
@@ -210,7 +204,7 @@ export function PluginBrowse({
         item={item}
         label={label}
         logo={logo}
-        description={rowDescription(
+        description={displayDescription(
           curatedAppCopy([item.name, item.slug]),
           pluginForApp.get(catalogItemKey(item))?.description,
           label,
@@ -227,7 +221,7 @@ export function PluginBrowse({
       <PluginRow
         key={entry.id}
         name={entry.displayName}
-        description={rowDescription(
+        description={displayDescription(
           recommendedPluginCopy(entry),
           entry.description,
           entry.displayName,

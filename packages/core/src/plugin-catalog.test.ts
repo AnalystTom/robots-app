@@ -9,7 +9,6 @@ import {
   matchesWordPrefixes,
   namesAgentProduct,
   pluginCategory,
-  pluginDescription,
   recommendedPluginCopy,
 } from "./plugin-catalog.js";
 
@@ -100,26 +99,6 @@ describe("managedAppFor", () => {
     expect(managedAppFor(entry({ name: "vercel", displayName: "Vercel" }), apps)).toBe(apps[1]);
     expect(managedAppFor(entry({ name: "google-calendar" }), apps)).toBe(apps[0]);
     expect(managedAppFor(entry({ name: "calcom", displayName: "Calcom" }), apps)).toBeUndefined();
-  });
-});
-
-describe("plugin description", () => {
-  it("gives a Recommended plugin its RoBots copy in place of registry text", () => {
-    expect(
-      pluginDescription({
-        name: "stripe",
-        description: "Stripe development plugin for Grok Build: best practices.",
-      }),
-    ).toBe("Look up payments, customers and subscriptions.");
-  });
-
-  it("keeps registry text for a plugin outside Recommended", () => {
-    expect(
-      pluginDescription({
-        name: "planning-notes",
-        description: "Plan work and write notes from Cursor.",
-      }),
-    ).toBe("Plan work and write notes from Cursor.");
   });
 });
 

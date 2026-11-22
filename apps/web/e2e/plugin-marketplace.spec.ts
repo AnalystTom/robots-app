@@ -163,6 +163,24 @@ test("Recommended plugin rows and details show RoBots copy, not another product'
     dialog.getByText("Look up payments, customers and subscriptions.", { exact: true }),
   ).toBeVisible();
   await expect(dialog.getByText("Stripe development plugin for Cursor")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Connect", exact: true }).click();
+  await expect(dialog.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+  await dialog.getByRole("button", { name: "Close integrations", exact: true }).click();
+  await page.reload();
+  await page.getByRole("button", { name: "Connect apps", exact: true }).click();
+  const connected = dialog
+    .getByTestId("connected-integrations")
+    .getByTestId("plugin-row")
+    .filter({ hasText: "Stripe" });
+  await expect(
+    connected.getByText("Look up payments, customers and subscriptions.", { exact: true }),
+  ).toBeVisible();
+  await expect(connected).not.toContainText("Cursor");
+  const availableStripe = dialog
+    .getByTestId("featured-connectors")
+    .getByTestId("plugin-row")
+    .filter({ hasText: "Stripe" });
+  await expect(availableStripe).toHaveCount(0);
 });
 
 test("shows directly registered MCP servers in Integrations without catalog connections", async ({

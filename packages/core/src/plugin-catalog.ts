@@ -202,12 +202,6 @@ export function recommendedPluginCopy(
   return isRecommendedPlugin(entry) ? CURATED_COPY.get(brandKey(entry.name)) : undefined;
 }
 
-export function pluginDescription(
-  entry: Pick<PluginMarketplaceEntry, "name" | "description">,
-): string {
-  return recommendedPluginCopy(entry) ?? entry.description;
-}
-
 type CategorySource = Pick<PluginMarketplaceEntry, "name" | "category">;
 
 export function pluginCategory(entry: CategorySource): PluginCategory | null {

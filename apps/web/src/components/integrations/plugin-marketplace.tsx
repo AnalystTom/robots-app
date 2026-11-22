@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { useLinkFavicon } from "@robots/chat-ui/web";
 import type {
@@ -13,7 +14,7 @@ import {
   PluginPreviewSchema,
   skillSafetyBlock,
 } from "@robots/contracts";
-import { installedPluginParts, pluginDescription } from "@robots/core";
+import { installedPluginParts, namesAgentProduct, recommendedPluginCopy } from "@robots/core";
 import { Button, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, Check, ChevronLeft, FileText, Plug } from "lucide-react";
 import type { ReactNode } from "react";
@@ -32,6 +33,7 @@ export type PluginSelection = {
   installedSource: string;
   name: string;
   description?: string;
+  curated?: string;
   logo?: string | null;
   site?: string | null;
 };
@@ -41,10 +43,21 @@ export function pluginSelection(entry: PluginMarketplaceEntry): PluginSelection 
     source: entry.source,
     installedSource: entry.installedSource,
     name: entry.displayName,
-    description: pluginDescription(entry),
+    description: entry.description,
+    curated: recommendedPluginCopy(entry),
     logo: entry.logo,
     site: pluginSite(entry),
   };
+}
+
+export function displayDescription(
+  curated: string | undefined,
+  registry: string | undefined,
+  name: string,
+): string {
+  if (curated) return curated;
+  if (registry && !namesAgentProduct(registry)) return registry;
+  return t`Connect ${name} to your bots.`;
 }
 
 function pluginSite(entry: Pick<PluginMarketplaceEntry, "homepage" | "domains">): string | null {
@@ -473,11 +486,13 @@ export function PluginDetail({
         <div className="flex shrink-0 gap-2 pt-2">{headerAction()}</div>
       </div>
 
-      {detail?.description || selection.description ? (
-        <p className="text-body-lg leading-6 text-muted-foreground">
-          {detail?.description || selection.description}
-        </p>
-      ) : null}
+      <p className="text-body-lg leading-6 text-muted-foreground">
+        {displayDescription(
+          selection.curated,
+          detail?.description || selection.description,
+          selection.name,
+        )}
+      </p>
 
       {install ? (
         <AvailabilityControl

@@ -16,7 +16,6 @@ import {
   customMcpServerInput,
   installedPluginParts,
   managedAppFor,
-  pluginDescription,
 } from "@robots/core";
 import {
   Button,
@@ -40,7 +39,11 @@ import type {
   ManagedAppLink,
   PluginSelection,
 } from "../components/integrations/plugin-marketplace";
-import { PluginDetail, pluginSelection } from "../components/integrations/plugin-marketplace";
+import {
+  displayDescription,
+  PluginDetail,
+  pluginSelection,
+} from "../components/integrations/plugin-marketplace";
 import { reachesOtherSpaces, useOwnSpaces } from "../components/integrations/space-availability";
 import { useBotName } from "../components/integrations/use-bot-name";
 import type { connectedAppMarks } from "../lib/connected-apps";
@@ -194,8 +197,11 @@ export function PluginsOverlay({
   }
 
   function appDescription(item: ConnectionCatalogItem) {
-    const entry = pluginForApp.get(catalogItemKey(item));
-    return curatedAppCopy([item.name, item.slug]) ?? (entry && pluginDescription(entry));
+    return displayDescription(
+      curatedAppCopy([item.name, item.slug]),
+      pluginForApp.get(catalogItemKey(item))?.description,
+      item.name,
+    );
   }
 
   function openApp(item: ConnectionCatalogItem) {
