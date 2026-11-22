@@ -197,4 +197,14 @@ describe("robot character picker", () => {
     expect(changed).toHaveBeenCalledTimes(1);
     expect(changed).toHaveBeenLastCalledWith("robot:red.antenna.aviators.cape.confetti", "robots");
   });
+
+  it("saves the robots set when a robot look is picked while the Original tab is open", async () => {
+    await render("robot:purple.deerstalker.magnifier.cape.none", "robots");
+    await click("Customize bot avatar");
+    await click("Original");
+    await click("Hero");
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(changed).toHaveBeenLastCalledWith("robot:red.antenna.aviators.cape.confetti", "robots");
+    expect(button("RoBots").getAttribute("aria-selected")).toBe("true");
+  });
 });

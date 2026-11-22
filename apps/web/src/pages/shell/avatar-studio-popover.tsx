@@ -341,7 +341,11 @@ export function AvatarStudioPopover({
                 value={value}
                 identity={identity}
                 avatarSet={pickedSet}
-                onChange={(next) => onChange(next, pickedSet)}
+                onChange={(next) => {
+                  const set = botLookState(next).robot ? "robots" : pickedSet;
+                  setPickedSet(set);
+                  onChange(next, set);
+                }}
                 onAvatarSetChange={setPickedSet}
               />
             </TabsContent>
