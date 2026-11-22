@@ -258,6 +258,8 @@ def reseal(profile: str, port: int) -> dict[str, Any]:
         result = apply_sessions(port, {"sites": [], "clear": [], "reseal": True})
         if not result["ok"]:
             return result
+        if public_key_rows(profile) > 0:
+            return {"ok": False, "error": "Some sign-ins still use the public key, so the profile stays closed."}
     mark_keyed(profile)
     return {"ok": True}
 
