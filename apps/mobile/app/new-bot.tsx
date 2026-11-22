@@ -44,12 +44,13 @@ export default function NewBot() {
 
   const readAccountSet = useCallback(() => {
     setAccountFailed(false);
-    return rpc("me")
-      .then((me) => {
+    return Promise.all([rpc("me"), rpc("bots/list")])
+      .then(([me, bots]) => {
         if (gone.current) return;
         const set = resolveBotAvatarSet(me.botAvatarSet);
+        const ownColors = bots.filter((bot) => bot.userId === me.userId).map((bot) => bot.color);
         setAccountSet(set);
-        setLook((current) => newBotLookForSet(current, set));
+        setLook((current) => newBotLookForSet(current, set, ownColors));
       })
       .catch(() => {
         if (!gone.current) setAccountFailed(true);

@@ -5,6 +5,7 @@ import {
   botLookState,
   newBotLook,
   newBotLookColor,
+  newBotLookForSet,
   newBotLookInput,
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
@@ -34,17 +35,21 @@ export interface CreateBotDialogInput {
 
 export function CreateBotDialog({
   avatarSet,
+  ownBotColors,
   onCancel,
   onCreate,
 }: {
   avatarSet: BotAvatarSet;
+  ownBotColors: readonly string[];
   onCancel: () => void;
   onCreate: (input: CreateBotDialogInput) => Promise<void>;
 }) {
   const { t } = useLingui();
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
-  const [look, setLook] = useState(() => newBotLook(avatarSet));
+  const [look, setLook] = useState(() =>
+    newBotLookForSet(newBotLook(avatarSet), avatarSet, ownBotColors),
+  );
   const pickedRobot = botLookState(newBotLookColor(look)).robot;
   const identity = newBotPreviewIdentity(avatarSet, look);
   const [submitting, setSubmitting] = useState(false);

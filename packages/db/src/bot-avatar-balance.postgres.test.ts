@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { parseRobotCharacter } from "@robots/contracts";
 import {
   newClientId,
@@ -128,6 +129,75 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       repos.createBot(actor(), { ...botInput("Unpicked"), avatarSet: "robots" }),
     );
     expect(created.color).toBe("robot:red.antenna.aviators.cape.confetti");
+  });
+
+  it("counts only the creating member's bots toward the least-worn default", async () => {
+    const repos = createRepos(prisma);
+    const system = asSystem(prisma);
+    const memberAddress = `+1555${Math.floor(Math.random() * 9_000_000 + 1_000_000)}`;
+    const member = await runAsSystem("test fixture", () =>
+      provisionMessagingIdentity(
+        prisma,
+        { provider, address: memberAddress },
+        { signupsEnabled: undefined, signupAllowlist: undefined },
+      ),
+    );
+    const { organizationId } = await system.space.findUniqueOrThrow({
+      where: { id: owner.spaceId },
+      select: { organizationId: true },
+    });
+    await system.spaceMember.create({
+      data: {
+        id: randomUUID(),
+        organizationId,
+        spaceId: owner.spaceId,
+        userId: member.userId,
+        role: "member",
+        createdAt: new Date(),
+      },
+    });
+    const memberActor = {
+      userId: member.userId,
+      spaceId: owner.spaceId,
+      email: "member@example.com",
+      isDeploymentOwner: false,
+    };
+    try {
+      await system.bot.updateMany({
+        where: { spaceId: owner.spaceId, userId: owner.userId },
+        data: { archivedAt: new Date() },
+      });
+      await runAsTenant(owner, async () => {
+        for (const preset of ROBOT_PRESETS.filter((candidate) => candidate.id !== "hero")) {
+          await repos.createBot(actor(), {
+            ...botInput(`Owner ${preset.id}`),
+            avatarSet: "robots",
+            color: robotPresetValue(preset.id),
+          });
+        }
+      });
+      await runAsTenant({ ...owner, userId: member.userId }, async () => {
+        for (const index of [0, 1]) {
+          await repos.createBot(memberActor, {
+            ...botInput(`Member ${index}`),
+            avatarSet: "robots",
+            color: robotPresetValue("hero"),
+          });
+        }
+      });
+      const created = await runAsTenant(owner, () =>
+        repos.createBot(actor(), { ...botInput("Unpicked"), avatarSet: "robots" }),
+      );
+      expect(created.color).toBe("robot:red.antenna.aviators.cape.confetti");
+    } finally {
+      await system.spaceMember.deleteMany({
+        where: { spaceId: owner.spaceId, userId: member.userId },
+      });
+      await system.messagingIdentity.deleteMany({
+        where: { provider, address: memberAddress },
+      });
+      await system.user.deleteMany({ where: { id: member.userId } });
+    }
   });
 
   it("defaults a new account's bots to RoBots, keeps an Original account on Original, and reloads explicit sets without altering photos or shapes", async () => {

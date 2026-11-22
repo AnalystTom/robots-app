@@ -1,5 +1,5 @@
 import type { RobotLook } from "@robots/contracts";
-import { robotCharacterValue } from "@robots/contracts";
+import { parseBotAvatarValue, robotCharacterValue } from "@robots/contracts";
 
 export const ROBOT_PRESETS = [
   {
@@ -141,6 +141,18 @@ export type RobotPresetId = (typeof ROBOT_PRESETS)[number]["id"];
 export function robotPresetValue(id: RobotPresetId): string {
   const preset = ROBOT_PRESETS.find((candidate) => candidate.id === id) ?? ROBOT_PRESETS[0];
   return robotCharacterValue(preset.look);
+}
+
+export function leastWornRobotValue(wornColors: readonly string[], random = Math.random): string {
+  const worn = wornColors.flatMap((color) => {
+    const avatar = parseBotAvatarValue(color);
+    const preset = avatar.kind === "robot" ? robotPresetOf(avatar.look) : null;
+    return preset ? [preset] : [];
+  });
+  const counts = ROBOT_PRESETS.map((preset) => worn.filter((id) => id === preset.id).length);
+  const fewest = Math.min(...counts);
+  const least = ROBOT_PRESETS.filter((_, index) => counts[index] === fewest);
+  return robotPresetValue(least[Math.floor(random() * least.length)]!.id);
 }
 
 export function robotPresetOf(look: RobotLook): RobotPresetId | null {

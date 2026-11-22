@@ -881,7 +881,12 @@ export default function BotSettingsScreen() {
                 { key: "robots", label: t`RoBots` },
               ]}
               value={styleSet}
-              onChange={(next) => setStyleSet(resolveBotAvatarSet(next))}
+              onChange={(next) => {
+                if (!bot) return;
+                setStyleSet(resolveBotAvatarSet(next));
+                setColor(bot.color);
+                setAvatarSet(resolveBotAvatarSet(bot.avatarSet));
+              }}
               plain
             />
             {bot ? (

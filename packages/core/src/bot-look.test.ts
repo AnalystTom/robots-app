@@ -12,6 +12,7 @@ import {
   newBotLookInput,
   newBotPreviewIdentity,
 } from "./bot-look.js";
+import { ROBOT_PRESETS, robotPresetValue } from "./robot-presets.js";
 
 describe("newBotLook", () => {
   it("reserves a valid id that never draws the heart body", () => {
@@ -41,15 +42,26 @@ describe("newBotLook", () => {
 
   it("moves a look to the account's set once it is known", () => {
     const robotLook = newBotLook("robots");
-    const organic = newBotLookForSet(robotLook, "organic");
+    const organic = newBotLookForSet(robotLook, "organic", []);
     expect(botLookState(organic.color!).defaultLook).toBe(true);
-    expect(newBotLookForSet(robotLook, "robots")).toEqual(robotLook);
     const shaped = { ...organic, color: "#2A92FE::shape_2" };
-    expect(newBotLookForSet(shaped, "organic")).toBe(shaped);
-    expect(newBotLookForSet(shaped, "robots").color).toBeNull();
+    expect(newBotLookForSet(shaped, "organic", [])).toBe(shaped);
     const robotic = { ...organic, color: "robot:red.antenna.aviators.cape.confetti" };
-    expect(newBotLookForSet(robotic, "robots")).toBe(robotic);
-    expect(botLookState(newBotLookForSet(robotic, "organic").color!).robot).toBeNull();
+    expect(newBotLookForSet(robotic, "robots", [])).toBe(robotic);
+    expect(botLookState(newBotLookForSet(robotic, "organic", []).color!).robot).toBeNull();
+  });
+
+  it("pre-selects the listed robot the user's own bots wear least", () => {
+    const everyRobotButHero = ROBOT_PRESETS.filter((preset) => preset.id !== "hero").map((preset) =>
+      robotPresetValue(preset.id),
+    );
+    const look = newBotLookForSet(newBotLook("robots"), "robots", everyRobotButHero);
+    expect(look.color).toBe("robot:red.antenna.aviators.cape.confetti");
+    expect(newBotLookInput("robots", look)).toEqual({
+      color: "robot:red.antenna.aviators.cape.confetti",
+      id: look.id,
+      avatarSet: "robots",
+    });
   });
 
   it("sends a picked robot with the RoBots set", () => {
