@@ -83,6 +83,7 @@ test("imports a browser sign-in from the desktop app into the vault and removes 
   await rpc(page, "computer/boot", { botId });
   const settings = await openUserSettings(page, "vault");
   await settings.getByTestId("vault-new").click();
+  await expect(page.getByTestId("vault-import-sessions")).toBeVisible();
   await captureScreenshot(page, testInfo, "vault-new-menu-desktop");
   await page.getByTestId("vault-import-sessions").click();
 
