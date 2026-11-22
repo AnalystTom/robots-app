@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 
 import type { BotAvatarSet } from "@robots/contracts";
+import { parseRobotCharacter } from "@robots/contracts";
+import { robotCharacterDataUri } from "@robots/core";
 import { DEFAULT_BOT_AVATAR_COLOR } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { act, useState } from "react";
@@ -103,6 +105,28 @@ describe("selectable bot icon sets", () => {
     await click("RoBots");
     expect(changed).toHaveBeenLastCalledWith(DEFAULT_BOT_AVATAR_COLOR, "robots");
     expect(document.querySelector(`img[src="${photo}"]`)).toBeNull();
+  });
+
+  it("shows a bot's own robot as the selected current look until a listed robot is picked", async () => {
+    const ownRobot = "robot:teal.top-hat.hearts.cape.none";
+    const detective = "robot:purple.deerstalker.magnifier.cape.none";
+    await render(ownRobot, "robots");
+    await click("Customize bot avatar");
+    const checked = () =>
+      [...document.querySelectorAll('[role="radio"][aria-checked="true"]')].map((node) =>
+        node.getAttribute("aria-label"),
+      );
+    expect(checked()).toEqual(["Current look"]);
+    expect(button("Current look").querySelector("img")?.getAttribute("src")).toBe(
+      robotCharacterDataUri(parseRobotCharacter(ownRobot)!),
+    );
+    expect(changed).not.toHaveBeenCalled();
+    await click("Current look");
+    expect(changed).toHaveBeenLastCalledWith(ownRobot, undefined);
+    await click("Detective");
+    expect(changed).toHaveBeenLastCalledWith(detective, undefined);
+    expect(checked()).toEqual(["Detective"]);
+    expect(document.querySelector('[aria-label="Current look"]')).toBeNull();
   });
 
   it("keeps explicit original shapes and their chosen set while changing colour", async () => {

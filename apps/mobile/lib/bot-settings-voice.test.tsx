@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   description: "",
   crossSpaceCommunication: false,
   avatarSet: undefined as "organic" | "robots" | undefined,
+  color: undefined as string | undefined,
   focus: undefined as string | undefined,
   os: "ios",
   work: [] as unknown[],
@@ -94,7 +95,7 @@ vi.mock("./api", () => ({
         instructions: mocks.instructions,
         description: mocks.description,
         instructionHistory: mocks.history,
-        color: BOT_COLORS[0],
+        color: mocks.color ?? BOT_COLORS[0],
         avatarSet: mocks.avatarSet,
         autoSpeak: false,
         computerMode: "team",
@@ -236,7 +237,7 @@ vi.mock("react-native", () => {
       accessibilityLabel?: string;
       accessibilityHint?: string;
       accessibilityRole?: string;
-      accessibilityState?: { expanded?: boolean };
+      accessibilityState?: { expanded?: boolean; checked?: boolean };
       style?: unknown;
       hitSlop?: number;
     }) =>
@@ -249,6 +250,7 @@ vi.mock("react-native", () => {
           "data-hint": accessibilityHint,
           role: accessibilityRole,
           "aria-expanded": accessibilityState?.expanded,
+          "aria-checked": accessibilityState?.checked,
           "data-style": JSON.stringify(style),
           "data-hit-slop": hitSlop,
         },
@@ -361,6 +363,7 @@ describe("bot settings device voice menu", () => {
   beforeEach(() => {
     mocks.crossSpaceCommunication = false;
     mocks.avatarSet = undefined;
+    mocks.color = undefined;
     vi.clearAllMocks();
     mocks.loadBot.mockReset();
     vi.mocked(Notifications.getPresentedNotificationsAsync).mockResolvedValue([]);
@@ -661,6 +664,39 @@ describe("bot settings device voice menu", () => {
     expect(mocks.rpc).toHaveBeenLastCalledWith("bots/update", {
       botId: "bot-fixture",
       avatarSet: "organic",
+    });
+  });
+
+  it("shows a bot's own robot as the selected current look and saves only a picked listed robot", async () => {
+    mocks.color = "robot:teal.top-hat.hearts.cape.none";
+    mocks.avatarSet = "robots";
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
+    );
+    const checkedRadios = () =>
+      [...container.querySelectorAll('[role="radio"][aria-checked="true"]')].map((node) =>
+        node.getAttribute("aria-label"),
+      );
+    const save = () =>
+      [...container.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent === "Save",
+      );
+    expect(checkedRadios()).toEqual(["Current look"]);
+    expect(container.querySelector('[aria-label="Shuffle"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Color 1"]')).toBeNull();
+    expect(save()).toBeUndefined();
+
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Detective"]')!.click(),
+    );
+    expect(checkedRadios()).toEqual(["Detective"]);
+    expect(container.querySelector('[aria-label="Current look"]')).toBeNull();
+    mocks.rpc.mockResolvedValueOnce({});
+    await act(async () => save()!.click());
+    expect(mocks.rpc).toHaveBeenCalledWith("bots/update", {
+      botId: "bot-fixture",
+      color: "robot:purple.deerstalker.magnifier.cape.none",
     });
   });
 

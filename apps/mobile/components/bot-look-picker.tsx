@@ -38,6 +38,7 @@ export function BotLookPicker({
   const { photo, shapeIndex: shape, color, robot, defaultLook } = botLookState(value);
   const labeled = !organicIdentities;
   const pickedPreset = robot ? robotPresetOf(robot) : null;
+  const currentLook = robot && !pickedPreset ? value : null;
   const presetLabels: Record<RobotPresetId, string> = {
     assistant: t`Assistant`,
     researcher: t`Researcher`,
@@ -61,6 +62,16 @@ export function BotLookPicker({
       <View>
         {labeled ? <Label>{t`Robot`}</Label> : null}
         <View accessibilityRole="radiogroup" style={grid}>
+          {currentLook ? (
+            <Choice
+              disabled={disabled}
+              label={t`Current look`}
+              selected
+              onPress={() => onChange(currentLook)}
+            >
+              <BotAvatar color={currentLook} size={ROBOT_SIZE} />
+            </Choice>
+          ) : null}
           {ROBOT_PRESETS.map((preset) => {
             const look = robotPresetValue(preset.id);
             return (

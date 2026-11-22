@@ -1,14 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_NAME_MAX_LENGTH } from "@robots/contracts";
-import {
-  botLookState,
-  newBotLook,
-  newBotLookInput,
-  newBotPreviewIdentity,
-  robotPresetOf,
-  robotPresetValue,
-} from "@robots/core";
+import { newBotLook, newBotLookInput, newBotPreviewIdentity } from "@robots/core";
 import {
   BotAvatar,
   Button,
@@ -43,8 +36,6 @@ export function CreateBotDialog({
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [look, setLook] = useState(newBotLook);
-  const pickedRobot = botLookState(look.color).robot;
-  const preset = pickedRobot ? robotPresetOf(pickedRobot) : null;
   const identity = newBotPreviewIdentity(avatarSet, look);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,10 +101,8 @@ export function CreateBotDialog({
             </p>
           ) : null}
           <RobotPresetPicker
-            value={preset}
-            onChange={(next) => {
-              setLook((current) => ({ ...current, color: robotPresetValue(next) }));
-            }}
+            value={look.color}
+            onChange={(color) => setLook((current) => ({ ...current, color }))}
           />
           <DialogFooter>
             <Button type="button" variant="outline" disabled={submitting} onClick={onCancel}>

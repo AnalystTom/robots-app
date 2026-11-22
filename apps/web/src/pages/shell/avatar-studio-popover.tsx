@@ -6,8 +6,6 @@ import {
   botLookState,
   botLookWithColor,
   botLookWithShape,
-  robotPresetOf,
-  robotPresetValue,
   SHIPPED_BOT_AVATAR_SHAPE_KEYS,
 } from "@robots/core";
 import {
@@ -58,10 +56,7 @@ export function BotLookPicker({
 
   return (
     <div className="space-y-4">
-      <RobotPresetPicker
-        value={robot ? robotPresetOf(robot) : null}
-        onChange={(id) => onChange(robotPresetValue(id))}
-      />
+      <RobotPresetPicker value={value} onChange={(next) => onChange(next)} />
       <Disclosure
         summary={<Trans>More styles</Trans>}
         summaryClassName="text-body-sm text-muted-foreground"
