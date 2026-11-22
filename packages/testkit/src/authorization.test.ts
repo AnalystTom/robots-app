@@ -580,6 +580,8 @@ describeWithDatabase("API authorization and resource isolation", () => {
       ["vault/reveal"],
       ["vault/activity"],
       ["vault/import"],
+      ["vault/importSessions"],
+      ["vault/signingOut"],
       ["vault/remove"],
       ["botSecrets/list"],
       ["botSecrets/put"],
