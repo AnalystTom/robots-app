@@ -7,6 +7,7 @@ import {
   aiConsentTargets,
   aiDataUsesForProcedure,
   ensureAiDataConsent,
+  recordAiConsentGranted,
 } from "./ai-consent.js";
 
 const status: AiConsentStatus = {
@@ -98,7 +99,11 @@ describe("foreground AI consent", () => {
       prompt,
       allow,
     });
-    expect(prompt).toHaveBeenCalledExactlyOnceWith(status.recipients, undefined);
+    expect(prompt).toHaveBeenCalledExactlyOnceWith(
+      status.recipients,
+      undefined,
+      expect.any(Function),
+    );
     expect(allow).toHaveBeenCalledExactlyOnceWith({
       scope: status.scope,
       version: status.version,
@@ -202,6 +207,47 @@ describe("foreground AI consent", () => {
     );
     expect(prompt).toHaveBeenCalledTimes(3);
     expect(allow).toHaveBeenCalledTimes(3);
+  });
+  it("does not prompt again for a status read that started before a grant landed", async () => {
+    let serverAllowed = false;
+    const snapshot = (allowed: boolean) => ({
+      ...status,
+      recipients: [{ ...status.recipients[0]!, allowed }],
+    });
+    let reads = 0;
+    let releaseFirstRead!: () => void;
+    const firstReadReleased = new Promise<void>((resolve) => {
+      releaseFirstRead = resolve;
+    });
+    const currentStatus = async () => {
+      reads += 1;
+      if (reads === 1) {
+        await firstReadReleased;
+        return snapshot(false);
+      }
+      return snapshot(serverAllowed);
+    };
+    const prompt = vi.fn(async () => true);
+    const allow = vi.fn(async () => {
+      serverAllowed = true;
+      recordAiConsentGranted();
+    });
+    const staleRead = ensureAiDataConsent({
+      uses: ["model"],
+      status: currentStatus,
+      prompt,
+      allow,
+    });
+    await ensureAiDataConsent({
+      uses: ["model"],
+      status: currentStatus,
+      prompt,
+      allow,
+    });
+    releaseFirstRead();
+    await staleRead;
+    expect(prompt).toHaveBeenCalledOnce();
+    expect(allow).toHaveBeenCalledOnce();
   });
   it("does not share a grant across independent API contexts", async () => {
     const prompt = vi.fn(async () => true);

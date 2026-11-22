@@ -11,6 +11,11 @@ export class AiConsentBlocked extends Error {
 }
 
 const pendingAiConsent = new Map<string, { done: Promise<void>; keys: string[] }>();
+let completedGrants = 0;
+
+export function recordAiConsentGranted(): void {
+  completedGrants += 1;
+}
 
 export function aiDataUsesForProcedure(procedure: string, input?: unknown): AiDataUse[] {
   const path = procedure.replaceAll(".", "/");
@@ -43,7 +48,11 @@ export function aiDataUsesForProcedure(procedure: string, input?: unknown): AiDa
 export async function ensureAiDataConsent(options: {
   uses: AiDataUse[];
   status(): Promise<AiConsentStatus>;
-  prompt(recipients: AiRecipient[], privacyUrl?: string): Promise<boolean>;
+  prompt(
+    recipients: AiRecipient[],
+    privacyUrl: string | undefined,
+    grant: () => Promise<unknown>,
+  ): Promise<boolean>;
   allow(input: { scope: string; version: string; keys: string[] }): Promise<unknown>;
   coalesceKey?: string;
 }) {
@@ -51,6 +60,7 @@ export async function ensureAiDataConsent(options: {
   const granted = new Set<string>();
   try {
     for (;;) {
+      const grantsBeforeRead = completedGrants;
       const status = await options.status();
       const needed = status.recipients.filter(
         (recipient) =>
@@ -65,11 +75,13 @@ export async function ensureAiDataConsent(options: {
         if (needed.every((recipient) => granted.has(recipient.key))) return;
         continue;
       }
+      if (completedGrants !== grantsBeforeRead) continue;
       const keys = needed.map((recipient) => recipient.key);
+      const grant = () => options.allow({ scope: status.scope, version: status.version, keys });
       const done = (async () => {
-        if (!(await options.prompt(needed, status.privacyUrl)))
+        if (!(await options.prompt(needed, status.privacyUrl, grant)))
           throw new Error(AI_CONSENT_REQUIRED);
-        await options.allow({ scope: status.scope, version: status.version, keys });
+        await grant();
       })().finally(() => {
         if (pendingAiConsent.get(key)?.done === done) pendingAiConsent.delete(key);
       });

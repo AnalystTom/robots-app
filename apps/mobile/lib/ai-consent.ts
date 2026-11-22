@@ -3,6 +3,7 @@ import type { AiDataUse, AiRecipient } from "@robots/contracts";
 import { AI_PRIVACY_URL } from "@robots/contracts";
 import { useSyncExternalStore } from "react";
 import { BackHandler, Platform } from "react-native";
+import { registerSessionDiskCache } from "./session";
 
 export function aiDataDisclosure(use: AiDataUse): string {
   switch (use) {
@@ -21,13 +22,28 @@ export type AiConsentRequest = {
   denied: boolean;
 };
 
-type QueuedRequest = AiConsentRequest & { decide(allowed: boolean): void };
+type ConsentGrant = () => Promise<unknown>;
+type QueuedRequest = {
+  recipients: AiRecipient[];
+  privacyUrl: string;
+  grant: ConsentGrant;
+  decide(allowed: boolean): void;
+};
+type BlockedRequest = Omit<QueuedRequest, "decide">;
 
 let queue: QueuedRequest[] = [];
+let blocked: BlockedRequest | null = null;
+let snapshot: AiConsentRequest | null = null;
+let session = 0;
 const listeners = new Set<() => void>();
 
-function publish(next: QueuedRequest[]) {
+function publish(next: QueuedRequest[], nextBlocked: BlockedRequest | null = blocked) {
   queue = next;
+  blocked = nextBlocked;
+  const shown = blocked ?? queue[0];
+  snapshot = shown
+    ? { recipients: shown.recipients, privacyUrl: shown.privacyUrl, denied: blocked !== null }
+    : null;
   for (const listener of listeners) listener();
 }
 
@@ -39,15 +55,20 @@ function subscribe(listener: () => void) {
 }
 
 function currentRequest(): AiConsentRequest | null {
-  return queue[0] ?? null;
+  return snapshot;
 }
 
 export function promptAiConsent(
   recipients: AiRecipient[],
   privacyUrl = AI_PRIVACY_URL,
+  grant: ConsentGrant,
 ): Promise<boolean> {
   return new Promise((decide) => {
-    publish([...queue, { recipients, privacyUrl, denied: false, decide }]);
+    if (blocked) {
+      decide(false);
+      return;
+    }
+    publish([...queue, { recipients, privacyUrl, grant, decide }]);
   });
 }
 
@@ -69,11 +90,38 @@ export function denyAiConsent() {
     BackHandler.exitApp();
     return;
   }
-  publish([{ ...shown, denied: true }, ...rest]);
+  publish([], { recipients: shown.recipients, privacyUrl: shown.privacyUrl, grant: shown.grant });
+  shown.decide(false);
+  for (const request of rest) request.decide(false);
 }
 
+function clearAiConsentRequests() {
+  session += 1;
+  const waiting = queue;
+  publish([], null);
+  for (const request of waiting) request.decide(false);
+}
+
+registerSessionDiskCache(clearAiConsentRequests);
+
 export function reviewAiConsentAgain() {
-  const [shown, ...rest] = queue;
-  if (!shown) return;
-  publish([{ ...shown, denied: false }, ...rest]);
+  if (!blocked) return;
+  const review = blocked;
+  const started = session;
+  publish(
+    [
+      {
+        recipients: review.recipients,
+        privacyUrl: review.privacyUrl,
+        grant: review.grant,
+        decide: (allowed) => {
+          if (!allowed) return;
+          review.grant().catch(() => {
+            if (started === session) publish([], review);
+          });
+        },
+      },
+    ],
+    null,
+  );
 }

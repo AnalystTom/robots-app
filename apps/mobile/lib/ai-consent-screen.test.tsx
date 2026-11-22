@@ -33,6 +33,7 @@ vi.mock("../components/native-action-button", () => ({
     createElement("button", { type: "button", onClick: onPress }, label),
 }));
 vi.mock("../components/app-mark", () => ({ AppMark: () => null }));
+vi.mock("./session", () => ({ registerSessionDiskCache: vi.fn() }));
 vi.mock("./native", () => ({
   native: {},
   useMobileTokens: () => tokensForAppearance("light"),
@@ -66,13 +67,15 @@ async function click(label: string) {
   await act(async () => found.click());
 }
 
-async function ask(recipients: AiRecipient[]) {
+async function ask(recipients: AiRecipient[], grant = vi.fn(async () => undefined)) {
   let decided: boolean | undefined;
-  const pending = promptAiConsent(recipients, "https://robots.example/privacy").then((value) => {
-    decided = value;
-  });
+  const pending = promptAiConsent(recipients, "https://robots.example/privacy", grant).then(
+    (value) => {
+      decided = value;
+    },
+  );
   await act(async () => undefined);
-  return { pending, decided: () => decided };
+  return { pending, decided: () => decided, grant };
 }
 
 describe("AI data sharing consent screen", () => {
@@ -108,6 +111,29 @@ describe("AI data sharing consent screen", () => {
     expect(container.querySelector("[data-testid='ai-consent-screen']")).toBeNull();
   });
 
+  it("settles every queued and late iOS request as declined when denied", async () => {
+    Platform.OS = "ios";
+    const first = await ask([openai]);
+    const queued = await ask([openaiMemory]);
+    await click("Deny");
+    await Promise.all([first.pending, queued.pending]);
+    expect(first.decided()).toBe(false);
+    expect(queued.decided()).toBe(false);
+    expect(first.grant).not.toHaveBeenCalled();
+    expect(queued.grant).not.toHaveBeenCalled();
+
+    const late = await ask([openai]);
+    await late.pending;
+    expect(late.decided()).toBe(false);
+    expect(text()).toContain("RoBots needs this to work");
+
+    await click("Review again");
+    expect(text()).toContain("Share data with OpenAI?");
+    await click("Approve");
+    await vi.waitFor(() => expect(first.grant).toHaveBeenCalledOnce());
+    expect(queued.grant).not.toHaveBeenCalled();
+  });
+
   it("closes the app on Android when denied and asks again on return", async () => {
     const consent = await ask([openai]);
     await click("Deny");
@@ -123,19 +149,38 @@ describe("AI data sharing consent screen", () => {
     expect(consent.decided()).toBe(true);
   });
 
-  it("blocks on iOS when denied until the person reviews it again", async () => {
+  it("settles a denied iOS prompt as declined, and grants on Approve after Review again", async () => {
     Platform.OS = "ios";
-    const consent = await ask([openai]);
+    const grant = vi.fn(async () => undefined);
+    const consent = await ask([openai], grant);
     await click("Deny");
+    await consent.pending;
+    expect(consent.decided()).toBe(false);
     expect(BackHandler.exitApp).not.toHaveBeenCalled();
     expect(text()).toContain("RoBots needs this to work");
     expect(text()).not.toContain("Approve");
-    expect(consent.decided()).toBeUndefined();
 
     await click("Review again");
     expect(text()).toContain("Share data with OpenAI?");
+    expect(grant).not.toHaveBeenCalled();
     await click("Approve");
+    await vi.waitFor(() => expect(grant).toHaveBeenCalledOnce());
+    expect(container.querySelector("[data-testid='ai-consent-screen']")).toBeNull();
+  });
+
+  it("shows the denied screen again when the grant after Review again fails", async () => {
+    Platform.OS = "ios";
+    const grant = vi.fn(async () => {
+      throw new Error("offline");
+    });
+    const consent = await ask([openai], grant);
+    await click("Deny");
     await consent.pending;
-    expect(consent.decided()).toBe(true);
+
+    await click("Review again");
+    await click("Approve");
+    await vi.waitFor(() => expect(grant).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(text()).toContain("RoBots needs this to work"));
+    expect(text()).not.toContain("Approve");
   });
 });

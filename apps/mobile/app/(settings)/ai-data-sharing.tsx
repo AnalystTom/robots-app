@@ -13,12 +13,13 @@ import {
   SettingsSwitch,
   useStackedSettings,
 } from "../../components/settings-group";
-import { aiDataDisclosure } from "../../lib/ai-consent";
+import { aiDataDisclosure, promptAiConsent } from "../../lib/ai-consent";
 import {
   aiDataSharingPlaceholder,
   aiPrivacyLinks,
   groupAiRecipients,
 } from "../../lib/ai-data-sharing";
+import { allowPromptedAiConsent, captureApiRequestContext } from "../../lib/api";
 import { native, useThemedStyles } from "../../lib/native";
 import { queryClient, rpcQuery, useSave } from "../../lib/query";
 import { useScreenQuery } from "../../lib/screen-query";
@@ -46,16 +47,20 @@ export default function AiDataSharing() {
   const change = useSave({
     save: async (ask: { recipient: AiRecipient; allowed: boolean } | "withdraw", send) => {
       if (!status) return;
+      const askAndAllow = async (recipient: AiRecipient) => {
+        const input = { scope: status.scope, version: status.version, keys: [recipient.key] };
+        const requestContext = await captureApiRequestContext();
+        const allowed = await promptAiConsent([recipient], status.privacyUrl, () =>
+          allowPromptedAiConsent(input, requestContext),
+        );
+        return allowed ? send("aiConsent/allow", input) : null;
+      };
       const saved =
         ask === "withdraw"
           ? await send("aiConsent/revoke", { key: null })
           : !ask.allowed
             ? await send("aiConsent/revoke", { key: ask.recipient.key })
-            : await send("aiConsent/allow", {
-                scope: status.scope,
-                version: status.version,
-                keys: [ask.recipient.key],
-              });
+            : await askAndAllow(ask.recipient);
       if (saved) await writeSaved(queryClient, statusRead.queryKey, () => saved);
     },
     onFailed: (cause) =>
