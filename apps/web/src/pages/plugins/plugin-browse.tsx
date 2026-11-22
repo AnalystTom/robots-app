@@ -20,8 +20,8 @@ import {
   matchesRemoteMcpApp,
   OTHER_PLUGINS,
   REMOTE_MCP_APPS,
-  recommendedAppDescription,
   remoteMcpAppServer,
+  robotsAppCopy,
 } from "@robots/core";
 import { Button, SectionHeading, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, ChevronRight, Search } from "lucide-react";
@@ -194,7 +194,7 @@ export function PluginBrowse({
     item: ConnectionCatalogItem,
     label: string,
     logo?: string | null,
-    opts?: { tileTestId?: boolean; fallbackDescription?: string },
+    opts?: { tileTestId?: boolean },
   ) {
     return (
       <CatalogTile
@@ -203,9 +203,8 @@ export function PluginBrowse({
         label={label}
         logo={logo}
         description={
-          recommendedAppDescription(item) ??
-          pluginForApp.get(catalogItemKey(item))?.description ??
-          opts?.fallbackDescription
+          robotsAppCopy([item.name, item.slug]) ??
+          pluginForApp.get(catalogItemKey(item))?.description
         }
         tileTestId={opts?.tileTestId}
         context={tileContext}
@@ -213,13 +212,13 @@ export function PluginBrowse({
     );
   }
 
-  function renderPluginRow(entry: PluginMarketplaceEntry) {
+  function renderPluginRow(entry: PluginMarketplaceEntry, description = entry.description) {
     const selection = pluginSelection(entry);
     return (
       <PluginRow
         key={entry.id}
         name={entry.displayName}
-        description={entry.description}
+        description={description}
         logo={entry.logo}
         site={selection.site}
         installed={Boolean(installedPlugin(entry.installedSource))}
@@ -376,8 +375,8 @@ export function PluginBrowse({
           ))}
           {recommended.map(({ entry, item }) =>
             item
-              ? catalogTile(item, item.name, item.logo, { fallbackDescription: entry.description })
-              : renderPluginRow(entry),
+              ? catalogTile(item, item.name, item.logo)
+              : renderPluginRow(entry, robotsAppCopy([entry.name]) ?? entry.description),
           )}
         </BrowseSection>
       ) : null}

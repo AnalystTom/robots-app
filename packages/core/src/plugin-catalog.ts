@@ -168,9 +168,17 @@ const RECOMMENDED: ReadonlyArray<readonly [name: string, description: string]> =
 ];
 const RECOMMENDED_RANK = new Map(RECOMMENDED.map(([name], index) => [name, index]));
 
-export function recommendedAppDescription(app: { name: string; slug: string }): string | undefined {
-  const keys = new Set([brandKey(app.name), brandKey(app.slug)]);
-  return RECOMMENDED.find(([name]) => keys.has(brandKey(name)))?.[1];
+const FEATURED_COPY: ReadonlyArray<readonly [name: string, description: string]> = [
+  ["Gmail", "Search, read and draft email."],
+  ["Google Calendar", "Check your schedule and book events."],
+  ["Google Drive", "Find and open files in your Drive."],
+  ["Slack", "Read channels and send messages."],
+  ["Notion", "Search and update pages in your workspace."],
+];
+
+export function robotsAppCopy(names: readonly string[]): string | undefined {
+  const keys = new Set(names.map(brandKey));
+  return [...RECOMMENDED, ...FEATURED_COPY].find(([name]) => keys.has(brandKey(name)))?.[1];
 }
 
 type CategorySource = Pick<PluginMarketplaceEntry, "name" | "category">;

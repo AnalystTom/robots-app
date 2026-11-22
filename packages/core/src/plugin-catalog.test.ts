@@ -7,7 +7,7 @@ import {
   matchesPluginQuery,
   matchesWordPrefixes,
   pluginCategory,
-  recommendedAppDescription,
+  robotsAppCopy,
 } from "./plugin-catalog.js";
 
 function entry(
@@ -107,11 +107,26 @@ describe("installedPluginParts", () => {
   });
 });
 
-describe("recommendedAppDescription", () => {
-  it("gives RoBots copy to the managed app it names, not to a plugin with the same name", () => {
-    expect(recommendedAppDescription({ name: "Stripe", slug: "stripe" })).toBe(
+describe("robotsAppCopy", () => {
+  it("gives RoBots copy to the managed app it names", () => {
+    expect(robotsAppCopy(["Stripe", "stripe"])).toBe(
       "Look up payments, customers and subscriptions.",
     );
-    expect(recommendedAppDescription({ name: "Neon Color", slug: "neon-color" })).toBeUndefined();
+    expect(robotsAppCopy(["Google Calendar", "google-calendar"])).toBe(
+      "Check your schedule and book events.",
+    );
   });
+
+  it("gives no copy to an unrelated app", () => {
+    expect(robotsAppCopy(["Neon Color", "neon-color"])).toBeUndefined();
+  });
+
+  it.each(["Gmail", "Google Calendar", "Google Drive", "Slack", "Notion", "GitHub", "Stripe"])(
+    "gives %s copy that names no other agent product",
+    (name) => {
+      const copy = robotsAppCopy([name]);
+      expect(copy).toBeTruthy();
+      expect(copy).not.toMatch(/Grok|Claude|Cursor|Codex|Copilot|Gemini|Windsurf|ChatGPT|OpenCode/);
+    },
+  );
 });
