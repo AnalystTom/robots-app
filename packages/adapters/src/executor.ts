@@ -256,7 +256,6 @@ import { restoreTurnCheckpoint } from "./turn-checkpoint.js";
 import { wakeRun } from "./wake-run.js";
 import { createWebProvider } from "./web-provider-factory.js";
 
-/** Same reach as the MCP connector: usable servers assigned to the bot or shared with every bot. */
 async function verbatimMcpServersForRun(
   prisma: ExecutorDeps["prisma"],
   scope: { botId: string; spaceId: string; userId: string },
@@ -286,17 +285,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
     executorDeps.browser ?? createBrowserProvider(undefined, { sandbox: executorDeps.sandbox });
   const resolveConnectedModel = resolveConnectedRunModel.bind(undefined, executorDeps);
 
-  // Run-scoped connector state (installed MCP sessions) outlives one attempt
-  // but not its run, so the session side owns the lifetime: the connector ends
-  // it when this worker observes the run's end, and bounds the rest itself.
   const endRunConnectorState = (runId: string) => executorDeps.connector?.endRun?.(runId);
-  // Every terminal outcome funnels through finalizeRun — completion, failure,
-  // the tool-loop stop and pre-turn failures — but only the attempt that still
-  // owns the run finalizes it. A fenced-out attempt must not end the run's
-  // state while a newer attempt of this run still needs it; whether it may end
-  // it depends on the run row, not on this attempt. A rejected finalizeRun left
-  // the run unfinished, so its state survives the retry. The write is fenced by the
-  // lease, so it waits out a database failover instead of losing the run's outcome.
   const events: ThreadEvents = {
     ...executorDeps.events,
     finalizeRun: async (input) => {
@@ -324,15 +313,12 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
 
     async continueRun(runId: string, workerId: string, onRunStarted?: () => void) {
       let deps = baseDeps;
-      // A stopping process must not claim work it cannot finish. The row stays
-      // queued or expired for a worker that is still running.
       if (deps.shutdownSignal?.aborted) return;
       const run = await deps.prisma.run.findUnique({
         where: { id: runId },
         include: { routine: { select: { name: true } } },
       });
       if (!run) return;
-      // Logs and security events raised by this run's tools name its account and space.
       enrichLogContext({
         "run.id": runId,
         "bot.id": run.botId,
@@ -341,15 +327,10 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         ...(run.userId ? { "user.id": run.userId } : {}),
       });
       if (isTerminal(run.status as RunStatus)) {
-        // Finalized elsewhere (cancelled while waiting, another worker): this
-        // worker's run-scoped state for it may end now; until a next touch, the
-        // connector's own idle bound holds it.
         endRunConnectorState(runId);
         return;
       }
-      // Every way work reaches a bot ends here, so a deactivated account's run stops before it starts.
       if (await accountDeactivated(deps.prisma, run.userId)) {
-        // Nothing cancelled: the owner is back (or the run already ended), so carry on.
         if (await cancelDeactivatedAccountRuns(deps.prisma, deps.events, run.userId, runId)) return;
       }
       if (await cancelRunOfFormerMember(deps, run)) return;
@@ -368,8 +349,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         },
       });
       if (!leaseTarget.computerId) throw new Error("Bot has no computer");
-      // A background helper never uses the computer, so it neither waits for a switch nor holds
-      // the bot's next turn.
       const backgroundHelper = run.trigger === BACKGROUND_HELPER_TRIGGER;
       if (leaseTarget.computerSwitching && !backgroundHelper) {
         await requeueComputerRun(deps, runId, workerId, fence, resumeCheckpoint, heldForTakeover);
@@ -390,7 +369,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
             (threadId, seq) => deps.events.notify(threadId, seq),
           );
         } catch (error) {
-          // A newer claim owns the run and its takeover cards.
           if (error instanceof RunHistoryWriteError) return;
           throw error;
         }
@@ -417,7 +395,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         }
       } catch (error) {
         if (!(error instanceof ComputerBusyError)) throw error;
-        // Maintenance or suspension sends no release, so only a held lease waits for one.
         const heldByAnotherRun = await deps.prisma.computerExecutionLease.findFirst({
           where: {
             computerId: leaseTarget.computerId,
@@ -439,9 +416,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         return;
       }
       let attempt: { id: string };
-      // Resumed attempts keep the first start, so lateness reflects when the run began.
       const executionStartedAt = current.startedAt ?? new Date();
-      // Classified with the first start, so a retry, resume or later schedule edit keeps it.
       let firstLateSince: Date | undefined;
       if (!current.startedAt && run.trigger === "routine" && run.routineId && run.clientNonce) {
         try {
@@ -450,13 +425,9 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
             select: { crons: true, timezone: true },
           });
           if (routine) firstLateSince = lateRoutineRunDueAt(run, routine, executionStartedAt);
-        } catch {
-          // Lateness is optional context; a lookup failure must not prevent a run.
-        }
+        } catch {}
       }
       try {
-        // Acquiring the computer can requeue a busy run. Count that wait as queue
-        // time, and only stamp execution once this attempt can use its computer.
         const executionStarted = await deps.prisma.run.updateMany({
           where: { id: runId, status: "running", leaseOwner: workerId, leaseFence: fence },
           data: { startedAt: executionStartedAt, lateSince: firstLateSince },
@@ -476,7 +447,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         throw error;
       }
 
-      // A newer claim of this run now rejects this attempt's history writes.
       deps = withRunLease(deps, runId, { owner: workerId, fence });
       const lease: RunLeaseState = {
         valid: true,
@@ -513,8 +483,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           })
           .catch((error) => {
             if (lease.completed) return;
-            // Both leases outlast a short failover; the next beat renews them. Once they could
-            // have expired, another worker may claim the run, so this attempt stops.
             if (
               databaseOutage.failed(error, "run lease renewal") &&
               Date.now() < lease.renewedAt + EXECUTION_LEASE_MS - RUN_HEARTBEAT_MS
@@ -533,12 +501,8 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
       const runSecrets = [...deps.secrets];
       let dispatchHandedOff = false;
       try {
-        // Durable run ownership and its heartbeat now carry recovery. Model,
-        // integration and computer setup must not occupy a queue dispatch slot.
         onRunStarted?.();
         dispatchHandedOff = Boolean(onRunStarted);
-        // A saved computer turn owns both identities. Resolve them before consulting
-        // today's main selection, whose connection may have changed while paused.
         let turnCheckpoint: string | undefined;
         let checkpointLoadError: Error | undefined;
         try {
@@ -581,7 +545,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
               savedComputerMode,
             );
           } catch (error) {
-            // A paused turn whose model or account is gone cannot resume; retrying will not help.
             if (!isLostPinnedModel(error)) throw error;
             pinnedComputerFailure = PINNED_COMPUTER_MODEL_LOST_RUN_ERROR;
           }
@@ -668,7 +631,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           loadRunLoginRedactions(deps.prisma, deps.secretStore, run, run.id),
           loadRunCodeRedactions(deps.prisma, deps.secretStore, run, run.id),
         ]);
-        // Team chat reaches people besides the owner, so their runs get a group channel's limits.
         const teamChatConversationId =
           run.trigger === "messaging" ? thread.externalConversationId : null;
         const nonOwnerChatRun =
@@ -695,12 +657,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
               )?.seq ??
               thread.nextMessageSeq)
             : thread.nextMessageSeq;
-        // Encoded forms too: read_file redacts with these values before any shell command runs.
-        // Read here only to hide the values and to tell the model the variables' names: no
-        // command has them yet, so nothing is recorded as used until the shell tool sends one.
         runSecrets.push(...commandRedactions);
-        // A login filled in an earlier run may still be on its page, and anything this run reads
-        // or is given may contain it, so every run hides its saved passwords before the model runs.
         runSecrets.push(
           ...savedLoginPasswordRedactions,
           ...purchaseRedactions,
@@ -710,7 +667,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         const agentEnvironmentInstruction = formatAgentEnvironmentInstruction(
           initialBotCommandEnvironment,
         );
-        // modelPinned distinguishes the captured choice from an attempt's recorded model.
         const modelChoice = runModelChoice(run, bot);
         const hasModelOverride = Boolean(modelChoice.modelProvider && modelChoice.modelId);
         const overrideCredential =
@@ -780,14 +736,11 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         const discoveredPromise = deps.connector
           ? deps.connector.discoverTools(context)
           : Promise.resolve([]);
-        // A connection that cannot be read now leaves the cloud-agent tools out of this turn only.
         const cloudAgentPromise = cloudAgentForActor(executorDeps, {
           spaceId: run.spaceId,
           userId: run.userId,
           botIds: [bot.id],
         }).catch(() => null);
-        // Group threads and spaces several people share: who wrote each message, so the model can
-        // tell the bots and the people apart. A personal space's direct chat stays plain turns.
         const people = await loadSpacePeople(
           deps.prisma,
           thread.space?._count.memberships ?? 0,
@@ -806,12 +759,10 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           {
             messages: [...messages].reverse().map((m) => {
               const speaker = historySpeaker(speakers, m);
-              // In a group, turns from several speakers are joined, so no line may pose as a label.
               const neutral = (value: string) =>
                 speakers ? neutralizeSpeakerLabels(value) : value;
               const text = neutral(messageToAgentHistoryText(m));
               const partial = isPartialReplyClientNonce(m.clientNonce);
-              // Runs for someone other than the owner replay replies as everyone saw them.
               const segments =
                 m.role === "user" || m.role === "system" || speaker || !replaysToolHistory
                   ? undefined
@@ -886,9 +837,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           run.sourceMessageId,
         );
         const turnBlocks = currentTurnMessage?.blocks;
-        // A run owns its source message and steering bound to it, including waiting-input
-        // replies. message.runId alone is display linkage: a send during background work
-        // points at that run but waits for its continuation. Read independently of history.
         const currentRunImageMessages = await deps.prisma.message.findMany({
           where: {
             threadId: thread.id,
@@ -902,15 +850,12 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           select: { id: true, blocks: true },
           orderBy: { seq: "asc" },
         });
-        // The content extension decrypts imageHandling after filtering on plain kind.
         const confirmedRunImages = currentRunImageMessages.flatMap((message) =>
           (message.blocks as MessageBlock[]).filter(
             (block) => block.kind === "image" && block.imageHandling === "confirm",
           ),
         );
         const currentRunRequiresImageInput = confirmedRunImages.length > 0;
-        // The send decided whether the message named this member; one it named nobody for
-        // reached every member, and each may end its turn without a reply.
         const groupReplyOptional =
           Boolean(thread.groupId) && run.trigger === "user" && run.groupReplyOptional;
         const allowSilentPeerMessage = botMessageAllowsSilence(
@@ -982,8 +927,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           if (recalled.ok) {
             const stored = recalled.value.filter((memory) => !memory.external);
             recallSucceeded = stored.length > 0;
-            // Provider extraction and recall return derived knowledge, even when the original
-            // conversation was this bot's own. Storage cannot promote it to owner authority.
             recalledMemory = stored.length ? formatRecalledMemory(stored) : "";
           } else {
             getLogger().error("semantic memory recall failed", recalled.error);
@@ -1027,7 +970,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
             });
         const selectedProvider = selected.provider ?? runtimeFallback?.provider;
         const selectedModelId = selected.id ?? runtimeFallback?.id;
-        // A missing or refused connection of the user's own fails every scheduled run alike.
         const failRunBeforeModel = async (message: string, accountFailure = false) => {
           const failed = await failRunBeforeTurn(
             deps,
@@ -1093,8 +1035,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           resolved,
         } = started.start;
         runSecrets.push(...resolved.redact);
-        // A pin stays as it was created. Unpinned runs still record the model they
-        // used; modelPinned is what keeps that record from becoming the next choice.
         if (!run.modelPinned) {
           await deps.prisma.run.updateMany({
             where: { id: runId, status: "running", leaseOwner: workerId, leaseFence: fence },
@@ -1112,7 +1052,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           skipMessageId: currentTurnMessage?.id,
           maxTurns: RECENT_TURN_IMAGE_TURNS,
         };
-        // Files from earlier messages that history tools surfaced this run.
         const earlierFiles = createEarlierFileQueue();
         const runComputer = lazyRunComputer(
           async () => {
@@ -1122,8 +1061,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
             computerUse.screenRelease = { computer, context, keepWarm: false };
             recordComputerDisk(deps, storedComputer.id, computer, context);
             scheduleComputerSleep(deps.jobs, storedComputer.id);
-            // Earlier attachments wait for the computer's first use; every start copies them
-            // again, so they need no checkpoint, and each copy logs and skips its own failure.
             if (artifacts) {
               await materializeRecentThreadFiles({ ...deps, artifacts }, history, historyMessages, {
                 ...recentFilesInput,
@@ -1146,7 +1083,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         );
         const pendingTurnFiles: MessageBlock[][] = [turnBlocks ?? []];
         let copyingTurnFiles = Promise.resolve();
-        // Serialize copies before each tool, including attachments received while a boot is in flight.
         const getRunComputer = async (reason: "tool" | "takeover" | "script", tool?: string) => {
           if (computerUse.reason === "none") {
             computerUse.reason = reason;
@@ -1183,7 +1119,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                   if (artifacts && earlier.length) {
                     earlierFiles.copiedTo(
                       earlier,
-                      // Saved with the run's checkpoint, so a resumed attempt still has them.
                       await materializeEarlierFiles({ ...deps, artifacts }, earlier, {
                         context,
                         computer: async () => computer,
@@ -1220,11 +1155,25 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         ]
           .filter(Boolean)
           .join("\n\n");
-        const graphical =
-          !sandboxKindCapabilities(computerKind).runsOnUserMachine &&
-          deps.sandbox.describe().capabilities.graphical;
-        // Gate on the pair written to the run row above; re-deriving it would drop the
-        // deployment fallback and gate a vision-capable default as text-only.
+        const hostEnvironment = sandboxKindCapabilities(computerKind).nativeShell
+          ? await deps.sandbox
+              .environment?.(
+                {
+                  id: storedComputer.providerRef ?? storedComputer.id,
+                  botId: storedComputer.homeKey,
+                  kind: computerKind as ComputerRef["kind"],
+                  providerRef: storedComputer.providerRef ?? "",
+                },
+                {
+                  ...context,
+                  signal: AbortSignal.any([context.signal, AbortSignal.timeout(2000)]),
+                },
+              )
+              .catch(() => undefined)
+          : undefined;
+        const graphical = sandboxKindCapabilities(computerKind).runsOnUserMachine
+          ? hostEnvironment?.screen === true
+          : deps.sandbox.describe().capabilities.graphical;
         const modelSeesImages = modelAcceptsImageInput(
           runModelProvider,
           runModelId,
@@ -1284,10 +1233,8 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           ...resolvedModelRunFields(resolved),
           thinkingLevel: thinkingLevel ?? null,
         };
-        // Saved identities win on resume, including when the setting was cleared meanwhile.
         const computerModel =
           pinnedComputerModels?.computer ??
-          // A paused turn resumes with the models it started with, even one saved before this setting.
           (scripted || storedTurnCheckpoint || !graphical
             ? undefined
             : await resolveComputerRunModel(
@@ -1320,11 +1267,8 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                 },
               })
             : null;
-        // Calls carry no schema flag: the sending client encodes them in the clientNonce.
         const sourceClientNonce = sourceMessage?.clientNonce ?? null;
-        // A follow-up can be queued by a bot (group handoffs); only the user's own counts.
         const ownerStartedRun = isOwnerStartedRun(run.trigger, sourceMessage?.role === "user");
-        // A hang-up run has no source message: its own nonce carries the call it closes.
         const callEndRun = run.trigger === "call_end";
         const callClientNonceForRun = callEndRun ? run.clientNonce : sourceClientNonce;
         const voiceCall = callEndRun || isCallClientNonce(sourceClientNonce);
@@ -1344,8 +1288,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
             })
           : null;
         const botEmail = emailName ? `${emailName.name}@${deps.inboundEmailDomain}` : null;
-        // The inbox is the owner's mail: read only in their own runs, never in a group or channel, and
-        // never for another bot, which may be answering someone else.
         const emailInbox =
           Boolean(botEmail) &&
           run.userId === bot.userId &&
@@ -1372,13 +1314,11 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           if (device) {
             userComputer = "connected";
             userComputerShell = !device.screenOnly;
-            // The macOS and Windows desktops fetch a screen driver; Linux has none yet.
             userComputerScreen = device.platform === "darwin" || device.platform === "win32";
             macApps = device.platform === "darwin";
           } else userComputer = "offline";
         }
         const cloudAgent = await cloudAgentPromise;
-        // Revocation blocks new instructions, but existing owned agents still need cleanup.
         const cloudAgentCleanupEnabled = Boolean(
           !cloudAgent &&
             deps.userCloudAgents &&
@@ -1399,8 +1339,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         const builtins = [
           ...selectBuiltinToolsForRun({
             ticketBoardEnabled,
-            // A call rings the bot's own person, whose chat it is; other members of a shared
-            // Space reach it by message for now.
             phoneCallsEnabled: deps.phoneCallsEnabled && run.userId === bot.userId,
             historyRetrievalEnabled: contextStrategy !== "current",
             graphicalToolsAllowed,
@@ -1418,7 +1356,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
             paymentWalletEnabled,
             messagingChannelRun: nonOwnerChatRun,
             voiceCall,
-            // Every member already got a message that names nobody, so a handoff only repeats it.
             disabledBuiltinTools: groupReplyOptional
               ? [...(bot.disabledBuiltinTools ?? []), "handoff_to_bot"]
               : bot.disabledBuiltinTools,
@@ -1432,9 +1369,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
               Boolean(deps.inboundEmailDomain) && !emailName && run.userId === bot.userId,
             emailSend: Boolean(deps.email),
           }),
-          // Cross-owner agent connections only exist for chat-linked bots. The chat link is its
-          // creator's, and a connected agent's messages run as them, so only their runs may
-          // open, approve or use one.
           ...(run.userId === bot.userId &&
           offersAgentConnectionTools({
             hasMessagingIdentity,
@@ -1469,16 +1403,12 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           ownerChatMessageBlocks: nonOwnerChatRun ? undefined : messagingSource?.blocks,
           connectedPlugins,
         });
-        // Outbound destinations this run may reach without asking. See outboundSiteGate and
-        // connectorReadRequiresApproval; approvals from earlier attempts are read back from effects.
         const searchResultUrls = new Set<string>();
         const initiallyTainted =
           !ownerStartedRun ||
           Boolean(turnCheckpoint) ||
           Boolean(checkpointLoadError) ||
           historyReplaysOutsideContent(history);
-        // The creation intro only asks what the bot is for (see selectBuiltinToolsForRun),
-        // so it gets no connector tools either.
         const tools =
           run.trigger === "created"
             ? strategicBuiltins
@@ -1503,22 +1433,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           disabledBuiltinTools,
           new Set(tools.map((tool) => tool.name)),
         );
-        const hostEnvironment = sandboxKindCapabilities(computerKind).nativeShell
-          ? await deps.sandbox
-              .environment?.(
-                {
-                  id: storedComputer.providerRef ?? storedComputer.id,
-                  botId: storedComputer.homeKey,
-                  kind: computerKind as ComputerRef["kind"],
-                  providerRef: storedComputer.providerRef ?? "",
-                },
-                {
-                  ...context,
-                  signal: AbortSignal.any([context.signal, AbortSignal.timeout(2000)]),
-                },
-              )
-              .catch(() => undefined)
-          : undefined;
         const hostInstruction = hostEnvironment
           ? hostComputerInstruction(computerKind, hostEnvironment)
           : undefined;
@@ -1564,7 +1478,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           toolResults: new Map(),
           tainted: initiallyTainted,
           ownerSettingsRefused: false,
-          // A resumed turn replaces this with the baseline its saved prompt was built from.
           ownInstructionsBaseline: bot.instructions ?? "",
           earlierAttempt: undefined,
           walletHosts: new Set(),
@@ -1573,7 +1486,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           terminalCheckpointComplete: false,
         };
         const { effects } = state;
-        /** Fleet tools take every scope from the run, never from arguments. */
         const fleetRun: FleetRun = {
           spaceId: run.spaceId,
           userId: run.userId,
@@ -1689,8 +1601,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         );
         const invokedSkill = runSavedSkills.find(
           (skill) =>
-            // Taught skills are the space's. Only a person's own message may pull in one someone
-            // else taught; any other run follows only those its own person taught.
             (ownerStartedRun || skill.userId === run.userId) &&
             promptInvokesSkill(taskPrompt, skill.name || skill.goal),
         );
@@ -1729,9 +1639,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
               select: { timezone: true },
             })
           )?.timezone;
-        } catch {
-          // Timezone is optional context; a lookup failure must not prevent a run.
-        }
+        } catch {}
         let lateRoutineNote: string | undefined;
         const lateSince = current.lateSince ?? firstLateSince;
         if (lateSince && run.routineId) {
@@ -1746,9 +1654,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                 executionStartedAt,
                 routine.timezone,
               );
-          } catch {
-            // Lateness is optional context; a lookup failure must not prevent a run.
-          }
+          } catch {}
         }
         const sharedSpaceNote = people
           ? await loadSharedSpaceNote(deps.prisma, run.spaceId, run.userId)
@@ -1758,9 +1664,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           run.trigger === "reaction" && replyContext ? undefined : basePrompt,
           takeoverResume?.promptNote,
           approvalContinuation,
-          // A hang-up turn is read, not heard: no spoken-reply constraint.
           voiceCall && !callEndRun ? voiceCallInstruction(disabledBuiltinTools) : undefined,
-          // Per-turn, not in the system prompt: the timestamp changes every call and would break the cacheable prefix.
           formatCurrentTimeInstruction(deps.now?.() ?? new Date(), userTimeZone),
           lateRoutineNote,
           sharedSpaceNote,
@@ -1787,8 +1691,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           resolved.maxImagesPerPrompt === undefined
             ? undefined
             : Math.max(0, resolved.maxImagesPerPrompt - (currentTurnImages?.length ?? 0));
-        // A text-only model keeps the [image:] marker. Putting image parts in
-        // history makes the provider reject a follow-up that used to be text.
         const historyWithImages = modelSeesImages
           ? await withLatestStepScreenshot(
               deps,
@@ -1800,7 +1702,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
             )
           : history;
         const runtimeHistory = [...historicalContext, ...historyWithImages];
-        // Without a roster a bot only knows the bots it spawned itself.
         const [teammates, groupDirectory] = await Promise.all([
           thread.groupId
             ? []
@@ -1835,9 +1736,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           }
         }
 
-        // Stop during setup must not still open the model. A reclaimed lease can
-        // leave status "running" under a new owner, and the stream loop only
-        // notices cancellation after the provider request has started.
         const beforeModel = await deps.prisma.run.findUnique({
           where: { id: runId },
           select: { status: true, leaseOwner: true, leaseFence: true },
@@ -1858,7 +1756,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           spaceId: run.spaceId,
           userId: run.userId,
         });
-        // The running model is not its own backup, unless another account serves it.
         const fallbackModels = (await backups.load()).filter(
           (candidate) =>
             !backups.unavailable.has(candidate) &&
@@ -1877,10 +1774,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         const fallbackModelIds = new Set(
           fallbackModels.map((candidate) => fallbackKey(candidate.provider, candidate.modelId)),
         );
-        // Provider kind and model id only: custom endpoints are identified by kind, never host.
         const activeModel = { "model.provider": runModelProvider, "model.id": runModelId };
-        // Shutdown must not finalize the attempt. The finally block queues the run
-        // when this worker still owns it.
         const interruptedByShutdown = async () => {
           if (!deps.shutdownSignal?.aborted) return false;
           if (!ctx.state.terminalCheckpointComplete) {
@@ -1891,8 +1785,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
 
         try {
           if (checkpointLoadError) throw checkpointLoadError;
-          // Recorded only once setup is done, so a setup failure is not charged to the prompt.
-          // A label for comparing releases: failing to record it never fails the run.
           await Promise.resolve()
             .then(() =>
               deps.prisma.run.updateMany({
@@ -1925,15 +1817,12 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                 (run.trigger === "follow_up" && sourceMessage?.role === "user"))
                 ? { promptSpeaker: personSpeaker(people, run.userId) }
                 : {}),
-              // Keep an explicit executor override, but let the runtime select
-              // cache-aware context for connections declaring a cache window.
               contextStrategy: deps.contextStrategy,
               instructions: userTurnInstructions({
                 botInstructions: [
                   runIdentityInstruction(bot, run.trigger),
                   botEmail
                     ? botEmailInstruction(botEmail, {
-                        // Only the tools this bot has: its owner may turn any of them off.
                         read: emailInbox && !disabledBuiltinTools.has("read_email"),
                         send:
                           emailInbox &&
@@ -1959,7 +1848,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                   ? redactSecrets(ticketContext, runSecrets)
                   : undefined,
                 hasHistoricalContext: historicalContext.length > 0,
-                // A background helper is not offered the history tools, so it gets no guidance on them.
                 historyRetrievalEnabled:
                   contextStrategy !== "current" &&
                   tools.some((tool) => tool.name === "search_history"),
@@ -1973,7 +1861,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                 agentSkillsLine,
                 taughtSkillsLine,
                 replyGuidance: runReplyGuidance(run.trigger, replyMode),
-                // These runs get a narrow tool set, so guidance names only the tools they have.
                 disabledBuiltinTools:
                   isStrategicInitiativeRun(run) || run.trigger === BACKGROUND_HELPER_TRIGGER
                     ? new Set(
@@ -2005,7 +1892,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                   ),
               ),
               tools,
-              // The live array: secrets learned later in the run redact too.
               secrets: runSecrets,
               model: mainRunModel,
               computerModel,
@@ -2048,7 +1934,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                 if (!roleModel && !fallbackModelIds.has(fallbackKey(provider, modelId))) {
                   throw new Error("Model is not selected");
                 }
-                // The run's model is what retries and pins rerun; computer mode is a detour from it.
                 if (!computerMode) {
                   const updated = await deps.prisma.run.updateMany({
                     where: {
@@ -2195,10 +2080,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
   };
 }
 
-/**
- * A run acts with its sender's accounts, so it must not start or resume once they have left
- * the Space. Leaving cancels their runs; this closes the gap for anything that slipped past.
- */
 async function cancelRunOfFormerMember(
   deps: ExecutorDeps,
   run: {
@@ -2236,7 +2117,6 @@ async function cancelRunOfFormerMember(
       type: "run.cancelled",
       payload: {},
     });
-    // Remaining members' messages waited behind this run; give them their own.
     const continuationId = await createPendingSteeringRun(tx, run);
     return { seq: event.seq, continuationId };
   });

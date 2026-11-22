@@ -3,12 +3,14 @@ import { homedir } from "node:os";
 import path from "node:path";
 import type { AdapterContext, ComputerRef } from "@robots/adapter-kit";
 import { DesktopSandboxProvider } from "./desktop-sandbox.js";
+import { HostBrowserCookieError } from "./host-browser-cookies.js";
 import type { HostComputerFrame, HostComputerRequest } from "./host-computer-protocol.js";
 import {
   HOST_COMPUTER_MAX_FILE_BYTES,
   hostComputerDeadlineMs,
   hostComputerRequest,
 } from "./host-computer-protocol.js";
+import type { HostDesktop } from "./host-desktop.js";
 import type { HostScreen } from "./host-screen.js";
 import { HostScreenError } from "./host-screen.js";
 import type { MacApps } from "./mac-apps-protocol.js";
@@ -32,6 +34,7 @@ export function createHostComputerRunner(options: {
   root: string;
   screen?: HostScreen;
   macApps?: MacApps;
+  desktop?: HostDesktop;
 }) {
   let enabled = false;
   const active = new Map<
@@ -60,6 +63,12 @@ export function createHostComputerRunner(options: {
     return options.screen;
   }
 
+  function desktop() {
+    if (!options.desktop)
+      throw new HostScreenError("Screen control is not available on this computer.");
+    return options.desktop;
+  }
+
   function macApps() {
     if (!options.macApps) throw new MacAppError(MAC_APPS_UNAVAILABLE_MESSAGE);
     return options.macApps;
@@ -82,7 +91,24 @@ export function createHostComputerRunner(options: {
         yield await macApps().run(input.call, context.signal);
         break;
       case "environment":
-        yield await provider.environment();
+        yield { ...(await provider.environment()), screen: Boolean(options.desktop) };
+        break;
+      case "desktopEnvironment":
+        yield desktop().environment(computer.providerRef);
+        break;
+      case "desktopRun":
+        yield await desktop().run(input.script, input.input, input.timeoutMs, context.signal);
+        break;
+      case "browserProfiles":
+        yield await desktop().profiles();
+        break;
+      case "importBrowserSessions":
+        yield await desktop().importSessions(
+          input.screen,
+          input.profile,
+          input.sites,
+          context.signal,
+        );
         break;
       case "provision": {
         const result = await provider.provision({ botId: computer.botId, homePath: "" }, context);
@@ -233,7 +259,12 @@ export function createHostComputerRunner(options: {
 }
 
 function hostComputerErrorMessage(error: unknown) {
-  if (error instanceof HostScreenError || error instanceof MacAppError) return error.message;
+  if (
+    error instanceof HostScreenError ||
+    error instanceof MacAppError ||
+    error instanceof HostBrowserCookieError
+  )
+    return error.message;
   if (
     error instanceof Error &&
     (error.message === "Path escapes the computer workspace" ||

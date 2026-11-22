@@ -3,6 +3,7 @@ import { once } from "node:events";
 import { createServer } from "node:http";
 import { HOST_COMPUTER_MAX_BYTES } from "./host-computer-protocol.js";
 import { createHostComputerRunner } from "./host-computer-runner.js";
+import type { HostDesktop } from "./host-desktop.js";
 import type { HostScreen } from "./host-screen.js";
 import type { MacApps } from "./mac-apps-protocol.js";
 
@@ -13,12 +14,14 @@ export async function startHostComputerServer(options: {
   hostname?: string;
   screen?: HostScreen;
   macApps?: MacApps;
+  desktop?: HostDesktop;
 }) {
   if (!/^[a-f0-9]{64}$/.test(options.token)) throw new Error("Invalid local computer credential");
   const runner = createHostComputerRunner({
     root: options.root,
     screen: options.screen,
     macApps: options.macApps,
+    desktop: options.desktop,
   });
   const secret = Buffer.from(`Bearer ${options.token}`);
   const server = createServer(async (request, response) => {

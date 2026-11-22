@@ -32,8 +32,6 @@ const context = {
   signal: new AbortController().signal,
 };
 const token = "ab".repeat(32);
-// Host commands get a minimal environment, so under headless Electron the child needs to be
-// told to run as Node again.
 const nodeEnv: Record<string, string> = process.versions.electron
   ? { ELECTRON_RUN_AS_NODE: "1" }
   : {};
@@ -298,7 +296,6 @@ describe("native host computer transport", () => {
       context,
     );
     expect(await client.readFile(computer, "nested/file.bin", context)).toEqual(content);
-    // attach_file supplies its 10 MiB limit even when the requested file is tiny.
     expect(
       await client.readFile(computer, "nested/file.bin", context, { maxBytes: 10 * 1024 * 1024 }),
     ).toEqual(content);
@@ -479,7 +476,10 @@ describe("native host computer transport", () => {
     controller.abort();
     await rejected;
     await expect.poll(() => processExists(pid)).toBe(false);
-    await expect(client.connectScreen()).rejects.toThrow("unavailable");
+    await expect(
+      client.connectScreen(computer, { view: "stream" }, context),
+    ).resolves.toMatchObject({ url: null });
+    await expect(client.observe(computer, context)).rejects.toThrow("unavailable");
     expect(client.describe().capabilities.graphical).toBe(false);
   });
 });

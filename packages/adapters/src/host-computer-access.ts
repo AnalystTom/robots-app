@@ -6,6 +6,13 @@ import {
   spaceOwnedByDeploymentAdmins,
 } from "@robots/db";
 
+export class HostComputerAccessDeniedError extends Error {
+  constructor() {
+    super("Local computer access is disabled");
+    this.name = "HostComputerAccessDeniedError";
+  }
+}
+
 export interface HostComputerAccess {
   adminEmails: readonly string[];
   singleAccount: boolean;
@@ -55,3 +62,5 @@ export function hostComputerGate(
     },
   };
 }
+
+export type HostComputerGate = Pick<ReturnType<typeof hostComputerGate>, "forHome" | "forUser">;

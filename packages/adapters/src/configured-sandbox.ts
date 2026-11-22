@@ -5,6 +5,7 @@ import type {
   ComputerInput,
   ComputerRef,
   ControlLeaseRef,
+  HostBrowserImportRequest,
   PortableFile,
   ProcessEvent,
   SandboxProvider,
@@ -24,20 +25,17 @@ import {
 } from "./computer-provider-registry.js";
 import { manageComputerWorkspaceDirectories } from "./computer-workspace.js";
 import { credentialDigest } from "./credential-digest.js";
+import { HostBrowserImportUnavailableError } from "./host-computer-protocol.js";
 import { sandboxNotFoundError } from "./sandbox-errors.js";
 import { createSandboxProvider } from "./sandbox-factory.js";
 
 export const COMPUTER_PROVIDER_SECRET_KIND = "computer-provider";
-/** Record id binding the deployment's encrypted computer settings to its settings row. */
 export const DEPLOYMENT_COMPUTER_PROVIDER_RECORD = "deployment-computer-provider";
-/** Settings change rarely; other instances pick up a change within this window. */
 const SETTINGS_TTL_MS = 5_000;
 export interface StoredComputerSettings {
   provider: string;
   values: Record<string, string>;
-  /** Retain other deployment connections for computers already running there. */
   connections?: Record<string, Record<string, string>>;
-  /** Ciphertext identifies a credential version without retaining another plaintext copy. */
   ciphertext?: string;
 }
 export interface ComputerProviderSelection {
@@ -79,10 +77,6 @@ export function parseStoredComputerSettings(plaintext: string): StoredComputerSe
     return null;
   }
 }
-/**
- * `strict` callers route computers, so a store that cannot be read right now fails the call
- * rather than look like a removed connection; Settings stays readable so an admin can replace it.
- */
 async function decryptSettings(
   secrets: Pick<SecretStore, "load">,
   secret: { id: string; ciphertext: string },
@@ -169,7 +163,6 @@ export async function refreshComputerProvider(sandbox: SandboxProvider) {
   if (sandbox instanceof ConfiguredSandbox) await sandbox.refresh();
 }
 
-/** Resolve settings per operation; retain only the adapter for each current ciphertext. */
 export class ConfiguredSandbox implements SandboxProvider {
   readonly pageBrowser?: SandboxProvider["pageBrowser"];
   private selection: ComputerProviderSelection = { provider: "default", settings: null };
@@ -201,7 +194,6 @@ export class ConfiguredSandbox implements SandboxProvider {
       for (const [key, entry] of this.providers)
         if (entry.ciphertext === ref) this.providers.delete(key);
     });
-    // Bots are offered page tools only where the deployment's own computers have them.
     if (primary.pageBrowser)
       this.pageBrowser = async (computer, request, context) => {
         const provider = await this.route(computer);
@@ -215,14 +207,12 @@ export class ConfiguredSandbox implements SandboxProvider {
             };
       };
   }
-  /** Rereads everything now; a save on this instance calls it so its change applies at once. */
   async refresh() {
     await this.reload();
     this.owners.clear();
   }
   private async reload() {
     const selection = await this.load();
-    // A connection kept after going back to the default is built only when a computer needs it.
     this.selected =
       selection.settings && selection.provider !== "default"
         ? await this.providerFor(selection.settings, "deployment")
@@ -281,13 +271,9 @@ export class ConfiguredSandbox implements SandboxProvider {
     computer: Pick<ComputerRef, "kind" | "botId" | "providerRef">,
     fresh = false,
   ): Promise<SandboxProvider> {
-    // Kinds Settings never selects (Docker, a local host computer) can only belong to the primary.
     const descriptor = computerProviderRegistry.find((entry) => entry.id === computer.kind);
     if (!descriptor && (this.primary.ownsReference?.(computer) ?? true)) return this.primary;
-    // Only a provider an account can choose for itself ever runs that account's computers.
     const perAccount = descriptor?.capabilities.perAccount;
-    // While the secret store cannot be read, route on what was last read and never call the
-    // computer gone: the store failing is not evidence the connection was removed.
     let unreadable: unknown;
     const own = perAccount
       ? await this.ownSettings(computer.botId, fresh).catch((error: unknown) => {
@@ -312,16 +298,12 @@ export class ConfiguredSandbox implements SandboxProvider {
     if (computer.kind === primaryKind && (this.primary.ownsReference?.(computer) ?? true))
       return this.primary;
     if (unreadable) throw unreadable;
-    // Another instance may have saved the connection since these settings were read.
     if (!fresh) return this.route(computer, true);
-    // No connection reaches it any more, so it is gone: Reset and deletion can clear it and the
-    // next start provisions where Settings now says.
     throw sandboxNotFoundError("The computer's provider connection is no longer configured");
   }
   private async target(homeKey?: string) {
     const own = homeKey ? await this.ownSettings(homeKey) : null;
     if (own) return this.providerFor(own, homeKey!);
-    // An unreadable store must not stop every computer from starting: use the last settings read.
     await this.current().catch((error) => {
       if (!this.selectionLoadedAt) throw error;
     });
@@ -348,7 +330,6 @@ export class ConfiguredSandbox implements SandboxProvider {
   ): Promise<ComputerRef> {
     const target = await this.target(request.botId);
     const kind = target.describe().id;
-    // A reference from the other provider means nothing to this one.
     const expectedKind = (await target.provisionKind?.(request.botId)) ?? kind;
     const providerRef = request.providerKind === expectedKind ? request.providerRef : undefined;
     return target.provision({ ...request, providerRef }, context);
@@ -367,13 +348,28 @@ export class ConfiguredSandbox implements SandboxProvider {
   }
 
   async environment(computer: ComputerRef, context: AdapterContext) {
-    // Asked before a new or moving computer starts, so describe where it will start.
     const provider = await this.route(computer).catch(async (error: unknown) => {
       const target = await this.target(computer.botId);
       if (target.describe().id !== computer.kind) throw error;
       return target;
     });
     return provider.environment?.(computer, context);
+  }
+
+  async hostBrowserProfiles(computer: ComputerRef, context: AdapterContext) {
+    const provider = await this.route(computer);
+    if (!provider.hostBrowserProfiles) throw new HostBrowserImportUnavailableError();
+    return provider.hostBrowserProfiles(computer, context);
+  }
+
+  async importHostBrowserSessions(
+    computer: ComputerRef,
+    request: HostBrowserImportRequest,
+    context: AdapterContext,
+  ) {
+    const provider = await this.route(computer);
+    if (!provider.importHostBrowserSessions) throw new HostBrowserImportUnavailableError();
+    return provider.importHostBrowserSessions(computer, request, context);
   }
 
   async workspaceDirectories(
@@ -496,7 +492,6 @@ export class ConfiguredSandbox implements SandboxProvider {
   }
 
   billsWhileRunning(computer: ComputerRef): boolean {
-    // The primary bills its own kinds, such as a local host computer behind Docker.
     if (
       computer.kind === this.primary.describe().id ||
       !computerProviderRegistry.some((entry) => entry.id === computer.kind)
@@ -506,7 +501,6 @@ export class ConfiguredSandbox implements SandboxProvider {
       if (entry.resolved?.describe().id === computer.kind)
         return entry.resolved.billsWhileRunning?.(computer) ?? false;
     }
-    // An unresolved or invalidated remote connection must not disable idle shutdown.
     return true;
   }
 
@@ -540,8 +534,6 @@ export class ConfiguredSandbox implements SandboxProvider {
       botId: machine.homeKey ?? "",
       providerRef: machine.machineId,
     });
-    // The deployment's own provider answers for every kind Settings cannot select, so it may be
-    // another kind than the machine's: asking it would only report a machine it never had as gone.
     if (provider.describe().id !== machine.provider || !provider.deleteMachine)
       throw new Error("No configured computer provider can delete this machine");
     return provider.deleteMachine(machine, signal);
