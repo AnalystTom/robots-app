@@ -84,3 +84,61 @@ test("the template gallery creates a ready-made bot in one tap, wearing its robo
       .getByRole("button", { name: "Open Inbox triage", exact: true }),
   ).toBeVisible();
 });
+
+test("a team that stops short keeps its bots, and Retry finishes it without duplicates", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await signup(page, `template-team-${Date.now()}@robots.test`, "password12", "Team Test");
+  await completeOnboarding(page);
+
+  const teamIds = ["chief-of-staff", "developer", "researcher", "sales", "gtm", "refund-bot"];
+  const templates = await rpc<BotTemplateListing[]>(page, "bots/templates", {});
+  const made = new Map<string, Bot>();
+  for (const id of teamIds.filter((item) => item !== "sales")) {
+    const template = templates.find((item) => item.id === id)!;
+    const { bot } = await rpc<{ bot: Bot; created: boolean }>(page, "bots/createFromTemplate", {
+      templateId: id,
+      version: template.version,
+    });
+    made.set(id, bot);
+  }
+  const partialBots = teamIds.filter((id) => id !== "sales").map((id) => made.get(id)!);
+
+  await page.getByRole("button", { name: "Connect apps", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Integrations", exact: true })
+    .getByTestId("open-bot-templates")
+    .click();
+  const dialog = page.getByRole("dialog", { name: "RoBot templates", exact: true });
+  await expect(dialog.getByTestId("bot-template-team")).toBeVisible();
+
+  let teamCalls = 0;
+  await page.route("**/rpc/bots/createTeamFromTemplate", async (route) => {
+    teamCalls += 1;
+    if (teamCalls > 1) return route.continue();
+    await route.fulfill({ json: { json: { bots: partialBots, failed: ["sales"] } } });
+  });
+  await dialog
+    .getByTestId("bot-template-team")
+    .getByRole("button", { name: "Create Autopilot team", exact: true })
+    .click();
+  await expect(
+    dialog.getByText("Created 5 of 6 bots. Try again to finish the team.", { exact: true }),
+  ).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+
+  await dialog.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/app/${made.get("chief-of-staff")!.id}`));
+  expect(teamCalls).toBe(2);
+
+  const bots = await rpc<Bot[]>(page, "bots/list", {});
+  for (const id of teamIds) {
+    const name = templates.find((item) => item.id === id)!.name;
+    expect(bots.filter((bot) => bot.name === name)).toHaveLength(1);
+  }
+  for (const bot of partialBots) {
+    expect(bots.map((item) => item.id)).toContain(bot.id);
+  }
+});
