@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, pbkdf2Sync } from "node:crypto";
+import { createDecipheriv, createHash, pbkdf2Sync } from "node:crypto";
 
 export type CookieCipherVersion = "v10" | "v11";
 
@@ -13,6 +13,7 @@ export type BrowserSessionsErrorCode =
   | "key_denied"
   | "wrong_key"
   | "profile_busy"
+  | "profile_unreadable"
   | "profile_not_found";
 
 export class BrowserSessionsError extends Error {

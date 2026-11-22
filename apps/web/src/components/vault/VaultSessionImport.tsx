@@ -64,6 +64,7 @@ export function VaultSessionImportPage({
     key_denied: t`Allow RoBots to use the browser's key when your computer asks, then try again.`,
     wrong_key: t`This browser's key didn't open its sign-ins.`,
     profile_busy: t`Close the browser, then try again.`,
+    profile_unreadable: t`RoBots can't read this browser's sign-ins.`,
     profile_not_found: t`That browser profile is gone.`,
   };
 

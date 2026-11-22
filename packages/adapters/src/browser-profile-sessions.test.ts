@@ -104,6 +104,23 @@ async function writeProfile(input: {
   db.close();
 }
 
+async function writeUnreadableProfileBeside(userDataDir: string) {
+  await writeProfile({
+    userDataDir,
+    dbVersion: 24,
+    keys: linuxV10,
+    cookies: [{ host: ".x.com", name: "auth_token", value: "fake-healthy-token" }],
+  });
+  await mkdir(join(userDataDir, "Profile 1", "Network"), { recursive: true });
+  await writeFile(join(userDataDir, "Profile 1", "Network", "Cookies"), "");
+  await writeFile(
+    join(userDataDir, "Local State"),
+    JSON.stringify({
+      profile: { info_cache: { Default: { name: "Thomas" }, "Profile 1": { name: "Broken" } } },
+    }),
+  );
+}
+
 function fakeRun(answers: Record<string, Partial<CommandResult>>): RunCommand & {
   calls: Array<{ file: string; args: readonly string[]; input?: string }>;
 } {
@@ -390,6 +407,32 @@ describe("Chrome profile sessions", () => {
     expect(session?.cookies.map((cookie) => cookie.value)).toEqual(
       cookies.map((cookie) => cookie.value),
     );
+  });
+
+  it("lists a healthy profile beside one whose cookies file is empty", async () => {
+    const userDataDir = join(root, ".config", "google-chrome");
+    await writeUnreadableProfileBeside(userDataDir);
+    const reader = profileSessionsReader(
+      linuxHost(),
+      platformKeySource("linux", fakeRun({})),
+      () => NOW_MS,
+    );
+    expect((await reader.profiles()).map((profile) => [profile.id, profile.sites])).toEqual([
+      ["chrome/0/Default", [{ site: "x.com", cookies: 1 }]],
+    ]);
+  });
+
+  it("refuses to read a profile whose cookies file is empty, with a coded refusal", async () => {
+    const userDataDir = join(root, ".config", "google-chrome");
+    await writeUnreadableProfileBeside(userDataDir);
+    const reader = profileSessionsReader(
+      linuxHost(),
+      platformKeySource("linux", fakeRun({})),
+      () => NOW_MS,
+    );
+    await expect(reader.read("chrome/0/Profile 1", ["x.com"])).rejects.toMatchObject({
+      code: "profile_unreadable",
+    });
   });
 
   it("refuses a profile id it did not list", async () => {

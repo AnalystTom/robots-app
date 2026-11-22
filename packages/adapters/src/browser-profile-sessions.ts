@@ -144,11 +144,18 @@ async function withCookieCopy<T>(cookiesFile: string, read: (db: DatabaseSync) =
     for (const suffix of ["-wal", "-journal"]) {
       if (await exists(cookiesFile + suffix)) await copyFile(cookiesFile + suffix, copy + suffix);
     }
-    const db = new DatabaseSync(copy);
+    let db: DatabaseSync | undefined;
     try {
+      db = new DatabaseSync(copy);
       return read(db);
+    } catch (error) {
+      if (error instanceof BrowserSessionsError) throw error;
+      throw new BrowserSessionsError(
+        "profile_unreadable",
+        "RoBots can't read this browser's sign-ins.",
+      );
     } finally {
-      db.close();
+      db?.close();
     }
   } finally {
     await rm(dir, { recursive: true, force: true });
@@ -262,8 +269,9 @@ export function profileSessionsReader(
         try {
           counts = await withCookieCopy(profile.cookiesPath, (db) => siteCounts(db, nowSeconds));
         } catch (error) {
-          if (!(error instanceof BrowserSessionsError) || error.code !== "profile_busy")
-            throw error;
+          if (!(error instanceof BrowserSessionsError)) throw error;
+          if (error.code === "profile_unreadable") continue;
+          if (error.code !== "profile_busy") throw error;
           summaries.push({ ...base, busy: true, sites: [] });
           continue;
         }
@@ -321,8 +329,7 @@ export function profileSessionsReader(
             : row.value;
           cookies.push(sessionCookie(row, value));
         }
-        if (cookies.length)
-          sessions.push({ site, cookies });
+        if (cookies.length) sessions.push({ site, cookies });
       }
       return sessions;
     },
