@@ -79,13 +79,13 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       const bots = [];
       for (let index = 0; index < 9; index++) {
         bots.push(
-          await repos.createBot(actor(), { ...botInput(`Helper ${index}`), avatarSet: "organic" }),
+          await repos.createBot(actor(), { ...botInput(`Helper ${index}`), avatarSet: "robots" }),
         );
       }
       bots.push(
         await repos.createBot(actor(), {
           ...botInput("Child"),
-          avatarSet: "organic",
+          avatarSet: "robots",
           parentBotId: bots[0]!.id,
         }),
       );
@@ -147,11 +147,10 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       where: { id: owner.spaceId },
       select: { organizationId: true },
     });
-    await system.spaceMember.create({
+    await system.member.create({
       data: {
         id: randomUUID(),
         organizationId,
-        spaceId: owner.spaceId,
         userId: member.userId,
         role: "member",
         createdAt: new Date(),
@@ -361,7 +360,7 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
   it("serializes concurrent creation before reading the existing robots", async () => {
     const repos = createRepos(prisma);
     await asSystem(prisma).bot.updateMany({
-      where: { spaceId: owner.spaceId, userId: owner.userId },
+      where: { spaceId: owner.spaceId, archivedAt: null },
       data: { archivedAt: new Date() },
     });
     const created = await runAsTenant(owner, () =>
