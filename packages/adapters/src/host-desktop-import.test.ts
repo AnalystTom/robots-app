@@ -10,7 +10,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { DesktopEnvironment } from "@robots/core/node/desktop-runtime";
-import { browserProfilePathForScreen, screenSlotPath } from "@robots/core/node/desktop-runtime";
+import {
+  browserProfilePathForScreen,
+  MAX_DESKTOP_DISPLAY,
+  screenSlotPath,
+} from "@robots/core/node/desktop-runtime";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { HostKeyring } from "./host-browser-cookies.js";
 import { cookieKey } from "./host-browser-cookies.js";
@@ -302,5 +306,38 @@ describe.skipIf(process.platform !== "linux")("sign-in import into a screen's br
       ),
     ).rejects.toThrow("not running for this screen");
     expect(upgrades).toBe(0);
+  });
+
+  async function importAtScreenIndex(index: number) {
+    await chromeProfile([{ host: ".x.com", name: "auth_token", value: "token-x" }]);
+    const screenId = `range-${randomBytes(4).toString("hex")}`;
+    const slot = screenSlotPath(screenId);
+    slots.push(slot);
+    await mkdir(path.dirname(slot), { recursive: true });
+    await writeFile(slot, `${index}\nlease:1\nview\n`);
+    const desktop = createHostDesktop(
+      path.join(home, "computers"),
+      { displayStart: 100, port: 6180, toolsDir: home },
+      keyring,
+      home,
+    );
+    return desktop.importSessions(
+      screenId,
+      "chrome:Default",
+      ["x.com"],
+      AbortSignal.timeout(5_000),
+    );
+  }
+
+  it("refuses a screen whose browser port would be past the TCP range", async () => {
+    await expect(importAtScreenIndex(MAX_DESKTOP_DISPLAY - 100 + 1)).rejects.toThrow(
+      "no free browser port",
+    );
+  });
+
+  it("keeps the last screen whose browser port is still in the TCP range", async () => {
+    await expect(importAtScreenIndex(MAX_DESKTOP_DISPLAY - 100)).rejects.toThrow(
+      "not running for this screen",
+    );
   });
 });

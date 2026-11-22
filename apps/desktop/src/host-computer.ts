@@ -7,34 +7,16 @@ import type { HostScreen } from "@robots/adapters/host-screen";
 import type { MacApps } from "@robots/adapters/mac-apps-protocol";
 import { readPrivateFile, writePrivateFile } from "./setup-store.js";
 
-const DEFAULT_DISPLAY_START = 100;
-const DEFAULT_SCREEN_PORT_START = 6180;
-
-function wholeNumber(value: string | undefined, name: string, fallback: number, max: number) {
-  if (value === undefined || value.trim() === "") return fallback;
-  const parsed = Number(value);
-  if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > max)
-    throw new Error(`${name} must be a whole number from 0 to ${max}`);
-  return parsed;
-}
+const HOST_DISPLAY_START = 100;
+const HOST_SCREEN_PORT_START = 6180;
 
 function hostDesktop(root: string, env: NodeJS.ProcessEnv) {
   const toolsDir = env.ROBOTS_HOST_TOOLS_DIR?.trim();
   if (process.platform !== "linux" || !toolsDir) return undefined;
   return createHostDesktop(root, {
     toolsDir,
-    displayStart: wholeNumber(
-      env.ROBOTS_HOST_DISPLAY_START,
-      "ROBOTS_HOST_DISPLAY_START",
-      DEFAULT_DISPLAY_START,
-      65535 - 9221,
-    ),
-    port: wholeNumber(
-      env.ROBOTS_HOST_SCREEN_PORT_START,
-      "ROBOTS_HOST_SCREEN_PORT_START",
-      DEFAULT_SCREEN_PORT_START,
-      65535,
-    ),
+    displayStart: HOST_DISPLAY_START,
+    port: HOST_SCREEN_PORT_START,
   });
 }
 

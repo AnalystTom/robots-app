@@ -54,7 +54,6 @@ function database(computerHost: string | null = "this-mac") {
       ),
     },
     user: {
-      findFirst: vi.fn(async () => ({ id: "admin" })),
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) => users[where.id] ?? null),
       findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
         where.id.in.flatMap((id) => (users[id] ? [users[id]] : [])),
@@ -110,13 +109,25 @@ describe("host computer access", () => {
     expect(await hostComputerGate(database() as never, admins).forHome(undefined)).toBe(false);
   });
 
-  it("lets a desktop app's single stack owner, and only that account, reach this computer", async () => {
-    const gate = hostComputerGate(database() as never, {
-      adminEmails: [],
-      singleAccount: true,
-    });
-    expect(await gate.forUser("admin")).toBeInstanceOf(Date);
-    expect(await gate.forUser("member")).toBeNull();
+  it("lets a desktop app's stack owner, the earliest account, and only that account, reach this computer", async () => {
+    const accounts = [
+      { id: "later", createdAt: new Date("2026-02-01") },
+      { id: "owner", createdAt: new Date("2026-01-01") },
+    ];
+    const prisma = {
+      ...database(),
+      user: {
+        findFirst: async ({ orderBy }: { orderBy: { createdAt: "asc" | "desc" } }) =>
+          [...accounts].sort(
+            (x, y) =>
+              (orderBy.createdAt === "asc" ? 1 : -1) *
+              (x.createdAt.getTime() - y.createdAt.getTime()),
+          )[0] ?? null,
+      },
+    };
+    const gate = hostComputerGate(prisma as never, { adminEmails: [], singleAccount: true });
+    expect(await gate.forUser("owner")).toBeInstanceOf(Date);
+    expect(await gate.forUser("later")).toBeNull();
   });
 
   it("keeps the desktop app's single account on this computer", async () => {
