@@ -6,7 +6,7 @@ import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import BotTemplatesScreen from "../app/(settings)/bot-templates";
-import { queryClient } from "./query";
+import { queryClient, rpcQuery } from "./query";
 
 i18n.load("en", {});
 i18n.activate("en");
@@ -282,8 +282,13 @@ it("says how many team bots were made when one fails, and retries the whole team
   const create = hold("bots/createTeamFromTemplate");
   await render();
   await act(async () => teamAction().click());
+  const invalidate = vi.spyOn(queryClient, "invalidateQueries");
   await create.finish({ bots: [bot], failed: ["sales"] });
   expectNothingOpened();
+  const invalidated = invalidate.mock.calls.map(([filters]) => filters?.queryKey);
+  expect(invalidated).toEqual(
+    expect.arrayContaining([rpcQuery("bots/templates").queryKey, rpcQuery("bots/list").queryKey]),
+  );
   const [title, message, buttons] = mocks.alert.mock.calls[0]!;
   expect([title, message]).toEqual([
     "Could not create the team",

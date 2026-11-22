@@ -42,7 +42,14 @@ export function BotTemplatesDialog({
     save: async (pick: TemplatePick, client): Promise<Bot> => {
       if (pick.kind === "team") {
         const { bots, failed } = await client.bots.createTeamFromTemplate({ teamId: pick.teamId });
-        if (failed.length) throw botTeamIncompleteError(bots.length, bots.length + failed.length);
+        if (failed.length) {
+          await Promise.allSettled(
+            [queries.bots.templates.queryKey(), queries.bots.list.queryKey()].map((queryKey) =>
+              queryClient.invalidateQueries({ queryKey }),
+            ),
+          );
+          throw botTeamIncompleteError(bots.length, bots.length + failed.length);
+        }
         return bots[0]!;
       }
       const { template } = pick;
@@ -57,14 +64,8 @@ export function BotTemplatesDialog({
     stale: [queries.bots.templates.queryKey()],
     closesScreen: true,
     onSaved: onOpenBot,
-    onFailed: (error, pick) => {
-      if (pick.kind === "team") {
-        void Promise.allSettled(
-          [queries.bots.templates.queryKey(), queries.bots.list.queryKey()].map((queryKey) =>
-            queryClient.invalidateQueries({ queryKey }),
-          ),
-        );
-      } else if (isBotTemplateChanged(error)) void templates.refetch();
+    onFailed: (error) => {
+      if (isBotTemplateChanged(error)) void templates.refetch();
     },
   });
 

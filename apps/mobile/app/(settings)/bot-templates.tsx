@@ -47,7 +47,14 @@ export default function BotTemplatesScreen() {
         const { bots, failed } = await send("bots/createTeamFromTemplate", {
           teamId: pick.teamId,
         });
-        if (failed.length) throw botTeamIncompleteError(bots.length, bots.length + failed.length);
+        if (failed.length) {
+          await Promise.allSettled(
+            [rpcQuery("bots/templates").queryKey, rpcQuery("bots/list").queryKey].map((queryKey) =>
+              queryClient.invalidateQueries({ queryKey }),
+            ),
+          );
+          throw botTeamIncompleteError(bots.length, bots.length + failed.length);
+        }
         return bots[0]!;
       }
       const { template } = pick;
@@ -80,11 +87,6 @@ export default function BotTemplatesScreen() {
         Alert.alert(t`This template was just updated. Try again.`);
         void refetch();
       } else if (pick.kind === "team") {
-        void Promise.allSettled(
-          [rpcQuery("bots/templates").queryKey, rpcQuery("bots/list").queryKey].map((queryKey) =>
-            queryClient.invalidateQueries({ queryKey }),
-          ),
-        );
         Alert.alert(t`Could not create the team`, errorText(cause, t`Try again.`), [
           { text: t`Retry`, onPress: () => open.run(pick) },
           { text: t`Cancel`, style: "cancel" },
