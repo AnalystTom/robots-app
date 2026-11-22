@@ -2,7 +2,7 @@ import type { BotTemplate, ConnectionCatalogItem } from "@robots/contracts";
 import { matchConnectedAppCatalog } from "./app-connect.js";
 import { catalogItemKey } from "./connection-catalog.js";
 import { REMOTE_MCP_APPS } from "./remote-mcp-apps.js";
-import { robotPresetValue } from "./robot-character.js";
+import { robotPresetValue } from "./robot-presets.js";
 
 export const BOT_TEMPLATES: readonly BotTemplate[] = [
   {

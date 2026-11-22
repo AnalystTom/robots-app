@@ -20,12 +20,13 @@ export function RobotPresetPicker({
     creator: t`Creator`,
     chef: t`Chef`,
     hero: t`Hero`,
+    hoodie: t`Hoodie`,
+    critic: t`Critic`,
     professor: t`Professor`,
     detective: t`Detective`,
     keynote: t`Keynote`,
     hustler: t`Hustler`,
     host: t`Host`,
-    critic: t`Critic`,
   };
   return (
     <div role="radiogroup" aria-label={t`Character`} className="grid grid-cols-4 gap-2">

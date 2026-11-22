@@ -6,7 +6,7 @@ import { BOT_TEMPLATES, botTemplateAppMarks, findBotTemplate } from "./bot-templ
 import { presetFromCron } from "./cron.js";
 import { matchFeaturedConnectorId } from "./featured-connectors.js";
 import { REMOTE_MCP_APPS } from "./remote-mcp-apps.js";
-import { ROBOT_PRESETS, robotPresetValue } from "./robot-character.js";
+import { ROBOT_PRESETS, robotPresetValue } from "./robot-presets.js";
 import { scanSkillSafety } from "./skill-safety.js";
 
 describe("bot templates", () => {
