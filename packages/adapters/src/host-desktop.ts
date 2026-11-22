@@ -28,6 +28,7 @@ export interface HostDesktopOptions {
   toolsDir: string;
 }
 
+const CDP_EXCHANGE_TIMEOUT_MS = 15_000;
 const MAX_OUTPUT_BYTES = 4 * 1024 * 1024;
 const TIMED_OUT = 124;
 const SAVE_TIMEOUT_MS = 90_000;
@@ -219,7 +220,8 @@ async function setBrowserCookies(
 ) {
   if (!(await runsProfileOnPort(port, userDataDir)))
     throw new HostBrowserCookieError("The bot's browser is not running for this screen");
-  const version = await fetch(`http://127.0.0.1:${port}/json/version`, { signal });
+  const exchange = AbortSignal.any([signal, AbortSignal.timeout(CDP_EXCHANGE_TIMEOUT_MS)]);
+  const version = await fetch(`http://127.0.0.1:${port}/json/version`, { signal: exchange });
   const { webSocketDebuggerUrl } = (await version.json()) as { webSocketDebuggerUrl?: unknown };
   if (
     typeof webSocketDebuggerUrl !== "string" ||
@@ -230,7 +232,7 @@ async function setBrowserCookies(
   try {
     await new Promise<void>((resolve, reject) => {
       const fail = () => reject(new HostBrowserCookieError("The bot's browser is not answering"));
-      signal.addEventListener("abort", fail, { once: true });
+      exchange.addEventListener("abort", fail, { once: true });
       socket.addEventListener("error", fail, { once: true });
       socket.addEventListener("close", fail, { once: true });
       socket.addEventListener("open", () =>

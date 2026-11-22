@@ -141,7 +141,7 @@ export class HostAwareSandbox implements SandboxProvider {
   ) {
     if (isolated.pageBrowser || host.pageBrowser) {
       this.pageBrowser = async (computer, request, context) => {
-        const provider = await this.usableBy(computer, context);
+        const provider = await this.usable(computer, context);
         return provider.pageBrowser
           ? provider.pageBrowser(computer, request, context)
           : {
@@ -166,14 +166,14 @@ export class HostAwareSandbox implements SandboxProvider {
     return computer.kind === "desktop" ? this.host : this.isolated;
   }
 
-  private async usable(computer: Pick<ComputerRef, "kind" | "botId">) {
+  private async routed(computer: Pick<ComputerRef, "kind" | "botId">) {
     if (computer.kind !== "desktop") return this.isolated;
     if (!(await this.gate.forHome(computer.botId))) throw new HostComputerAccessDeniedError();
     return this.host;
   }
 
-  private async usableBy(computer: Pick<ComputerRef, "kind" | "botId">, context: AdapterContext) {
-    const provider = await this.usable(computer);
+  private async usable(computer: Pick<ComputerRef, "kind" | "botId">, context: AdapterContext) {
+    const provider = await this.routed(computer);
     if (provider === this.host && !(await this.gate.forUser(context.userId)))
       throw new HostComputerAccessDeniedError();
     return provider;
@@ -218,7 +218,7 @@ export class HostAwareSandbox implements SandboxProvider {
   }
 
   async environment(computer: ComputerRef, context: AdapterContext) {
-    const provider = await this.usable(computer);
+    const provider = await this.routed(computer);
     const environment = await provider.environment?.(computer, context);
     if (provider !== this.host || !environment) return environment;
     if (await this.gate.forUser(context.userId)) return environment;
@@ -226,7 +226,7 @@ export class HostAwareSandbox implements SandboxProvider {
   }
 
   async prepare(computer: ComputerRef, context: AdapterContext) {
-    return (await this.usable(computer)).prepare(computer, context);
+    return (await this.usable(computer, context)).prepare(computer, context);
   }
 
   async *execute(
@@ -234,7 +234,7 @@ export class HostAwareSandbox implements SandboxProvider {
     request: CommandRequest,
     context: AdapterContext,
   ): AsyncIterable<ProcessEvent> {
-    yield* (await this.usable(computer)).execute(computer, request, context);
+    yield* (await this.usable(computer, context)).execute(computer, request, context);
   }
 
   async workspaceDirectories(
@@ -243,7 +243,7 @@ export class HostAwareSandbox implements SandboxProvider {
     context: AdapterContext,
   ) {
     return manageComputerWorkspaceDirectories(
-      await this.usable(computer),
+      await this.usable(computer, context),
       computer,
       request,
       context,
@@ -255,11 +255,11 @@ export class HostAwareSandbox implements SandboxProvider {
   }
 
   async connectScreen(computer: ComputerRef, request: ScreenRequest, context: AdapterContext) {
-    return (await this.usableBy(computer, context)).connectScreen(computer, request, context);
+    return (await this.usable(computer, context)).connectScreen(computer, request, context);
   }
 
   async hostBrowserProfiles(computer: ComputerRef, context: AdapterContext) {
-    return (await this.usableBy(computer, context)).hostBrowserProfiles?.(computer, context);
+    return (await this.usable(computer, context)).hostBrowserProfiles?.(computer, context);
   }
 
   async importHostBrowserSessions(
@@ -267,7 +267,7 @@ export class HostAwareSandbox implements SandboxProvider {
     request: HostBrowserImportRequest,
     context: AdapterContext,
   ) {
-    return (await this.usableBy(computer, context)).importHostBrowserSessions?.(
+    return (await this.usable(computer, context)).importHostBrowserSessions?.(
       computer,
       request,
       context,
@@ -275,7 +275,7 @@ export class HostAwareSandbox implements SandboxProvider {
   }
 
   async connectTerminal(computer: ComputerRef, request: TerminalRequest, context: AdapterContext) {
-    const provider = await this.usableBy(computer, context);
+    const provider = await this.usable(computer, context);
     if (!provider.connectTerminal) throw new Error("terminal is unavailable on this computer");
     return provider.connectTerminal(computer, request, context);
   }
@@ -286,19 +286,19 @@ export class HostAwareSandbox implements SandboxProvider {
     lease: ControlLeaseRef,
     context: AdapterContext,
   ) {
-    return (await this.usableBy(computer, context)).sendInput(computer, input, lease, context);
+    return (await this.usable(computer, context)).sendInput(computer, input, lease, context);
   }
 
   async observe(computer: ComputerRef, context: AdapterContext) {
-    return (await this.usableBy(computer, context)).observe(computer, context);
+    return (await this.usable(computer, context)).observe(computer, context);
   }
 
   async act(computer: ComputerRef, request: ComputerActionRequest, context: AdapterContext) {
-    return (await this.usableBy(computer, context)).act(computer, request, context);
+    return (await this.usable(computer, context)).act(computer, request, context);
   }
 
   async listFiles(computer: ComputerRef, path: string, context: AdapterContext) {
-    return (await this.usable(computer)).listFiles(computer, path, context);
+    return (await this.usable(computer, context)).listFiles(computer, path, context);
   }
 
   async readFile(
@@ -307,11 +307,11 @@ export class HostAwareSandbox implements SandboxProvider {
     context: AdapterContext,
     options?: { maxBytes?: number },
   ) {
-    return (await this.usable(computer)).readFile(computer, path, context, options);
+    return (await this.usable(computer, context)).readFile(computer, path, context, options);
   }
 
   async writeFile(computer: ComputerRef, file: PortableFile, context: AdapterContext) {
-    return (await this.usable(computer)).writeFile(computer, file, context);
+    return (await this.usable(computer, context)).writeFile(computer, file, context);
   }
 
   exportWorkspace(computer: ComputerRef, context: AdapterContext, limits?: WorkspaceExportLimits) {
@@ -325,7 +325,7 @@ export class HostAwareSandbox implements SandboxProvider {
     context: AdapterContext,
     limits?: WorkspaceExportLimits,
   ) {
-    yield* (await this.usable(computer)).exportWorkspace(computer, context, limits);
+    yield* (await this.usable(computer, context)).exportWorkspace(computer, context, limits);
   }
 
   async importWorkspace(
@@ -333,7 +333,7 @@ export class HostAwareSandbox implements SandboxProvider {
     files: AsyncIterable<PortableFile>,
     context: AdapterContext,
   ) {
-    return (await this.usable(computer)).importWorkspace(computer, files, context);
+    return (await this.usable(computer, context)).importWorkspace(computer, files, context);
   }
 
   snapshot(computer: ComputerRef, context: AdapterContext) {
@@ -362,7 +362,7 @@ export class HostAwareSandbox implements SandboxProvider {
     context: AdapterContext,
     controlToken?: string,
   ) {
-    const provider = interactive ? await this.usableBy(computer, context) : this.route(computer);
+    const provider = interactive ? await this.usable(computer, context) : this.route(computer);
     await provider.setScreenControl?.(computer, interactive, context, controlToken);
   }
 

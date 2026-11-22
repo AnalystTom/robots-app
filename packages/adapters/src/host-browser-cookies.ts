@@ -62,10 +62,15 @@ export interface CookieKeys {
   v11?: Buffer[];
 }
 
+const SITE_NAME = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
+
+function isSiteName(value: string) {
+  return SITE_NAME.test(value);
+}
+
 export function normalizeSite(site: string) {
   const normalized = site.trim().toLowerCase().replace(/^\.+/, "").replace(/\.+$/, "");
-  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(normalized))
-    throw new HostBrowserCookieError(`"${site}" is not a site name`);
+  if (!isSiteName(normalized)) throw new HostBrowserCookieError(`"${site}" is not a site name`);
   return normalized;
 }
 
@@ -76,7 +81,7 @@ export function cookieBelongsToSite(hostKey: string, site: string) {
 
 export function siteNames(hostKeys: Iterable<string>) {
   const hosts = [...new Set([...hostKeys].map((key) => key.toLowerCase().replace(/^\./, "")))]
-    .filter(Boolean)
+    .filter(isSiteName)
     .sort((a, b) => a.length - b.length || a.localeCompare(b));
   const sites: string[] = [];
   for (const host of hosts) {

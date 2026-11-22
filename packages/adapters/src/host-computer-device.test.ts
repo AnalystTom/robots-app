@@ -32,6 +32,7 @@ describe("this computer's screen on the desktop app's own server", () => {
       findUnique: async () => ({ computerHost, updatedAt: grantedAt }),
     },
     user: {
+      findFirst: async () => ({ id: "user" }),
       findUnique: async ({ where }: { where: { id: string } }) =>
         ({
           admin: { email: "Admin@Example.test", emailVerified: true },
