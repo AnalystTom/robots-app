@@ -27,10 +27,6 @@ function previousWorkerValues(source: NodeJS.ProcessEnv) {
       .filter(Boolean),
     mcpStdio: mcpStdioOptionsFromEnv(source),
     mcpAllowPrivateEndpoint: source.MCP_ALLOW_PRIVATE_ENDPOINT === "true",
-    adminEmails: (source.ROBOTS_ADMIN_EMAILS ?? "")
-      .split(/[\s,]+/)
-      .filter(Boolean)
-      .map((email) => email.toLowerCase()),
     pipedreamClientId: source.PIPEDREAM_CLIENT_ID,
     pipedreamClientSecret: source.PIPEDREAM_CLIENT_SECRET,
     pipedreamProjectId: source.PIPEDREAM_PROJECT_ID,
@@ -57,7 +53,6 @@ describe("runRuntimeEnvFromProcess", () => {
       MCP_STDIO_ALLOWED_COMMANDS: " npx, uvx ,,",
       MCP_STDIO_IDLE_MS: "1000",
       MCP_ALLOW_PRIVATE_ENDPOINT: "true",
-      ROBOTS_ADMIN_EMAILS: " Admin@Example.test,ops@example.test ",
       PIPEDREAM_CLIENT_ID: " client ",
       PIPEDREAM_CLIENT_SECRET: "secret",
       PIPEDREAM_PROJECT_ID: "project",

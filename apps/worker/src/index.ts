@@ -69,6 +69,7 @@ import {
   createThreadEvents,
   databaseCapacityBackoffMs,
   databaseOutage,
+  deploymentAdminEmails,
   describeRowSecurity,
   installAuditEventStore,
   installSecurityEventStore,
@@ -159,7 +160,7 @@ async function main() {
     secrets,
     privateEndpointAuthorizer(prisma, {
       allowPrivateEndpoint: env.mcpAllowPrivateEndpoint,
-      adminEmails: env.adminEmails,
+      adminEmails: deploymentAdminEmails(process.env.ROBOTS_ADMIN_EMAILS),
     }),
   );
   const home = createAgentHomeStore(env.dataDir, prisma);
