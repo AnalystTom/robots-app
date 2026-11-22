@@ -101,6 +101,7 @@ function fakeBot(id: string, name: string): Bot {
     modelProvider: null,
     modelId: null,
     thinkingLevel: null,
+    fastMode: false,
     teamChatAmbientEnabled: false,
     teamChatRules: "",
     disabledBuiltinTools: [],

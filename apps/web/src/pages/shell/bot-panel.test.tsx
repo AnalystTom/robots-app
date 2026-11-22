@@ -168,6 +168,7 @@ function bot(description = "Billing", overrides: Partial<Bot> = {}): Bot {
     modelProvider: null,
     modelId: null,
     thinkingLevel: null,
+    fastMode: false,
     teamChatAmbientEnabled: false,
     teamChatRules: "",
     fleetManagement: false,

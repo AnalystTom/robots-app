@@ -9,6 +9,7 @@ import {
   modelOptionKey,
   modelTierMenu,
   parseModelOptionKey,
+  supportsFastMode,
 } from "@robots/core";
 import { useQuery } from "@tanstack/react-query";
 import { Alert, Text, View } from "react-native";
@@ -39,6 +40,13 @@ export function ComposerModelMenu({ botId }: { botId: string }) {
     stale: [botRead.queryKey],
     onFailed: (error) => Alert.alert(errorText(error, t`Could not change the model`)),
   });
+  const saveFast = useSave<boolean>({
+    save: async (fastMode, send) => {
+      await send("bots/update", { botId, fastMode });
+    },
+    stale: [botRead.queryKey],
+    onFailed: (error) => Alert.alert(errorText(error, t`Could not change Fast mode`)),
+  });
   if (!bot || !me || !catalog || !credentials) return null;
   const savedKey =
     bot.modelProvider && bot.modelId ? modelOptionKey(bot.modelProvider, bot.modelId) : "";
@@ -65,9 +73,14 @@ export function ComposerModelMenu({ botId }: { botId: string }) {
       ? modelOptionKey(me.defaultProvider, me.defaultModel)
       : "");
   const selectedModel = menu.models.find((choice) => choice.key === runningKey);
-  const label = menu.tier
+  const modelLabel = menu.tier
     ? tiers[menu.tier].title
     : (selectedModel?.modelLabel ?? selectedModel?.label ?? t`Model`);
+  const fastAvailable = supportsFastMode(menu.provider);
+  const fast =
+    fastAvailable &&
+    (saveFast.pending && saveFast.input !== undefined ? saveFast.input : bot.fastMode);
+  const label = fast ? t`${modelLabel} · Fast` : modelLabel;
   const provider = menu.providers.find((entry) => entry.provider === menu.provider);
   const actions: MenuAction[] = [
     {
@@ -80,6 +93,15 @@ export function ComposerModelMenu({ botId }: { botId: string }) {
         state: menu.tier === tier ? ("on" as const) : ("off" as const),
       })),
     },
+    ...(fastAvailable
+      ? [
+          {
+            id: "fast",
+            title: `${t`Fast`}\n${t`Faster replies, uses more of your plan`}`,
+            state: fast ? ("on" as const) : ("off" as const),
+          },
+        ]
+      : []),
     {
       id: "advanced",
       title: t`Advanced`,
@@ -108,6 +130,10 @@ export function ComposerModelMenu({ botId }: { botId: string }) {
     },
   ];
   const choose = (event: string) => {
+    if (event === "fast") {
+      saveFast.run(!fast);
+      return;
+    }
     const [kind, ...rest] = event.split(":");
     const value = rest.join(":");
     const key =

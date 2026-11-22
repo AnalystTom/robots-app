@@ -75,7 +75,7 @@ import { ChatFindBar } from "./shell/chat-find-bar";
 import { ChatHeader } from "./shell/chat-header";
 import { FALLBACK_BOT_COLOR } from "./shell/chat-shared";
 import { Composer } from "./shell/composer";
-import { ComposerModelPicker, saveBotModel } from "./shell/composer-model-picker";
+import { ComposerModelPicker, saveComposerBotChange } from "./shell/composer-model-picker";
 import { ComputerOverlay } from "./shell/computer-overlay";
 import { ComputerPanel } from "./shell/computer-panel";
 import type { CreateBotDialogInput } from "./shell/create-bot-dialog";
@@ -1230,7 +1230,15 @@ function SpaceShell() {
                   <ComposerModelPicker
                     bot={active}
                     onChange={(change) =>
-                      void saveBotModel(rpc, setBots, active, change, t`Could not change the model`)
+                      void saveComposerBotChange(
+                        rpc,
+                        setBots,
+                        active,
+                        change,
+                        "fastMode" in change
+                          ? t`Could not change Fast mode`
+                          : t`Could not change the model`,
+                      )
                     }
                   />
                 ) : undefined

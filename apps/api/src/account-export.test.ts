@@ -59,6 +59,7 @@ const botRecord = (id: string): Extract<AccountExportRecord, { type: "bot" }> =>
   modelProvider: null,
   modelId: null,
   thinkingLevel: null,
+  fastMode: false,
   disabledBuiltinTools: [],
   teamChatAmbientEnabled: false,
   teamChatRules: "",

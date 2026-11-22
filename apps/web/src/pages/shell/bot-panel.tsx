@@ -17,6 +17,7 @@ import {
   modelThinkingLevels,
   parseModelOptionKey,
   resolveSelectableModelId,
+  supportsFastMode,
 } from "@robots/core";
 import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger, toast } from "@robots/ui-web";
 import { useQuery } from "@tanstack/react-query";
@@ -62,6 +63,7 @@ type AdvancedPatch = {
   modelProvider?: string | null;
   modelId?: string | null;
   thinkingLevel?: ThinkingLevel | null;
+  fastMode?: boolean;
 };
 
 type QueuedPatch = {
@@ -170,6 +172,7 @@ export function BotSettings({
   const [voiceId, setVoiceId] = useState(bot.voiceId ?? "");
   const [modelKey, setModelKey] = useState(() => botModelKey(bot));
   const [thinkingLevel, setThinkingLevel] = useState(bot.thinkingLevel ?? "");
+  const [fastMode, setFastMode] = useState(bot.fastMode);
   const [disabledBuiltinTools, setDisabledBuiltinTools] = useState<string[]>(
     bot.disabledBuiltinTools ?? [],
   );
@@ -224,6 +227,7 @@ export function BotSettings({
     if (pendingSavesRef.current > 0) return;
     setModelKey(botModelKey(bot));
     setThinkingLevel(bot.thinkingLevel ?? "");
+    setFastMode(bot.fastMode);
     setComputerMode(bot.computerMode);
     setMemoryScope(bot.memoryScope);
     setAutoSpeak(bot.autoSpeak);
@@ -532,6 +536,12 @@ export function BotSettings({
                 saveAdvanced({ thinkingLevel: (level || null) as ThinkingLevel | null }, () =>
                   setThinkingLevel(previous),
                 );
+              }}
+              fastMode={supportsFastMode(effectiveProvider) ? fastMode : null}
+              onFastModeChange={(enabled) => {
+                const previous = fastMode;
+                setFastMode(enabled);
+                saveAdvanced({ fastMode: enabled }, () => setFastMode(previous));
               }}
             />
             <ComputerGroup

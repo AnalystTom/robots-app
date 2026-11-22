@@ -122,6 +122,8 @@ export function ModelSection({
   thinkingLevel,
   defaultThinkingLevel,
   onThinkingLevelChange,
+  fastMode,
+  onFastModeChange,
 }: {
   ids: string;
   containerRef: RefObject<HTMLDivElement | null>;
@@ -133,6 +135,8 @@ export function ModelSection({
   thinkingLevel: string;
   defaultThinkingLevel: ThinkingLevel;
   onThinkingLevelChange: (level: string) => void;
+  fastMode: boolean | null;
+  onFastModeChange: (enabled: boolean) => void;
 }) {
   const { t } = useLingui();
   return (
@@ -187,7 +191,40 @@ export function ModelSection({
             </NativeSelect>
           </label>
         ) : null}
+        {fastMode === null ? null : (
+          <FastModeRow ids={ids} checked={fastMode} onChange={onFastModeChange} />
+        )}
       </div>
+    </div>
+  );
+}
+
+function FastModeRow({
+  ids,
+  checked,
+  onChange,
+}: {
+  ids: string;
+  checked: boolean;
+  onChange: (enabled: boolean) => void;
+}) {
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-3">
+      <div className="flex flex-col">
+        <label htmlFor={`${ids}-fast-mode`} id={`${ids}-fast-mode-label`} className={rowLabelClass}>
+          <Trans>Fast</Trans>
+        </label>
+        <span id={`${ids}-fast-mode-detail`} className="text-body-sm text-muted-foreground">
+          <Trans>Faster replies, uses more of your plan</Trans>
+        </span>
+      </div>
+      <Switch
+        id={`${ids}-fast-mode`}
+        checked={checked}
+        aria-labelledby={`${ids}-fast-mode-label`}
+        aria-describedby={`${ids}-fast-mode-detail`}
+        onCheckedChange={onChange}
+      />
     </div>
   );
 }
