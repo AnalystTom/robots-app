@@ -6,6 +6,8 @@ import {
   botLookState,
   botLookWithColor,
   botLookWithShape,
+  robotPresetOf,
+  robotPresetValue,
   SHIPPED_BOT_AVATAR_SHAPE_KEYS,
 } from "@robots/core";
 import {

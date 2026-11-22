@@ -13,11 +13,9 @@ import {
   SHIPPED_BOT_AVATAR_SHAPE_KEYS,
 } from "@robots/core";
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useMobileTokens } from "../lib/native";
 import { BotAvatar } from "./bot-avatar";
-import { NativeSymbol } from "./native-symbol";
 
 const ROBOT_SIZE = 48;
 

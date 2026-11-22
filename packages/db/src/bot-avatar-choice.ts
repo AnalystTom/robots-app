@@ -1,11 +1,6 @@
 import { randomInt } from "node:crypto";
 import type { BotAvatarSet } from "@robots/contracts";
-import {
-  BOT_COLORS,
-  parseBotAvatarValue,
-  ROBOT_PARTS,
-  robotCharacterValue,
-} from "@robots/contracts";
+import { BOT_COLORS, parseBotAvatarValue } from "@robots/contracts";
 import {
   ORGANIC_AVATAR_HEART_FAMILY,
   ORGANIC_AVATAR_LOOKS,

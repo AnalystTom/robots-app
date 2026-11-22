@@ -7,6 +7,8 @@ import {
   newBotLookInput,
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
+  robotPresetOf,
+  robotPresetValue,
 } from "@robots/core";
 import {
   BotAvatar,
