@@ -2,7 +2,7 @@
 
 import type { BotAvatarSet } from "@robots/contracts";
 import { parseBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
-import { ROBOT_PRESETS, robotCharacterDataUri } from "@robots/core";
+import { robotCharacterDataUri } from "@robots/core";
 import type { ReactNode } from "react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -27,12 +27,13 @@ const CHARACTER_NAMES = [
   "Creator",
   "Chef",
   "Hero",
+  "Hoodie",
+  "Critic",
   "Professor",
   "Detective",
   "Keynote",
   "Hustler",
   "Host",
-  "Critic",
 ];
 
 let container: HTMLDivElement;
@@ -127,14 +128,12 @@ describe("CreateBotDialog", () => {
     await render(onCreate);
     for (const name of CHARACTER_NAMES) expect(button(name)).toBeDefined();
     expect(document.querySelectorAll('[role="radio"]')).toHaveLength(CHARACTER_NAMES.length);
-    expect(document.querySelector('[data-testid="robot-builder"]')).toBeNull();
+    expect(document.body.textContent).not.toContain("Shuffle");
     await click(button("Researcher"));
     expect(button("Researcher").getAttribute("aria-checked")).toBe("true");
     await typeName("Scout");
     await click(button("Create"));
-    expect(parseRobotCharacter(onCreate.mock.lastCall![0].color)).toEqual(
-      ROBOT_PRESETS.find((preset) => preset.id === "researcher")!.look,
-    );
+    expect(onCreate.mock.lastCall![0].color).toBe("robot:blue.deerstalker.magnifier.tweed.none");
   });
 
   it("shows the error and stays open when creating fails", async () => {

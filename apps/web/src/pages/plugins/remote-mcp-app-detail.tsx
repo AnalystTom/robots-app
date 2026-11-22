@@ -44,7 +44,7 @@ export function RemoteMcpAppDetail({
     <div data-testid="connection-detail">
       <ConnectionPage
         name={app.name}
-        icon={<PluginLogo name={app.name} site={app.site} large />}
+        icon={<PluginLogo name={app.name} site={app.site} size="large" />}
         placement="cloud"
         description={app.description}
       >

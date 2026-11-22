@@ -77,7 +77,11 @@ import { botEmailAddress, botEmailAddresses, claimBotEmailAddress } from "../bot
 import { exportBotPackageFor } from "../bot-package-export.js";
 import { loadBotForRemoval } from "../bot-removal.js";
 import { changedBotSettings } from "../bot-setting-analytics.js";
-import { createBotFromTemplate, listBotTemplates } from "../bot-templates.js";
+import {
+  createBotFromTemplate,
+  createBotTeamFromTemplate,
+  listBotTemplates,
+} from "../bot-templates.js";
 import { requireIdentityConfirmation } from "../identity-confirmation.js";
 import { managedAppCatalog } from "../onboarding.js";
 import { isPrimaryBot, startPrimaryBot } from "../primary-bot-intro.js";
@@ -470,6 +474,22 @@ export function botsRoutes(ctx: RouterContext) {
           throw mapSpaceLifecycleError(error);
         }
       }),
+      createTeamFromTemplate: authed.bots.createTeamFromTemplate.handler(
+        async ({ context, input }) => {
+          try {
+            return await createBotTeamFromTemplate(
+              agentImportServices,
+              () =>
+                managedAppCatalog(deps.connectors, context.actor, "bots.createTeamFromTemplate"),
+              context.actor,
+              input,
+              context.signal,
+            );
+          } catch (error) {
+            throw mapSpaceLifecycleError(error);
+          }
+        },
+      ),
       duplicate: authed.bots.duplicate.handler(async ({ context, input }) => {
         const source = await repos.getBot(context.actor, input.botId);
         const duplicate = await repos

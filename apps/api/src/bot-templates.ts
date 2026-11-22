@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import type {
   Actor,
   AgentImportPlan,
+  Bot,
   BotTemplate,
   BotTemplateListing,
   ConnectionCatalogItem,
@@ -17,9 +18,9 @@ import {
   appConnectCard,
   BOT_TEMPLATES,
   botTemplateApps,
-  botTemplateLook,
   buildSkillMd,
   findBotTemplate,
+  findBotTemplateTeam,
   renameRoutineSkillMentions,
   renameSkillMd,
   scanSkillSafety,
@@ -143,7 +144,7 @@ export async function createBotFromTemplate<PreparedKey>(
     digest: requestDigest({ templateId: template.id }),
     name: input.name ?? template.name,
     description: template.description,
-    color: botTemplateLook(template.id),
+    color: template.avatar,
     selection: {
       instructions: ["instructions"],
       memory: [],
@@ -228,6 +229,40 @@ export async function createBotFromTemplate<PreparedKey>(
     },
   };
   return writeImportedBot(services, actor, request, signal);
+}
+
+export async function createBotTeamFromTemplate<PreparedKey>(
+  services: AgentImportServices<PreparedKey>,
+  appCatalog: () => Promise<ConnectionCatalogItem[]>,
+  actor: Actor,
+  input: { teamId: string },
+  signal?: AbortSignal,
+) {
+  const team = findBotTemplateTeam(input.teamId);
+  if (!team) throw new ORPCError("NOT_FOUND", { message: "No team has that id." });
+  let catalog: Promise<ConnectionCatalogItem[]> | undefined;
+  const sharedCatalog = () => (catalog ??= appCatalog());
+  const bots: Bot[] = [];
+  const failed: string[] = [];
+  let firstError: unknown;
+  for (const templateId of team.templateIds) {
+    const template = findBotTemplate(templateId)!;
+    try {
+      const { bot } = await createBotFromTemplate(
+        services,
+        sharedCatalog,
+        actor,
+        { templateId, version: template.version },
+        signal,
+      );
+      bots.push(bot);
+    } catch (error) {
+      failed.push(templateId);
+      firstError ??= error;
+    }
+  }
+  if (!bots.length) throw firstError;
+  return { bots, failed };
 }
 
 function escapeRegExp(value: string): string {

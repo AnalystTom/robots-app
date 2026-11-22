@@ -38,6 +38,8 @@
   --text-display: 32px;
   --text-display--line-height: 40px;
   --text-display--letter-spacing: -0.02em;
+  --text-field: 16px;
+  --text-field--line-height: 24px;
 }
 
 /* The system font reads light at 400 on macOS; regular text uses 420 there. Medium and semibold stay. */

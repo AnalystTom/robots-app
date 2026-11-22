@@ -2,25 +2,46 @@ export const MCP_OAUTH_CALLBACK_PATH = "/mcp/oauth/callback";
 export const SLACK_INSTALL_CALLBACK_PATH = "/messaging/slack/callback";
 
 const INVITE_PATH = /^\/invite\/[A-Za-z0-9_-]{1,200}$/;
+const TEMPLATE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const TEMPLATE_PATH = /^\/templates\/([^/]+)$/;
 
-/** The page sign-in or sign-up may return to; anything else is ignored, so `next` can't redirect off the app. */
-export function signInNext(next: string | null): string | null {
+export function templateImportPath(templateId: string): string {
+  return `/templates/${templateId}`;
+}
+
+function templateSlug(value: string | null | undefined): string | null {
+  return value && value.length <= 64 && TEMPLATE_ID.test(value) ? value : null;
+}
+
+function templateSlugFromPath(path: string): string | null {
+  return templateSlug(TEMPLATE_PATH.exec(path)?.[1]);
+}
+
+export function signInNext(params: URLSearchParams): string | null {
+  const template = templateSlug(params.get("template"));
+  if (template) return templateImportPath(template);
+  const next = params.get("next");
   if (!next) return null;
-  // A connector sign-in started on another device lands here signed out; finish it after sign-in.
   if (
     next === "/integrations/setup" ||
     next === "/admin/plugins" ||
     next === "/admin/access" ||
     next.startsWith(`${MCP_OAUTH_CALLBACK_PATH}?`) ||
     next.startsWith(`${SLACK_INSTALL_CALLBACK_PATH}?`) ||
-    INVITE_PATH.test(next)
+    INVITE_PATH.test(next) ||
+    templateSlugFromPath(next) !== null
   ) {
     return next;
   }
   return null;
 }
 
-/** Where a new account starts: an invite it came for, otherwise onboarding. */
 export function newAccountDestination(next: string | null): string {
-  return next && INVITE_PATH.test(next) ? next : "/onboarding";
+  if (next && INVITE_PATH.test(next)) return next;
+  const template = next ? templateSlugFromPath(next) : null;
+  return template ? `/onboarding?template=${template}` : "/onboarding";
+}
+
+export function onboardingTemplate(params: URLSearchParams): string | null {
+  return templateSlug(params.get("template"));
 }

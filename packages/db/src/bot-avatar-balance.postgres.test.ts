@@ -1,9 +1,11 @@
-import { parseRobotCharacter, ROBOT_PARTS } from "@robots/contracts";
+import { parseRobotCharacter } from "@robots/contracts";
 import {
   newClientId,
   ORGANIC_AVATAR_HEART_FAMILY,
   organicAvatarFamily,
   organicAvatarLook,
+  ROBOT_PRESETS,
+  robotPresetValue,
 } from "@robots/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "./client.js";
@@ -13,11 +15,11 @@ import { createRepos } from "./repos.js";
 import { asSystem, runAsSystem, runAsTenant } from "./row-security.js";
 
 const databaseUrl = process.env.DATABASE_URL;
+const LISTED_ROBOTS: string[] = ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id));
 const describePostgres = process.env.VERIFY_DATABASE && databaseUrl ? describe : describe.skip;
 
 describePostgres("new bot avatars (PostgreSQL)", () => {
   const provider = "sendblue";
-  // A prefix no other test file uses, so parallel files never share this account.
   const address = `+1554${Math.floor(Math.random() * 9_000_000 + 1_000_000)}`;
   let prisma: PrismaClient;
   let close: () => Promise<void>;
@@ -78,7 +80,6 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
           await repos.createBot(actor(), { ...botInput(`Helper ${index}`), avatarSet: "organic" }),
         );
       }
-      // A bot made by a bot goes through the same choice.
       bots.push(
         await repos.createBot(actor(), {
           ...botInput("Child"),
@@ -91,21 +92,19 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
 
     const all = [...before, ...created];
     const lookOf = (id: string) => organicAvatarLook(organicAvatarFamily(id));
-    // Eight automatic looks: the heart is excluded and the two round families share a look.
     const firstEight = all.slice(0, 8);
     expect(new Set(firstEight.map((bot) => lookOf(bot.id))).size).toBe(firstEight.length);
     expect(
       created.every((bot) => organicAvatarFamily(bot.id) !== ORGANIC_AVATAR_HEART_FAMILY),
     ).toBe(true);
-    // Each gets a robot character, and no robot colour repeats until every colour is worn.
-    expect(created.every((bot) => parseRobotCharacter(bot.color) !== null)).toBe(true);
-    const firstColours = all
-      .flatMap((bot) => parseRobotCharacter(bot.color)?.colour ?? [])
-      .slice(0, ROBOT_PARTS.colour.length);
-    expect(new Set(firstColours).size).toBe(firstColours.length);
+    expect(created.every((bot) => LISTED_ROBOTS.includes(bot.color))).toBe(true);
+    const firstRobots = all
+      .map((bot) => bot.color)
+      .filter((color) => LISTED_ROBOTS.includes(color))
+      .slice(0, LISTED_ROBOTS.length);
+    expect(new Set(firstRobots).size).toBe(firstRobots.length);
     expect(created.every((bot) => /^c[a-z0-9]{24}$/.test(bot.id))).toBe(true);
 
-    // Existing bots keep their id and colour.
     const after = await system.bot.findMany({
       where: { id: { in: before.map((bot) => bot.id) } },
       select: { id: true, color: true },
@@ -119,7 +118,7 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       repos.createBot(actor(), botInput("Original default")),
     );
     expect(created.avatarSet).toBe("organic");
-    expect(parseRobotCharacter(created.color)).not.toBeNull();
+    expect(LISTED_ROBOTS).toContain(created.color);
     for (const color of ["#8B5CF6", "#8B5CF6::shape_3", "data:image/png;base64,aGVsbG8="]) {
       const original = await runAsTenant(owner, () =>
         repos.createBot(actor(), { ...botInput("Original look"), avatarSet: "organic", color }),
@@ -247,7 +246,6 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       where: { spaceId: owner.spaceId, userId: owner.userId, archivedAt: null },
       select: { id: true },
     });
-    // Archive every bot but one; the next bot then avoids only that one's family.
     const [kept, ...rest] = live;
     await system.bot.updateMany({
       where: { id: { in: rest.map((bot) => bot.id) } },

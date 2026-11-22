@@ -6,22 +6,12 @@ import { NativeSymbol } from "./native-symbol";
 
 type TemplateSymbol = { ios: string; android: ComponentProps<typeof Ionicons>["name"] };
 
-const SYMBOLS: Record<string, TemplateSymbol> = {
-  "morning-briefing": { ios: "sun.max", android: "sunny-outline" },
-  "inbox-triage": { ios: "tray", android: "file-tray-outline" },
-  "pr-reviewer": { ios: "arrow.triangle.pull", android: "git-pull-request-outline" },
-  "topic-watch": { ios: "binoculars", android: "telescope-outline" },
-};
-
-/** The mark for bot templates as a whole. */
-export const BOT_TEMPLATES_SYMBOL: TemplateSymbol = {
+const BOT_TEMPLATES_SYMBOL: TemplateSymbol = {
   ios: "square.grid.2x2",
   android: "grid-outline",
 };
 
-/** A template's mark in a rounded tile; unknown templates share the templates mark. */
-export function BotTemplateIcon({ id, size = 32 }: { id?: string; size?: number }) {
-  const symbol = (id && SYMBOLS[id]) || BOT_TEMPLATES_SYMBOL;
+export function BotTemplateIcon({ size = 32 }: { size?: number }) {
   return (
     <View
       accessibilityElementsHidden
@@ -36,7 +26,7 @@ export function BotTemplateIcon({ id, size = 32 }: { id?: string; size?: number 
         justifyContent: "center",
       }}
     >
-      <NativeSymbol {...symbol} size={Math.round(size * 0.5)} color={native.label} />
+      <NativeSymbol {...BOT_TEMPLATES_SYMBOL} size={Math.round(size * 0.5)} color={native.label} />
     </View>
   );
 }

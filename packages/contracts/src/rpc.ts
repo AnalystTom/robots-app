@@ -60,6 +60,8 @@ import {
   BotTemplateListingSchema,
   CreateBotFromTemplateInput,
   CreateBotFromTemplateOutput,
+  CreateBotTeamFromTemplateInput,
+  CreateBotTeamFromTemplateOutput,
 } from "./bot-template.js";
 import {
   ComputerModeSchema,
@@ -598,6 +600,9 @@ export const appContract = {
     importSetupState: oc.input(AgentImportSetupStateInput).output(AgentImportSetupStateSchema),
     templates: oc.output(z.array(BotTemplateListingSchema)),
     createFromTemplate: oc.input(CreateBotFromTemplateInput).output(CreateBotFromTemplateOutput),
+    createTeamFromTemplate: oc
+      .input(CreateBotTeamFromTemplateInput)
+      .output(CreateBotTeamFromTemplateOutput),
     exportPackage: oc.input(ExportBotPackageInput).output(BotPackageSchema),
     duplicate: oc.input(botId).output(BotSchema),
     reorder: oc.input(ReorderBotsInput).output(z.object({ ok: z.literal(true) })),

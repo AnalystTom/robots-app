@@ -91,6 +91,9 @@ const PairPage = lazyComponent(() => import("./pages/PairPage").then((module) =>
 const InvitePage = lazyComponent(() =>
   import("./pages/Invite").then((module) => module.InvitePage),
 );
+const TemplateImportPage = lazyComponent(() =>
+  import("./pages/TemplateImport").then((module) => module.TemplateImportPage),
+);
 
 function SsoCallbackPage() {
   useEffect(() => {
@@ -99,7 +102,6 @@ function SsoCallbackPage() {
   return null;
 }
 
-// Link icons come from our API, which fetches and caches them; the browser never asks the site.
 const linkFavicons: LinkFavicons = {
   load: (origin) => rpc.links.favicon({ origin }),
 };
@@ -125,15 +127,13 @@ export function App() {
 
 function SessionApp() {
   const [searchParams] = useSearchParams();
-  const next = signInNext(searchParams.get("next"));
-  // A joined string, so a fresh but equal list never re-renders the routes; null until loaded.
+  const next = signInNext(searchParams);
   const labsKey = useSyncExternalStore(
     subscribeLabs,
     () => getLoadedLabs()?.join(",") ?? null,
     () => null,
   );
   const labs = labsKey === null ? null : (labsKey.split(",") as LabFeature[]);
-  /** A Labs page waits for the account's Labs, so it never falls through to a chat route. */
   const lab = (feature: LabFeature, page: ReactNode) =>
     labs === null ? (
       <PageLoading />
@@ -148,7 +148,6 @@ function SessionApp() {
   const analyticsUserId = session.data?.user.id;
   const lastScreen = useRef<string | undefined>(undefined);
   useEffect(() => {
-    // A pending session is not a sign-out; startup already tagged the signed-in user.
     if (session.isPending) return;
     void identifyMonitoringUser(Boolean(analyticsUserId));
   }, [analyticsUserId, session.isPending]);
@@ -304,6 +303,16 @@ function SessionApp() {
                 }
               />
               <Route
+                path="/templates/:templateId"
+                element={
+                  user ? (
+                    <TemplateImportPage />
+                  ) : (
+                    <Navigate to={`/sign-in?next=${encodeURIComponent(pathname)}`} replace />
+                  )
+                }
+              />
+              <Route
                 path="/admin/access"
                 element={
                   user ? <AdminAccessPage /> : <Navigate to="/sign-in?next=/admin/access" replace />
@@ -344,11 +353,6 @@ function SessionApp() {
   );
 }
 
-/**
- * A session lookup that never reached the server is not a sign-out, so the app
- * waits and retries here instead of routing to sign-in and stranding a signed-in
- * user. Better Auth only polls once a session exists, so the retry lives here.
- */
 function SessionUnavailable({ refetch }: { refetch: () => Promise<void> }) {
   const { t } = useLingui();
   const [attempt, setAttempt] = useState(0);
@@ -396,7 +400,6 @@ function SessionUnavailable({ refetch }: { refetch: () => Promise<void> }) {
   );
 }
 
-/** Last resort for a render failure no inner boundary caught: offer a reload instead of a blank page. */
 function AppFailed() {
   return (
     <div

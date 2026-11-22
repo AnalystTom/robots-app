@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import type { BotAvatarSet } from "@robots/contracts";
+import { robotPresetValue } from "@robots/core";
 import { DEFAULT_BOT_AVATAR_COLOR } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { act, useState } from "react";
@@ -8,9 +9,11 @@ import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@lingui/react/macro", () => ({
-  Trans: ({ children }: { children: ReactNode }) => children,
-}));
+vi.mock("@lingui/react/macro", () => {
+  const t = (parts: TemplateStringsArray, ...values: unknown[]) =>
+    parts.reduce((text, part, index) => `${text}${index > 0 ? values[index - 1] : ""}${part}`, "");
+  return { useLingui: () => ({ t }), Trans: ({ children }: { children: ReactNode }) => children };
+});
 
 import { AvatarStudioPopover } from "./avatar-studio-popover";
 
@@ -112,5 +115,18 @@ describe("selectable bot icon sets", () => {
     expect(button("Original").getAttribute("aria-selected")).toBe("true");
     await click("RoBots");
     expect(changed).toHaveBeenLastCalledWith("#00C972", "robots");
+  });
+
+  it("shows a stored look that is not a preset as the current look until a preset is picked", async () => {
+    const customLook = "robot:pink.hood.happy.vest.none";
+    await render(customLook);
+    await click("Customize bot avatar");
+    expect(button("Current look").getAttribute("aria-checked")).toBe("true");
+    expect(button("Assistant").getAttribute("aria-checked")).toBe("false");
+    expect(changed).not.toHaveBeenCalled();
+    await click("Assistant");
+    expect(changed).toHaveBeenLastCalledWith(robotPresetValue("assistant"), undefined);
+    expect(document.querySelector('[aria-label="Current look"]')).toBeNull();
+    expect(button("Assistant").getAttribute("aria-checked")).toBe("true");
   });
 });
