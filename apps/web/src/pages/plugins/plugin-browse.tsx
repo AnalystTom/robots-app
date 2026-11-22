@@ -152,9 +152,9 @@ export function PluginBrowse({
   const connectedApps = catalog.filter(itemConnected);
   const connectedRemote = REMOTE_MCP_APPS.filter((app) => remoteAppConnected(app, mcpServers));
   const installedApps = plugins.filter((entry) => installedPlugin(entry.installedSource));
-  const availableTiles = featuredTiles.filter(
-    (tile) => !tile.item || tile.missing || !itemConnected(tile.item),
-  );
+  const availableTiles = catalog.length
+    ? featuredTiles.filter((tile) => !tile.item || tile.missing || !itemConnected(tile.item))
+    : [];
   const featuredKeys = new Set(
     featuredTiles.flatMap((tile) => (tile.item ? [catalogItemKey(tile.item)] : [])),
   );
