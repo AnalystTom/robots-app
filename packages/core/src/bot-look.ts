@@ -8,7 +8,7 @@ import {
 } from "./avatar-shape.js";
 import { DEFAULT_BOT_AVATAR_COLOR, resolvePersonaColorDef } from "./bot-avatar-colors.js";
 import { newClientId } from "./client-id.js";
-import { randomRobotPreset, robotPresetValue } from "./robot-character.js";
+import { randomRobotPreset, robotPresetValue } from "./robot-presets.js";
 
 export const ORGANIC_PREVIEW_IDENTITIES = ORGANIC_AVATAR_LOOKS.map(organicAvatarSampleIdentity);
 

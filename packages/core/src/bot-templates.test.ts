@@ -5,6 +5,7 @@ import { buildSkillMd, extractRoutineSkillMentions } from "./agent-skill.js";
 import { BOT_TEMPLATES, botTemplateLook, findBotTemplate } from "./bot-templates.js";
 import { presetFromCron } from "./cron.js";
 import { matchFeaturedConnectorId } from "./featured-connectors.js";
+import { ROBOT_PRESETS, robotPresetValue } from "./robot-presets.js";
 import { scanSkillSafety } from "./skill-safety.js";
 
 describe("bot templates", () => {
@@ -54,15 +55,16 @@ describe("bot templates", () => {
     }
   });
 
-  it("dress a template whose role matches a ready-made robot in it", () => {
+  it("dress a template whose role matches a listed robot in it", () => {
     expect(parseRobotCharacter(botTemplateLook("pr-reviewer") ?? "")).toMatchObject({
       headwear: "chef-hat",
       outfit: "chef-jacket",
     });
     expect(botTemplateLook("inbox-triage")).toBeUndefined();
+    const listed: string[] = ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id));
     for (const template of BOT_TEMPLATES) {
       const look = botTemplateLook(template.id);
-      if (look) expect(parseRobotCharacter(look)).not.toBeNull();
+      if (look) expect(listed).toContain(look);
     }
   });
 

@@ -10,7 +10,7 @@ import {
   newBotLookInput,
   newBotPreviewIdentity,
 } from "./bot-look.js";
-import { robotPresetOf, robotPresetValue } from "./robot-character.js";
+import { robotPresetOf, robotPresetValue } from "./robot-presets.js";
 
 describe("newBotLook", () => {
   it("reserves a valid id that never draws the heart body", () => {
