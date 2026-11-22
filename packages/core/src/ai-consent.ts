@@ -13,6 +13,10 @@ export class AiConsentBlocked extends Error {
 const pendingAiConsent = new Map<string, { done: Promise<void>; keys: string[] }>();
 let completedGrants = 0;
 
+export function recordAiConsentGranted(): void {
+  completedGrants += 1;
+}
+
 export function aiDataUsesForProcedure(procedure: string, input?: unknown): AiDataUse[] {
   const path = procedure.replaceAll(".", "/");
   if (
@@ -78,7 +82,6 @@ export async function ensureAiDataConsent(options: {
         if (!(await options.prompt(needed, status.privacyUrl, grant)))
           throw new Error(AI_CONSENT_REQUIRED);
         await grant();
-        completedGrants += 1;
       })().finally(() => {
         if (pendingAiConsent.get(key)?.done === done) pendingAiConsent.delete(key);
       });

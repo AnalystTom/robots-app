@@ -7,6 +7,7 @@ import {
   aiConsentTargets,
   aiDataUsesForProcedure,
   ensureAiDataConsent,
+  recordAiConsentGranted,
 } from "./ai-consent.js";
 
 const status: AiConsentStatus = {
@@ -229,6 +230,7 @@ describe("foreground AI consent", () => {
     const prompt = vi.fn(async () => true);
     const allow = vi.fn(async () => {
       serverAllowed = true;
+      recordAiConsentGranted();
     });
     const staleRead = ensureAiDataConsent({
       uses: ["model"],

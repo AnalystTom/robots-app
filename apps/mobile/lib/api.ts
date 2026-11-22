@@ -11,6 +11,7 @@ import {
   isUnreachableStatus,
   parseRetryAfter,
   readBoundedJsonResponse,
+  recordAiConsentGranted,
   withAbort,
 } from "@robots/core";
 import { clientCorrelationHeaders, responseCorrelation } from "@robots/logging/monitoring";
@@ -666,8 +667,10 @@ export type RpcArgs<P extends RpcPath> =
       ? [body?: RpcInput<P>, options?: RpcOptions]
       : [body: RpcInput<P>, options?: RpcOptions];
 /** Calls a procedure from the shared contract; its path picks the body and result types. */
-export function rpc<P extends RpcPath>(proc: P, ...[body, options]: RpcArgs<P>) {
-  return request(proc, body, options) as Promise<RpcOutput<P>>;
+export async function rpc<P extends RpcPath>(proc: P, ...[body, options]: RpcArgs<P>) {
+  const output = (await request(proc, body, options)) as RpcOutput<P>;
+  if (proc === "aiConsent/allow") recordAiConsentGranted();
+  return output;
 }
 async function request(
   proc: RpcPath,
