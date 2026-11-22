@@ -62,6 +62,7 @@ function matches<T extends object>(
   return Object.entries(where).every(([key, value]) => {
     if (key === "OR") return (value as Where[]).some((branch) => matches(row, branch, scoping));
     if (key === "AND") return (value as Where[]).every((branch) => matches(row, branch, scoping));
+    if (key === "NOT") return !matches(row, value as Where, scoping);
     if (key === "bots") {
       const { botId } = (value as { some: { botId: string } }).some;
       return scoping.chosen.some((entry) => entry.credentialId === id && entry.botId === botId);

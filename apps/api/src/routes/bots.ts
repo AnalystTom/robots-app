@@ -46,6 +46,7 @@ import {
   encodeLoginSecret,
   noneSkipped,
   resolveBotAvatarSet,
+  sessionOriginSite,
   UNCHOSEN_ITEM_ANSWER,
   VaultPolicy,
   vaultImportLogin,
@@ -330,10 +331,11 @@ function botSecretMetadataDto(
   row: Awaited<ReturnType<typeof listVaultItems>>[number],
 ): BotSecretMetadata {
   const policy = VaultPolicy.catch("allow").parse(row.policy);
-  // Unreadable or no-longer-storable destinations become auth:null so the owner UI stays remove-only.
   const parsed = BotSecretAuth.safeParse(row.auth);
   let auth: BotSecretMetadata["auth"] = null;
-  if (parsed.success) {
+  if (parsed.success && parsed.data.type === "session") {
+    auth = sessionOriginSite(row.origin) ? parsed.data : null;
+  } else if (parsed.success) {
     try {
       normalizeSecretDestination({ name: row.name, origin: row.origin, auth: parsed.data });
       auth = parsed.data;

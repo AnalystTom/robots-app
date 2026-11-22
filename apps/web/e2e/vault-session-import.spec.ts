@@ -101,6 +101,7 @@ test("imports a browser sign-in from the desktop app into the vault and removes 
   await row.click();
   const detail = settings.getByTestId("vault-item-detail");
   await expect(detail.getByText("Imported from")).toBeVisible();
+  await expect(detail.getByTestId("vault-item-access-detail")).toContainText("Chief");
   await expect(detail.getByTestId("vault-item-edit")).toHaveCount(0);
   await expect(detail.getByTestId("vault-item-show")).toHaveCount(0);
   await captureScreenshot(page, testInfo, "vault-session-detail");

@@ -17,9 +17,16 @@ function validSites(sites: unknown): string[] | undefined {
     : undefined;
 }
 
+export type ConfirmSessionImport = (request: {
+  server: string;
+  profile: BrowserProfileSummary;
+  sites: readonly string[];
+}) => Promise<boolean>;
+
 export function createBrowserSessionsHandlers(
   getTarget: () => AppTarget | null,
   reader: ProfileSessionsReader,
+  confirm: ConfirmSessionImport,
 ) {
   return {
     profiles: async (event: InvokeEvent): Promise<BrowserProfileSummary[] | null> =>
@@ -31,10 +38,18 @@ export function createBrowserSessionsHandlers(
       sites: unknown,
     ): Promise<BrowserSessionsReadResult | null> => {
       const wanted = validSites(sites);
-      if (!fromAppFrame(getTarget(), event) || typeof profileId !== "string" || !wanted) {
+      const target = getTarget();
+      if (!target || !fromAppFrame(target, event) || typeof profileId !== "string" || !wanted) {
         return null;
       }
       try {
+        const profile = (await reader.profiles()).find((entry) => entry.id === profileId);
+        if (!profile)
+          throw new BrowserSessionsError("profile_not_found", "That browser profile is gone.");
+        const server = new URL(target.url).host;
+        if (!(await confirm({ server, profile, sites: wanted }))) {
+          return { ok: false, code: "cancelled", error: "The import was cancelled." };
+        }
         return { ok: true, sessions: await reader.read(profileId, wanted) };
       } catch (error) {
         if (error instanceof BrowserSessionsError) {

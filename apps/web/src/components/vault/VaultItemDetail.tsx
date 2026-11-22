@@ -337,12 +337,6 @@ export function VaultItemDetail({
       </DetailRow>,
     );
   }
-  if (auth && kind === "session")
-    rows.push(
-      <DetailRow key="site" label={t`Site`}>
-        {siteHost(item.origin)}
-      </DetailRow>,
-    );
   if (item.note)
     rows.push(
       <DetailRow key="note" label={kind === "session" ? t`Imported from` : t`When to use`}>
