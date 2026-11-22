@@ -65,6 +65,9 @@ export function VaultSettings({
   const queryClient = useQueryClient();
   const list = queries.vault.list.queryOptions({ input: { scope } });
   const listQuery = useQuery({ ...list, refetchOnMount: "always" });
+  const signingOut = queries.vault.signingOut.queryOptions({ input: { scope } });
+  const signingOutQuery = useQuery({ ...signingOut, refetchOnMount: "always" });
+  const signingOutSites = signingOutQuery.data ?? [];
   // Bots are chosen in the Space they're in, and a Space with its own vault never uses the
   // account's.
   const overrides = useQuery({
@@ -105,7 +108,7 @@ export function VaultSettings({
 
   async function refresh() {
     try {
-      await fetchFresh(queryClient, list);
+      await Promise.all([fetchFresh(queryClient, list), fetchFresh(queryClient, signingOut)]);
       return true;
     } catch {
       return false;
@@ -467,7 +470,7 @@ export function VaultSettings({
           <Trans>Could not load credentials.</Trans>
         </p>
       ) : null}
-      {shown.length ? (
+      {shown.length || signingOutSites.length ? (
         <ul data-testid="vault-card" className="overflow-hidden rounded-xl bg-muted/50">
           {shown.map((item) => {
             const kind = item.auth ? vaultKind(item.auth.type) : null;
@@ -510,6 +513,25 @@ export function VaultSettings({
               </li>
             );
           })}
+          {signingOutSites.map((site) => (
+            <li
+              key={`signing-out-${site}`}
+              data-testid="vault-signing-out-row"
+              className="border-t border-border first:border-t-0"
+            >
+              <div className="flex w-full items-center gap-3 px-3.5 py-2.5">
+                <VaultTile kind="session" title={site} origin={`https://${site}`} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-body font-medium text-foreground">
+                    {site}
+                  </span>
+                  <span className="block truncate text-body-sm text-muted-foreground">
+                    <Trans>Signing out</Trans>
+                  </span>
+                </span>
+              </div>
+            </li>
+          ))}
         </ul>
       ) : needle && items?.length ? (
         <p className="py-6 text-center text-body-sm text-muted-foreground">

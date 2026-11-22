@@ -576,7 +576,7 @@ app.post("/computers/:id/browser", async (c) => {
           .array(
             z.object({
               site: sessionSite,
-              cookies: z.array(sessionCookie).min(1).max(150),
+              cookies: z.array(sessionCookie).min(1),
             }),
           )
           .max(50),

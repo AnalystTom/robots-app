@@ -59,7 +59,11 @@ import {
   CreateBotFromTemplateInput,
   CreateBotFromTemplateOutput,
 } from "./bot-template.js";
-import { ImportSessionsInput, ImportSessionsResult } from "./browser-sessions.js";
+import {
+  ImportSessionsInput,
+  ImportSessionsResult,
+  SessionSite,
+} from "./browser-sessions.js";
 import {
   ComputerModeSchema,
   ComputerProviderSettingsSchema,
@@ -292,7 +296,7 @@ const threadSendWithRoutinesInput = threadSendFields.safeExtend({
 });
 
 /** What a Space change signal tells apps to read again; each is a `notifications.subscribe` frame. */
-export const SpaceChangeKind = z.enum(["computerUpdates", "runs", "routines"]);
+export const SpaceChangeKind = z.enum(["computerUpdates", "runs", "routines", "vault"]);
 export type SpaceChangeKind = z.infer<typeof SpaceChangeKind>;
 
 const spaceName = z.string().trim().min(1).max(60);
@@ -1697,6 +1701,7 @@ export const appContract = {
   },
   vault: {
     list: oc.input(settingsScopeInput.optional()).output(z.array(BotSecretMetadata)),
+    signingOut: oc.input(settingsScopeInput.optional()).output(z.array(SessionSite)),
     put: oc.input(VaultPutInput).output(BotSecretMetadata),
     /** Needs a recent identity confirmation on this session (IDENTITY_CONFIRMATION_REQUIRED). */
     reveal: oc.input(VaultRevealInput).output(VaultRevealed),

@@ -214,7 +214,12 @@ async function computerOwnerLocale(
 }
 
 function applyBrowserSessionsAfterStart(
-  deps: { prisma: PrismaClient; sandbox: SandboxProvider; secretStore?: SecretStore },
+  deps: {
+    prisma: PrismaClient;
+    sandbox: SandboxProvider;
+    secretStore?: SecretStore;
+    events: ThreadEvents;
+  },
   computerId: string,
   context: AdapterContext,
 ) {
@@ -222,7 +227,12 @@ function applyBrowserSessionsAfterStart(
   void bestEffort(
     "browser sessions after computer start",
     syncComputerBrowserSessions(
-      { prisma: deps.prisma, sandbox: deps.sandbox, secretStore: deps.secretStore },
+      {
+        prisma: deps.prisma,
+        sandbox: deps.sandbox,
+        secretStore: deps.secretStore,
+        events: deps.events,
+      },
       computerId,
       {
         operationId: context.operationId,

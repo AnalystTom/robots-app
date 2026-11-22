@@ -4,6 +4,7 @@ import { settingsScopeInput } from "./settings-scope.js";
 
 export const SESSION_SITES_PER_IMPORT = 50;
 export const SESSION_BOTS_PER_IMPORT = 20;
+export const SESSION_SITES_PER_REQUEST = 50;
 
 const SITE_PATTERN =
   /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/;

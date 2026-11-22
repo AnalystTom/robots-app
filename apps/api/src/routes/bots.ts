@@ -19,6 +19,7 @@ import {
   relabelVaultItem,
   revealBotSecret,
   SAVED_LOGIN_UNREADABLE,
+  signingOutSites,
   SPACE_VAULT_NOT_IN_USE,
   stopCancelledGroupRuns,
   storeBotSecret,
@@ -1035,6 +1036,9 @@ export function botsRoutes(ctx: RouterContext) {
         );
         return rows.map(botSecretMetadataDto);
       }),
+      signingOut: authed.vault.signingOut.handler(({ context, input }) =>
+        signingOutSites(deps.prisma, vaultScope(context.actor, input?.scope)),
+      ),
       put: authed.vault.put.handler(({ context, input }) =>
         saveVaultCredential(deps, vaultScope(context.actor, input.scope), input),
       ),

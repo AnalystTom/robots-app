@@ -50,6 +50,7 @@ import type { MobileBot } from "../../lib/mobile-types";
 import { native, useResolvedAppearance, useThemedStyles } from "../../lib/native";
 import { iosAtLeast } from "../../lib/native-controls";
 import { queryClient, rpcQuery } from "../../lib/query";
+import { useSpaceChanges } from "../../lib/roster-signals";
 import { settingsRpc, settingsTarget } from "../../lib/settings-target";
 import { useSideInsets } from "../../lib/side-insets";
 import { errorText } from "../../lib/user-error";
@@ -102,6 +103,21 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
   );
   const listQuery = useQuery(listRead, queryClient);
   const { refetch: refetchList } = listQuery;
+  const signingOutRead = rpcQuery(
+    "vault/signingOut",
+    { scope },
+    target.scope === "space" ? target.spaceId : undefined,
+  );
+  const signingOutQuery = useQuery(signingOutRead, queryClient);
+  const { refetch: refetchSigningOut } = signingOutQuery;
+  const signingOut = signingOutQuery.data ?? [];
+  useSpaceChanges(
+    "vault",
+    () => {
+      void refetchSigningOut();
+    },
+    true,
+  );
   // Null until the first read lands.
   const items = listQuery.data ?? null;
   const loadError = listQuery.error
@@ -124,7 +140,10 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
   // A read that started before a change never shows what the change replaced.
   const beforeChange = () => queryClient.cancelQueries({ queryKey: listRead.queryKey });
   // Read again after every change, also a failed one, which may have saved some of it.
-  const afterChange = () => void queryClient.invalidateQueries({ queryKey: listRead.queryKey });
+  const afterChange = () => {
+    void queryClient.invalidateQueries({ queryKey: listRead.queryKey });
+    void queryClient.invalidateQueries({ queryKey: signingOutRead.queryKey });
+  };
   // A value that arrives after the screen lost focus is dropped instead of shown.
   const focused = useRef(false);
   const { withIdentityConfirmation, identityDialog } = useIdentityConfirmation();
@@ -142,7 +161,8 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
     useCallback(() => {
       setError(null);
       void refetchList();
-    }, [refetchList]),
+      void refetchSigningOut();
+    }, [refetchList, refetchSigningOut]),
   );
 
   useEffect(() => {
@@ -581,6 +601,19 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
                 </LongPressMenu>
               );
             })}
+          </SettingsGroup>
+        ) : null}
+        {signingOut.length ? (
+          <SettingsGroup>
+            {signingOut.map((site) => (
+              <SettingsRow
+                key={`signing-out-${site}`}
+                testID="vault-signing-out-row"
+                title={site}
+                detail={t`Signing out`}
+                dimmed
+              />
+            ))}
           </SettingsGroup>
         ) : null}
         {scope === "account" ? <BotEmailAddressesGroup /> : null}
