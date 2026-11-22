@@ -13,7 +13,6 @@ type ComputerPanelProps = {
   computer: ComputerStatus | null;
   computerOpen: boolean;
   embeddedScreenUrl: string | null;
-  /** Changes to load the screen again in a new frame. */
   screenFrameKey?: string;
   heldScreen?: { url: string; key: string } | null;
   screenFrameRef: (frame: HTMLIFrameElement | null) => void;
@@ -40,7 +39,6 @@ export function ComputerPanel({
 }: ComputerPanelProps) {
   const percent = props.computer?.diskFullPercent;
   const warn = percent !== undefined && onCleanUpDisk && onDismissDiskWarning;
-  // The preview keeps its place either way, so the warning never remounts the live screen.
   return (
     <>
       <ComputerPreview {...props} />
@@ -89,7 +87,6 @@ function ComputerPreview({
   onOpenComputerSettings,
   onOpen,
 }: Omit<ComputerPanelProps, "cleaningUpDisk" | "onCleanUpDisk" | "onDismissDiskWarning">) {
-  // A clickable preview invites a boot that costs money, so an idle computer only wakes from its button.
   const idle =
     !computerOpen &&
     !booting &&
@@ -130,7 +127,6 @@ function ComputerPreview({
     );
   }
   const canOpen = !computerScreenError && !showingRecoveryHint;
-  // The Open pill replaces the status text on hover; fade it so they never overlap.
   const hideOnHover = canOpen
     ? "transition-opacity group-hover:opacity-0 group-has-[:focus-visible]:opacity-0"
     : "";
@@ -148,7 +144,7 @@ function ComputerPreview({
           >
             <Trans>Open in full window</Trans>
           </div>
-        ) : computer?.kind === "desktop" ? (
+        ) : computer?.kind === "desktop" && !embeddedScreenUrl ? (
           <DesktopKindEmptyState
             className={`grid h-full place-items-center px-6 text-center text-body text-muted-foreground/80 ${hideOnHover}`}
           />

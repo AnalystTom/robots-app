@@ -4,7 +4,6 @@ import { Id, SandboxKind } from "./ids.js";
 export const ComputerModeSchema = z.enum(["team", "dedicated"]);
 export type ComputerMode = z.infer<typeof ComputerModeSchema>;
 
-/** How big a machine a cloud computer runs on. Providers without sizes ignore it. */
 export const ComputerSizeSchema = z.enum(["standard", "large", "xlarge"]);
 export type ComputerSize = z.infer<typeof ComputerSizeSchema>;
 
@@ -42,33 +41,33 @@ export const ComputerStatusSchema = z.object({
   busyBotName: z.string().nullable(),
   canUpdate: z.boolean(),
   terminalAvailable: z.boolean(),
-  /** Set only while the user should see that the disk is nearly full. */
   diskFullPercent: z.number().int().min(0).max(100).optional(),
-  /** True when other people share the Space, and with it this computer and its browser sign-ins. */
   shared: z.boolean().optional(),
-  /** True when another person in the Space has control, so this viewer only watches. */
   controlledByOther: z.boolean().optional(),
-  /** The viewer's own control lease, set only for the person holding it; closing hands it back. */
   controlLeaseId: Id.optional(),
 });
 export type ComputerStatus = z.infer<typeof ComputerStatusSchema>;
 
-/** A computer screen to load, and how its URL signs the viewer in. */
 export const ComputerScreenSchema = z.object({
   url: z.string().nullable(),
-  /**
-   * Set when the URL signs in with a code that works once and ends the session an earlier code
-   * opened, so loading it a second time, or loading a newer one beside it, loses the screen.
-   * `screen` names what the URL shows apart from that code: URLs with the same value show the
-   * same screen. Absent when the URL can be loaded again, and from older servers.
-   */
   singleUseSignIn: z.object({ screen: z.string() }).optional(),
 });
+
+export const HostBrowserProfileSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  sites: z.array(z.string()),
+});
+export type HostBrowserProfile = z.infer<typeof HostBrowserProfileSchema>;
+
+export const HostBrowserImportSchema = z.object({
+  sites: z.array(z.object({ site: z.string(), cookies: z.number().int().nonnegative() })),
+});
+export type HostBrowserImport = z.infer<typeof HostBrowserImportSchema>;
 
 export const ComputerReleaseReasonSchema = z.enum(["done", "skipped"]);
 export type ComputerReleaseReason = z.infer<typeof ComputerReleaseReasonSchema>;
 
-/** Public metadata only; adapter validation and constructor options stay server-side. */
 export const ComputerProviderFieldSchema = z.object({
   key: z.string(),
   label: z.string(),
@@ -76,7 +75,6 @@ export const ComputerProviderFieldSchema = z.object({
   required: z.boolean(),
   options: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
   validation: z.enum(["public-https"]).optional(),
-  /** A saved credential must be re-entered when its destination changes. */
   destination: z.string().optional(),
 });
 export type ComputerProviderField = z.infer<typeof ComputerProviderFieldSchema>;
@@ -101,7 +99,6 @@ export const ComputerProviderUpdateSchema = z.object({
 });
 export type ComputerProviderUpdate = z.infer<typeof ComputerProviderUpdateSchema>;
 
-/** The vCPUs and memory each computer size provides. */
 export const COMPUTER_SIZE_SPECS: Record<ComputerSize, { vcpus: number; memoryGb: number }> = {
   standard: { vcpus: 4, memoryGb: 8 },
   large: { vcpus: 8, memoryGb: 16 },

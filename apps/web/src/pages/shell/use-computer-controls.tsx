@@ -23,7 +23,6 @@ import {
 import { errorText } from "../../lib/user-error";
 import type { ComputerState } from "./use-computer";
 
-/** Booting, opening, taking over and releasing the computer, and what its views show. */
 export function useComputerControls({
   rpc,
   state,
@@ -186,10 +185,6 @@ export function useComputerControls({
     }
   }
 
-  /**
-   * After this tab's own take or release, the one screen read starts beside the
-   * thread refresh, so a failed refresh still shows the new screen and the live event reads none.
-   */
   async function refreshAfterControlChange(targetBotId: string) {
     const shown = activeBotId.current === targetBotId || computerBotIdRef.current === targetBotId;
     const screen = shown ? refreshOwnControlScreen(targetBotId).catch(() => null) : undefined;
@@ -217,12 +212,9 @@ export function useComputerControls({
     }
     if (!active) return;
     const botId = active.id;
-    // Opening the panel is a fresh try at a screen that failed.
     screenAwaitsRetry.current = false;
     let cancelled = false;
     void (async () => {
-      // Refresh from the server first: a stale SSE "booting" snapshot would
-      // otherwise hide an RPC takeover.
       const snap = await refreshThread(botId).catch(() => null);
       if (cancelled || activeBotId.current !== botId) return;
       const state = snap?.computer?.state;
@@ -256,8 +248,6 @@ export function useComputerControls({
     }
   }, [computer?.busyBotName]);
 
-  // Opening the computer while its bot was running was refused as busy; boot it once the run
-  // ends, or the open window is left on a stopped computer with nothing to press.
   const computerBlockedByRun = computerBusyWithRun(computer, runStatus);
   useEffect(() => {
     if (computerBlockedByRun) return;
@@ -288,8 +278,6 @@ export function useComputerControls({
     const heartbeatBotId = computerBot?.id ?? active?.id;
     if ((panel !== "computer" && !computerOpen) || !heartbeatBotId || computer?.state !== "running")
       return;
-    // Only a visible page checks in: a forgotten tab neither keeps the computer awake nor holds
-    // control, which lapses about a minute and a half after it was hidden.
     const ping = () => {
       if (document.visibilityState !== "visible") return;
       void rpc.computer.heartbeat({ botId: heartbeatBotId }).catch((error) => {
@@ -301,7 +289,6 @@ export function useComputerControls({
       hasControl ? COMPUTER_CONTROL_HEARTBEAT_MS : COMPUTER_HEARTBEAT_MS,
     );
     ping();
-    // Coming back checks in at once, so a short visit elsewhere keeps control.
     document.addEventListener("visibilitychange", ping);
     return () => {
       window.clearInterval(timer);
@@ -309,9 +296,6 @@ export function useComputerControls({
     };
   }, [panel, computerOpen, computerBot?.id, active?.id, computer?.state, hasControl]);
 
-  // Control ends with the screen: closing it, switching chats, or leaving the page hands it back.
-  // The server tells the holder their lease, from Take control or teaching alike; the hand back
-  // names it, so a late one from an old page never ends newer control.
   const heldBotId = hasControl && computerOpen ? computerBot?.id : undefined;
   const heldLeaseId = heldBotId ? computer?.controlLeaseId : undefined;
   useEffect(() => {
@@ -327,8 +311,6 @@ export function useComputerControls({
     };
   }, [heldBotId, heldLeaseId]);
 
-  // A control event says the screen is held but not by whom; the status read says, and gives the
-  // holder their lease. The event, or this tab's own take, already reads the screen.
   const controlBotNeedsRead =
     computer?.controlHolder === "user" && !computer.controlledByOther && !computer.controlLeaseId
       ? computer.botId
@@ -338,7 +320,6 @@ export function useComputerControls({
     void refreshComputerFor(controlBotNeedsRead, false).catch(() => undefined);
   }, [controlBotNeedsRead, computerOpen]);
 
-  /** Open the computer view. Only an explicit Take control asks for the lease. */
   async function openComputer(botId?: string, takeControl = false) {
     const id = botId ?? active?.id;
     if (!id) return false;
@@ -354,12 +335,10 @@ export function useComputerControls({
       commitComputer(targetComputer);
       setScreenUrl(targetScreen);
     }
-    // Reopening during a boot shows it; a second boot would be refused as busy.
     const bootInFlight = bootsInFlight.current.has(id) || targetComputer?.state === "booting";
     setComputerOpen(true);
     computerVisible.current = true;
     if (bootInFlight && !takeControl) {
-      // An external boot may have finished since this snapshot was cached.
       if (!bootsInFlight.current.has(id)) await refreshComputerFor(id).catch(() => undefined);
       return true;
     }
@@ -373,7 +352,6 @@ export function useComputerControls({
       });
       return true;
     } catch {
-      // computerError already set in bootComputer
       return false;
     }
   }
@@ -386,8 +364,6 @@ export function useComputerControls({
   async function releaseComputer(reason?: ComputerReleaseReason) {
     const botId = computerBotIdRef.current ?? activeBotId.current;
     if (!botId) return;
-    // Hand back and I'm done end whatever control this person holds on the bot's screen. Nothing
-    // changes here until the server answers; the screen then follows its state.
     try {
       const leaseId = computerRef.current?.controlLeaseId ?? ownControlLease(botId);
       if (leaseId) expectOwnControlEvent(botId, "computer.takeover.released", leaseId);
@@ -409,7 +385,6 @@ export function useComputerControls({
     }
   }
 
-  /** Answers a needs-you card from the chat; a failure is the card's to show. */
   async function answerTakeover(
     botId: string,
     runId: string | undefined,
@@ -430,7 +405,6 @@ export function useComputerControls({
       computerBotIdRef.current === botId || activeBotId.current === botId
         ? refreshAfterControlChange(botId).catch(() => undefined)
         : undefined,
-      // A group card may belong to a bot that is neither open nor active.
       groupId ? refreshGroupThread(groupId).catch(() => undefined) : undefined,
     ]);
   }
@@ -463,7 +437,6 @@ export function useComputerControls({
           : !booting && computer?.state === "error"
             ? t`Computer failed to boot`
             : null));
-  // Retrying cannot help once the hours are spent; only a plan change can.
   const allowanceUsed = computer?.state !== "running" && isComputerAllowanceUsed(computerFailure);
   const computerScreenError = computerFailure ? (
     <div role="alert" className="flex flex-col items-center gap-3 px-6 text-center text-body">
@@ -485,8 +458,6 @@ export function useComputerControls({
             if (!computerBot) return;
             setScreenLoadError(null);
             setScreenUrlLoadedBotId(null);
-            // An explicit retry clears any error and starts the screen's reconnects over;
-            // background screen reads clear only their own error.
             screenAwaitsRetry.current = false;
             resetScreenReconnect();
             if (computer?.state === "running") {
@@ -519,7 +490,6 @@ export function useComputerControls({
       ) : null}
     </div>
   ) : null;
-  // Booting shows inline with the screen's own Close; leaving it lets the boot finish.
   const computerBooting =
     booting || computer?.state === "booting" ? (
       <span className="flex flex-col items-center gap-3">
@@ -529,7 +499,6 @@ export function useComputerControls({
     ) : null;
   const computerPreviewScreen =
     !computerOpen &&
-    computer?.kind !== "desktop" &&
     computer?.state === "running" &&
     Boolean(embeddedScreenUrl) &&
     !computerScreenError;

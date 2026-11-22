@@ -11,7 +11,6 @@ import { LocalAgentHomeStore } from "./home.js";
 import { HostAwareSandbox } from "./host-aware-sandbox.js";
 import { InMemoryJobQueue } from "./wakeup.js";
 
-// The plan's size is read from billing, which these Prisma doubles do not model.
 vi.mock("@robots/db", async (importOriginal) => ({
   ...(await importOriginal<typeof Db>()),
   planComputerSize: vi.fn(async () => "standard"),
@@ -49,7 +48,6 @@ async function fixture() {
       )
     )
       return { count: 0 };
-    // Model the database trigger that revokes viewers on a lifecycle transition.
     if (
       data.state &&
       data.state !== row.state &&
@@ -73,7 +71,10 @@ async function fixture() {
   const execute = vi.spyOn(docker, "execute").mockImplementation(async function* () {
     yield { type: "exit", code: 0 };
   });
-  const sandbox = new HostAwareSandbox(docker, new FakeSandboxProvider(), async () => false);
+  const sandbox = new HostAwareSandbox(docker, new FakeSandboxProvider(), {
+    forHome: async () => false,
+    forUser: async () => null,
+  });
   const prisma = {
     computer: { findUniqueOrThrow: vi.fn(async () => ({ ...row })), updateMany },
     $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),

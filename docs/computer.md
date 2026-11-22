@@ -67,3 +67,21 @@ start with your own bots, never from routines or other people's messages.
 > [!WARNING]
 > A bot with access to your computer can read your files and run programs as you. Only turn it on
 > for a computer you would let your bots use unattended.
+
+### A screen on a Linux server
+
+A self-hosted Linux server that lets its admins' bots use the server itself can also give each of
+those bots its own screen and browser there. Bots then use the page and screen tools, and admins
+can **Take control** from web, desktop and mobile as on any other computer. Everyone else keeps an
+isolated computer.
+
+The host computer service needs Xvfb, x11vnc, fluxbox, xdotool, wmctrl, scrot, xterm, xdpyinfo,
+websockify and Chromium on its `PATH`, and pass `createHostDesktop` a tools folder whose
+`share/novnc` holds noVNC with this repository's `embed.html`, `clipboard-bridge.js` and
+`mobile-keyboard.js`, and whose `bin` holds `robots-page-browser`, `page_secrets.py` and
+`agent-browser`. Each bot's browser keeps its own profile beside the bots' folders and stores its
+sign-ins with the desktop keyring, not the public key the isolated computers use.
+
+**Sign in from this computer**, on that screen, copies the sessions of the sites you pick from a
+Chrome or Chromium profile on the server into the bot's browser. Only admins see it, and cookie
+values never leave the server.

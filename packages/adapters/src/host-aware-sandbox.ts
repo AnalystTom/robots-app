@@ -6,6 +6,7 @@ import type {
   ComputerInput,
   ComputerRef,
   ControlLeaseRef,
+  HostBrowserImportRequest,
   PortableFile,
   ProcessEvent,
   SandboxProvider,
@@ -27,7 +28,9 @@ import {
   loadComputerProviderSelection,
 } from "./configured-sandbox.js";
 import { assertHostCommandsAllowed, DesktopSandboxProvider } from "./desktop-sandbox.js";
-import { hostComputerGate } from "./host-computer-access.js";
+import type { HostComputerGate } from "./host-computer-access.js";
+import { HostComputerAccessDeniedError, hostComputerGate } from "./host-computer-access.js";
+import { HostBrowserImportUnavailableError } from "./host-computer-protocol.js";
 import { HostComputerSandbox } from "./host-computer-sandbox.js";
 import type { SandboxProviderOptions } from "./sandbox-factory.js";
 import { createSandboxProvider } from "./sandbox-factory.js";
@@ -125,7 +128,7 @@ async function createBaseRunSandbox(
   return new HostAwareSandbox(
     primary,
     new HostComputerSandbox(opts.hostComputerUrl ?? "", opts.hostComputerToken ?? ""),
-    hostComputerGate(opts.prisma, opts.hostComputerAccess).forHome,
+    hostComputerGate(opts.prisma, opts.hostComputerAccess),
   );
 }
 
@@ -135,7 +138,7 @@ export class HostAwareSandbox implements SandboxProvider {
   constructor(
     private readonly isolated: SandboxProvider,
     private readonly host: SandboxProvider,
-    private readonly hostEnabled: (homeKey: string | undefined) => Promise<boolean>,
+    private readonly gate: HostComputerGate,
   ) {
     if (isolated.pageBrowser || host.pageBrowser) {
       this.pageBrowser = async (computer, request, context) => {
@@ -166,13 +169,19 @@ export class HostAwareSandbox implements SandboxProvider {
 
   private async usable(computer: Pick<ComputerRef, "kind" | "botId">) {
     if (computer.kind !== "desktop") return this.isolated;
-    if (!(await this.hostEnabled(computer.botId)))
-      throw new Error("Local computer access is disabled");
+    if (!(await this.gate.forHome(computer.botId))) throw new HostComputerAccessDeniedError();
     return this.host;
   }
 
+  private async usableBy(computer: Pick<ComputerRef, "kind" | "botId">, context: AdapterContext) {
+    const provider = await this.usable(computer);
+    if (provider === this.host && !(await this.gate.forUser(context.userId)))
+      throw new HostComputerAccessDeniedError();
+    return provider;
+  }
+
   private async provisioner(homeKey: string | undefined) {
-    return (await this.hostEnabled(homeKey)) ? this.host : this.isolated;
+    return (await this.gate.forHome(homeKey)) ? this.host : this.isolated;
   }
 
   async provisionKind(homeKey?: string) {
@@ -243,11 +252,27 @@ export class HostAwareSandbox implements SandboxProvider {
   }
 
   async connectScreen(computer: ComputerRef, request: ScreenRequest, context: AdapterContext) {
-    return (await this.usable(computer)).connectScreen(computer, request, context);
+    return (await this.usableBy(computer, context)).connectScreen(computer, request, context);
+  }
+
+  async hostBrowserProfiles(computer: ComputerRef, context: AdapterContext) {
+    const provider = await this.usableBy(computer, context);
+    if (!provider.hostBrowserProfiles) throw new HostBrowserImportUnavailableError();
+    return provider.hostBrowserProfiles(computer, context);
+  }
+
+  async importHostBrowserSessions(
+    computer: ComputerRef,
+    request: HostBrowserImportRequest,
+    context: AdapterContext,
+  ) {
+    const provider = await this.usableBy(computer, context);
+    if (!provider.importHostBrowserSessions) throw new HostBrowserImportUnavailableError();
+    return provider.importHostBrowserSessions(computer, request, context);
   }
 
   async connectTerminal(computer: ComputerRef, request: TerminalRequest, context: AdapterContext) {
-    const provider = await this.usable(computer);
+    const provider = await this.usableBy(computer, context);
     if (!provider.connectTerminal) throw new Error("terminal is unavailable on this computer");
     return provider.connectTerminal(computer, request, context);
   }
@@ -258,7 +283,7 @@ export class HostAwareSandbox implements SandboxProvider {
     lease: ControlLeaseRef,
     context: AdapterContext,
   ) {
-    return (await this.usable(computer)).sendInput(computer, input, lease, context);
+    return (await this.usableBy(computer, context)).sendInput(computer, input, lease, context);
   }
 
   async observe(computer: ComputerRef, context: AdapterContext) {
@@ -328,16 +353,14 @@ export class HostAwareSandbox implements SandboxProvider {
     return this.route(computer).releaseScreen?.(computer, context) ?? Promise.resolve();
   }
 
-  setScreenControl(
+  async setScreenControl(
     computer: ComputerRef,
     interactive: boolean,
     context: AdapterContext,
     controlToken?: string,
   ) {
-    return (
-      this.route(computer).setScreenControl?.(computer, interactive, context, controlToken) ??
-      Promise.resolve()
-    );
+    const provider = interactive ? await this.usableBy(computer, context) : this.route(computer);
+    await provider.setScreenControl?.(computer, interactive, context, controlToken);
   }
 
   stop(computer: ComputerRef, context: AdapterContext, options?: { discardUnsaved?: boolean }) {

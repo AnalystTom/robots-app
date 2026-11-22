@@ -65,16 +65,33 @@ import {
   withViewOnly,
 } from "../computer-control.js";
 import { scrollPoint } from "../computer-input.js";
+import { refuseUnlessHostAdmin } from "../host-browser-import.js";
 import type { RouterContext } from "./context.js";
 import { computerContext } from "./shared.js";
 
 const MAX_COMPUTER_TEXT_FILE_BYTES = 2 * 1024 * 1024;
 
-/** Each command writes a running and a done event, so this keeps about 100 commands. */
 const COMPUTER_COMMAND_HISTORY_EVENTS = 200;
 
 export function computerRoutes(ctx: RouterContext) {
   const { deps, repos, taughtSkills, authed } = ctx;
+  async function hostBrowserTarget(
+    context: { actor: Parameters<typeof repos.getBot>[0] },
+    botId: string,
+  ) {
+    const bot = await repos.getBot(context.actor, botId);
+    const computer = bot.computer;
+    if (!computer?.providerRef || computer.state !== "running")
+      throw new ORPCError("BAD_REQUEST", { message: "Wake the bot's computer first." });
+    const ctx = await computerScreenContext(
+      deps.prisma,
+      context.actor,
+      computer.id,
+      bot.id,
+      "screen",
+    );
+    return { computer, botId: bot.id, ctx };
+  }
   return {
     computer: {
       status: authed.computer.status.handler(async ({ context, input }) =>
@@ -126,7 +143,6 @@ export function computerRoutes(ctx: RouterContext) {
           if (error instanceof ComputerBusyError) {
             throw new ORPCError("CONFLICT", { message: "Computer is busy" });
           }
-          // The bot was deleted or moved to another computer while this boot waited.
           if (isRecordNotFound(error)) {
             throw new ORPCError("NOT_FOUND", { message: "Computer no longer exists" });
           }
@@ -140,7 +156,6 @@ export function computerRoutes(ctx: RouterContext) {
         const bot = await repos.getBot(context.actor, input.botId);
         if (!bot.computer) throw new IsolationError();
         assertNotAnotherPersonsControl(bot.computer, context.actor);
-        // A repeated Stop must not turn an unsafe guest back into an auto-startable one.
         if (bot.computer.state === "quarantined") {
           if (bot.computer.providerRef)
             await deps.sandbox.stop(
@@ -154,8 +169,6 @@ export function computerRoutes(ctx: RouterContext) {
         const claimed = await deps.prisma.computer.updateMany({
           where: {
             id: bot.computer.id,
-            // Provision may resume the sandbox after Stop returns; let the boot finish first. Stop
-            // acts on the state it read, so one that changed since is busy too.
             state: { equals: bot.computer.state, notIn: ["booting", "suspending", "quarantined"] },
             providerRef: bot.computer.providerRef,
             kind: bot.computer.kind,
@@ -201,8 +214,6 @@ export function computerRoutes(ctx: RouterContext) {
             const ref = toComputerRef(bot.computer);
             try {
               if (bot.computer.state === "stopped" || bot.computer.state === "suspended") {
-                // It was saved when it went down and its provider keeps the disk, so a save would
-                // only wake it.
                 stopping = true;
                 await deps.sandbox.stop(ref, ctx);
               } else {
@@ -211,7 +222,6 @@ export function computerRoutes(ctx: RouterContext) {
                 });
               }
             } catch (error) {
-              // The sandbox is already gone: nothing left to checkpoint or stop.
               if (!isSandboxGoneError(error)) throw error;
               end = "gone";
             }
@@ -236,8 +246,6 @@ export function computerRoutes(ctx: RouterContext) {
           await recordComputerRunEnd(deps.prisma, bot.computer, end);
           await endTeachingWithLease(deps, context.actor.spaceId, controlLeaseId);
         } catch (error) {
-          // A failed save, or a stop the provider put off, leaves the computer up: hand it back
-          // to idle sleep and metering instead of hiding it as an error.
           const stillUp = !stopping || sleepDeferReason(error) !== undefined;
           await deps.prisma.computer
             .updateMany({
@@ -269,7 +277,6 @@ export function computerRoutes(ctx: RouterContext) {
             throw new ORPCError("CONFLICT", { message: "Computer is busy" });
           throw error;
         } finally {
-          // A refused start can still have dismissed earlier failures.
           await deps.events.publishSpaceChange?.(context.actor.spaceId, "computerUpdates");
         }
       }),
@@ -351,7 +358,6 @@ export function computerRoutes(ctx: RouterContext) {
         takeComputerControl(deps, context.actor, input.botId),
       ),
       release: authed.computer.release.handler(async ({ context, input }) => {
-        // Handing back also ends a teaching recording made under this control, saved as a draft.
         const handBack = async () => {
           const bot = await repos.getBot(context.actor, input.botId);
           if (bot.computer) {
@@ -369,8 +375,6 @@ export function computerRoutes(ctx: RouterContext) {
           await handBack();
           return { ok: true as const };
         }
-        // Done or Skip answers the bot's request and then hands back. A refused answer changes
-        // nothing, including who controls the screen.
         const answered = await answerComputerRequest(
           deps,
           context.actor,
@@ -379,11 +383,9 @@ export function computerRoutes(ctx: RouterContext) {
           input.runId,
         );
         if (answered) return { ok: true as const };
-        // The card waits for its answer to land, so one that changed nothing must say so.
         if (input.runId !== undefined) {
           throw new ORPCError("CONFLICT", { message: "The bot is no longer waiting" });
         }
-        // The screen's I'm done with nothing waiting any more is a plain hand back.
         await handBack();
         return { ok: true as const };
       }),
@@ -508,7 +510,6 @@ export function computerRoutes(ctx: RouterContext) {
             if (error instanceof Error && error.message.startsWith("agent home file exceeds ")) {
               throw new ORPCError("BAD_REQUEST", { message: "file is too large to preview" });
             }
-            // The file browser can ask for a file deleted since it last listed.
             if (error instanceof Error && "code" in error && error.code === "ENOENT") {
               throw new ORPCError("NOT_FOUND", { message: "file not found" });
             }
@@ -521,7 +522,6 @@ export function computerRoutes(ctx: RouterContext) {
         const bot = await repos.getBot(context.actor, input.botId);
         const computer = bot.computer;
         if (!computer) throw new IsolationError();
-        // The stopped-computer home store is text-only; binary transfer needs the live machine.
         if (computer.state !== "running" || !computer.providerRef) {
           throw new ORPCError("CONFLICT", { message: "Start the computer first." });
         }
@@ -621,7 +621,6 @@ export function computerRoutes(ctx: RouterContext) {
         ) {
           return { url: null };
         }
-        // Same rule as the interactive screen: only the user holding this bot's control lease.
         if (!holdsComputerControl(computer, bot.id, context.actor) || !computer.controlLeaseId) {
           throw new ORPCError("FORBIDDEN", { message: "Take control first." });
         }
@@ -660,6 +659,34 @@ export function computerRoutes(ctx: RouterContext) {
           ),
         };
       }),
+      hostBrowserProfiles: authed.computer.hostBrowserProfiles.handler(
+        async ({ context, input }) => {
+          const { computer, ctx } = await hostBrowserTarget(context, input.botId);
+          const profiles = await refuseUnlessHostAdmin(
+            deps.sandbox.hostBrowserProfiles?.(toComputerRef(computer), ctx),
+          );
+          return { profiles };
+        },
+      ),
+      importHostBrowserSessions: authed.computer.importHostBrowserSessions.handler(
+        async ({ context, input }) => {
+          const { computer, botId, ctx } = await hostBrowserTarget(context, input.botId);
+          const imported = await refuseUnlessHostAdmin(
+            deps.sandbox.importHostBrowserSessions?.(
+              toComputerRef(computer),
+              { profile: input.profile, sites: input.sites },
+              ctx,
+            ),
+          );
+          getLogger().info("computer.host_browser_sessions_imported", {
+            botId,
+            userId: context.actor.userId,
+            profile: input.profile,
+            sites: imported.sites,
+          });
+          return imported;
+        },
+      ),
       screenUrl: authed.computer.screenUrl.handler(async ({ context, input }) => {
         let bot = await repos.getBot(context.actor, input.botId);
         if (await expireStaleComputerControl(deps, bot.computer)) {
@@ -672,7 +699,6 @@ export function computerRoutes(ctx: RouterContext) {
           return { url: null };
         }
         const computer = bot.computer;
-        // Everyone in the Space can watch; only the person holding control can drive it.
         const holder = holdsComputerControl(computer, bot.id, context.actor);
         const session = await deps.sandbox
           .connectScreen(
@@ -708,7 +734,6 @@ export function computerRoutes(ctx: RouterContext) {
             undefined,
             session.headers,
           ),
-          // The view is part of what a screen shows: taking or releasing control changes it.
           ...(session.singleUseSignIn
             ? {
                 singleUseSignIn: {
@@ -722,7 +747,6 @@ export function computerRoutes(ctx: RouterContext) {
         const bot = await repos.getBot(context.actor, input.botId);
         const computer = bot.computer;
         if (!computer?.providerRef || computer.state !== "running") return { image: null };
-        // A card shows the screen only while its run waits, before and after the capture.
         const stillWaiting = async () =>
           !input.runId ||
           Boolean(await waitingTakeoverRun(deps, context.actor.spaceId, bot.id, input.runId));

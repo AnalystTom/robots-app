@@ -187,7 +187,7 @@ describe("routing computers between this computer and isolated ones", () => {
       vi.spyOn(host, "prepare"),
     ];
     const gate = hostComputerGate(database() as never, admins);
-    const routed = new HostAwareSandbox(new FakeSandboxProvider(), host, gate.forHome);
+    const routed = new HostAwareSandbox(new FakeSandboxProvider(), host, gate);
     const computer = desktopComputer("member-space");
     const refused = "Local computer access is disabled";
 
@@ -209,7 +209,7 @@ describe("routing computers between this computer and isolated ones", () => {
   it("still runs commands on this computer for an admin-owned space", async () => {
     const host = new FakeSandboxProvider();
     const gate = hostComputerGate(database() as never, admins);
-    const routed = new HostAwareSandbox(new FakeSandboxProvider(), host, gate.forHome);
+    const routed = new HostAwareSandbox(new FakeSandboxProvider(), host, gate);
     const computer = await host.provision({ botId: "home-admin-space", homePath: "/home" }, ctx);
     const execute = vi.spyOn(host, "execute");
     await drain(routed.execute({ ...computer, kind: "desktop" }, { argv: ["true"] }, ctx));
