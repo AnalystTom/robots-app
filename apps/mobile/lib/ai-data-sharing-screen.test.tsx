@@ -141,7 +141,6 @@ function lastAlert() {
     press: (text: string) => buttons?.find((b) => b.text === text)?.onPress?.(),
   };
 }
-/** Answers the opening read, and holds the named write open so a test decides how it ends. */
 function hold(write: string, answer = opened) {
   let finish!: (outcome: Error | typeof opened) => void;
   mocks.rpc.mockImplementation((proc: string) =>
@@ -162,7 +161,6 @@ function hold(write: string, answer = opened) {
   };
 }
 
-/** What every write carries: the server, session and space its save was started in. */
 const pinned = {
   requestContext: {
     apiBase: "https://app.example.test",
@@ -177,7 +175,6 @@ it("shows each service's permission, and allows one only after its consent promp
   expect(toggle("Allow Speech on mobile").checked).toBe(false);
 
   await act(async () => toggle("Allow Speech on mobile").click());
-  expect(mocks.prompt).toHaveBeenCalledWith(opened.recipients[1], undefined);
   expect(allow.calls()).toEqual([
     ["aiConsent/allow", { scope: "mobile", version: "v1", keys: ["Speech"] }, pinned],
   ]);

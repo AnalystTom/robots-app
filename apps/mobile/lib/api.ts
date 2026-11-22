@@ -11,6 +11,7 @@ import {
   isUnreachableStatus,
   parseRetryAfter,
   readBoundedJsonResponse,
+  recordAiConsentGranted,
   withAbort,
 } from "@robots/core";
 import { clientCorrelationHeaders, responseCorrelation } from "@robots/logging/monitoring";
@@ -181,9 +182,8 @@ export type ApiRequestContext = {
   apiBase: string;
   headers: Record<string, string>;
 };
-/** Keeps consent prompts separate across servers and the selected Space. */
 export function aiConsentCoalesceKey(requestContext: ApiRequestContext): string {
-  return [requestContext.apiBase, requestContext.headers["x-robots-space-id"] ?? ""].join("\u0000");
+  return [requestContext.apiBase, requestContext.sessionGeneration ?? ""].join("\u0000");
 }
 const aiConsentListeners = new Set<() => void>();
 /** Runs after a consent prompt's Allow is saved, so whatever shows the permissions reads them again. */
@@ -667,8 +667,10 @@ export type RpcArgs<P extends RpcPath> =
       ? [body?: RpcInput<P>, options?: RpcOptions]
       : [body: RpcInput<P>, options?: RpcOptions];
 /** Calls a procedure from the shared contract; its path picks the body and result types. */
-export function rpc<P extends RpcPath>(proc: P, ...[body, options]: RpcArgs<P>) {
-  return request(proc, body, options) as Promise<RpcOutput<P>>;
+export async function rpc<P extends RpcPath>(proc: P, ...[body, options]: RpcArgs<P>) {
+  const output = (await request(proc, body, options)) as RpcOutput<P>;
+  if (proc === "aiConsent/allow") recordAiConsentGranted();
+  return output;
 }
 async function request(
   proc: RpcPath,

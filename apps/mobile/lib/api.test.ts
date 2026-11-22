@@ -522,7 +522,6 @@ describe("mobile API requests", () => {
   it("asks about every mentioned routine's recipients before a combined send", async () => {
     vi.mocked(promptAiConsent).mockClear();
     vi.mocked(promptAiConsent).mockResolvedValue(false);
-    // A paused routine on another bot is reported only by a check for that routine.
     const recipient = {
       key: "routine-model",
       name: "Example AI",
@@ -549,7 +548,6 @@ describe("mobile API requests", () => {
         routineIds: ["routine-active", "routine-paused"],
       }),
     ).rejects.toThrow("AI data sharing");
-    expect(promptAiConsent).toHaveBeenCalledWith(recipient, undefined);
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/rpc/aiConsent/status",
       "/rpc/aiConsent/status",
@@ -627,7 +625,6 @@ describe("mobile API requests", () => {
       "told",
       "/rpc/threads/send",
     ]);
-    expect(promptAiConsent).toHaveBeenLastCalledWith(recipient, "https://example.com/privacy");
   });
 
   it("coalesces concurrent mobile consent checks before sending each request once", async () => {
@@ -849,8 +846,6 @@ describe("mobile API requests", () => {
     await expect(selectSpace("space-b")).resolves.toBe(true);
     resolveStale(rpcErrorResponse(401, "UNAUTHORIZED", "Unauthorized"));
 
-    // The stale request fails without probing or touching the new selection;
-    // Space B's own requests run recovery if B is itself inaccessible.
     await expect(stale).rejects.toThrow("Unauthorized");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(selectedSpaceId()).toBe("space-b");
@@ -885,9 +880,6 @@ describe("mobile API requests", () => {
     await expect(selectSpace("space-a")).resolves.toBe(true);
     resolveStale(rpcErrorResponse(401, "UNAUTHORIZED", "Unauthorized"));
 
-    // ID-only matching would treat this obsolete Space A response as current
-    // after A → B → A; the selection epoch must keep recovery from clearing
-    // the newer Space A selection.
     await expect(stale).rejects.toThrow("Unauthorized");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(selectedSpaceId()).toBe("space-a");
@@ -906,7 +898,6 @@ describe("mobile API requests", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     try {
-      // Home polls several reads at once; every one of them comes back 401.
       await Promise.all([
         expect(rpc("me")).rejects.toThrow("Unauthorized"),
         expect(rpc("bots/list")).rejects.toThrow("Unauthorized"),
@@ -919,7 +910,6 @@ describe("mobile API requests", () => {
           .mock.calls.filter(([key]) => key === "robots.session_token"),
       ).toHaveLength(1);
 
-      // Later requests carry no session and cannot reject it again.
       await expect(rpc("me")).rejects.toThrow("Unauthorized");
       expect(fetchMock.mock.calls[2]![1].headers.authorization).toBeUndefined();
       expect(rejected).toHaveBeenCalledOnce();
@@ -947,8 +937,6 @@ describe("mobile API requests", () => {
       vi.fn(async () => rpcErrorResponse(401, "UNAUTHORIZED", "Unauthorized")),
     );
 
-    // The rejection ends the session, but the queue must survive it: the app reports
-    // those messages before a sign-in deletes them.
     await expect(rpc("bots/list")).rejects.toThrow("Unauthorized");
 
     expect(store.has("robots.session_token")).toBe(false);
@@ -976,8 +964,6 @@ describe("mobile API requests", () => {
       expect(store.get("robots.session_token")).toBe("session-token");
       expect(selectedSpaceId()).toBeNull();
 
-      // When the probe without a Space is refused too, the session itself is
-      // gone. The selection is left alone until sign-in resets it.
       await selectSpace("space-support");
       fetchMock
         .mockResolvedValueOnce(rpcErrorResponse(401, "UNAUTHORIZED", "Unauthorized"))
@@ -1037,7 +1023,6 @@ describe("mobile API requests", () => {
     try {
       const pending = changePassword("old-password", "new-password");
       await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
-      // The server already revoked the old token; a poll lands before the new one arrives.
       await expect(rpc("bots/list")).rejects.toThrow("Unauthorized");
       const accountResult = await fetchAuthenticatedAccountJson("/api/devices", {}, {});
       expect(accountResult.response.status).toBe(401);

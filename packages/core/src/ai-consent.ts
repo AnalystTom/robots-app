@@ -1,20 +1,22 @@
 import type { AiConsentStatus, AiDataUse, AiRecipient, SettingsScope } from "@robots/contracts";
 import { AI_CONSENT_REQUIRED, SettingsScopeSchema } from "@robots/contracts";
 
-/** A foreground check failed before the requested mutation was dispatched. */
 export class AiConsentBlocked extends Error {
   constructor(message = AI_CONSENT_REQUIRED, cause?: unknown) {
     super(message);
-    // Keeps an unreachable server recognizable behind the consent check.
     if (cause !== undefined) {
       Object.defineProperty(this, "cause", { value: cause, writable: true, configurable: true });
     }
   }
 }
 
-const pendingAiConsent = new Map<string, Promise<void>>();
+const pendingAiConsent = new Map<string, { done: Promise<void>; keys: string[] }>();
+let completedGrants = 0;
 
-/** Only user actions that can start AI processing need a foreground disclosure. */
+export function recordAiConsentGranted(): void {
+  completedGrants += 1;
+}
+
 export function aiDataUsesForProcedure(procedure: string, input?: unknown): AiDataUse[] {
   const path = procedure.replaceAll(".", "/");
   if (
@@ -46,35 +48,46 @@ export function aiDataUsesForProcedure(procedure: string, input?: unknown): AiDa
 export async function ensureAiDataConsent(options: {
   uses: AiDataUse[];
   status(): Promise<AiConsentStatus>;
-  prompt(recipient: AiRecipient, privacyUrl?: string): Promise<boolean>;
+  prompt(
+    recipients: AiRecipient[],
+    privacyUrl: string | undefined,
+    grant: () => Promise<unknown>,
+  ): Promise<boolean>;
   allow(input: { scope: string; version: string; keys: string[] }): Promise<unknown>;
-  /** Separates independent API servers before the account-space scope is applied. */
   coalesceKey?: string;
 }) {
   if (options.uses.length === 0) return;
+  const granted = new Set<string>();
   try {
-    const status = await options.status();
-    for (const recipient of status.recipients) {
-      if (recipient.allowed || !options.uses.includes(recipient.use)) continue;
-      const key = [options.coalesceKey ?? "", status.scope, status.version, recipient.key].join(
-        "\u0000",
+    for (;;) {
+      const grantsBeforeRead = completedGrants;
+      const status = await options.status();
+      const needed = status.recipients.filter(
+        (recipient) =>
+          !recipient.allowed && options.uses.includes(recipient.use) && !granted.has(recipient.key),
       );
-      let pending = pendingAiConsent.get(key);
-      if (!pending) {
-        pending = (async () => {
-          if (!(await options.prompt(recipient, status.privacyUrl)))
-            throw new Error(AI_CONSENT_REQUIRED);
-          await options.allow({
-            scope: status.scope,
-            version: status.version,
-            keys: [recipient.key],
-          });
-        })().finally(() => {
-          if (pendingAiConsent.get(key) === pending) pendingAiConsent.delete(key);
-        });
-        pendingAiConsent.set(key, pending);
+      if (needed.length === 0) return;
+      const key = [options.coalesceKey ?? "", status.scope, status.version].join("\u0000");
+      const shown = pendingAiConsent.get(key);
+      if (shown) {
+        await shown.done;
+        for (const grantedKey of shown.keys) granted.add(grantedKey);
+        if (needed.every((recipient) => granted.has(recipient.key))) return;
+        continue;
       }
-      await pending;
+      if (completedGrants !== grantsBeforeRead) continue;
+      const keys = needed.map((recipient) => recipient.key);
+      const grant = () => options.allow({ scope: status.scope, version: status.version, keys });
+      const done = (async () => {
+        if (!(await options.prompt(needed, status.privacyUrl, grant)))
+          throw new Error(AI_CONSENT_REQUIRED);
+        await grant();
+      })().finally(() => {
+        if (pendingAiConsent.get(key)?.done === done) pendingAiConsent.delete(key);
+      });
+      pendingAiConsent.set(key, { done, keys });
+      await done;
+      return;
     }
   } catch (error) {
     throw new AiConsentBlocked(error instanceof Error ? error.message : AI_CONSENT_REQUIRED, error);
@@ -88,13 +101,11 @@ export function aiConsentTarget(input: unknown): {
   settingsScope?: SettingsScope;
 } {
   if (!input || typeof input !== "object") return {};
-  // A request that names a settings copy is asked about that copy's recipients.
   const scope = SettingsScopeSchema.safeParse((input as { scope?: unknown }).scope).data;
   const thread = threadConsentTarget(input);
   return scope ? { ...thread, settingsScope: scope } : thread;
 }
 
-/** A send that starts routines is also checked as each routine's own test run would be. */
 export function aiConsentTargets(input: unknown): ReturnType<typeof aiConsentTarget>[] {
   const routineIds = (input as { routineIds?: unknown } | null | undefined)?.routineIds;
   return [

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { ORPCError } from "@orpc/server";
+import type { AiRecipientGrant } from "@robots/adapters";
 import {
   aiRecipient,
   cloudAgentForActor,
@@ -31,11 +32,11 @@ import type { RouterDeps } from "./router.js";
 import { resolveThreadTarget } from "./thread-target.js";
 import { voiceCredentialServer } from "./voice.js";
 
-export async function aiConsentStatus(
+async function aiConsentGrants(
   deps: RouterDeps,
   actor: Actor,
   query: AiConsentQuery = {},
-): Promise<AiConsentStatus> {
+): Promise<AiConsentGrants> {
   const uses = query.uses ?? ["model", "memory", "voice"];
   const modelsEnabled = uses.includes("model") && deps.env.agentRuntime !== "scripted";
   const target =
@@ -62,8 +63,7 @@ export async function aiConsentStatus(
         ? resolveMemberMainModel({ prisma: deps.prisma, secretStore: deps.secrets }, actor)
         : null,
       modelsEnabled
-        ? // Any bot in the space runs on this member's credentials when they message it.
-          deps.prisma.bot.findMany({
+        ? deps.prisma.bot.findMany({
             where: {
               spaceId: actor.spaceId,
               archivedAt: null,
@@ -72,9 +72,6 @@ export async function aiConsentStatus(
             select: { modelProvider: true, modelId: true, thinkingLevel: true },
           })
         : [],
-      // An active routine with its own model is another recipient for this bot.
-      // A paused routine is included only when this check is for that routine,
-      // so it does not block an ordinary chat message.
       modelsEnabled
         ? deps.prisma.routine.findMany({
             where: {
@@ -107,14 +104,19 @@ export async function aiConsentStatus(
         ? deps.prisma.deploymentSettings.findUnique({ where: { id: "default" } })
         : null,
       deps.prisma.aiDataConsent.findMany({
-        where: { userId: actor.userId, spaceId: actor.spaceId, version: AI_DISCLOSURE_VERSION },
+        where: { userId: actor.userId, version: AI_DISCLOSURE_VERSION },
+        select: { recipientKey: true },
       }),
     ]);
-  const allowed = new Set(consents.map((row) => row.recipientKey));
-  const recipients = new Map<string, AiRecipient>();
-  const add = (recipient: ReturnType<typeof aiRecipient>) => {
-    if (recipient)
-      recipients.set(recipient.key, { ...recipient, allowed: allowed.has(recipient.key) });
+  const granted = new Set(consents.map((row) => row.recipientKey));
+  const recipients = new Map<string, AiRecipientGrant>();
+  const add = (recipient: AiRecipientGrant | null) => {
+    if (!recipient) return;
+    const known = recipients.get(recipient.key);
+    recipients.set(recipient.key, {
+      ...recipient,
+      grantKeys: [...new Set([...(known?.grantKeys ?? []), ...recipient.grantKeys])],
+    });
   };
   if (modelsEnabled) {
     const deployment = deps.env.deploymentModelConfigured
@@ -140,7 +142,6 @@ export async function aiConsentStatus(
         });
       }),
     );
-    // Connected models remain reachable by helpers during a targeted bot run.
     for (const preference of preferences)
       selected.push({
         provider: preference.credential.provider,
@@ -152,7 +153,6 @@ export async function aiConsentStatus(
         },
         thinkingLevel: null,
       });
-    // Every purpose's models, fallbacks included, can receive a run's content.
     const roleModels = await Promise.all(
       roleChoices.map(async (choice) => {
         const credential = choice.credentialId
@@ -205,7 +205,6 @@ export async function aiConsentStatus(
             const parsed = parseModelSecret(await deps.secrets.load(secret.ciphertext, secret.id));
             return [secret.id, parsed.kind === "openai_compatible" ? parsed.baseUrl : undefined];
           } catch {
-            // Unreadable credentials still disclose by provider; the base URL is unknown.
             return [secret.id, undefined];
           }
         }),
@@ -223,7 +222,6 @@ export async function aiConsentStatus(
     }
   }
   for (const voice of voices) {
-    // A self-hosted server is disclosed by its own origin, like a custom model endpoint.
     const server = await voiceCredentialServer(deps, actor, voice.credential);
     add(
       aiRecipient({
@@ -250,9 +248,6 @@ export async function aiConsentStatus(
         baseUrl: toStringRecord(memory.settings).baseUrl,
       }),
     );
-  // Each target agent's own connection and the deployment's, which takes over once that one
-  // stops answering; without a target, every one any agent may use, so allowing what a
-  // targeted check showed always finds it.
   const owner = { spaceId: actor.spaceId, userId: actor.userId };
   const cloudAgents = !uses.includes("model")
     ? []
@@ -276,12 +271,49 @@ export async function aiConsentStatus(
   }
   return {
     scope: createHash("sha256")
-      .update(JSON.stringify([actor.userId, actor.spaceId]))
+      .update(JSON.stringify([actor.userId]))
       .digest("hex"),
     version: AI_DISCLOSURE_VERSION,
     privacyUrl: deps.env.privacyPolicyUrl ?? AI_PRIVACY_URL,
-    recipients: [...recipients.values()],
+    recipients: [...recipients.values()].map(({ grantKeys, ...recipient }) => ({
+      ...recipient,
+      allowed: grantKeys.some((key) => granted.has(key)),
+      grantKeys,
+    })),
   };
+}
+
+type AiConsentGrants = Omit<AiConsentStatus, "recipients"> & {
+  recipients: (AiRecipient & { grantKeys: string[] })[];
+};
+
+export async function aiConsentStatus(
+  deps: RouterDeps,
+  actor: Actor,
+  query: AiConsentQuery = {},
+): Promise<AiConsentStatus> {
+  return withoutGrantKeys(await aiConsentGrants(deps, actor, query));
+}
+
+function withoutGrantKeys(status: AiConsentGrants): AiConsentStatus {
+  return {
+    ...status,
+    recipients: status.recipients.map(({ grantKeys: _, ...recipient }) => recipient),
+  };
+}
+
+export async function revokeAiConsent(deps: RouterDeps, actor: Actor, key: string | null) {
+  const current = await aiConsentGrants(deps, actor);
+  const recipientKeys = key
+    ? [key, ...(current.recipients.find((recipient) => recipient.key === key)?.grantKeys ?? [])]
+    : undefined;
+  await deps.prisma.aiDataConsent.deleteMany({
+    where: {
+      userId: actor.userId,
+      ...(recipientKeys ? { recipientKey: { in: recipientKeys } } : {}),
+    },
+  });
+  return aiConsentStatus(deps, actor);
 }
 
 export async function allowAiConsent(
@@ -289,7 +321,6 @@ export async function allowAiConsent(
   actor: Actor,
   input: { scope: string; version: string; keys: string[]; settingsScope?: SettingsScope },
 ) {
-  // Checked against the same settings copy the member reviewed.
   const current = await aiConsentStatus(
     deps,
     actor,
@@ -303,7 +334,6 @@ export async function allowAiConsent(
   ) {
     throw new ORPCError("CONFLICT", { message: "AI data sharing changed. Review it again." });
   }
-  // Interactive rather than a batch: a batch cannot carry the request's database context.
   await deps.prisma.$transaction(async (tx) => {
     for (const recipientKey of input.keys)
       await tx.aiDataConsent.upsert({

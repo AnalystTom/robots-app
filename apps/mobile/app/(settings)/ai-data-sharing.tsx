@@ -19,6 +19,7 @@ import {
   aiPrivacyLinks,
   groupAiRecipients,
 } from "../../lib/ai-data-sharing";
+import { allowPromptedAiConsent, captureApiRequestContext } from "../../lib/api";
 import { native, useThemedStyles } from "../../lib/native";
 import { queryClient, rpcQuery, useSave } from "../../lib/query";
 import { useScreenQuery } from "../../lib/screen-query";
@@ -29,13 +30,11 @@ export default function AiDataSharing() {
   const sideInsets = useSideInsets();
   const { t } = useLingui();
   const statusRead = rpcQuery("aiConsent/status");
-  // Read on every visit: a consent prompt elsewhere, or another device, can change it meanwhile.
   const { data, error: loadError, refetch } = useScreenQuery(statusRead);
   const status = data ?? null;
   const placeholder = aiDataSharingPlaceholder(status, Boolean(loadError));
   const styles = useThemedStyles(createStyles);
   const stacked = useStackedSettings();
-  // A read can fail while another screen covers this one; its alert waits for the return.
   const focused = useIsFocused();
   useEffect(() => {
     if (!loadError || !focused) return;
@@ -48,19 +47,20 @@ export default function AiDataSharing() {
   const change = useSave({
     save: async (ask: { recipient: AiRecipient; allowed: boolean } | "withdraw", send) => {
       if (!status) return;
+      const askAndAllow = async (recipient: AiRecipient) => {
+        const input = { scope: status.scope, version: status.version, keys: [recipient.key] };
+        const requestContext = await captureApiRequestContext();
+        const allowed = await promptAiConsent([recipient], status.privacyUrl, () =>
+          allowPromptedAiConsent(input, requestContext),
+        );
+        return allowed ? send("aiConsent/allow", input) : null;
+      };
       const saved =
         ask === "withdraw"
           ? await send("aiConsent/revoke", { key: null })
           : !ask.allowed
             ? await send("aiConsent/revoke", { key: ask.recipient.key })
-            : (await promptAiConsent(ask.recipient, status.privacyUrl))
-              ? await send("aiConsent/allow", {
-                  scope: status.scope,
-                  version: status.version,
-                  keys: [ask.recipient.key],
-                })
-              : null;
-      // A read that started before the change never puts back what it replaced.
+            : await askAndAllow(ask.recipient);
       if (saved) await writeSaved(queryClient, statusRead.queryKey, () => saved);
     },
     onFailed: (cause) =>
