@@ -52,7 +52,7 @@ import {
 import { getLogger } from "@robots/logging";
 import { createAccessGrant, listAccessGrants, revokeAccessGrant } from "../access-grants.js";
 import { requireAdmin } from "../admins.js";
-import { aiConsentStatus, allowAiConsent } from "../ai-consent.js";
+import { aiConsentStatus, allowAiConsent, revokeAiConsent } from "../ai-consent.js";
 import type { BillingService } from "../billing.js";
 import { firstModelConnectAnalytics } from "../model-connect-analytics.js";
 import type { RouterDeps } from "../router.js";
@@ -89,16 +89,9 @@ export function accountRoutes(ctx: RouterContext) {
       allow: authed.aiConsent.allow.handler(({ context, input }) =>
         allowAiConsent(deps, context.actor, input),
       ),
-      revoke: authed.aiConsent.revoke.handler(async ({ context, input }) => {
-        await deps.prisma.aiDataConsent.deleteMany({
-          where: {
-            userId: context.actor.userId,
-            spaceId: context.actor.spaceId,
-            recipientKey: input.key ?? undefined,
-          },
-        });
-        return aiConsentStatus(deps, context.actor);
-      }),
+      revoke: authed.aiConsent.revoke.handler(({ context, input }) =>
+        revokeAiConsent(deps, context.actor, input.key ?? null),
+      ),
     },
     analytics: {
       screen: authed.analytics.screen.handler(async ({ context, input }) => {
