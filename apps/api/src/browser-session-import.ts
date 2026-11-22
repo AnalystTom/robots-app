@@ -24,6 +24,7 @@ function syncContext() {
 }
 
 const SIGN_OUT_ATTEMPTS = 4;
+const SYNC_PARALLELISM = 3;
 
 export async function importSessions(
   deps: SessionDeps,
@@ -62,17 +63,21 @@ export function removedSessionBots(
 }
 
 export function syncSessionBots(deps: SessionDeps, botIds: readonly string[]): void {
-  for (const botId of new Set(botIds)) {
-    void bestEffort(
-      "sync a sign-in item to its bot's browser",
-      retry(
-        async () => {
-          if ((await syncBotBrowserSessions(syncDeps(deps), botId, syncContext())) === "failed") {
-            throw new Error("The bot's browser did not take the sign-in change.");
-          }
-        },
-        { attempts: SIGN_OUT_ATTEMPTS, retryable: () => true },
-      ),
-    );
-  }
+  const queue = [...new Set(botIds)];
+  const worker = async () => {
+    for (let botId = queue.shift(); botId !== undefined; botId = queue.shift()) {
+      await bestEffort(
+        "sync a sign-in item to its bot's browser",
+        retry(
+          async () => {
+            if ((await syncBotBrowserSessions(syncDeps(deps), botId, syncContext())) === "failed") {
+              throw new Error("The bot's browser did not take the sign-in change.");
+            }
+          },
+          { attempts: SIGN_OUT_ATTEMPTS, retryable: () => true },
+        ),
+      );
+    }
+  };
+  void Promise.all(Array.from({ length: Math.min(SYNC_PARALLELISM, queue.length) }, worker));
 }

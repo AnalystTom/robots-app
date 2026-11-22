@@ -78,7 +78,8 @@ export async function importBrowserSessions(
     }),
   );
   for (const target of targets) {
-    if (await onThisComputer(prisma, target.computer)) throw new Error(SESSIONS_NOT_ON_THIS_COMPUTER);
+    if (await onThisComputer(prisma, target.computer))
+      throw new Error(SESSIONS_NOT_ON_THIS_COMPUTER);
   }
   await assertRoomFor(
     prisma,
@@ -357,7 +358,8 @@ export async function syncBotBrowserSessions(
         })),
       });
     });
-    if (toClear.length) await deps.events?.publishSpaceChange?.(bot.spaceId, "vault");
+    if (toSet.length || toClear.length)
+      await deps.events?.publishSpaceChange?.(bot.spaceId, "vault");
     getLogger().info("browser_sessions.synced", {
       "bot.id": bot.id,
       set: toSet.length,
