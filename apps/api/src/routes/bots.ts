@@ -365,6 +365,7 @@ function botSecretMetadataDto(
     allBots: row.allBots,
     botIds: row.botIds,
     ...(auth?.type === "login" ? { alsoOn: row.alsoOn ?? [] } : {}),
+    ...(row.signInDelivery ? { signInDelivery: row.signInDelivery } : {}),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

@@ -887,6 +887,9 @@ export type VaultPreview = z.infer<typeof VaultPreview>;
  * A null `auth` means the stored settings can't be read. `title` is never empty: one the owner
  * left empty is filled from the item itself.
  */
+export const BotSignInState = z.enum(["signing_in", "signed_in", "next_start"]);
+export type BotSignInState = z.infer<typeof BotSignInState>;
+
 export const BotSecretMetadata = z.object({
   name: StoredBotSecretName,
   origin: z.string(),
@@ -902,6 +905,7 @@ export const BotSecretMetadata = z.object({
   botIds: z.array(z.string()).optional(),
   /** Missing from an older server, which fills a login only on its own site. */
   alsoOn: z.array(z.string()).optional(),
+  signInDelivery: z.array(z.object({ botId: z.string(), state: BotSignInState })).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

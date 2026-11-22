@@ -36,6 +36,14 @@ export function vaultPolicyLabels(): Record<VaultPolicy, string> {
   };
 }
 
+export function vaultSignInStateLabel(state: "signing_in" | "signed_in" | "next_start"): string {
+  if (state === "signed_in") return i18n._({ id: "Signed in", message: "Signed in" });
+  if (state === "next_start") {
+    return i18n._({ id: "Will sign in at next start", message: "Will sign in at next start" });
+  }
+  return i18n._({ id: "Signing in…", message: "Signing in…" });
+}
+
 /**
  * Said under an account item's bots: that this Space can't use it, or, where there are other
  * Spaces, that a choice covers only this one's bots.

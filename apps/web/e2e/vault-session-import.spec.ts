@@ -8,7 +8,13 @@ import {
   signup,
 } from "./helpers";
 
-type VaultRow = { name: string; title: string; note: string; auth: { type: string } | null };
+type VaultRow = {
+  name: string;
+  title: string;
+  note: string;
+  auth: { type: string } | null;
+  signInDelivery?: Array<{ botId: string; state: string }>;
+};
 
 test("imports a browser sign-in from the desktop app into the vault and removes it", async ({
   page,
@@ -91,9 +97,7 @@ test("imports a browser sign-in from the desktop app into the vault and removes 
   await captureScreenshot(page, testInfo, "vault-session-import");
   await submit.click();
 
-  await expect(importPage.getByTestId("vault-session-delivery")).toContainText(
-    /Signing in|Signs in when its computer|Signed in/,
-  );
+  await expect(importPage.getByTestId("vault-session-delivery").first()).toBeVisible();
   expect(
     await page.evaluate(() => (window as unknown as { __sessionReads: unknown[] }).__sessionReads),
   ).toEqual([{ profileId: "chrome/0/Default", sites: ["x.com"] }]);
@@ -105,12 +109,21 @@ test("imports a browser sign-in from the desktop app into the vault and removes 
   const saved = await rpc<VaultRow[]>(page, "vault/list", {});
   const item = saved.find((entry) => entry.title === "x.com");
   expect(item?.auth).toEqual({ type: "session" });
+  await expect
+    .poll(async () =>
+      (await rpc<VaultRow[]>(page, "vault/list", {}))
+        .find((entry) => entry.title === "x.com")
+        ?.signInDelivery?.map((delivery) => delivery.state),
+    )
+    .toEqual(["signed_in"]);
   await captureScreenshot(page, testInfo, "vault-session-item");
 
   await row.click();
   const detail = settings.getByTestId("vault-item-detail");
   await expect(detail.getByText("Imported from")).toBeVisible();
   await expect(detail.getByTestId("vault-item-access-detail")).toContainText("Chief");
+  await expect(detail.getByTestId("vault-item-delivery")).toContainText("Signed in");
+  await expect(detail.getByTestId("vault-item-delivery")).not.toContainText("Signing in");
   await expect(detail.getByTestId("vault-item-edit")).toHaveCount(0);
   await expect(detail.getByTestId("vault-item-show")).toHaveCount(0);
   await captureScreenshot(page, testInfo, "vault-session-detail");

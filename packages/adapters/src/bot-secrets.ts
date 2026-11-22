@@ -3,6 +3,7 @@ import type { SecretStore } from "@robots/adapter-kit";
 import { SecretNotFoundError, SecretStoreUnavailableError } from "@robots/adapter-kit";
 import type {
   BotSecretDestination,
+  BotSignInState,
   CardSecretValue,
   LoginField,
   LoginSecretValue,
@@ -42,6 +43,7 @@ import {
   otherSiteOrigin,
   SecretHttpRequest,
   sameLoginFieldLabel,
+  sessionOriginSite,
   UNCHOSEN_ITEM_ANSWER,
   VAULT_ITEM_LIMIT,
   vaultLoginKey,
@@ -1295,6 +1297,11 @@ export async function listVaultItems(
       select: { credentialId: true, botId: true },
     }),
   ]);
+  const botIds = [...new Set(chosen.map((entry) => entry.botId))];
+  const sessionStates =
+    botIds.length && rows.some((row) => isSessionAuth(row.auth))
+      ? await sessionBotStates(prisma, botIds)
+      : undefined;
   return Promise.all(
     rows.map(async ({ id, userId, spaceId, ciphertext, ...row }) => {
       const preview = withPreview
@@ -1311,9 +1318,69 @@ export async function listVaultItems(
       const botIds = allBots
         ? []
         : chosen.flatMap((entry) => (entry.credentialId === id ? [entry.botId] : []));
-      return { ...row, allBots, botIds, title: vaultItemTitle(row, preview), preview };
+      const signInDelivery =
+        sessionStates && isSessionAuth(row.auth)
+          ? sessionDeliveryOf(
+              sessionStates,
+              { id, updatedAt: row.updatedAt, origin: row.origin },
+              botIds,
+            )
+          : undefined;
+      return {
+        ...row,
+        allBots,
+        botIds,
+        title: vaultItemTitle(row, preview),
+        preview,
+        signInDelivery,
+      };
     }),
   );
+}
+
+export function sessionItemVersion(item: { id: string; updatedAt: Date }): string {
+  return `${item.id}:${item.updatedAt.getTime()}`;
+}
+
+async function sessionBotStates(prisma: PrismaClient, botIds: readonly string[]) {
+  const [applied, bots] = await Promise.all([
+    prisma.browserSessionSite.findMany({
+      where: { botId: { in: [...botIds] } },
+      select: { botId: true, site: true, itemVersion: true },
+    }),
+    prisma.bot.findMany({
+      where: { id: { in: [...botIds] } },
+      select: { id: true, computer: { select: { state: true, providerRef: true } } },
+    }),
+  ]);
+  return {
+    delivered: new Set(
+      applied.map((row) => JSON.stringify([row.botId, row.site, row.itemVersion])),
+    ),
+    running: new Set(
+      bots
+        .filter((bot) => bot.computer?.state === "running" && Boolean(bot.computer.providerRef))
+        .map((bot) => bot.id),
+    ),
+  };
+}
+
+function sessionDeliveryOf(
+  states: Awaited<ReturnType<typeof sessionBotStates>>,
+  item: { id: string; updatedAt: Date; origin: string },
+  botIds: readonly string[],
+): Array<{ botId: string; state: BotSignInState }> {
+  const site = sessionOriginSite(item.origin);
+  const version = sessionItemVersion(item);
+  return botIds.map((botId) => {
+    const delivered = site !== null && states.delivered.has(JSON.stringify([botId, site, version]));
+    const state: BotSignInState = delivered
+      ? "signed_in"
+      : states.running.has(botId)
+        ? "signing_in"
+        : "next_start";
+    return { botId, state };
+  });
 }
 
 /**

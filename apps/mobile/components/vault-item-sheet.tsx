@@ -8,7 +8,7 @@ import {
   otherSitesText,
   vaultKind,
 } from "@robots/contracts";
-import { vaultBotsLine } from "@robots/i18n/vault";
+import { vaultBotsLine, vaultSignInStateLabel } from "@robots/i18n/vault";
 import * as Clipboard from "expo-clipboard";
 import { useState } from "react";
 import { Modal, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -121,6 +121,12 @@ export function VaultItemSheet({
         unusedHere: ownVault,
       }),
     );
+    if (entry.signInDelivery?.length) {
+      add(
+        t`Sign-in`,
+        entry.signInDelivery.map((delivery) => vaultSignInStateLabel(delivery.state)).join(", "),
+      );
+    }
     return list;
   }
 

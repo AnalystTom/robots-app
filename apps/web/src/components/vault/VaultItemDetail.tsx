@@ -8,7 +8,7 @@ import {
   otherSitesText,
   vaultKind,
 } from "@robots/contracts";
-import { vaultBotsLine } from "@robots/i18n/vault";
+import { vaultBotsLine, vaultSignInStateLabel } from "@robots/i18n/vault";
 import { Button } from "@robots/ui-web";
 import { Check, Copy, Eye, EyeOff } from "lucide-react";
 import type { ReactNode } from "react";
@@ -360,6 +360,20 @@ export function VaultItemDetail({
     rows.push(
       <DetailRow key="access" label={t`Bots`} testId="vault-item-access-detail">
         {access}
+      </DetailRow>,
+    );
+  if (item.signInDelivery?.length)
+    rows.push(
+      <DetailRow key="delivery" label={t`Sign-in`} testId="vault-item-delivery">
+        {item.signInDelivery.map((entry) => {
+          const name = bots?.find((bot) => bot.id === entry.botId)?.name;
+          const state = vaultSignInStateLabel(entry.state);
+          return (
+            <span key={entry.botId} className="block" data-state={entry.state}>
+              {name ? `${name}: ${state}` : state}
+            </span>
+          );
+        })}
       </DetailRow>,
     );
 

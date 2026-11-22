@@ -16,6 +16,7 @@ import {
 import type { PrismaClient, ThreadEvents } from "@robots/db";
 import { runAsSystem, runAsTenant, spaceIsShared, withTransactionRetry } from "@robots/db";
 import { getLogger } from "@robots/logging";
+import { advisoryLock } from "./advisory-lock.js";
 import type { BotSecretScope } from "./bot-secrets.js";
 import {
   assertVaultInUse,
@@ -23,6 +24,7 @@ import {
   lockVault,
   newVaultItemName,
   saveItemBots,
+  sessionItemVersion,
   vaultFields,
 } from "./bot-secrets.js";
 import { toComputerRef } from "./computer-support.js";
@@ -258,7 +260,7 @@ async function desiredSites(
     return [
       {
         site,
-        version: `${row.id}:${row.updatedAt.getTime()}`,
+        version: sessionItemVersion(row),
         open: async () =>
           SessionSiteCookies.parse(
             JSON.parse(await openVaultValue(deps.prisma, deps.secretStore, row)),
@@ -287,36 +289,25 @@ function batches(sites: SiteSession[]): SiteSession[][] {
   return out;
 }
 
-const syncing = new Map<string, { dirty: boolean; run: Promise<SessionDelivery> }>();
+const SYNC_TRANSACTION_MS = 120_000;
 
 export function syncBotBrowserSessions(
   deps: SessionSyncDeps,
   botId: string,
   context: Pick<AdapterContext, "operationId" | "traceId" | "signal">,
 ): Promise<SessionDelivery> {
-  const active = syncing.get(botId);
-  if (active) {
-    active.dirty = true;
-    return active.run;
-  }
-  const state: { dirty: boolean; run: Promise<SessionDelivery> } = {
-    dirty: false,
-    run: Promise.resolve("failed"),
-  };
-  state.run = (async () => {
-    try {
-      let delivery = await syncBotBrowserSessionsOnce(deps, botId, context);
-      while (state.dirty) {
-        state.dirty = false;
-        delivery = await syncBotBrowserSessionsOnce(deps, botId, context);
-      }
-      return delivery;
-    } finally {
-      syncing.delete(botId);
-    }
-  })();
-  syncing.set(botId, state);
-  return state.run;
+  return deps.prisma.$transaction(
+    async (tx) => {
+      await advisoryLock(tx, "browser_session_sync", botId);
+      return syncBotBrowserSessionsOnce(deps, botId, context);
+    },
+    { timeout: SYNC_TRANSACTION_MS },
+  );
+}
+
+async function failedSync(deps: SessionSyncDeps, spaceId: string): Promise<"failed"> {
+  await deps.events?.publishSpaceChange?.(spaceId, "vault");
+  return "failed";
 }
 
 async function syncBotBrowserSessionsOnce(
@@ -342,12 +333,12 @@ async function syncBotBrowserSessionsOnce(
     const toClear = applied.map((row) => row.site).filter((site) => !keep.has(site));
     if (!toSet.length && !toClear.length) return "signed_in";
     const computer = bot.computer;
-    if (await onThisComputer(deps.prisma, computer)) return "failed";
+    if (await onThisComputer(deps.prisma, computer)) return failedSync(deps, bot.spaceId);
     if (computer?.state !== "running" || !computer.providerRef) {
       await deps.events?.publishSpaceChange?.(bot.spaceId, "vault");
       return "next_start";
     }
-    if (!deps.sandbox.pageBrowser) return "failed";
+    if (!deps.sandbox.pageBrowser) return failedSync(deps, bot.spaceId);
     const sites = await Promise.all(
       toSet.map(async (entry) => ({ site: entry.site, cookies: await entry.open() })),
     );
@@ -376,7 +367,7 @@ async function syncBotBrowserSessionsOnce(
           cleared: toClear.length,
           error: typeof result.error === "string" ? result.error : undefined,
         });
-        return "failed";
+        return failedSync(deps, bot.spaceId);
       }
     }
     await deps.prisma.$transaction(async (tx) => {
@@ -391,6 +382,7 @@ async function syncBotBrowserSessionsOnce(
           site: entry.site,
           itemVersion: entry.version,
         })),
+        skipDuplicates: true,
       });
     });
     if (toSet.length || toClear.length)
