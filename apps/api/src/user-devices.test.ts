@@ -436,6 +436,34 @@ describe("device sessions", () => {
     expect(rows[0]).toMatchObject({ sessionId: "desktop-ended", revokedBy: "session" });
   });
 
+  it("revokes a computer presented by another account's sign-in, then lets that account pair one", async () => {
+    const { pair, app, attach, hub, rows } = setup();
+    const { deviceId, token } = await (await pair("user-1", { session: "desktop" })).json();
+    const socket = await attach(deviceId);
+
+    const response = await app.request("/api/devices/self/session", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "x-test-user": "user-2",
+        "x-test-session": "phone",
+      },
+    });
+    expect(response.status).toBe(403);
+    expect(rows[0]).toMatchObject({ id: deviceId, sessionId: "desktop", revokedBy: "session" });
+    expect(rows[0]!.revokedAt).toBeInstanceOf(Date);
+    expect(socket.sent).toContainEqual({ type: "revoked", reason: "session-ended" });
+    expect(socket.closedWith).toBe(4001);
+    await expect(hub.authenticate(`Bearer ${token}`)).resolves.toBeNull();
+
+    const paired = await (await pair("user-2", { session: "phone" })).json();
+    expect(paired.deviceId).not.toBe(deviceId);
+    const list = await app.request("/api/devices", { headers: { "x-test-user": "user-2" } });
+    expect((await list.json()).devices).toEqual([
+      expect.objectContaining({ deviceId: paired.deviceId }),
+    ]);
+  });
+
   it("never accepts a device paired by a sign-in that already ended", async () => {
     const { pair, hub, rows } = setup();
     const { token } = await (await pair("user-1", { session: "desktop-ended" })).json();
