@@ -22,6 +22,7 @@ MARKER_URL = "https://commit.robots.invalid/"
 MARKER_PREFIX = "robots_commit_"
 PAST = 1
 STORE_MARK = ".robots-password-store"
+RESEAL_PENDING = ".robots-reseal-pending"
 ENCRYPTED_STORE = "gnome-libsecret"
 
 
@@ -249,6 +250,8 @@ def wait_for_browser(port: int, deadline: float) -> bool:
 def mark_keyed(profile: str) -> None:
     with open(os.path.join(profile, STORE_MARK), "w", encoding="utf-8") as mark:
         mark.write(ENCRYPTED_STORE + "\n")
+    if os.path.exists(os.path.join(profile, RESEAL_PENDING)):
+        os.remove(os.path.join(profile, RESEAL_PENDING))
 
 
 def reseal(profile: str, port: int) -> dict[str, Any]:
@@ -259,11 +262,32 @@ def reseal(profile: str, port: int) -> dict[str, Any]:
         if not result["ok"]:
             return result
         if public_key_rows(profile) > 0:
+            open(os.path.join(profile, RESEAL_PENDING), "w", encoding="utf-8").close()
             return {"ok": False, "error": "Some sign-ins still use the public key, so the profile stays closed."}
     mark_keyed(profile)
     return {"ok": True}
 
 
+def finish_closed_migration(profile: str) -> dict[str, Any]:
+    if not os.path.exists(os.path.join(profile, RESEAL_PENDING)):
+        return {"ok": True, "purged": 0}
+    path = cookies_db(profile)
+    purged = 0
+    if path:
+        connection = sqlite3.connect(path)
+        try:
+            with connection:
+                cursor = connection.execute(
+                    "DELETE FROM cookies WHERE substr(encrypted_value, 1, 3) = CAST('v10' AS BLOB)")
+                purged = cursor.rowcount
+        finally:
+            connection.close()
+    mark_keyed(profile)
+    return {"ok": True, "purged": purged}
+
+
 if __name__ == "__main__":
     if len(sys.argv) == 4 and sys.argv[1] == "reseal":
         print(json.dumps(reseal(sys.argv[2], int(sys.argv[3]))))
+    elif len(sys.argv) == 3 and sys.argv[1] == "finish-migration":
+        print(json.dumps(finish_closed_migration(sys.argv[2])))
