@@ -598,3 +598,22 @@ it("keeps the robot the user picked when a late bot list arrives", async () => {
   await answerBotList(ownBotsWearingEveryRobotBut("Hero"));
   expect(CHARACTER_NAMES.filter(checked)).toEqual(["Chef"]);
 });
+
+it("keeps the look the user picked when the account read resolves after the pick", async () => {
+  let answer!: (me: unknown) => void;
+  serveRpc(
+    () =>
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+  );
+  await render();
+  const chef = CHARACTERS.find((character) => character.name === "Chef")!.look;
+  await tap(radio("Chef"));
+  await act(async () => answer({ botAvatarSet: "organic", userId: "user-me" }));
+  expect(CHARACTER_NAMES.filter(checked)).toEqual(["Chef"]);
+  await typeName("Gordon");
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  expect(createdBot()).toEqual(expect.objectContaining({ color: robotCharacterValue(chef) }));
+});

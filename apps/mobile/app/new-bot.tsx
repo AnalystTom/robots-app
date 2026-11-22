@@ -52,7 +52,7 @@ export default function NewBot() {
         if (gone.current) return;
         const set = resolveBotAvatarSet(me.botAvatarSet);
         setAccountSet(set);
-        setLook((current) => newBotLookForSet(current, set, []));
+        setLook((current) => (lookChosen.current ? current : newBotLookForSet(current, set, [])));
         const bots = await botsRead;
         if (gone.current || !bots || set !== "robots") return;
         const ownColors = bots.filter((bot) => bot.userId === me.userId).map((bot) => bot.color);
