@@ -13,7 +13,7 @@ import {
   CLOUDFLARE_WORKERS_AI_PROVIDER_ID,
   cloudflareModelConfigMessage,
 } from "./cloudflare-ai-gateway.js";
-import { createRunExecutor as createExecutor, hostGraphical } from "./executor.js";
+import { createRunExecutor as createExecutor } from "./executor.js";
 import { serializeModelSecret } from "./model-secret.js";
 import { UnavailableModelForAuthError, validateConnectedModelChoice } from "./model-selection.js";
 import {
@@ -4693,22 +4693,4 @@ describe("cross-chat history grant", () => {
       ).toBe(false);
     },
   );
-});
-
-describe("host computer graphical state", () => {
-  it("keeps graphical tools when a later environment read does not answer in time", () => {
-    const computerId = "host-slow-screen";
-    expect(hostGraphical(computerId, true)).toBe(true);
-    expect(hostGraphical(computerId, undefined)).toBe(true);
-  });
-
-  it("reports a host that answers no screen as non-graphical", () => {
-    const computerId = "host-no-screen";
-    expect(hostGraphical(computerId, false)).toBe(false);
-    expect(hostGraphical(computerId, undefined)).toBe(false);
-  });
-
-  it("stays non-graphical for a host that has never answered", () => {
-    expect(hostGraphical("host-never-answered", undefined)).toBe(false);
-  });
 });

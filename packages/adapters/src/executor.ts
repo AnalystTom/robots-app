@@ -277,7 +277,7 @@ async function verbatimMcpServersForRun(
 const RUN_HEARTBEAT_MS = 60_000;
 const lastKnownHostScreen = new Map<string, boolean>();
 
-export function hostGraphical(computerId: string, screen: boolean | undefined) {
+function hostGraphical(computerId: string, screen: boolean | undefined) {
   if (screen !== undefined) {
     lastKnownHostScreen.set(computerId, screen);
     return screen;
