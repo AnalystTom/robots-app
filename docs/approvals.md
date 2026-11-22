@@ -44,10 +44,12 @@ To stop one bot from ever using a tool, open the bot's settings, expand **Advanc
 
 ## Reading web pages
 
-Bots read public web pages without asking. In **Ask** and **Auto**, they still ask before reading
-an IP address, a local or internal name such as `localhost` or `printer.local`, a cloud metadata
-host, a link with a password in it, or a program or archive download. To approve every page
-yourself, add an **Ask** rule for `web_fetch`.
+Bots read public web pages without asking until the run has read outside content, such as a
+page, a search result or an inbound message. After that, a new public site asks like before. In
+**Ask** and **Auto**, bots still ask before reading an IP address, a local or internal name such
+as `localhost` or `printer.local`, a cloud metadata host, a link with a password in it, or a
+program or archive download. Downloads are recognized by the file extension in the URL only.
+To approve every page yourself, add an **Ask** rule for `web_fetch`.
 
 ## What always asks
 

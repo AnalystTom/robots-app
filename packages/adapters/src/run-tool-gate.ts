@@ -226,12 +226,17 @@ export async function gateToolCall(
     connectorKind,
     connectorProviders,
   );
+  const untaintedPublicRead =
+    name === "web_fetch" &&
+    fetchUrl !== undefined &&
+    !isRiskyFetchTarget(fetchUrl) &&
+    !(await isRunTainted(ctx));
   const siteGate =
     fetchUrl && fetchSite
       ? outboundSiteGate({
           site: fetchSite,
           trusted:
-            (name === "web_fetch" && !isRiskyFetchTarget(fetchUrl)) ||
+            untaintedPublicRead ||
             ctx.trust.searchResultUrls.has(fetchUrl) ||
             (await ctx.trust.loadTrustedSites()).has(fetchSite),
           rules: await ctx.trust.loadApprovalRules(),
@@ -669,7 +674,8 @@ export async function gateToolCall(
   }
   // Past the gate: this destination is now one the run was given. A search result's exact
   // URL trusts only that URL, never the rest of its site.
-  if (fetchSite && siteGate === "new") (await ctx.trust.loadTrustedSites()).add(fetchSite);
+  if (fetchSite && (siteGate === "new" || untaintedPublicRead))
+    (await ctx.trust.loadTrustedSites()).add(fetchSite);
   if (viaConnector) {
     const trusted = await ctx.trust.loadTrustedConnectors();
     for (const trust of connectorTrusts) trusted.add(trust);
