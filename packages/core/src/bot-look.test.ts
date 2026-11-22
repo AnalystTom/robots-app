@@ -10,6 +10,7 @@ import {
   newBotLookInput,
   newBotPreviewIdentity,
 } from "./bot-look.js";
+import { robotPresetOf, robotPresetValue } from "./robot-character.js";
 
 describe("newBotLook", () => {
   it("reserves a valid id that never draws the heart body", () => {
@@ -20,10 +21,12 @@ describe("newBotLook", () => {
     }
   });
 
-  it("starts as a robot character that creation sends in either set", () => {
+  it("starts as a preset robot that creation sends in either set", () => {
     const look = newBotLook();
     expect(isBotAvatarValue(look.color)).toBe(true);
-    expect(botLookState(look.color).robot).not.toBeNull();
+    const robot = botLookState(look.color).robot;
+    expect(robot).not.toBeNull();
+    expect(look.color).toBe(robotPresetValue(robotPresetOf(robot!)!));
     for (const set of ["organic", "robots"] as const) {
       expect(newBotLookInput(set, look)).toEqual({ color: look.color, id: look.id });
     }
