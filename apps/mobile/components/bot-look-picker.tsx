@@ -2,6 +2,7 @@ import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_COLORS, robotCharacterValue } from "@robots/contracts";
+import type { RobotPresetId } from "@robots/core";
 import {
   botLookState,
   botLookWithColor,
@@ -13,7 +14,6 @@ import {
 } from "@robots/core";
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
-import { robotPresetLabel } from "@robots/i18n/robot-presets";
 import { useMobileTokens } from "../lib/native";
 import { BotAvatar } from "./bot-avatar";
 
@@ -38,6 +38,23 @@ export function BotLookPicker({
   const { photo, shapeIndex: shape, color, robot, defaultLook } = botLookState(value);
   const labeled = !organicIdentities;
   const pickedPreset = robot ? robotPresetOf(robot) : null;
+  const presetLabels: Record<RobotPresetId, string> = {
+    assistant: t`Assistant`,
+    researcher: t`Researcher`,
+    coder: t`Coder`,
+    writer: t`Writer`,
+    analyst: t`Analyst`,
+    creator: t`Creator`,
+    chef: t`Chef`,
+    hero: t`Hero`,
+    hoodie: t`Hoodie`,
+    critic: t`Critic`,
+    professor: t`Professor`,
+    detective: t`Detective`,
+    keynote: t`Keynote`,
+    hustler: t`Hustler`,
+    host: t`Host`,
+  };
 
   return (
     <View style={{ gap: 20 }}>
@@ -55,7 +72,7 @@ export function BotLookPicker({
               <Choice
                 disabled={disabled}
                 key={preset.id}
-                label={robotPresetLabel(preset.id)}
+                label={presetLabels[preset.id]}
                 selected={preset.id === pickedPreset}
                 onPress={() => onChange(look)}
               >

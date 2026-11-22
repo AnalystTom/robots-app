@@ -1,8 +1,8 @@
 import { useLingui } from "@lingui/react/macro";
 import type { RobotLook } from "@robots/contracts";
 import { robotCharacterValue } from "@robots/contracts";
+import type { RobotPresetId } from "@robots/core";
 import { ROBOT_PRESETS, robotPresetOf, robotPresetValue } from "@robots/core";
-import { robotPresetLabel } from "@robots/i18n/robot-presets";
 import { BotAvatar } from "@robots/ui-web";
 
 export function RobotPresetPicker({
@@ -13,6 +13,23 @@ export function RobotPresetPicker({
   onChange: (value: string) => void;
 }) {
   const { t } = useLingui();
+  const labels: Record<RobotPresetId, string> = {
+    assistant: t`Assistant`,
+    researcher: t`Researcher`,
+    coder: t`Coder`,
+    writer: t`Writer`,
+    analyst: t`Analyst`,
+    creator: t`Creator`,
+    chef: t`Chef`,
+    hero: t`Hero`,
+    hoodie: t`Hoodie`,
+    critic: t`Critic`,
+    professor: t`Professor`,
+    detective: t`Detective`,
+    keynote: t`Keynote`,
+    hustler: t`Hustler`,
+    host: t`Host`,
+  };
   const selectedPreset = robot ? robotPresetOf(robot) : null;
   const tileClass = (selected: boolean) =>
     `flex flex-col items-center gap-1 rounded-xl border p-2 text-caption transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
@@ -44,12 +61,12 @@ export function RobotPresetPicker({
             type="button"
             role="radio"
             aria-checked={selected}
-            aria-label={robotPresetLabel(preset.id)}
+            aria-label={labels[preset.id]}
             onClick={() => onChange(robotPresetValue(preset.id))}
             className={tileClass(selected)}
           >
             <BotAvatar color={robotPresetValue(preset.id)} size={44} />
-            {robotPresetLabel(preset.id)}
+            {labels[preset.id]}
           </button>
         );
       })}

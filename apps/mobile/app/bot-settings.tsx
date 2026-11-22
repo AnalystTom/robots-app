@@ -81,7 +81,6 @@ export default function BotSettingsScreen() {
   const [color, setColor] = useState<string>(DEFAULT_BOT_AVATAR_COLOR);
   const [computerMode, setComputerMode] = useState<ComputerMode>("team");
   const [avatarSet, setAvatarSet] = useState<BotAvatarSet>(DEFAULT_NEW_BOT_AVATAR_SET);
-  const [styleSet, setStyleSet] = useState<BotAvatarSet>(DEFAULT_NEW_BOT_AVATAR_SET);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(focus === "model" || pickedModel !== undefined);
   const [modelKey, setModelKey] = useState("");
@@ -544,7 +543,6 @@ export default function BotSettingsScreen() {
               accessibilityRole="button"
               accessibilityLabel={t`Edit avatar`}
               onPress={() => {
-                setStyleSet(avatarSet);
                 setAvatarOpen(true);
               }}
               style={{ padding: 4 }}
@@ -880,23 +878,18 @@ export default function BotSettingsScreen() {
                 { key: "organic", label: t`Original` },
                 { key: "robots", label: t`RoBots` },
               ]}
-              value={styleSet}
-              onChange={(next) => {
-                const set = resolveBotAvatarSet(next);
-                setStyleSet(set);
-                setAvatarSet(set);
-              }}
+              value={avatarSet}
+              onChange={(next) => setAvatarSet(resolveBotAvatarSet(next))}
               plain
             />
             {bot ? (
               <BotLookPicker
                 value={color}
                 identity={bot.id}
-                avatarSet={styleSet}
+                avatarSet={avatarSet}
                 onChange={(next) => {
-                  const set = botLookState(next).robot ? "robots" : styleSet;
+                  const set = botLookState(next).robot ? "robots" : avatarSet;
                   setColor(next);
-                  setStyleSet(set);
                   setAvatarSet(set);
                 }}
               />
