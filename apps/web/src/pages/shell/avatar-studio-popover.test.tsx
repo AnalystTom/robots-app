@@ -116,3 +116,63 @@ describe("selectable bot icon sets", () => {
     expect(changed).toHaveBeenLastCalledWith("#00C972", "robots");
   });
 });
+
+describe("robot character picker", () => {
+  const presetLabels = [
+    "Assistant",
+    "Researcher",
+    "Coder",
+    "Writer",
+    "Analyst",
+    "Creator",
+    "Chef",
+    "Hero",
+    "Hoodie",
+    "Critic",
+    "Professor",
+    "Detective",
+    "Keynote",
+    "Hustler",
+    "Host",
+  ];
+
+  function characterTiles() {
+    return [
+      ...document.querySelectorAll<HTMLButtonElement>(
+        '[role="radiogroup"][aria-label="Character"] [role="radio"]',
+      ),
+    ];
+  }
+
+  it("shows a stored look that is not a preset as the selected Current look and keeps it until a preset is picked", async () => {
+    const storedLook = "robot:green.top-hat.grumpy.cape.none";
+    await render(storedLook, "robots");
+    await click("Customize bot avatar");
+
+    const tiles = characterTiles();
+    expect(tiles.map((tile) => tile.getAttribute("aria-label"))).toEqual([
+      "Current look",
+      ...presetLabels,
+    ]);
+    expect(tiles.map((tile) => tile.getAttribute("aria-checked"))).toEqual([
+      "true",
+      ...presetLabels.map(() => "false"),
+    ]);
+    expect(changed).not.toHaveBeenCalled();
+
+    await click("Detective");
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(changed).toHaveBeenLastCalledWith(
+      "robot:purple.deerstalker.magnifier.cape.none",
+      undefined,
+    );
+
+    const afterPick = characterTiles();
+    expect(afterPick).toHaveLength(presetLabels.length);
+    expect(
+      afterPick
+        .find((tile) => tile.getAttribute("aria-checked") === "true")
+        ?.getAttribute("aria-label"),
+    ).toBe("Detective");
+  });
+});

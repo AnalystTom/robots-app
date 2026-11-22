@@ -7,8 +7,6 @@ import {
   newBotLookInput,
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
-  robotPresetOf,
-  robotPresetValue,
 } from "@robots/core";
 import {
   BotAvatar,
@@ -46,7 +44,6 @@ export function CreateBotDialog({
   const [name, setName] = useState("");
   const [look, setLook] = useState(() => newBotLook(avatarSet));
   const pickedRobot = botLookState(look.color).robot;
-  const preset = pickedRobot ? robotPresetOf(pickedRobot) : null;
   const identity = newBotPreviewIdentity(avatarSet, look);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,9 +110,9 @@ export function CreateBotDialog({
           ) : null}
           {avatarSet === "robots" ? (
             <RobotPresetPicker
-              value={preset}
-              onChange={(next) => {
-                setLook((current) => ({ ...current, color: robotPresetValue(next) }));
+              robot={pickedRobot}
+              onChange={(color) => {
+                setLook((current) => ({ ...current, color }));
               }}
             />
           ) : (
