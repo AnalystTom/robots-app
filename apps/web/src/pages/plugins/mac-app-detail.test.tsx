@@ -154,3 +154,22 @@ it("turns the whole app off with one connector rule", async () => {
     "Off",
   );
 });
+
+it("asks to update RoBots when the Mac app is too old for Mac apps", async () => {
+  window.robotsDesktop = {
+    platform: "darwin",
+    device: { state: async () => null, setAllowed: async () => null },
+  } as never;
+  const container = await render();
+  const grant = container.querySelector('[data-testid="mac-grant"]');
+  expect(grant?.textContent).toContain("Control Mail");
+  expect(grant?.textContent).toContain("Update RoBots on this Mac to allow");
+  expect(buttonIn(grant, "Allow")).toBeUndefined();
+});
+
+it("asks to open RoBots on the Mac from a browser", async () => {
+  window.robotsDesktop = undefined;
+  const container = await render();
+  const grant = container.querySelector('[data-testid="mac-grant"]');
+  expect(grant?.textContent).toContain("Open RoBots on your Mac to allow");
+});
