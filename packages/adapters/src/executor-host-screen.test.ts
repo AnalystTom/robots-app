@@ -59,14 +59,14 @@ function recordingPrisma(models: Record<string, Record<string, unknown>>) {
   return prisma;
 }
 
-function world({ computerId }: { computerId: string }) {
+function world({ computerId, userId }: { computerId: string; userId: string }) {
   const run = {
     id: "run-1",
     botId: scope.botId,
     threadId: "thread-1",
     taskId: "task-1",
     spaceId: scope.spaceId,
-    userId: scope.userId,
+    userId,
     status: "queued",
     trigger: "message",
     routineId: null,
@@ -173,7 +173,7 @@ afterEach(() => {
 
 describe("graphical tools on a host computer", () => {
   it("keeps graphical tools offered when a later environment read fails", async () => {
-    const run = world({ computerId: "host-screen-kept" });
+    const run = world({ computerId: "host-screen-kept", userId: "admin-1" });
     run.environment.mockResolvedValueOnce({
       platform: "linux",
       home: "/home/owner",
@@ -185,8 +185,32 @@ describe("graphical tools on a host computer", () => {
     expect(await run.offeredTools()).toContain("computer_observe");
   });
 
+  it("keeps the admin's last answer when a member's run on the same host reports no screen", async () => {
+    const admin = world({ computerId: "host-screen-shared", userId: "admin-1" });
+    admin.environment.mockResolvedValueOnce({
+      platform: "linux",
+      home: "/home/owner",
+      shell: "bash",
+      screen: true,
+    });
+    expect(await admin.offeredTools()).toContain("computer_observe");
+
+    const member = world({ computerId: "host-screen-shared", userId: "member-1" });
+    member.environment.mockResolvedValueOnce({
+      platform: "linux",
+      home: "/home/owner",
+      shell: "bash",
+      screen: false,
+    });
+    expect(await member.offeredTools()).not.toContain("computer_observe");
+
+    const adminLater = world({ computerId: "host-screen-shared", userId: "admin-1" });
+    adminLater.environment.mockRejectedValueOnce(new Error("The host did not answer"));
+    expect(await adminLater.offeredTools()).toContain("computer_observe");
+  });
+
   it("stays non-graphical for a host that has never answered", async () => {
-    const run = world({ computerId: "host-screen-never" });
+    const run = world({ computerId: "host-screen-never", userId: "admin-1" });
     run.environment.mockRejectedValue(new Error("The host did not answer"));
     expect(await run.offeredTools()).not.toContain("computer_observe");
   });

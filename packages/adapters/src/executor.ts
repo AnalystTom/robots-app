@@ -277,12 +277,13 @@ async function verbatimMcpServersForRun(
 const RUN_HEARTBEAT_MS = 60_000;
 const lastKnownHostScreen = new Map<string, boolean>();
 
-function hostGraphical(computerId: string, screen: boolean | undefined) {
+function hostGraphical(computerId: string, userId: string, screen: boolean | undefined) {
+  const key = JSON.stringify([computerId, userId]);
   if (screen !== undefined) {
-    lastKnownHostScreen.set(computerId, screen);
+    lastKnownHostScreen.set(key, screen);
     return screen;
   }
-  const known = lastKnownHostScreen.get(computerId);
+  const known = lastKnownHostScreen.get(key);
   if (known === undefined) return false;
   getLogger().warn("host screen state unknown; using last known state", { computerId });
   return known;
@@ -1187,7 +1188,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
             )
           : undefined;
         const graphical = sandboxKindCapabilities(computerKind).runsOnUserMachine
-          ? hostGraphical(storedComputer.id, hostEnvironment?.screen)
+          ? hostGraphical(storedComputer.id, run.userId, hostEnvironment?.screen)
           : deps.sandbox.describe().capabilities.graphical;
         const modelSeesImages = modelAcceptsImageInput(
           runModelProvider,
