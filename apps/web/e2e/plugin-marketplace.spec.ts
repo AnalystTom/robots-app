@@ -38,6 +38,8 @@ test("Integrations installs a plugin, completes real broker OAuth against a fake
   const dialog = page.getByRole("dialog", { name: "Integrations", exact: true });
   const section = dialog.getByTestId("plugin-section").filter({ hasText: "Productivity" });
   await expect(section.getByText("Planning Notes", { exact: true })).toBeVisible();
+  await expect(section.getByText("Plan work and write notes.", { exact: true })).toBeVisible();
+  await expect(dialog.getByText(/from Cursor/)).toHaveCount(0);
   // A skill pack has nothing to connect, so it is offered under Skills instead.
   await expect(dialog.getByText("Review Kit", { exact: true })).toHaveCount(0);
   await captureScreenshot(page, testInfo, "integrations-plugins");

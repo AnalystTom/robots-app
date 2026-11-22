@@ -16,6 +16,7 @@ import {
 import { installedPluginParts } from "@robots/core";
 import { Button, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, Check, ChevronLeft, FileText, Plug } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { connectMcpOauth } from "../../lib/mcp-connect";
 import { rpc } from "../../lib/rpc";
@@ -85,7 +86,7 @@ export function PluginLogo({
     />
   ) : (
     <div
-      className={`${box} grid shrink-0 place-items-center border border-border/60 bg-favicon-plate font-semibold text-foreground`}
+      className={`${box} grid shrink-0 place-items-center border border-border/60 bg-accent font-semibold text-foreground`}
     >
       {Array.from(name)[0]?.toUpperCase()}
     </div>
@@ -98,6 +99,37 @@ export const ROW_BUTTON =
   "flex min-w-0 flex-1 items-center gap-3 text-start focus-visible:outline-none";
 
 export const ROW_HOVER = "hover:bg-accent/60 has-[button:focus-visible]:bg-accent/60";
+
+export function IntegrationRow({
+  icon,
+  name,
+  description,
+  action,
+  testId,
+  onOpen,
+}: {
+  icon: ReactNode;
+  name: string;
+  description?: string;
+  action: ReactNode;
+  testId?: string;
+  onOpen: () => void;
+}) {
+  return (
+    <div data-testid={testId} className={`${ROW_SHELL} ${ROW_HOVER}`}>
+      <button type="button" onClick={onOpen} className={ROW_BUTTON}>
+        {icon}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-body-lg font-medium text-foreground">{name}</span>
+          {description ? (
+            <span className="block truncate text-body-sm text-muted-foreground">{description}</span>
+          ) : null}
+        </span>
+      </button>
+      {action}
+    </div>
+  );
+}
 
 export function PluginRow({
   name,
@@ -115,20 +147,18 @@ export function PluginRow({
   onOpen: () => void;
 }) {
   return (
-    <div data-testid="plugin-row" className={`${ROW_SHELL} ${ROW_HOVER}`}>
-      <button type="button" onClick={onOpen} className={ROW_BUTTON}>
-        <PluginLogo name={name} logo={logo} site={site} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-body-lg font-medium text-foreground">{name}</span>
-          {description ? (
-            <span className="block truncate text-body-sm text-muted-foreground">{description}</span>
-          ) : null}
-        </span>
-      </button>
-      <Button type="button" variant="secondary" size="sm" onClick={onOpen}>
-        {installed ? <Trans>Added</Trans> : <Trans>Add</Trans>}
-      </Button>
-    </div>
+    <IntegrationRow
+      testId="plugin-row"
+      icon={<PluginLogo name={name} logo={logo} site={site} />}
+      name={name}
+      description={description}
+      onOpen={onOpen}
+      action={
+        <Button type="button" variant="secondary" size="sm" onClick={onOpen}>
+          {installed ? <Trans>Added</Trans> : <Trans>Add</Trans>}
+        </Button>
+      }
+    />
   );
 }
 

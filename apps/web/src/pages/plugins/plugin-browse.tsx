@@ -23,14 +23,15 @@ import {
   remoteMcpAppServer,
 } from "@robots/core";
 import { Button, SectionHeading, Spinner } from "@robots/ui-web";
-import { ArrowUpRight, Search } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Search } from "lucide-react";
+import type { ReactNode } from "react";
 import { MacAppIcon } from "../../components/integrations/mac-app-icon";
 import type { PluginSelection } from "../../components/integrations/plugin-marketplace";
 import {
+  IntegrationRow,
+  PluginLogo,
   PluginRow,
   pluginSelection,
-  ROW_BUTTON,
-  ROW_HOVER,
   ROW_SHELL,
 } from "../../components/integrations/plugin-marketplace";
 import type { TileContext } from "./parts";
@@ -41,37 +42,66 @@ import type { PluginConnections } from "./use-plugin-connections";
 
 const SECTION_SIZE = 6;
 
-function RemoteMcpApps({
-  query,
+function remoteAppConnected(app: RemoteMcpApp, servers: readonly McpServer[]): boolean {
+  const server = remoteMcpAppServer(app, servers);
+  return Boolean(server && mcpServerConnection(server) === "connected");
+}
+
+function RemoteMcpAppRow({
+  app,
   servers,
   onOpen,
 }: {
-  query: string;
+  app: RemoteMcpApp;
   servers: readonly McpServer[];
   onOpen: (app: RemoteMcpApp) => void;
 }) {
-  const apps = REMOTE_MCP_APPS.filter((app) => matchesRemoteMcpApp(app, query));
-  if (!apps.length) return null;
   return (
-    <div data-testid="remote-mcp-apps" className="mb-6 grid grid-cols-2 gap-2">
-      {apps.map((app) => {
-        const server = remoteMcpAppServer(app, servers);
-        return (
-          <PluginRow
-            key={app.id}
-            name={app.name}
-            description={app.description}
-            site={app.site}
-            installed={Boolean(server && mcpServerConnection(server) === "connected")}
-            onOpen={() => onOpen(app)}
-          />
-        );
-      })}
-    </div>
+    <PluginRow
+      name={app.name}
+      description={app.description}
+      site={app.site}
+      installed={remoteAppConnected(app, servers)}
+      onOpen={() => onOpen(app)}
+    />
   );
 }
 
-/** The browse page under the search: featured apps, plugin sections or matches, and more apps. */
+function MacAppRow({ app, onOpen }: { app: MacAppConnection; onOpen: () => void }) {
+  return (
+    <IntegrationRow
+      icon={
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border/60 bg-accent text-foreground [&_svg]:size-5">
+          <MacAppIcon name={app.icon} />
+        </span>
+      }
+      name={app.name}
+      description={app.description}
+      onOpen={onOpen}
+      action={<ChevronRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />}
+    />
+  );
+}
+
+function BrowseSection({
+  title,
+  testId,
+  children,
+}: {
+  title: ReactNode;
+  testId: string;
+  children: ReactNode;
+}) {
+  return (
+    <section data-testid={testId} className="mb-6">
+      <SectionHeading as="h2" className="mb-2 px-2.5">
+        {title}
+      </SectionHeading>
+      <div className="grid grid-cols-2 gap-2">{children}</div>
+    </section>
+  );
+}
+
 export function PluginBrowse({
   browse,
   state,
@@ -85,7 +115,6 @@ export function PluginBrowse({
   state: PluginConnections;
   tileContext: TileContext;
   onOpenPlugin: (selection: PluginSelection) => void;
-  /** Opens the public MCP catalog searched for the query. */
   onSearchPublic: (query: string) => void;
   onOpenMacApp: (app: MacAppConnection) => void;
   onOpenRemoteApp: (app: RemoteMcpApp) => void;
@@ -113,9 +142,33 @@ export function PluginBrowse({
     brandMatches,
     searching,
     pluginMatches,
+    pluginForApp,
   } = browse;
+  const { itemConnected } = tileContext.connections;
   const installedPlugin = (installedSource: string) =>
     pluginInstalls.find((row) => row.source === installedSource);
+
+  const browsingHome = showFeatured && !category;
+  const connectedApps = catalog.filter(itemConnected);
+  const connectedRemote = REMOTE_MCP_APPS.filter((app) => remoteAppConnected(app, mcpServers));
+  const installedApps = plugins.filter((entry) => installedPlugin(entry.installedSource));
+  const availableTiles = featuredTiles.filter(
+    (tile) => !tile.item || tile.missing || !itemConnected(tile.item),
+  );
+  const featuredKeys = new Set(
+    featuredTiles.flatMap((tile) => (tile.item ? [catalogItemKey(tile.item)] : [])),
+  );
+  const availableRemote = REMOTE_MCP_APPS.filter((app) => !remoteAppConnected(app, mcpServers));
+  const remoteMatches = REMOTE_MCP_APPS.filter((app) => matchesRemoteMcpApp(app, query));
+  const recommended = catalogEntries
+    .filter(isRecommendedPlugin)
+    .map((entry) => ({ entry, item: managedAppFor(entry, catalog) }))
+    .filter(({ entry, item }) =>
+      item
+        ? !itemConnected(item) && !featuredKeys.has(catalogItemKey(item))
+        : entry.hasConnector && !installedPlugin(entry.installedSource),
+    )
+    .slice(0, SECTION_SIZE);
 
   function catalogTile(
     item: ConnectionCatalogItem,
@@ -129,6 +182,7 @@ export function PluginBrowse({
         item={item}
         label={label}
         logo={logo}
+        description={pluginForApp.get(catalogItemKey(item))?.description}
         tileTestId={opts?.tileTestId}
         context={tileContext}
       />
@@ -195,12 +249,6 @@ export function PluginBrowse({
           ) : null}
         </section>
       ) : null;
-    // A recommended brand this deployment already offers as a managed app is listed as that app.
-    const recommended = catalogEntries
-      .filter(isRecommendedPlugin)
-      .map((entry) => ({ entry, item: managedAppFor(entry, catalog) }))
-      .filter(({ entry, item }) => item || entry.hasConnector)
-      .slice(0, SECTION_SIZE);
     const uncategorized = plugins.filter((entry) => !entry.category);
     const sections: Array<[string, string, PluginMarketplaceEntry[]]> = [
       ...categories.map((name): [string, string, PluginMarketplaceEntry[]] => [
@@ -214,18 +262,6 @@ export function PluginBrowse({
     ].filter(([, , entries]) => entries.length);
     return (
       <>
-        {recommended.length ? (
-          <section data-testid="plugin-section" className="mt-8">
-            <SectionHeading as="h2" className="mb-2 px-2.5">
-              <Trans>Recommended</Trans>
-            </SectionHeading>
-            <div className="grid grid-cols-2 gap-2">
-              {recommended.map(({ entry, item }) =>
-                item ? catalogTile(item, item.name, item.logo) : renderPluginRow(entry),
-              )}
-            </div>
-          </section>
-        ) : null}
         {sections.map(([name, label, entries]) => (
           <section key={name} data-testid="plugin-section" className="mt-8">
             <div className="mb-2 flex items-center justify-between px-2.5">
@@ -245,106 +281,87 @@ export function PluginBrowse({
     );
   }
 
-  /** Nothing leaves for the public catalog until the person picks this row. */
   function renderPublicCatalogRow(query: string) {
     return (
-      <div className={`mt-2 ${ROW_SHELL} ${ROW_HOVER}`}>
-        <button
-          type="button"
-          className={ROW_BUTTON}
-          onClick={() => {
-            onSearchPublic(query);
-          }}
-        >
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border/60 bg-favicon-plate text-muted-foreground">
-            <Search className="size-4" />
-          </div>
-          <span className="min-w-0 flex-1 truncate text-body-lg font-medium text-foreground">
-            <Trans>Search MCP servers for “{query}”</Trans>
-          </span>
-        </button>
+      <div className="mt-2">
+        <IntegrationRow
+          icon={
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border/60 bg-accent text-muted-foreground">
+              <Search className="size-4" />
+            </span>
+          }
+          name={t`Search MCP servers for “${query}”`}
+          onOpen={() => onSearchPublic(query)}
+          action={null}
+        />
       </div>
     );
   }
 
   return (
     <>
-      {catalogLoaded && showFeatured && !category ? (
-        <div className="mb-6" data-testid="featured-connectors">
-          {catalog.length === 0 ? (
-            !catalogsReady || plugins.length ? null : (
-              <p className="text-body leading-6 text-muted-foreground/80">
-                <Trans>Configure a plugin catalog on the server to connect apps.</Trans>
-              </p>
-            )
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              {featuredTiles.map((tile) => {
-                const item = tile.item;
-                const key = item ? catalogItemKey(item) : tile.id;
-                const disabled = tile.missing || !item;
-                if (item && !tile.missing) {
-                  // Featured is the stable hit target for connection-tile-* in E2E.
-                  return catalogTile(item, tile.label, item.logo, {
-                    tileTestId: true,
-                  });
-                }
-                return (
-                  <div
-                    key={key}
-                    className={`flex min-w-0 items-center gap-3 rounded-xl px-2.5 py-2 ${
-                      disabled ? "opacity-70" : ""
-                    }`}
-                  >
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent text-body font-semibold text-foreground">
-                      {tile.label[0]}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-body-lg font-medium text-foreground">
-                        {tile.label}
-                      </div>
-                      {disabled ? (
-                        <div className="truncate text-body-sm text-muted-foreground">
-                          <Trans>Not in the plugin catalog</Trans>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      {browsingHome && catalogLoaded && catalog.length === 0 && catalogsReady && !plugins.length ? (
+        <p className="mb-6 text-body leading-6 text-muted-foreground/80">
+          <Trans>Configure a plugin catalog on the server to connect apps.</Trans>
+        </p>
+      ) : null}
+
+      {browsingHome && connectedApps.length + connectedRemote.length + installedApps.length ? (
+        <BrowseSection title={<Trans>Connected</Trans>} testId="connected-apps">
+          {connectedApps.map((item) =>
+            catalogTile(item, item.name, item.logo, { tileTestId: true }),
           )}
-        </div>
+          {connectedRemote.map((app) => (
+            <RemoteMcpAppRow key={app.id} app={app} servers={mcpServers} onOpen={onOpenRemoteApp} />
+          ))}
+          {installedApps.map(renderPluginRow)}
+        </BrowseSection>
       ) : null}
 
-      {!category ? (
-        <RemoteMcpApps
-          query={showFeatured ? "" : query}
-          servers={mcpServers}
-          onOpen={onOpenRemoteApp}
-        />
+      {browsingHome ? (
+        <BrowseSection title={<Trans>On your Mac</Trans>} testId="mac-apps">
+          {MAC_APP_CONNECTIONS.map((app) => (
+            <MacAppRow key={app.id} app={app} onOpen={() => onOpenMacApp(app)} />
+          ))}
+        </BrowseSection>
       ) : null}
 
-      {showFeatured && !category ? (
-        <section data-testid="mac-apps" className="mb-6">
-          <SectionHeading as="h2" className="mb-2 px-2.5">
-            <Trans>On your Mac</Trans>
-          </SectionHeading>
-          <div className="grid grid-cols-2 gap-2">
-            {MAC_APP_CONNECTIONS.map((app) => (
-              <div key={app.id} className={`${ROW_SHELL} ${ROW_HOVER}`}>
-                <button type="button" className={ROW_BUTTON} onClick={() => onOpenMacApp(app)}>
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground [&_svg]:size-5">
-                    <MacAppIcon name={app.icon} />
+      {browsingHome &&
+      catalogLoaded &&
+      availableTiles.length + availableRemote.length + recommended.length ? (
+        <BrowseSection title={<Trans>Available</Trans>} testId="featured-connectors">
+          {availableTiles.map((tile) =>
+            tile.item && !tile.missing ? (
+              catalogTile(tile.item, tile.label, tile.item.logo, { tileTestId: true })
+            ) : (
+              <div key={tile.id} className={`${ROW_SHELL} opacity-70`}>
+                <PluginLogo name={tile.label} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-body-lg font-medium text-foreground">
+                    {tile.label}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-start text-body-lg font-medium text-foreground">
-                    {app.name}
+                  <span className="block truncate text-body-sm text-muted-foreground">
+                    <Trans>Not in the plugin catalog</Trans>
                   </span>
-                </button>
+                </span>
               </div>
-            ))}
-          </div>
-        </section>
+            ),
+          )}
+          {availableRemote.map((app) => (
+            <RemoteMcpAppRow key={app.id} app={app} servers={mcpServers} onOpen={onOpenRemoteApp} />
+          ))}
+          {recommended.map(({ entry, item }) =>
+            item ? catalogTile(item, item.name, item.logo) : renderPluginRow(entry),
+          )}
+        </BrowseSection>
+      ) : null}
+
+      {!showFeatured && !category && remoteMatches.length ? (
+        <div data-testid="remote-mcp-apps" className="mb-6 grid grid-cols-2 gap-2">
+          {remoteMatches.map((app) => (
+            <RemoteMcpAppRow key={app.id} app={app} servers={mcpServers} onOpen={onOpenRemoteApp} />
+          ))}
+        </div>
       ) : null}
 
       {catalogsReady &&
@@ -368,7 +385,6 @@ export function PluginBrowse({
             <div className="grid grid-cols-2 gap-2">
               {rendered.map((item) =>
                 catalogTile(item, item.name, item.logo, {
-                  // Avoid duplicate connection-tile-* ids while featured is also shown.
                   tileTestId: !showFeatured,
                 }),
               )}
