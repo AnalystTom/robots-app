@@ -108,6 +108,8 @@ export default function BotTemplatesScreen() {
                 (id) => templates.data.find((template) => template.id === id) ?? [],
               );
               const name = t`Autopilot team`;
+              const [lead, ...others] = crew.map((member) => botTemplateCopy(member).name);
+              const otherNames = others.join(", ");
               return (
                 <View key={team.id} testID="bot-template-team" style={styles.card}>
                   <View style={styles.crew}>
@@ -119,9 +121,7 @@ export default function BotTemplatesScreen() {
                     <Text accessibilityRole="header" style={styles.name}>
                       {name}
                     </Text>
-                    <Text style={styles.summary}>
-                      {t`Chief of Staff runs Dev, Researcher, Sales, GTM and Refund Bot.`}
-                    </Text>
+                    <Text style={styles.summary}>{t`${lead} runs ${otherNames}.`}</Text>
                   </View>
                   <NativeActionButton
                     fill={false}

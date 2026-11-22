@@ -218,7 +218,10 @@ function TeamCard({
   onPick: () => void;
 }) {
   const { t } = useLingui();
+  const copy = useBotTemplateCopy();
   const name = t`Autopilot team`;
+  const [lead, ...others] = crew.map((member) => copy(member).name);
+  const otherNames = others.join(", ");
   return (
     <section
       data-testid="bot-template-team"
@@ -232,9 +235,7 @@ function TeamCard({
       </div>
       <div className="min-w-0 flex-1">
         <h3 className="text-body-lg font-medium text-foreground">{name}</h3>
-        <p className="text-body-sm text-muted-foreground">
-          <Trans>Chief of Staff runs Dev, Researcher, Sales, GTM and Refund Bot.</Trans>
-        </p>
+        <p className="text-body-sm text-muted-foreground">{t`${lead} runs ${otherNames}.`}</p>
       </div>
       <Button size="sm" disabled={busy} aria-label={t`Create ${name}`} onClick={onPick}>
         {creating ? <Trans>Creating…</Trans> : <Trans>Create team</Trans>}

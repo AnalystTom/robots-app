@@ -10,27 +10,27 @@ export const BOT_TEMPLATE_COPY: Readonly<
 > = {
   "chief-of-staff": {
     name: msg`Chief of Staff`,
-    summary: msg`Takes your requests, hands each one to the right bot and brings you only the decisions that are yours.`,
+    summary: msg`Hands each request to the right bot`,
   },
   developer: {
     name: msg`Dev`,
-    summary: msg`Just ask for coding work. Reproduces the bug, writes the fix, runs the tests and asks before it opens a pull request.`,
+    summary: msg`Reproduces bugs, writes fixes and runs the tests`,
   },
   researcher: {
     name: msg`Researcher`,
-    summary: msg`Works from a research prompt: reads the sources, writes plain-language notes and links a source for every claim.`,
+    summary: msg`Reads sources and writes notes that cite each claim`,
   },
   sales: {
     name: msg`Sales`,
-    summary: msg`Gets the money. Follows up on warm leads, keeps the pipeline honest and flags the deals that have gone quiet.`,
+    summary: msg`Follows up on warm leads and flags quiet deals`,
   },
   gtm: {
     name: msg`GTM`,
-    summary: msg`Takes what you shipped to market: launch posts and outreach drafts. Nothing goes out until you say so.`,
+    summary: msg`Drafts launch posts and outreach for your approval`,
   },
   "refund-bot": {
     name: msg`Refund Bot`,
-    summary: msg`Checks refund requests against your policy, approves what fits, and asks you before any refund over your limit.`,
+    summary: msg`Approves refunds that fit your policy`,
   },
   "inbox-triage": {
     name: msg`Inbox triage`,

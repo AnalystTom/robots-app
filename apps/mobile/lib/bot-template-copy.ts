@@ -8,32 +8,32 @@ export function botTemplateCopy(template: BotTemplate): BotTemplateCopy {
     case "chief-of-staff":
       return {
         name: t`Chief of Staff`,
-        summary: t`Takes your requests, hands each one to the right bot and brings you only the decisions that are yours.`,
+        summary: t`Hands each request to the right bot`,
       };
     case "developer":
       return {
         name: t`Dev`,
-        summary: t`Just ask for coding work. Reproduces the bug, writes the fix, runs the tests and asks before it opens a pull request.`,
+        summary: t`Reproduces bugs, writes fixes and runs the tests`,
       };
     case "researcher":
       return {
         name: t`Researcher`,
-        summary: t`Works from a research prompt: reads the sources, writes plain-language notes and links a source for every claim.`,
+        summary: t`Reads sources and writes notes that cite each claim`,
       };
     case "sales":
       return {
         name: t`Sales`,
-        summary: t`Gets the money. Follows up on warm leads, keeps the pipeline honest and flags the deals that have gone quiet.`,
+        summary: t`Follows up on warm leads and flags quiet deals`,
       };
     case "gtm":
       return {
         name: t`GTM`,
-        summary: t`Takes what you shipped to market: launch posts and outreach drafts. Nothing goes out until you say so.`,
+        summary: t`Drafts launch posts and outreach for your approval`,
       };
     case "refund-bot":
       return {
         name: t`Refund Bot`,
-        summary: t`Checks refund requests against your policy, approves what fits, and asks you before any refund over your limit.`,
+        summary: t`Approves refunds that fit your policy`,
       };
     case "inbox-triage":
       return { name: t`Inbox triage`, summary: t`Sorts new email and drafts the replies` };
