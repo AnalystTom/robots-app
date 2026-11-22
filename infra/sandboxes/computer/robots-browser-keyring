@@ -1,0 +1,52 @@
+#!/bin/sh
+set -eu
+key_file="${ROBOTS_BROWSER_KEY_FILE:-/tmp/robots/browser-store-key}"
+[ -s "$key_file" ] || exit 3
+command -v gnome-keyring-daemon >/dev/null 2>&1 || exit 3
+command -v secret-tool >/dev/null 2>&1 || exit 3
+command -v dbus-send >/dev/null 2>&1 || exit 3
+[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] || exit 3
+key=$(cat "$key_file")
+bus=$(printf '%s' "$DBUS_SESSION_BUS_ADDRESS" | sha256sum | cut -c1-16)
+state="/tmp/robots/keyring-$bus"
+mkdir -p "$state"
+chmod 700 "$state"
+exec 9>"$state/lock"
+flock -w 20 9
+
+secrets_owned() {
+  dbus-send --session --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus \
+    org.freedesktop.DBus.NameHasOwner string:org.freedesktop.secrets 2>/dev/null | grep -q 'boolean true'
+}
+
+seeded() {
+  for app in chromium chrome brave; do
+    found=$(timeout 5 secret-tool lookup application "$app" 2>/dev/null) || return 1
+    [ "$found" = "$key" ] || return 1
+  done
+}
+
+if secrets_owned && seeded; then
+  exit 0
+fi
+
+if ! secrets_owned; then
+  rm -rf "$state/data" "$state/run"
+  mkdir -p "$state/data" "$state/run"
+  chmod 700 "$state/data" "$state/run"
+  login=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  printf '%s' "$login" | XDG_DATA_HOME="$state/data" XDG_RUNTIME_DIR="$state/run" \
+    gnome-keyring-daemon --daemonize --unlock --components=secrets >"$state/env" 2>"$state/log" 9>&-
+  tries=0
+  until secrets_owned; do
+    tries=$((tries + 1))
+    [ "$tries" -lt 50 ] || exit 4
+    sleep 0.1
+  done
+fi
+
+for app in chromium chrome brave; do
+  printf '%s' "$key" | timeout 5 secret-tool store --label="Chromium Safe Storage" \
+    xdg:schema chrome_libsecret_os_crypt_password_v2 application "$app"
+done
+seeded || exit 4

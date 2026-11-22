@@ -98,6 +98,8 @@ export function VaultItemSheet({
     } else if (entry.auth.type === "command") {
       add(t`Variable`, `$${commandVariableName(entry.name)}`);
       list.push({ label: t`Value`, ...hidden });
+    } else if (entry.auth.type === "session") {
+      add(t`Site`, siteHost(entry.origin));
     } else {
       add(t`Site`, entry.origin);
       add(
@@ -110,7 +112,7 @@ export function VaultItemSheet({
       );
       list.push({ label: t`Value`, ...hidden });
     }
-    add(t`When to use`, entry.note);
+    add(entry.auth.type === "session" ? t`Imported from` : t`When to use`, entry.note);
     add(
       t`Bots`,
       vaultBotsLine({
@@ -146,7 +148,7 @@ export function VaultItemSheet({
           ) : (
             <NativeActionButton label={t`Done`} onPress={onClose} prominence="plain" />
           )}
-          {readable && !usesOpen ? (
+          {readable && readable.auth.type !== "session" && !usesOpen ? (
             <NativeActionButton
               disabled={busy}
               fill={false}

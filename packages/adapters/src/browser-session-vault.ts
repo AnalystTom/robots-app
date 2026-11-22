@@ -1,0 +1,304 @@
+import { randomBytes } from "node:crypto";
+import type { AdapterContext, SandboxProvider, SecretStore } from "@robots/adapter-kit";
+import type {
+  ImportSessionsInput,
+  SessionCookie,
+  SessionDelivery,
+  SiteSession,
+} from "@robots/contracts";
+import {
+  SessionSiteCookies,
+  sessionOriginSite,
+  sessionSiteOrigin,
+  VAULT_ITEM_LIMIT,
+} from "@robots/contracts";
+import type { PrismaClient } from "@robots/db";
+import { runAsSystem, runAsTenant, spaceIsShared, withTransactionRetry } from "@robots/db";
+import { getLogger } from "@robots/logging";
+import type { BotSecretScope } from "./bot-secrets.js";
+import {
+  assertVaultInUse,
+  isSessionAuth,
+  lockVault,
+  newVaultItemName,
+  saveItemBots,
+  vaultFields,
+} from "./bot-secrets.js";
+import { toComputerRef } from "./computer-support.js";
+import { persistPreparedSecret } from "./secret-persistence.js";
+import { openVaultValue, sealVaultValue } from "./vault-values.js";
+
+export const SESSIONS_NEED_OWN_SPACE =
+  "Sign-ins can only be imported into a Space that only you use.";
+export const SESSION_IMPORT_TOO_LARGE = "Too many sign-ins at once. Pick fewer sites.";
+
+const SESSION_AUTH = { type: "session" } as const;
+const SESSION_TYPE = { path: ["type"], equals: "session" };
+const MAX_BATCH_BYTES = 600_000;
+
+export interface SessionVaultDeps {
+  prisma: PrismaClient;
+  secretStore: SecretStore;
+}
+
+export interface SessionSyncDeps extends SessionVaultDeps {
+  sandbox: Pick<SandboxProvider, "pageBrowser">;
+}
+
+function sealContext(scope: BotSecretScope, id: string): AdapterContext {
+  return {
+    operationId: id,
+    traceId: id,
+    userId: scope.userId,
+    spaceId: scope.spaceId,
+    signal: new AbortController().signal,
+  };
+}
+
+export async function importBrowserSessions(
+  deps: SessionVaultDeps,
+  scope: BotSecretScope,
+  input: Pick<ImportSessionsInput, "source" | "botIds" | "sessions">,
+): Promise<string[]> {
+  const { prisma, secretStore } = deps;
+  if (await spaceIsShared(prisma, scope.spaceId)) throw new Error(SESSIONS_NEED_OWN_SPACE);
+  if (Buffer.byteLength(JSON.stringify(input.sessions)) > MAX_BATCH_BYTES) {
+    throw new Error(SESSION_IMPORT_TOO_LARGE);
+  }
+  await assertVaultInUse(prisma, scope);
+  const sites: string[] = [];
+  for (const session of input.sessions) {
+    await withTransactionRetry(async () => {
+      const vault = await vaultFields(prisma, scope);
+      const origin = sessionSiteOrigin(session.site);
+      const existing = await prisma.vaultCredential.findFirst({
+        where: { ...vault, origin, auth: SESSION_TYPE },
+        select: { id: true },
+      });
+      const id = existing?.id ?? randomBytes(12).toString("hex");
+      const ciphertext = await sealVaultValue(
+        prisma,
+        secretStore,
+        { id, ...vault },
+        JSON.stringify(session.cookies),
+        sealContext(scope, id),
+      );
+      const name = existing
+        ? undefined
+        : await newVaultItemName(prisma, scope, `session ${session.site}`, "session");
+      await persistPreparedSecret(prisma, secretStore, { id, ciphertext }, () =>
+        prisma.$transaction(async (tx) => {
+          await lockVault(tx, scope);
+          await assertVaultInUse(tx, scope);
+          if (existing) {
+            await tx.vaultCredential.update({
+              where: { id },
+              data: { ciphertext, note: input.source },
+            });
+            const chosen = await tx.vaultCredentialBot.findMany({
+              where: { credentialId: id, userId: scope.userId, spaceId: scope.spaceId },
+              select: { botId: true },
+            });
+            await saveItemBots(tx, scope, id, {
+              botIds: [...new Set([...chosen.map((row) => row.botId), ...input.botIds])],
+            });
+            return;
+          }
+          if ((await tx.vaultCredential.count({ where: vault })) >= VAULT_ITEM_LIMIT) {
+            throw new Error("Credential limit reached");
+          }
+          await tx.vaultCredential.create({
+            data: {
+              id,
+              ...vault,
+              name: name as string,
+              origin,
+              auth: SESSION_AUTH,
+              title: session.site,
+              note: input.source,
+              ciphertext,
+            },
+          });
+          await saveItemBots(tx, scope, id, { botIds: input.botIds });
+        }),
+      );
+    });
+    sites.push(session.site);
+  }
+  return sites;
+}
+
+export type SessionVaultScope = BotSecretScope;
+
+export async function sessionItemBots(
+  prisma: PrismaClient,
+  scope: BotSecretScope,
+  name: string,
+): Promise<string[]> {
+  const row = await prisma.vaultCredential.findFirst({
+    where: { ...(await vaultFields(prisma, scope)), name },
+    select: { auth: true, bots: { select: { botId: true } } },
+  });
+  return row && isSessionAuth(row.auth) ? row.bots.map((bot) => bot.botId) : [];
+}
+
+interface DesiredSite {
+  site: string;
+  version: string;
+  open: () => Promise<SessionCookie[]>;
+}
+
+async function desiredSites(
+  deps: SessionVaultDeps,
+  bot: { id: string; userId: string; spaceId: string },
+): Promise<DesiredSite[]> {
+  if (await spaceIsShared(deps.prisma, bot.spaceId)) return [];
+  const scope = { userId: bot.userId, spaceId: bot.spaceId };
+  const rows = await deps.prisma.vaultCredential.findMany({
+    where: {
+      ...(await vaultFields(deps.prisma, scope)),
+      auth: SESSION_TYPE,
+      policy: { not: "off" },
+      bots: { some: { botId: bot.id } },
+    },
+    select: {
+      id: true,
+      userId: true,
+      spaceId: true,
+      ciphertext: true,
+      origin: true,
+      updatedAt: true,
+    },
+  });
+  return rows.flatMap((row) => {
+    const site = sessionOriginSite(row.origin);
+    if (!site) return [];
+    return [
+      {
+        site,
+        version: `${row.id}:${row.updatedAt.getTime()}`,
+        open: async () =>
+          SessionSiteCookies.parse(
+            JSON.parse(await openVaultValue(deps.prisma, deps.secretStore, row)),
+          ),
+      },
+    ];
+  });
+}
+
+function batches(sites: SiteSession[]): SiteSession[][] {
+  const out: SiteSession[][] = [];
+  let current: SiteSession[] = [];
+  let size = 0;
+  for (const site of sites) {
+    const bytes = Buffer.byteLength(JSON.stringify(site));
+    if (current.length && size + bytes > MAX_BATCH_BYTES) {
+      out.push(current);
+      current = [];
+      size = 0;
+    }
+    current.push(site);
+    size += bytes;
+  }
+  if (current.length || !out.length) out.push(current);
+  return out;
+}
+
+export async function syncBotBrowserSessions(
+  deps: SessionSyncDeps,
+  botId: string,
+  context: Pick<AdapterContext, "operationId" | "traceId" | "signal">,
+): Promise<SessionDelivery> {
+  const bot = await runAsSystem("browser session sync owner", () =>
+    deps.prisma.bot.findUnique({
+      where: { id: botId },
+      select: { id: true, userId: true, spaceId: true, computer: true },
+    }),
+  );
+  if (!bot) return "failed";
+  return runAsTenant({ spaceId: bot.spaceId, userId: bot.userId }, async () => {
+    const [desired, applied] = await Promise.all([
+      desiredSites(deps, bot),
+      deps.prisma.browserSessionSite.findMany({ where: { botId: bot.id } }),
+    ]);
+    const appliedVersion = new Map(applied.map((row) => [row.site, row.itemVersion]));
+    const toSet = desired.filter((entry) => appliedVersion.get(entry.site) !== entry.version);
+    const keep = new Set(desired.map((entry) => entry.site));
+    const toClear = applied.map((row) => row.site).filter((site) => !keep.has(site));
+    if (!toSet.length && !toClear.length) return "signed_in";
+    const computer = bot.computer;
+    if (computer?.state !== "running" || !computer.providerRef) return "next_start";
+    if (!deps.sandbox.pageBrowser) return "failed";
+    const sites = await Promise.all(
+      toSet.map(async (entry) => ({ site: entry.site, cookies: await entry.open() })),
+    );
+    const adapterContext: AdapterContext = {
+      ...context,
+      userId: bot.userId,
+      spaceId: bot.spaceId,
+      botId: bot.id,
+    };
+    const ref = toComputerRef(computer);
+    const groups = batches(sites.filter((entry) => entry.cookies.length > 0));
+    for (const [index, group] of groups.entries()) {
+      const result = await deps.sandbox.pageBrowser(
+        ref,
+        {
+          command: "sessions",
+          sites: group,
+          clear: index === groups.length - 1 ? toClear : [],
+        },
+        adapterContext,
+      );
+      if (!result.ok) {
+        getLogger().warn("browser_sessions.sync_failed", {
+          "bot.id": bot.id,
+          sites: group.length,
+          cleared: toClear.length,
+          error: typeof result.error === "string" ? result.error : undefined,
+        });
+        return "failed";
+      }
+    }
+    await deps.prisma.$transaction(async (tx) => {
+      await tx.browserSessionSite.deleteMany({
+        where: { botId: bot.id, site: { in: [...toClear, ...toSet.map((entry) => entry.site)] } },
+      });
+      await tx.browserSessionSite.createMany({
+        data: toSet.map((entry) => ({
+          botId: bot.id,
+          userId: bot.userId,
+          spaceId: bot.spaceId,
+          site: entry.site,
+          itemVersion: entry.version,
+        })),
+      });
+    });
+    getLogger().info("browser_sessions.synced", {
+      "bot.id": bot.id,
+      set: toSet.length,
+      cleared: toClear.length,
+    });
+    return "signed_in";
+  });
+}
+
+export async function syncComputerBrowserSessions(
+  deps: SessionSyncDeps,
+  computerId: string,
+  context: Pick<AdapterContext, "operationId" | "traceId" | "signal">,
+): Promise<void> {
+  const bots = await runAsSystem("browser session sync on boot", () =>
+    deps.prisma.bot.findMany({
+      where: {
+        computerId,
+        OR: [
+          { browserSessionSites: { some: {} } },
+          { vaultCredentials: { some: { credential: { auth: SESSION_TYPE } } } },
+        ],
+      },
+      select: { id: true },
+    }),
+  );
+  for (const bot of bots) await syncBotBrowserSessions(deps, bot.id, context);
+}

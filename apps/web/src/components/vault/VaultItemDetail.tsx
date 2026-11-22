@@ -337,9 +337,15 @@ export function VaultItemDetail({
       </DetailRow>,
     );
   }
+  if (auth && kind === "session")
+    rows.push(
+      <DetailRow key="site" label={t`Site`}>
+        {siteHost(item.origin)}
+      </DetailRow>,
+    );
   if (item.note)
     rows.push(
-      <DetailRow key="note" label={t`When to use`}>
+      <DetailRow key="note" label={kind === "session" ? t`Imported from` : t`When to use`}>
         {item.note}
       </DetailRow>,
     );
@@ -397,7 +403,11 @@ export function VaultItemDetail({
       {confirmingRemove ? (
         <div className="flex flex-col gap-2">
           <p className="text-body-sm text-foreground">
-            <Trans>Remove {secretName}? Bots will no longer be able to use it.</Trans>
+            {kind === "session" ? (
+              <Trans>Remove {secretName}? Its bots' browsers will be signed out of it.</Trans>
+            ) : (
+              <Trans>Remove {secretName}? Bots will no longer be able to use it.</Trans>
+            )}
           </p>
           <div className="flex gap-2">
             <Button
@@ -421,7 +431,7 @@ export function VaultItemDetail({
         </div>
       ) : (
         <div className="flex gap-2">
-          {auth ? (
+          {auth && kind !== "session" ? (
             <Button
               type="button"
               variant="secondary"

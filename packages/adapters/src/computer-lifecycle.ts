@@ -5,6 +5,7 @@ import type {
   ComputerRef,
   JobPublisher,
   SandboxProvider,
+  SecretStore,
 } from "@robots/adapter-kit";
 import {
   computerControlExpireJobKey,
@@ -35,7 +36,8 @@ import {
   spaceTakesWork,
   withTransactionRetry,
 } from "@robots/db";
-import { getLogger } from "@robots/logging";
+import { bestEffort, getLogger } from "@robots/logging";
+import { syncComputerBrowserSessions } from "./browser-session-vault.js";
 import {
   clearInactiveUserComputerControl,
   endTeachingWithLease,
@@ -211,6 +213,26 @@ async function computerOwnerLocale(
   }
 }
 
+function applyBrowserSessionsAfterStart(
+  deps: { prisma: PrismaClient; sandbox: SandboxProvider; secretStore?: SecretStore },
+  computerId: string,
+  context: AdapterContext,
+) {
+  if (!deps.secretStore || !deps.sandbox.pageBrowser) return;
+  void bestEffort(
+    "browser sessions after computer start",
+    syncComputerBrowserSessions(
+      { prisma: deps.prisma, sandbox: deps.sandbox, secretStore: deps.secretStore },
+      computerId,
+      {
+        operationId: context.operationId,
+        traceId: context.traceId,
+        signal: new AbortController().signal,
+      },
+    ),
+  );
+}
+
 export async function provisionComputer(
   deps: {
     prisma: PrismaClient;
@@ -219,6 +241,7 @@ export async function provisionComputer(
     jobs: JobPublisher;
     events: ThreadEvents;
     dataDir?: string;
+    secretStore?: SecretStore;
   },
   computerId: string,
   context: AdapterContext,
@@ -299,6 +322,7 @@ export async function provisionComputer(
           operation: "reuse",
           durationMs: Math.round(performance.now() - started),
         });
+        applyBrowserSessionsAfterStart(deps, computerId, context);
         return ref;
       }
       context.signal.throwIfAborted();
@@ -628,6 +652,7 @@ export async function provisionComputer(
       operation: replacement ? "create" : ref.started ? "resume" : "reuse",
       durationMs: Math.round(performance.now() - started),
     });
+    applyBrowserSessionsAfterStart(deps, computerId, context);
     return ref;
   } catch (error) {
     log.warn("computer.provision_failed", {

@@ -116,7 +116,7 @@ export function computerRoutes(ctx: RouterContext) {
         const computerId = bot.computer.id;
         try {
           await getLogger().withContext({ reason: "manual" }, () =>
-            provisionComputer(deps, computerId, {
+            provisionComputer({ ...deps, secretStore: deps.secrets }, computerId, {
               ...ctx,
               screenLeaseId: screenLeaseIdForRun(lease, manualRunId),
             }),

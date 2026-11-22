@@ -77,6 +77,11 @@ import { botEmailAddress, botEmailAddresses, claimBotEmailAddress } from "../bot
 import { loadBotForRemoval } from "../bot-removal.js";
 import { changedBotSettings } from "../bot-setting-analytics.js";
 import { createBotFromTemplate, listBotTemplates } from "../bot-templates.js";
+import {
+  importSessions,
+  removedSessionBots,
+  signOutRemovedSessions,
+} from "../browser-session-import.js";
 import { requireIdentityConfirmation } from "../identity-confirmation.js";
 import { managedAppCatalog } from "../onboarding.js";
 import type { RouterDeps } from "../router.js";
@@ -1058,6 +1063,9 @@ export function botsRoutes(ctx: RouterContext) {
       import: authed.vault.import.handler(({ context, input }) =>
         importVaultLogins(deps, context.actor, input),
       ),
+      importSessions: authed.vault.importSessions.handler(({ context, input }) =>
+        importSessions(deps, vaultScope(context.actor, input.scope), input),
+      ),
       activity: authed.vault.activity.handler(async ({ context, input }) => {
         const uses = await listVaultItemUses(
           deps.prisma,
@@ -1068,7 +1076,10 @@ export function botsRoutes(ctx: RouterContext) {
         return uses;
       }),
       remove: authed.vault.remove.handler(async ({ context, input }) => {
-        await forgetBotSecret(deps.prisma, vaultScope(context.actor, input.scope), input.name);
+        const scope = vaultScope(context.actor, input.scope);
+        const signedInBots = await removedSessionBots(deps, scope, input.name);
+        await forgetBotSecret(deps.prisma, scope, input.name);
+        signOutRemovedSessions(deps, signedInBots);
         return { ok: true as const };
       }),
     },

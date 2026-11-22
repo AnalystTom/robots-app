@@ -59,6 +59,7 @@ import {
   CreateBotFromTemplateInput,
   CreateBotFromTemplateOutput,
 } from "./bot-template.js";
+import { ImportSessionsInput, ImportSessionsResult } from "./browser-sessions.js";
 import {
   ComputerModeSchema,
   ComputerProviderSettingsSchema,
@@ -1700,6 +1701,7 @@ export const appContract = {
     /** Needs a recent identity confirmation on this session (IDENTITY_CONFIRMATION_REQUIRED). */
     reveal: oc.input(VaultRevealInput).output(VaultRevealed),
     import: oc.input(VaultImportInput).output(VaultImportResult),
+    importSessions: oc.input(ImportSessionsInput).output(ImportSessionsResult),
     activity: oc
       .input(settingsScopeInput.extend({ name: StoredBotSecretName }))
       .output(z.array(VaultUse).max(VAULT_ACTIVITY_LIMIT)),

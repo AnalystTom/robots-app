@@ -689,6 +689,7 @@ model Space {
   vaultCredentials            VaultCredential[]
   vaultCredentialBots         VaultCredentialBot[]
   vaultCredentialLimits       VaultCredentialLimit[]
+  browserSessionSites         BrowserSessionSite[]
   externalConversations       ExternalConversation[]
   agentSecrets                AgentSecret[]
   board                       Board?
@@ -1028,6 +1029,7 @@ model Bot {
   steeringMessages  SteeringMessage[]
   mcpServers        BotMcpServer[]
   vaultCredentials  VaultCredentialBot[]
+  browserSessionSites BrowserSessionSite[]
   agentImports      AgentImport[]
   groupMembers      ChatGroupMember[]
   botSecrets BotSecret[]
@@ -2424,6 +2426,21 @@ model VaultCredentialLimit {
   @@unique([credentialId, spaceId])
   @@index([userId, spaceId])
   @@map("vault_credential_limits")
+}
+
+model BrowserSessionSite {
+  botId     String
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  userId    String
+  spaceId   String
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  site        String
+  itemVersion String
+  appliedAt   DateTime @default(now())
+
+  @@id([botId, site])
+  @@index([userId, spaceId])
+  @@map("browser_session_sites")
 }
 
 model ExternalConversation {

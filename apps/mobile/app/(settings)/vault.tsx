@@ -14,7 +14,7 @@ import {
   cardExpiry,
   isIdentityConfirmationRequired,
   newVaultImportRows,
-  VAULT_KINDS,
+  VAULT_NEW_KINDS,
   vaultImportCounts,
   vaultImportProblems,
   vaultKind,
@@ -231,7 +231,7 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
           icon: { type: "sfSymbol" as const, name: "plus" },
           menu: {
             items: [
-              ...VAULT_KINDS.map((kind) => ({
+              ...VAULT_NEW_KINDS.map((kind) => ({
                 type: "action" as const,
                 label: vaultKindLabel(kind),
                 icon: { type: "sfSymbol" as const, name: vaultKindSymbol(kind).ios as never },
@@ -485,7 +485,7 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
             colorScheme={colorScheme}
             title={t`New item`}
             actions={[
-              ...VAULT_KINDS.map((kind) => ({ id: kind, title: vaultKindLabel(kind) })),
+              ...VAULT_NEW_KINDS.map((kind) => ({ id: kind, title: vaultKindLabel(kind) })),
               { id: IMPORT, title: t`Import CSV`, attributes: { disabled: !listed } },
             ]}
             onPressAction={({ nativeEvent }) =>
@@ -536,7 +536,7 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
                 <LongPressMenu
                   key={item.name}
                   actions={[
-                    ...(readable
+                    ...(readable && readable.auth.type !== "session"
                       ? [{ id: "edit", title: t`Edit`, attributes: { disabled: pending } }]
                       : []),
                     {
@@ -631,6 +631,7 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
     if (kind === "card") return t`Cards`;
     if (kind === "contact") return t`Contacts`;
     if (kind === "api_key") return t`Keys`;
+    if (kind === "session") return t`Sign-ins`;
     return t`Variables`;
   }
 }

@@ -30,14 +30,16 @@ export type CredentialAuth = NonNullable<BotSecretMetadata["auth"]>;
 export type CredentialType = CredentialAuth["type"];
 export type VaultItem = BotSecretMetadata & { auth: CredentialAuth };
 export type { VaultBots } from "@robots/core";
-/** What a save sends: no name for a new item, which the server names from its title. */
-export type VaultDestination = { name?: string; origin?: string; auth: CredentialAuth };
+export type SavedAuth = Exclude<CredentialAuth, { type: "session" }>;
+export type VaultDestination = { name?: string; origin?: string; auth: SavedAuth };
+const SESSION_NOT_EDITABLE = "A sign-in is imported from a browser, not edited";
 
 export function vaultKindLabel(kind: VaultKind): string {
   if (kind === "login") return t`Login`;
   if (kind === "card") return t`Card`;
   if (kind === "contact") return t`Contact`;
   if (kind === "api_key") return t`API key`;
+  if (kind === "session") return t`Sign-in`;
   return t`Variable`;
 }
 
@@ -48,6 +50,7 @@ export function vaultKindSymbol(kind: VaultKind): { ios: string; android: string
   if (kind === "contact") return { ios: "mappin.and.ellipse", android: "location-outline" };
   if (kind === "api_key")
     return { ios: "chevron.left.forwardslash.chevron.right", android: "code-slash" };
+  if (kind === "session") return { ios: "globe", android: "globe-outline" };
   return { ios: "terminal", android: "terminal-outline" };
 }
 
@@ -188,7 +191,7 @@ function stringFields(
   >;
 }
 
-export function apiAuth(draft: VaultDraft): CredentialAuth {
+export function apiAuth(draft: VaultDraft): SavedAuth {
   if (draft.apiAuth === "header") return { type: "header", name: draft.headerName.trim() };
   if (draft.apiAuth === "basic") return { type: "basic", username: draft.basicUsername.trim() };
   return { type: "bearer" };
@@ -268,16 +271,17 @@ export function draftDestination(kind: VaultKind, draft: VaultDraft): VaultDesti
   if (kind === "login") return { origin: draft.origin.trim(), auth: { type: "login" } };
   if (kind === "api_key") return { origin: draft.origin.trim(), auth: apiAuth(draft) };
   if (kind === "variable") return { name: variableName(draft), auth: { type: "command" } };
+  if (kind === "session") throw new Error(SESSION_NOT_EDITABLE);
   return { auth: { type: kind } };
 }
 
 /** A saved item's destination, which an edit never changes. */
 export function itemDestination(item: VaultItem): VaultDestination {
-  return vaultKind(item.auth.type) === "variable" ||
-    item.auth.type === "card" ||
-    item.auth.type === "contact"
-    ? { name: item.name, auth: item.auth }
-    : { name: item.name, origin: item.origin, auth: item.auth };
+  const auth = item.auth;
+  if (auth.type === "session") throw new Error(SESSION_NOT_EDITABLE);
+  return vaultKind(auth.type) === "variable" || auth.type === "card" || auth.type === "contact"
+    ? { name: item.name, auth }
+    : { name: item.name, origin: item.origin, auth };
 }
 
 export type VaultSave = {
