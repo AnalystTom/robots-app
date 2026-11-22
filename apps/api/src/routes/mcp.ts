@@ -7,6 +7,7 @@ import {
   wakeRun,
 } from "@robots/adapters";
 import { MCP_OAUTH_REDIRECT_MISMATCH } from "@robots/contracts";
+import { REMOTE_APP_NATIVE_CALLBACK, REMOTE_MCP_APPS } from "@robots/core";
 import type { Prisma } from "@robots/db";
 import {
   AVAILABILITY_SELECT,
@@ -585,7 +586,16 @@ export function mcpRoutes(ctx: RouterContext) {
       oauth: {
         begin: authed.mcp.oauth.begin.handler(async ({ context, input }) => {
           try {
-            const expectedRedirect = new URL("/mcp/oauth/callback", deps.env.webOrigin).toString();
+            let expectedRedirect = new URL("/mcp/oauth/callback", deps.env.webOrigin).toString();
+            if (input.redirectUri === REMOTE_APP_NATIVE_CALLBACK) {
+              const server = await deps.prisma.mcpServer.findFirst({
+                where: { id: input.serverId, ...availableInSpace(context.actor), enabled: true },
+                select: { endpoint: true },
+              });
+              if (REMOTE_MCP_APPS.some((app) => server?.endpoint === app.endpoint)) {
+                expectedRedirect = REMOTE_APP_NATIVE_CALLBACK;
+              }
+            }
             if (input.redirectUri && new URL(input.redirectUri).toString() !== expectedRedirect) {
               throw new ORPCError(MCP_OAUTH_REDIRECT_MISMATCH, {
                 status: 400,

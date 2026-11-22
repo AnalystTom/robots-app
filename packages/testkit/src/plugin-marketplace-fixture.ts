@@ -1,15 +1,20 @@
 import type { PluginRepoFetcher, PluginTextReader } from "@robots/adapters";
 
+import { REMOTE_MCP_APPS } from "@robots/core";
+
 export const MARKETPLACE_FIXTURE_SOURCE = "https://github.com/example/plugin-marketplace-fixture";
 export const MARKETPLACE_FIXTURE_ENDPOINT = "https://marketplace-tools.example.test/mcp";
 export const MARKETPLACE_FIXTURE_AUTH = "https://marketplace-auth.example.test";
+
+const resources = [MARKETPLACE_FIXTURE_ENDPOINT, ...REMOTE_MCP_APPS.map((app) => app.endpoint)].map(
+  (value) => new URL(value),
+);
 
 const CURSOR_REPO = "https://github.com/cursor/plugins";
 const CURSOR_RAW = "https://raw.githubusercontent.com/cursor/plugins/HEAD/";
 const fixtureMcp = JSON.stringify({
   mcpServers: { notes: { type: "http", url: MARKETPLACE_FIXTURE_ENDPOINT } },
 });
-/** Plugins vendored in the fixture Cursor registry: one app with a skill, one skill pack. */
 const CURSOR_FILES: Record<string, string> = {
   "planning-notes/.cursor-plugin/plugin.json": JSON.stringify({
     name: "planning-notes",
@@ -33,8 +38,6 @@ const CURSOR_FILES: Record<string, string> = {
     "---\ndescription: Review the current draft\n---\n\nReview $ARGUMENTS.\n",
 };
 
-/** External provider boundary only. Catalog parsing, preview, installation,
- * native OAuth discovery/PKCE/storage, assignments and removal remain real. */
 export class PluginMarketplaceFixture {
   readonly calls: string[] = [];
   readonly repo: PluginRepoFetcher = async (source) => {
@@ -103,20 +106,24 @@ export class PluginMarketplaceFixture {
       init?.headers ?? (input instanceof Request ? input.headers : undefined),
     );
     const host = headers.get("host");
-    if (host?.endsWith(".example.test")) url.host = host;
     if (
-      ![
-        new URL(MARKETPLACE_FIXTURE_ENDPOINT).hostname,
-        new URL(MARKETPLACE_FIXTURE_AUTH).hostname,
-      ].includes(url.hostname)
+      host &&
+      (host.endsWith(".example.test") || resources.some((resource) => resource.host === host))
     )
-      return this.fallback(input, init);
+      url.host = host;
+    const resource = resources.find(
+      (item) =>
+        item.origin === url.origin &&
+        (item.pathname === url.pathname ||
+          `/.well-known/oauth-protected-resource${item.pathname}` === url.pathname),
+    );
+    if (!resource && url.origin !== MARKETPLACE_FIXTURE_AUTH) return this.fallback(input, init);
     const request = new Request(input, init);
     const bodyText = await request.text();
     this.calls.push(`${request.method} ${url.pathname}`);
-    if (url.pathname === "/.well-known/oauth-protected-resource/mcp")
+    if (resource && url.pathname !== resource.pathname)
       return Response.json({
-        resource: MARKETPLACE_FIXTURE_ENDPOINT,
+        resource: resource.href,
         authorization_servers: [MARKETPLACE_FIXTURE_AUTH],
       });
     if (url.pathname === "/.well-known/oauth-authorization-server")
@@ -134,7 +141,7 @@ export class PluginMarketplaceFixture {
       const metadata = bodyText ? JSON.parse(bodyText) : {};
       return Response.json({
         ...metadata,
-        client_id: "marketplace-fixture-client",
+        client_id: crypto.randomUUID(),
         token_endpoint_auth_method: "none",
       });
     }
@@ -149,12 +156,12 @@ export class PluginMarketplaceFixture {
         expires_in: 3600,
       });
     }
-    if (url.pathname === "/mcp") {
+    if (resource && url.pathname === resource.pathname) {
       if (headers.get("authorization") !== "Bearer fake-marketplace-access")
         return new Response("Authorization required", {
           status: 401,
           headers: {
-            "WWW-Authenticate": `Bearer resource_metadata="https://marketplace-tools.example.test/.well-known/oauth-protected-resource/mcp"`,
+            "WWW-Authenticate": `Bearer resource_metadata="${resource.origin}/.well-known/oauth-protected-resource${resource.pathname}"`,
           },
         });
       const rpcRequest = bodyText ? JSON.parse(bodyText) : {};

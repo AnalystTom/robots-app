@@ -4,14 +4,17 @@ import { mcpServerConnection } from "@robots/contracts";
 import type { RemoteMcpApp } from "@robots/core";
 import { customMcpServerInput, remoteMcpAppServer } from "@robots/core";
 import { Button, toast } from "@robots/ui-web";
+import { useCallback, useRef } from "react";
 import {
   ConnectionPage,
   ConnectionRow,
   ConnectionSection,
 } from "../../components/integrations/connection-page";
 import { PluginLogo } from "../../components/integrations/plugin-marketplace";
-import { connectMcpOauth } from "../../lib/mcp-connect";
 import { useSave, useSpaceQueries } from "../../lib/query";
+import { signInToRemoteApp } from "../../lib/remote-app-signin";
+import { selectedSpaceId } from "../../lib/rpc";
+import { useBoundSpaceId } from "../../lib/space-rpc";
 import { errorText } from "../../lib/user-error";
 
 export function RemoteMcpAppDetail({
@@ -25,23 +28,27 @@ export function RemoteMcpAppDetail({
 }) {
   const { t } = useLingui();
   const queries = useSpaceQueries();
+  const attempt = useRef<AbortController | null>(null);
+  const cancelOnClose = useCallback((node: HTMLDivElement | null) => {
+    if (!node) attempt.current?.abort();
+  }, []);
+  const boundSpaceId = useBoundSpaceId();
   const server = remoteMcpAppServer(app, servers);
   const connected = server ? mcpServerConnection(server) === "connected" : false;
   const connect = useSave({
-    save: async (_input, rpc) => {
+    save: async (signal: AbortSignal, rpc) => {
+      const spaceId = boundSpaceId === undefined ? selectedSpaceId() : boundSpaceId;
       const listed = remoteMcpAppServer(app, await rpc.mcp.servers.list());
       const target =
         listed ?? (await rpc.mcp.servers.create(customMcpServerInput(app.name, app.endpoint)));
-      const result = await connectMcpOauth(target.id);
-      if (result !== "cancelled" && botId)
-        await rpc.mcp.assignments.approve({ botId, serverId: target.id });
+      await signInToRemoteApp(rpc, target, spaceId, signal, botId);
     },
     stale: [queries.mcp.servers.list.queryKey()],
     onFailed: (error) => toast.error(errorText(error, t`Could not connect ${app.name}`)),
   });
 
   return (
-    <div data-testid="connection-detail">
+    <div ref={cancelOnClose} data-testid="connection-detail">
       <ConnectionPage
         name={app.name}
         icon={<PluginLogo name={app.name} site={app.site} large />}
@@ -58,10 +65,13 @@ export function RemoteMcpAppDetail({
                   type="button"
                   variant="secondary"
                   size="sm"
-                  disabled={connect.pending}
-                  onClick={() => connect.run()}
+                  onClick={() => {
+                    if (connect.pending) return attempt.current?.abort();
+                    attempt.current = new AbortController();
+                    connect.run(attempt.current.signal);
+                  }}
                 >
-                  <Trans>Connect</Trans>
+                  {connect.pending ? <Trans>Cancel</Trans> : <Trans>Connect</Trans>}
                 </Button>
               )
             }

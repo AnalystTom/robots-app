@@ -1,3 +1,5 @@
+export const REMOTE_APP_NATIVE_CALLBACK = "http://127.0.0.1:48191/mcp/oauth/callback";
+
 export type RemoteMcpApp = {
   id: string;
   name: string;

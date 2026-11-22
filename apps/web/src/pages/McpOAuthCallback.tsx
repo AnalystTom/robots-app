@@ -3,12 +3,9 @@ import { Button } from "@robots/ui-web";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { MCP_OAUTH_CHANNEL } from "../lib/mcp-connect";
-import { rpc } from "../lib/rpc";
+import { completeBrowserMcpAuthorization } from "../lib/remote-app-signin";
 import { errorText } from "../lib/user-error";
 
-// The window.open name set by the OAuth popup flow. Providers whose login
-// pages send COOP sever window.opener mid-flow, but the window name survives,
-// so it is the reliable "we are the popup" marker.
 const POPUP_NAME = MCP_OAUTH_CHANNEL;
 
 export function McpOAuthCallbackPage() {
@@ -33,8 +30,7 @@ export function McpOAuthCallbackPage() {
     }
     if (handledState.current === state) return;
     handledState.current = state;
-    void rpc.mcp.oauth
-      .complete({ sessionId: state, code, state })
+    void completeBrowserMcpAuthorization(code, state)
       .then(() => {
         const channel = new BroadcastChannel(POPUP_NAME);
         channel.postMessage({ type: "mcp-oauth-complete", sessionId: state });
