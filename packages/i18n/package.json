@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     "./bot-removal": "./src/bot-removal.ts",
+    "./bot-team": "./src/bot-team.ts",
     "./run-error": "./src/run-error.ts",
     "./vault": "./src/vault.ts",
     "./locales/*": "./locales/*"

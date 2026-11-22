@@ -26,8 +26,7 @@ import { WindowChrome } from "./WindowChrome";
 
 type AuthMode = "in" | "up" | "forgot";
 
-// off-scale: 16px below md stops iOS Safari zooming into a focused field.
-const fieldClass = "mt-2 h-12 rounded-xl px-4 text-[16px]/6 md:text-body-lg";
+const fieldClass = "mt-2 h-12 rounded-xl px-4 text-field md:text-body-lg";
 const CODE_LENGTH = 6;
 export const submitClass = "mt-3 h-12 w-full rounded-xl text-body-lg";
 
@@ -38,7 +37,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   const navigate = useNavigate();
   const chooserPath = mode === "up" ? "/sign-up" : "/sign-in";
   const emailStep = location.pathname === `${chooserPath}/email`;
-  const next = signInNext(searchParams.get("next"));
+  const next = signInNext(searchParams);
   const nextQuery = next ? `?next=${encodeURIComponent(next)}` : "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -234,7 +233,14 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
             callbackURL: callbackURL(next ?? "/app"),
             errorCallbackURL: callbackURL("/sign-in"),
           }),
-        ["/app", "/onboarding", "/integrations/setup", "/sign-in", ...(next ? [next] : [])],
+        [
+          "/app",
+          "/onboarding",
+          "/integrations/setup",
+          "/sign-in",
+          newAccountDestination(next),
+          ...(next ? [next] : []),
+        ],
       );
       if (result.error) setError(authErrorText(result.error, t`Could not continue`));
     } catch {

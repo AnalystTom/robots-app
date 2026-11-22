@@ -12,7 +12,6 @@ const settingsScreens = new Set([
   "approval-rule-add",
   "approvals",
   "archived-bots",
-  "bot-template",
   "bot-templates",
   "change-password",
   "computers",

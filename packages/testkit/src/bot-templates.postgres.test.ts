@@ -4,7 +4,7 @@ import path from "node:path";
 import { ComposioConnector, FakeComposioClient } from "@robots/adapters";
 import type { Bot, BotTemplateListing, MessageBlock } from "@robots/contracts";
 import { BOT_TEMPLATE_CHANGED } from "@robots/contracts";
-import { buildSkillMd, findBotTemplate } from "@robots/core";
+import { buildSkillMd, findBotTemplate, findBotTemplateTeam } from "@robots/core";
 import type { PrismaClient } from "@robots/db";
 import { createDb } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -70,10 +70,11 @@ describeIntegration("bot templates", () => {
       version: briefing.version,
     });
     expect(created).toBe(true);
-    expect([bot.name, bot.description, bot.instructions]).toEqual([
+    expect([bot.name, bot.description, bot.instructions, bot.color]).toEqual([
       briefing.name,
       briefing.description,
       briefing.instructions,
+      briefing.avatar,
     ]);
 
     const skills = await db.agentSkill.findMany({ where: owner });
@@ -157,6 +158,82 @@ describeIntegration("bot templates", () => {
     expect(skills.map((row) => row.name)).toEqual(["Inbox triage"]);
     const routine = await db.routine.findFirstOrThrow({ where: { botId: fresh.bot.id } });
     expect(routine.prompt).toBe("Triage my new email with @Inbox triage.");
+  });
+
+  it("creates the whole team once, lead first, each bot in its own robot", async () => {
+    const cookie = await signup(app, `template-team-${stamp}@robots.test`);
+    const owner = await ownerOf(cookie);
+    const team = findBotTemplateTeam("team-autopilot")!;
+
+    const first = await rpc<{ bots: Bot[] }>(app, cookie, "bots/createTeamFromTemplate", {
+      teamId: team.id,
+    });
+    expect(first.bots.map((bot) => [bot.name, bot.color])).toEqual(
+      team.templateIds.map((id) => {
+        const template = findBotTemplate(id)!;
+        return [template.name, template.avatar];
+      }),
+    );
+    expect(first.bots[0]!.name).toBe("Chief of Staff");
+
+    const again = await rpc<{ bots: Bot[] }>(app, cookie, "bots/createTeamFromTemplate", {
+      teamId: team.id,
+    });
+    expect(again.bots.map((bot) => bot.id)).toEqual(first.bots.map((bot) => bot.id));
+    expect(await db.bot.count({ where: owner })).toBe(6);
+    expect((await raw(app, cookie, "bots/createTeamFromTemplate", { teamId: "nope" })).status).toBe(
+      404,
+    );
+  });
+
+  it("keeps the members that were made when one fails, and finishes the team on retry", async () => {
+    const cookie = await signup(app, `template-partial-${stamp}@robots.test`);
+    const owner = await ownerOf(cookie);
+    const team = findBotTemplateTeam("team-autopilot")!;
+    const salesIndex = team.templateIds.indexOf("sales");
+    const salesName = findBotTemplate("sales")!.name;
+    const ownerDb = createDb(process.env.DATABASE_MIGRATION_URL ?? process.env.DATABASE_URL!);
+    await ownerDb.prisma.$executeRawUnsafe(`
+      CREATE OR REPLACE FUNCTION fail_team_member_insert() RETURNS trigger AS $$
+      BEGIN RAISE EXCEPTION 'injected member failure'; END $$ LANGUAGE plpgsql`);
+    await ownerDb.prisma.$executeRawUnsafe(
+      `CREATE TRIGGER fail_team_member_insert BEFORE INSERT ON bots FOR EACH ROW
+       WHEN (NEW."spaceId" = '${owner.spaceId}' AND NEW.name = '${salesName}')
+       EXECUTE FUNCTION fail_team_member_insert()`,
+    );
+
+    let partial: { bots: Bot[]; failed: string[] };
+    try {
+      partial = await rpc<{ bots: Bot[]; failed: string[] }>(
+        app,
+        cookie,
+        "bots/createTeamFromTemplate",
+        { teamId: team.id },
+      );
+    } finally {
+      await ownerDb.prisma.$executeRawUnsafe(
+        "DROP TRIGGER IF EXISTS fail_team_member_insert ON bots",
+      );
+      await ownerDb.prisma.$disconnect();
+    }
+    expect(partial.failed).toEqual(["sales"]);
+    expect(partial.bots.map((bot) => bot.name)).toEqual(
+      team.templateIds.filter((id) => id !== "sales").map((id) => findBotTemplate(id)!.name),
+    );
+    expect(await db.bot.count({ where: owner })).toBe(team.templateIds.length - 1);
+
+    const retried = await rpc<{ bots: Bot[]; failed: string[] }>(
+      app,
+      cookie,
+      "bots/createTeamFromTemplate",
+      { teamId: team.id },
+    );
+    expect(retried.failed).toEqual([]);
+    expect(retried.bots.filter((_, index) => index !== salesIndex).map((bot) => bot.id)).toEqual(
+      partial.bots.map((bot) => bot.id),
+    );
+    expect(retried.bots[salesIndex]!.name).toBe(salesName);
+    expect(await db.bot.count({ where: owner })).toBe(team.templateIds.length);
   });
 
   it("renames its skill on a clash and points the routine at the new name", async () => {

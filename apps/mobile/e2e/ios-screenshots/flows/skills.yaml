@@ -37,15 +37,8 @@ name: Skills
 - takeScreenshot: 04-plugin
 - openLink: "robots:///bot-templates"
 - extendedWaitUntil:
-    visible: "Morning briefing"
+    visible: "Create Morning briefing"
     timeout: 15000
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: 05-bot-templates
-- tapOn: "Morning briefing"
-- extendedWaitUntil:
-    visible: "Create bot"
-    timeout: 15000
-- waitForAnimationToEnd:
-    timeout: 3000
-- takeScreenshot: 06-bot-template

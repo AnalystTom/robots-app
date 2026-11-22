@@ -91,6 +91,9 @@ const PairPage = lazyComponent(() => import("./pages/PairPage").then((module) =>
 const InvitePage = lazyComponent(() =>
   import("./pages/Invite").then((module) => module.InvitePage),
 );
+const TemplateImportPage = lazyComponent(() =>
+  import("./pages/TemplateImport").then((module) => module.TemplateImportPage),
+);
 
 function SsoCallbackPage() {
   useEffect(() => {
@@ -124,15 +127,13 @@ export function App() {
 
 function SessionApp() {
   const [searchParams] = useSearchParams();
-  const next = signInNext(searchParams.get("next"));
-  // A joined string, so a fresh but equal list never re-renders the routes; null until loaded.
+  const next = signInNext(searchParams);
   const labsKey = useSyncExternalStore(
     subscribeLabs,
     () => getLoadedLabs()?.join(",") ?? null,
     () => null,
   );
   const labs = labsKey === null ? null : (labsKey.split(",") as LabFeature[]);
-  /** A Labs page waits for the account's Labs, so it never falls through to a chat route. */
   const lab = (feature: LabFeature, page: ReactNode) =>
     labs === null ? (
       <PageLoading />
@@ -298,6 +299,16 @@ function SessionApp() {
                     <InvitePage />
                   ) : (
                     <Navigate to={`/sign-up?next=${encodeURIComponent(pathname)}`} replace />
+                  )
+                }
+              />
+              <Route
+                path="/templates/:templateId"
+                element={
+                  user ? (
+                    <TemplateImportPage />
+                  ) : (
+                    <Navigate to={`/sign-in?next=${encodeURIComponent(pathname)}`} replace />
                   )
                 }
               />

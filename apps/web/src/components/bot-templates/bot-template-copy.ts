@@ -1,81 +1,77 @@
+import type { MessageDescriptor } from "@lingui/core";
+import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import type { BotTemplate } from "@robots/contracts";
 
-export type BotTemplateCopy = Pick<BotTemplate, "name" | "summary" | "sample">;
+export type BotTemplateCopy = Pick<BotTemplate, "name" | "summary">;
 
-/**
- * Each template's name, summary and sample in the app's language. The English here must match
- * `BOT_TEMPLATES` (a test checks); a template without copy here shows the server's English.
- */
+export const BOT_TEMPLATE_COPY: Readonly<
+  Record<string, { name: MessageDescriptor; summary: MessageDescriptor }>
+> = {
+  "chief-of-staff": {
+    name: msg`Chief of Staff`,
+    summary: msg`Hands each request to the right bot`,
+  },
+  developer: {
+    name: msg`Dev`,
+    summary: msg`Reproduces bugs, writes fixes and runs the tests`,
+  },
+  researcher: {
+    name: msg`Researcher`,
+    summary: msg`Reads sources and writes notes that cite each claim`,
+  },
+  sales: {
+    name: msg`Sales`,
+    summary: msg`Follows up on warm leads and flags quiet deals`,
+  },
+  gtm: {
+    name: msg`GTM`,
+    summary: msg`Drafts launch posts and outreach for your approval`,
+  },
+  "refund-bot": {
+    name: msg`Refund Bot`,
+    summary: msg`Approves refunds that fit your policy`,
+  },
+  "inbox-triage": {
+    name: msg`Inbox triage`,
+    summary: msg`Sorts new email and drafts the replies`,
+  },
+  "morning-briefing": {
+    name: msg`Morning briefing`,
+    summary: msg`Your day at a glance, every weekday morning`,
+  },
+  "meeting-prep": {
+    name: msg`Meeting prep`,
+    summary: msg`A short brief before each of today's meetings`,
+  },
+  "pr-reviewer": {
+    name: msg`PR reviewer`,
+    summary: msg`Reviews pull requests waiting on you`,
+  },
+  "issue-triage": {
+    name: msg`Issue triage`,
+    summary: msg`Sorts new issues and flags the urgent ones`,
+  },
+  "release-notes": {
+    name: msg`Release notes`,
+    summary: msg`Turns last week's merged work into notes people read`,
+  },
+  "weekly-recap": {
+    name: msg`Weekly recap`,
+    summary: msg`What you got done last week, ready to share`,
+  },
+  "topic-watch": {
+    name: msg`Topic watch`,
+    summary: msg`A weekly digest of what changed on topics you follow`,
+  },
+};
+
 export function useBotTemplateCopy(): (template: BotTemplate) => BotTemplateCopy {
-  const { t } = useLingui();
+  const { i18n } = useLingui();
   return (template) => {
-    switch (template.id) {
-      case "morning-briefing":
-        return {
-          name: t`Morning briefing`,
-          summary: t`Your day at a glance, every weekday morning`,
-          sample: t`**Thursday**
-
-**Calendar**
-- 10:00 Design review, moved to 11:30
-- 14:00 Call with Dana
-
-**Needs you**
-- Alex asked for the Q4 numbers by noon
-- A contract is waiting for your signature
-
-**Worth knowing**
-- Light rain after 4pm
-- Two stories on the topics you follow`,
-        };
-      case "inbox-triage":
-        return {
-          name: t`Inbox triage`,
-          summary: t`Sorts new email and drafts the replies`,
-          sample: t`**12 new since 8:00**
-
-**Reply needed**
-1. Priya wants to move Friday's review. Draft: "Friday works if we start at 2."
-2. Your card expires on the 30th. Draft ready.
-3. Sam asked about the API limits. Draft ready.
-
-**For your information**: a shipping update and a calendar change
-
-**Low priority**: 7 newsletters and notifications`,
-        };
-      case "pr-reviewer":
-        return {
-          name: t`PR reviewer`,
-          summary: t`Reviews pull requests waiting on you`,
-          sample: t`**2 pull requests are waiting on you**
-
-**#482 Add retry to webhook delivery**
-- Retries on 404 too, so a deleted endpoint is retried five times. Retry only 5xx and timeouts?
-- No test for the backoff cap.
-
-Suggested review: request changes.
-
-**#479 Fix date parsing in reports**
-Looks good. Suggested review: approve.`,
-        };
-      case "topic-watch":
-        return {
-          name: t`Topic watch`,
-          summary: t`A weekly digest of what changed on topics you follow`,
-          sample: t`**This week**
-
-**Open-source AI agents**
-- A major release adds scheduled tasks (3 days ago)
-- Two new comparisons; both call memory the main gap
-
-**competitor.example**
-- Pricing: the Team plan went from $20 to $25 per seat
-
-Nothing new on battery recycling.`,
-        };
-      default:
-        return template;
-    }
+    const copy = BOT_TEMPLATE_COPY[template.id];
+    return copy
+      ? { name: i18n._(copy.name), summary: i18n._(copy.summary) }
+      : { name: template.name, summary: template.summary };
   };
 }

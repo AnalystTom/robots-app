@@ -34,13 +34,26 @@ describe("withTransactionRetry", () => {
     expect(operation).toHaveBeenCalledTimes(2);
   });
 
-  it("gives up after three conflicting attempts", async () => {
+  it("commits when several concurrent creates collide in a row", async () => {
+    const operation = vi
+      .fn()
+      .mockRejectedValueOnce(driverConflict("40001"))
+      .mockRejectedValueOnce(driverConflict("40001"))
+      .mockRejectedValueOnce(driverConflict("40001"))
+      .mockRejectedValueOnce(driverConflict("40001"))
+      .mockResolvedValueOnce("committed");
+
+    await expect(withTransactionRetry(operation)).resolves.toBe("committed");
+    expect(operation).toHaveBeenCalledTimes(5);
+  }, 15_000);
+
+  it("gives up after five conflicting attempts", async () => {
     const error = conflict("P2034");
     const operation = vi.fn().mockRejectedValue(error);
 
     await expect(withTransactionRetry(operation)).rejects.toBe(error);
-    expect(operation).toHaveBeenCalledTimes(3);
-  });
+    expect(operation).toHaveBeenCalledTimes(5);
+  }, 15_000);
 
   it("does not retry a transaction that expired after it started", async () => {
     const error = Object.assign(
