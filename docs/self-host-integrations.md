@@ -30,7 +30,7 @@ the default work as described for Parallel.
 ## Self-hosted memory
 
 Supermemory, Honcho and Hindsight can run on your own network. In **Settings → Memory**, open **Advanced**, choose **Self-hosted**
-and enter the instance's base URL. A deployment admin (a verified address in `ROBOTS_ADMIN_EMAILS`) can save a local endpoint for Spaces they own. To let every workspace owner do so, the operator sets `MCP_ALLOW_PRIVATE_ENDPOINT=true`. A saved local endpoint stops working if its saver is no longer an admin and the flag is off. It must
+and enter the instance's base URL. Saving a local endpoint needs `MCP_ALLOW_PRIVATE_ENDPOINT=true` on the API and worker, which lets every workspace owner save one. Without the flag, only a deployment admin (a verified address in `ROBOTS_ADMIN_EMAILS`) can save one, and it stops working once that admin is no longer listed or verified. It must
 be loopback or resolve to private addresses (a Compose service name, an RFC1918 or unique-local
 address, or a `.internal` name such as Railway's private network); RoBots pins the resolved
 address for every request. Space members use the saved connection without seeing its key.
