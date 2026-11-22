@@ -32,6 +32,7 @@ import {
   HOST_COMPUTER_MAX_BYTES,
   HOST_COMPUTER_MAX_FILE_BYTES,
   HOST_DESKTOP_MAX_RUN_MS,
+  HostComputerRemoteError,
   hostComputerDeadlineMs,
 } from "./host-computer-protocol.js";
 import { LinuxDesktop } from "./linux-desktop.js";
@@ -106,7 +107,7 @@ export class HostComputerSandbox implements SandboxProvider {
             throw new Error("Local computer response is too large");
           const frame = JSON.parse(pending.slice(0, newline)) as HostComputerFrame<T>;
           pending = pending.slice(newline + 1);
-          if ("error" in frame) throw new Error(frame.error);
+          if ("error" in frame) throw new HostComputerRemoteError(frame.error);
           if ("heartbeat" in frame) {
             newline = pending.indexOf("\n");
             continue;

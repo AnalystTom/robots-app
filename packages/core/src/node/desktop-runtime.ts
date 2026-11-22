@@ -1036,6 +1036,10 @@ print(index)
   ].join("\n");
 }
 
+export function desktopRegistryLockPath() {
+  return `${REGISTRY}/.lock`;
+}
+
 export function screenSlotPath(screenId: string) {
   return `${REGISTRY}/${browserKeyForScreen(screenId)}.slot`;
 }

@@ -147,6 +147,34 @@ describe("host-aware sandbox", () => {
     await host.destroy(computer, ctx);
   });
 
+  it("reports this computer's screen only to deployment admins", async () => {
+    const host: SandboxProvider = new FakeSandboxProvider();
+    host.environment = async () => ({
+      platform: "linux",
+      home: "/home/host",
+      shell: "bash",
+      screen: true,
+    });
+    const provisioned = await host.provision({ botId: "env-bot", homePath: "" }, ctx);
+    const computer: ComputerRef = { ...provisioned, kind: "desktop" };
+    const member = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => true,
+      forUser: async () => null,
+    });
+    await expect(member.environment(computer, ctx)).resolves.toEqual({
+      platform: "linux",
+      home: "/home/host",
+      shell: "bash",
+      screen: false,
+    });
+    const admin = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => true,
+      forUser: async () => new Date(0),
+    });
+    await expect(admin.environment(computer, ctx)).resolves.toMatchObject({ screen: true });
+    await host.destroy(computer, ctx);
+  });
+
   it("does not expose page commands when neither provider supports them", () => {
     const sandbox = new HostAwareSandbox(new FakeSandboxProvider(), new DesktopSandboxProvider(), {
       forHome: async () => false,

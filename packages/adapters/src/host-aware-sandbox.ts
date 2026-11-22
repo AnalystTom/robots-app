@@ -218,7 +218,11 @@ export class HostAwareSandbox implements SandboxProvider {
   }
 
   async environment(computer: ComputerRef, context: AdapterContext) {
-    return (await this.usable(computer)).environment?.(computer, context);
+    const provider = await this.usable(computer);
+    const environment = await provider.environment?.(computer, context);
+    if (provider !== this.host || !environment) return environment;
+    if (await this.gate.forUser(context.userId)) return environment;
+    return { ...environment, screen: false };
   }
 
   async prepare(computer: ComputerRef, context: AdapterContext) {

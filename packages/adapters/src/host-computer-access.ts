@@ -54,7 +54,6 @@ export function hostComputerGate(
     async forUser(userId: string): Promise<Date | null> {
       const selected = await selection();
       if (!selected) return null;
-      if (access.singleAccount) return selected.since;
       const admin = await runAsSystem("check whether a deployment admin is asking", () =>
         isDeploymentAdmin(prisma, access.adminEmails, userId),
       );

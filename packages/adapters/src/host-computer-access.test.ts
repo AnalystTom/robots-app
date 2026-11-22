@@ -109,6 +109,15 @@ describe("host computer access", () => {
     expect(await hostComputerGate(database() as never, admins).forHome(undefined)).toBe(false);
   });
 
+  it("keeps the screen and sign-ins to deployment admins even for the desktop app's single account", async () => {
+    const gate = hostComputerGate(database() as never, {
+      adminEmails: ["owner@example.test"],
+      singleAccount: true,
+    });
+    expect(await gate.forUser("admin")).toBeInstanceOf(Date);
+    expect(await gate.forUser("member")).toBeNull();
+  });
+
   it("keeps the desktop app's single account on this computer", async () => {
     const gate = hostComputerGate(database() as never, { adminEmails: [], singleAccount: true });
     expect(await gate.forHome("home-member-space")).toBe(true);

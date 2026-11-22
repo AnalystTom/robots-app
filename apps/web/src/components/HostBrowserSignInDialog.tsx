@@ -45,8 +45,8 @@ export function HostBrowserSignInDialog({
       rpc.computer.importHostBrowserSessions({ botId, ...input }),
     onSaved: () => close(),
   });
-  const shownSites = (profile?.sites ?? []).filter((site) =>
-    site.includes(filter.trim().toLowerCase()),
+  const shownSites = (profile?.sites ?? []).filter(
+    (site) => sites.has(site) || site.includes(filter.trim().toLowerCase()),
   );
   const chosenSites = shownSites.filter((site) => sites.has(site));
 

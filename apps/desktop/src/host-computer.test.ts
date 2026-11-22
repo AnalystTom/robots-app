@@ -59,7 +59,6 @@ describe("desktop local computer consent", () => {
       expect.objectContaining({
         root: path.join(root, "computers"),
         token: computer.connection.token,
-        desktop: expect.objectContaining({ run: expect.any(Function) }),
       }),
     );
     expect(computer.connection.token).not.toBe(previous.token);
@@ -135,4 +134,50 @@ describe("desktop local computer consent", () => {
     computer.activate(true);
     expect(computer.isEnabled()).toBe(false);
   });
+});
+
+describe("desktop local computer screen", () => {
+  let root: string;
+  let computer: Awaited<ReturnType<typeof prepareHostComputer>> | undefined;
+
+  beforeEach(async () => {
+    root = await mkdtemp(path.join(tmpdir(), "robots-host-screen-setting-"));
+  });
+  afterEach(async () => {
+    vi.unstubAllEnvs();
+    await computer?.close();
+    computer = undefined;
+    await rm(root, { recursive: true, force: true });
+  });
+
+  async function reportedScreen(host: Awaited<ReturnType<typeof prepareHostComputer>>) {
+    await host.grant();
+    host.activate(true);
+    const port = new URL(host.connection.url).port;
+    const response = await fetch(`http://127.0.0.1:${port}/computer`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${host.connection.token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ botId: "screen-probe", method: "environment" }),
+    });
+    const [frame] = (await response.text()).trim().split("\n");
+    return (JSON.parse(frame ?? "{}") as { value?: { screen?: boolean } }).value?.screen;
+  }
+
+  it("reports no screen when the tools folder is not configured", async () => {
+    vi.stubEnv("ROBOTS_HOST_TOOLS_DIR", "");
+    computer = await prepareHostComputer(root);
+    await expect(reportedScreen(computer)).resolves.toBe(false);
+  });
+
+  it.skipIf(process.platform !== "linux")(
+    "reports a screen when the tools folder is configured",
+    async () => {
+      vi.stubEnv("ROBOTS_HOST_TOOLS_DIR", path.join(root, "host-tools"));
+      computer = await prepareHostComputer(root);
+      await expect(reportedScreen(computer)).resolves.toBe(true);
+    },
+  );
 });
