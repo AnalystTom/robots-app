@@ -38,6 +38,11 @@ test("Integrations installs a plugin, completes real broker OAuth against a fake
   const dialog = page.getByRole("dialog", { name: "Integrations", exact: true });
   const section = dialog.getByTestId("plugin-section").filter({ hasText: "Productivity" });
   await expect(section.getByText("Planning Notes", { exact: true })).toBeVisible();
+  const planningRow = section.getByTestId("plugin-row").filter({ hasText: "Planning Notes" });
+  await expect(
+    planningRow.getByText("Connect Planning Notes to your bots.", { exact: true }),
+  ).toBeVisible();
+  await expect(planningRow).not.toContainText("Cursor");
   // A skill pack has nothing to connect, so it is offered under Skills instead.
   await expect(dialog.getByText("Review Kit", { exact: true })).toHaveCount(0);
   await captureScreenshot(page, testInfo, "integrations-plugins");
@@ -106,6 +111,14 @@ test("Integrations installs a plugin, completes real broker OAuth against a fake
   await dialog.getByRole("button", { name: "Close integrations", exact: true }).click();
   await page.reload();
   await page.getByRole("button", { name: "Connect apps", exact: true }).click();
+  const connectedPlanning = dialog
+    .getByTestId("connected-integrations")
+    .getByTestId("plugin-row")
+    .filter({ hasText: "Planning Notes" });
+  await expect(
+    connectedPlanning.getByText("Connect Planning Notes to your bots.", { exact: true }),
+  ).toBeVisible();
+  await expect(connectedPlanning).not.toContainText("Cursor");
   await dialog.getByRole("button", { name: /^\d+ connected$/ }).click();
   const apps = dialog.getByTestId("connected-apps").getByTestId("installed-plugin");
   await expect(apps).toContainText("Planning Notes");
@@ -127,6 +140,47 @@ test("Integrations installs a plugin, completes real broker OAuth against a fake
   await expect(dialog.getByRole("button", { name: "Add skills", exact: true })).toBeVisible();
   expect(await rpc(page, "capabilities/list", undefined)).toEqual([]);
   expect(await skillNames()).not.toContain("planning-notes");
+});
+
+test("Recommended plugin rows and details show RoBots copy, not another product's registry text", async ({
+  page,
+}) => {
+  await signup(page, `recommended-${Date.now()}@robots.test`, "password12", "Recommended Test");
+  await completeOnboarding(page);
+  await page.getByRole("button", { name: "Connect apps", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Integrations", exact: true });
+  const available = dialog
+    .getByTestId("featured-connectors")
+    .getByTestId("plugin-row")
+    .filter({ hasText: "Stripe" });
+  await expect(
+    available.getByText("Look up payments, customers and subscriptions.", { exact: true }),
+  ).toBeVisible();
+  await expect(available).not.toContainText("Cursor");
+  await available.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(dialog.getByRole("heading", { name: "Stripe", exact: true })).toBeVisible();
+  await expect(
+    dialog.getByText("Look up payments, customers and subscriptions.", { exact: true }),
+  ).toBeVisible();
+  await expect(dialog.getByText("Stripe development plugin for Cursor")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Connect", exact: true }).click();
+  await expect(dialog.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+  await dialog.getByRole("button", { name: "Close integrations", exact: true }).click();
+  await page.reload();
+  await page.getByRole("button", { name: "Connect apps", exact: true }).click();
+  const connected = dialog
+    .getByTestId("connected-integrations")
+    .getByTestId("plugin-row")
+    .filter({ hasText: "Stripe" });
+  await expect(
+    connected.getByText("Look up payments, customers and subscriptions.", { exact: true }),
+  ).toBeVisible();
+  await expect(connected).not.toContainText("Cursor");
+  const availableStripe = dialog
+    .getByTestId("featured-connectors")
+    .getByTestId("plugin-row")
+    .filter({ hasText: "Stripe" });
+  await expect(availableStripe).toHaveCount(0);
 });
 
 test("shows directly registered MCP servers in Integrations without catalog connections", async ({
@@ -341,7 +395,7 @@ test("integration fallback icons preserve non-BMP initials", async ({ page }, te
   await expect(tile.getByText("𠮷", { exact: true })).toBeVisible();
   await tile.getByRole("button", { name: "Added", exact: true }).click();
   await expect(
-    dialog.getByTestId("connection-detail").getByText("𠮷", { exact: true }),
+    page.getByTestId("connection-detail").getByText("𠮷", { exact: true }),
   ).toBeVisible();
   await captureScreenshot(page, testInfo, "integrations-unicode-connector");
 });

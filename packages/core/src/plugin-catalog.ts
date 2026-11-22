@@ -1,5 +1,6 @@
 import type { PluginMarketplaceEntry, PluginPart } from "@robots/contracts";
 import { PluginPartSchema } from "@robots/contracts";
+import { FEATURED_CONNECTOR_LABELS } from "./featured-connectors.js";
 
 export const PLUGIN_CATEGORIES = [
   "productivity",
@@ -16,10 +17,8 @@ export const PLUGIN_CATEGORIES = [
 
 export type PluginCategory = (typeof PLUGIN_CATEGORIES)[number];
 
-/** The chip-less filter behind the uncategorized section's View all. */
 export const OTHER_PLUGINS = "other";
 
-/** Registries use their own coarse labels; these are the ones that already say what a plugin is for. */
 const REGISTRY_CATEGORIES: Record<string, PluginCategory> = {
   productivity: "productivity",
   development: "code",
@@ -150,26 +149,58 @@ const CATEGORY_BY_NAME = new Map(
   ),
 );
 
-/** Brands people look for first; plugins outside this list follow in catalog quality order. */
-const RECOMMENDED = [
-  "github",
-  "stripe",
-  "vercel",
-  "figma",
-  "hubspot",
-  "salesforce",
-  "sentry",
-  "supabase",
-  "calcom",
-  "zoom",
-  "datadog",
-  "attio",
-  "intercom",
-  "cloudflare",
-  "neon",
-  "docusign",
+const RECOMMENDED_COPY: ReadonlyArray<readonly [name: string, description: string]> = [
+  ["github", "Review pull requests, triage issues and search code."],
+  ["stripe", "Look up payments, customers and subscriptions."],
+  ["vercel", "Check deployments, logs and project settings."],
+  ["figma", "Read designs, comments and components in your files."],
+  ["hubspot", "Find contacts, update deals and log activity."],
+  ["salesforce", "Search accounts, update opportunities and pull reports."],
+  ["sentry", "Look into errors, issues and releases."],
+  ["supabase", "Query your database and manage your projects."],
+  ["calcom", "Check availability and book meetings."],
+  ["zoom", "Schedule meetings and find recordings."],
+  ["datadog", "Search logs, metrics and monitors."],
+  ["attio", "Search and update records in your CRM."],
+  ["intercom", "Read conversations and reply to customers."],
+  ["cloudflare", "Manage DNS, Workers and site settings."],
+  ["neon", "Query Postgres databases and manage branches."],
+  ["docusign", "Prepare envelopes and track signatures."],
 ];
-const RECOMMENDED_RANK = new Map(RECOMMENDED.map((name, index) => [name, index]));
+const RECOMMENDED_RANK = new Map(RECOMMENDED_COPY.map(([name], index) => [name, index]));
+
+const CURATED_COPY = new Map(
+  (
+    [
+      ...RECOMMENDED_COPY,
+      [FEATURED_CONNECTOR_LABELS.gmail, "Search, read and draft email."],
+      [FEATURED_CONNECTOR_LABELS["google-calendar"], "Check your schedule and book events."],
+      [FEATURED_CONNECTOR_LABELS["google-drive"], "Find and open files in your Drive."],
+      [FEATURED_CONNECTOR_LABELS.slack, "Read channels and send messages."],
+      [FEATURED_CONNECTOR_LABELS.notion, "Search and update pages in your workspace."],
+    ] as ReadonlyArray<readonly [string, string]>
+  ).map(([name, description]) => [brandKey(name), description]),
+);
+
+const AGENT_PRODUCT = /\b(?:Grok|Claude|Cursor|Codex|Copilot|Gemini|Windsurf|ChatGPT|OpenCode)\b/i;
+
+export function namesAgentProduct(text: string): boolean {
+  return AGENT_PRODUCT.test(text);
+}
+
+export function curatedAppCopy(names: readonly string[]): string | undefined {
+  for (const name of names) {
+    const copy = CURATED_COPY.get(brandKey(name));
+    if (copy) return copy;
+  }
+  return undefined;
+}
+
+export function recommendedPluginCopy(
+  entry: Pick<PluginMarketplaceEntry, "name">,
+): string | undefined {
+  return isRecommendedPlugin(entry) ? CURATED_COPY.get(brandKey(entry.name)) : undefined;
+}
 
 type CategorySource = Pick<PluginMarketplaceEntry, "name" | "category">;
 
@@ -191,8 +222,8 @@ function qualityRank(entry: PluginMarketplaceEntry): number {
 
 export function comparePlugins(a: PluginMarketplaceEntry, b: PluginMarketplaceEntry): number {
   const recommended =
-    (RECOMMENDED_RANK.get(a.name) ?? RECOMMENDED.length) -
-    (RECOMMENDED_RANK.get(b.name) ?? RECOMMENDED.length);
+    (RECOMMENDED_RANK.get(a.name) ?? RECOMMENDED_COPY.length) -
+    (RECOMMENDED_RANK.get(b.name) ?? RECOMMENDED_COPY.length);
   return (
     recommended ||
     qualityRank(a) - qualityRank(b) ||
@@ -208,7 +239,6 @@ function searchWords(text: string): string[] {
     .filter(Boolean);
 }
 
-/** Every query word starts a word of the text, or the text with its separators removed. */
 export function matchesWordPrefixes(text: string, query: string): boolean {
   const wanted = searchWords(query);
   const words = searchWords(text);
@@ -241,7 +271,6 @@ function brandKey(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-/** The managed app a plugin is for, matched by name, so one brand is listed once. */
 export function managedAppFor<T extends { name: string; slug: string }>(
   entry: Pick<PluginMarketplaceEntry, "name" | "displayName">,
   apps: readonly T[],
@@ -250,7 +279,6 @@ export function managedAppFor<T extends { name: string; slug: string }>(
   return apps.find((app) => keys.has(brandKey(app.name)) || keys.has(brandKey(app.slug)));
 }
 
-/** Installs from before parts could be chosen added everything they had. */
 export function installedPluginParts(config: Record<string, unknown>): PluginPart[] {
   const parsed = PluginPartSchema.array().safeParse(config.parts);
   return parsed.success ? parsed.data : ["connector", "skills"];
