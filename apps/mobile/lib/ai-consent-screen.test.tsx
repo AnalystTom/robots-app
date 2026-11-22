@@ -33,6 +33,7 @@ vi.mock("../components/native-action-button", () => ({
     createElement("button", { type: "button", onClick: onPress }, label),
 }));
 vi.mock("../components/app-mark", () => ({ AppMark: () => null }));
+vi.mock("./session", () => ({ registerSessionDiskCache: vi.fn() }));
 vi.mock("./native", () => ({
   native: {},
   useMobileTokens: () => tokensForAppearance("light"),

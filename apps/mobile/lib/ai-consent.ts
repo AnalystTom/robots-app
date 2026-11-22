@@ -4,6 +4,7 @@ import { AI_PRIVACY_URL } from "@robots/contracts";
 import { bestEffort } from "@robots/logging";
 import { useSyncExternalStore } from "react";
 import { BackHandler, Platform } from "react-native";
+import { registerSessionDiskCache } from "./session";
 
 export function aiDataDisclosure(use: AiDataUse): string {
   switch (use) {
@@ -93,6 +94,14 @@ export function denyAiConsent() {
   shown.decide(false);
   for (const request of rest) request.decide(false);
 }
+
+function clearAiConsentRequests() {
+  const waiting = queue;
+  publish([], null);
+  for (const request of waiting) request.decide(false);
+}
+
+registerSessionDiskCache(clearAiConsentRequests);
 
 export function reviewAiConsentAgain() {
   if (!blocked) return;
