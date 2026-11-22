@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { join } from "node:path";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import type {
@@ -160,6 +161,7 @@ import { mountLocalComputerHost } from "./local-settings.js";
 import { marketingEmailRoutes, sendWelcomeEmail } from "./marketing-email.js";
 import { moveMcpArgsIntoSecrets } from "./mcp-args-migration.js";
 import { startMessagingRuntime } from "./messaging-runtime.js";
+import { mobileUpdateRoutes } from "./mobile-updates.js";
 import { monitoringRoutes } from "./monitoring.js";
 import { pluginSubmissionRoutes } from "./plugin-submissions.js";
 import { sendReferralEmails } from "./referral-email.js";
@@ -909,6 +911,10 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     ),
   );
   app.route("/", cspReportRoutes(requestClientIp));
+  app.route(
+    "/",
+    mobileUpdateRoutes(join(env.dataDir, "mobile-updates"), () => env.webOrigin),
+  );
   app.route(
     "/",
     pluginSubmissionRoutes({
