@@ -586,5 +586,5 @@ export interface HostBrowserImportRequest {
 }
 
 export interface HostBrowserImportResult {
-  sites: Array<{ site: string; cookies: number }>;
+  sites: Array<{ site: string; cookies: number; reason?: string }>;
 }

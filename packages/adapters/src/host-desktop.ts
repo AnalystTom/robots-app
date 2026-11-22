@@ -162,7 +162,13 @@ export function createHostDesktop(
         waitingFor: "the bot's browser to save the sign-ins",
       },
     );
-    return { sites: found.map(({ site, cookies }) => ({ site, cookies: cookies.length })) };
+    return {
+      sites: found.map(({ site, cookies, unreadable }) => ({
+        site,
+        cookies: cookies.length,
+        reason: unreadable,
+      })),
+    };
   }
 
   return {

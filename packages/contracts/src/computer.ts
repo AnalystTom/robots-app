@@ -61,7 +61,13 @@ export const HostBrowserProfileSchema = z.object({
 export type HostBrowserProfile = z.infer<typeof HostBrowserProfileSchema>;
 
 export const HostBrowserImportSchema = z.object({
-  sites: z.array(z.object({ site: z.string(), cookies: z.number().int().nonnegative() })),
+  sites: z.array(
+    z.object({
+      site: z.string(),
+      cookies: z.number().int().nonnegative(),
+      reason: z.string().optional(),
+    }),
+  ),
 });
 export type HostBrowserImport = z.infer<typeof HostBrowserImportSchema>;
 
