@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import type { RobotPresetId } from "@robots/core";
-import { botLookState, ROBOT_PRESETS, robotPresetOf, robotPresetValue } from "@robots/core";
+import { ROBOT_PRESETS, robotPresetValue } from "@robots/core";
 import { BotAvatar } from "@robots/ui-web";
 
 export function RobotPresetPicker({
@@ -28,15 +28,11 @@ export function RobotPresetPicker({
     hustler: t`Hustler`,
     host: t`Host`,
   };
-  const robot = botLookState(value).robot;
-  const choices = [
-    ...(robot && !robotPresetOf(robot) ? [{ key: "current", label: t`Current look`, value }] : []),
-    ...ROBOT_PRESETS.map((preset) => ({
-      key: preset.id,
-      label: labels[preset.id],
-      value: robotPresetValue(preset.id),
-    })),
-  ];
+  const choices = ROBOT_PRESETS.map((preset) => ({
+    key: preset.id,
+    label: labels[preset.id],
+    value: robotPresetValue(preset.id),
+  }));
   return (
     <div role="radiogroup" aria-label={t`Character`} className="grid grid-cols-4 gap-2">
       {choices.map((choice) => {

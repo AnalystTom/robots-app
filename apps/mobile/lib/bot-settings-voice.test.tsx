@@ -271,7 +271,12 @@ vi.mock("./native", () => ({
   useResolvedAppearance: () => "light",
   useThemedStyles: (createStyles: () => unknown) => createStyles(),
 }));
-vi.mock("../components/bot-avatar", () => ({ BotAvatar: () => null }));
+vi.mock("../components/bot-avatar", async () => {
+  const { createElement } = await import("react");
+  return {
+    BotAvatar: ({ color }: { color: string }) => createElement("span", { "data-bot-color": color }),
+  };
+});
 vi.mock("../components/native-segmented-control", () => ({
   NativeSegmentedControl: ({
     options,
@@ -667,31 +672,50 @@ describe("bot settings device voice menu", () => {
     });
   });
 
-  it("shows a bot's own robot as the selected current look and saves only a picked listed robot", async () => {
-    mocks.color = "robot:teal.top-hat.hearts.cape.none";
+  it("keeps a legacy robot the bot wears, lists only the listed robots, and saves only a picked one", async () => {
+    const legacyRobot = "robot:teal.top-hat.hearts.cape.none";
+    mocks.color = legacyRobot;
     mocks.avatarSet = "robots";
     await render();
+    expect(container.querySelector(`[data-bot-color="${legacyRobot}"]`)).not.toBeNull();
     await act(async () =>
       container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
     );
+    const radios = () => [...container.querySelectorAll('[role="radio"]')];
     const checkedRadios = () =>
-      [...container.querySelectorAll('[role="radio"][aria-checked="true"]')].map((node) =>
-        node.getAttribute("aria-label"),
-      );
+      radios()
+        .filter((node) => node.getAttribute("aria-checked") === "true")
+        .map((node) => node.getAttribute("aria-label"));
     const save = () =>
       [...container.querySelectorAll<HTMLButtonElement>("button")].find(
         (button) => button.textContent === "Save",
       );
-    expect(checkedRadios()).toEqual(["Current look"]);
+    expect(radios().map((node) => node.getAttribute("aria-label"))).toEqual([
+      "Assistant",
+      "Researcher",
+      "Coder",
+      "Writer",
+      "Analyst",
+      "Creator",
+      "Chef",
+      "Hero",
+      "Hoodie",
+      "Critic",
+      "Professor",
+      "Detective",
+      "Keynote",
+      "Hustler",
+      "Host",
+    ]);
+    expect(checkedRadios()).toEqual([]);
     expect(container.querySelector('[aria-label="Shuffle"]')).toBeNull();
-    expect(container.querySelector('[aria-label="Color 1"]')).toBeNull();
     expect(save()).toBeUndefined();
+    expect(mocks.rpc).not.toHaveBeenCalled();
 
     await act(async () =>
       container.querySelector<HTMLButtonElement>('[aria-label="Detective"]')!.click(),
     );
     expect(checkedRadios()).toEqual(["Detective"]);
-    expect(container.querySelector('[aria-label="Current look"]')).toBeNull();
     mocks.rpc.mockResolvedValueOnce({});
     await act(async () => save()!.click());
     expect(mocks.rpc).toHaveBeenCalledWith("bots/update", {

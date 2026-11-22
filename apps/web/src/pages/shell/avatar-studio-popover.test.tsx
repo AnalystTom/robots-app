@@ -107,26 +107,44 @@ describe("selectable bot icon sets", () => {
     expect(document.querySelector(`img[src="${photo}"]`)).toBeNull();
   });
 
-  it("shows a bot's own robot as the selected current look until a listed robot is picked", async () => {
-    const ownRobot = "robot:teal.top-hat.hearts.cape.none";
+  it("keeps a legacy robot the bot wears, lists only the listed robots, and saves only a picked one", async () => {
+    const legacyRobot = "robot:teal.top-hat.hearts.cape.none";
     const detective = "robot:purple.deerstalker.magnifier.cape.none";
-    await render(ownRobot, "robots");
+    await render(legacyRobot, "robots");
+    const legacyUri = robotCharacterDataUri(parseRobotCharacter(legacyRobot)!);
+    expect([...document.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toContain(
+      legacyUri,
+    );
     await click("Customize bot avatar");
     const checked = () =>
       [...document.querySelectorAll('[role="radio"][aria-checked="true"]')].map((node) =>
         node.getAttribute("aria-label"),
       );
-    expect(checked()).toEqual(["Current look"]);
-    expect(button("Current look").querySelector("img")?.getAttribute("src")).toBe(
-      robotCharacterDataUri(parseRobotCharacter(ownRobot)!),
+    const listed = [...document.querySelectorAll('[role="radio"]')].map((node) =>
+      node.getAttribute("aria-label"),
     );
+    expect(listed).toEqual([
+      "Assistant",
+      "Researcher",
+      "Coder",
+      "Writer",
+      "Analyst",
+      "Creator",
+      "Chef",
+      "Hero",
+      "Hoodie",
+      "Critic",
+      "Professor",
+      "Detective",
+      "Keynote",
+      "Hustler",
+      "Host",
+    ]);
+    expect(checked()).toEqual([]);
     expect(changed).not.toHaveBeenCalled();
-    await click("Current look");
-    expect(changed).toHaveBeenLastCalledWith(ownRobot, undefined);
     await click("Detective");
     expect(changed).toHaveBeenLastCalledWith(detective, undefined);
     expect(checked()).toEqual(["Detective"]);
-    expect(document.querySelector('[aria-label="Current look"]')).toBeNull();
   });
 
   it("keeps explicit original shapes and their chosen set while changing colour", async () => {
