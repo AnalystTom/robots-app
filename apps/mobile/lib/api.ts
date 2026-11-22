@@ -181,9 +181,8 @@ export type ApiRequestContext = {
   apiBase: string;
   headers: Record<string, string>;
 };
-/** Keeps consent prompts separate across servers and the selected Space. */
 export function aiConsentCoalesceKey(requestContext: ApiRequestContext): string {
-  return [requestContext.apiBase, requestContext.headers["x-robots-space-id"] ?? ""].join("\u0000");
+  return [requestContext.apiBase, requestContext.sessionGeneration ?? ""].join("\u0000");
 }
 const aiConsentListeners = new Set<() => void>();
 /** Runs after a consent prompt's Allow is saved, so whatever shows the permissions reads them again. */
