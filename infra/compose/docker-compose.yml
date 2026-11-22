@@ -530,6 +530,7 @@ services:
     environment:
       <<: *app-environment
       GRAPHILE_WORKER_CONCURRENCY:
+      ROBOTS_ADMIN_EMAILS:
     volumes:
       - ../../data:/data
     depends_on:
