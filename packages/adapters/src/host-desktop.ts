@@ -4,7 +4,7 @@ import { mkdir, readdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import type { HostBrowserImportResult } from "@robots/adapter-kit";
-import { pollUntil } from "@robots/core";
+import { deadlineSignal, pollUntil } from "@robots/core";
 import type { DesktopEnvironment } from "@robots/core/node/desktop-runtime";
 import {
   browserProfilePathForScreen,
@@ -227,7 +227,7 @@ async function setBrowserCookies(
 ) {
   if (!(await runsProfileOnPort(port, userDataDir)))
     throw new HostBrowserCookieError("The bot's browser is not running for this screen");
-  const exchange = AbortSignal.any([signal, AbortSignal.timeout(CDP_EXCHANGE_TIMEOUT_MS)]);
+  const exchange = deadlineSignal(CDP_EXCHANGE_TIMEOUT_MS, signal);
   const version = await fetch(`http://127.0.0.1:${port}/json/version`, { signal: exchange });
   const { webSocketDebuggerUrl } = (await version.json()) as { webSocketDebuggerUrl?: unknown };
   if (
