@@ -59,11 +59,7 @@ import {
   CreateBotFromTemplateInput,
   CreateBotFromTemplateOutput,
 } from "./bot-template.js";
-import {
-  ImportSessionsInput,
-  ImportSessionsResult,
-  SessionSite,
-} from "./browser-sessions.js";
+import { ImportSessionsInput, ImportSessionsResult, SessionSite } from "./browser-sessions.js";
 import {
   ComputerModeSchema,
   ComputerProviderSettingsSchema,

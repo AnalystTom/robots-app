@@ -227,6 +227,8 @@ one in the login's editor where a bot must sign in on its own. A file whose quot
 not read at all, so no password is read differently from the export. Delete the export file
 afterwards: it holds your passwords unencrypted.
 
+**Import sign-ins** in the New menu of the desktop app copies the sign-ins for sites you pick from a Chrome or Chromium profile on that computer. The app asks before it lists the sites, and again before it imports, showing the profile and the sites. Each site becomes a Session item for the bots you pick; a running computer gets the sign-in at once, and otherwise at its next start. Removing the item signs those bots out of the site.
+
 A sign-in without a password, such as an ID number and phone number, uses the same login card. CAPTCHA and passkeys still use `request_takeover`, as does any sign-in you prefer to do yourself.
 
 ### One-time codes

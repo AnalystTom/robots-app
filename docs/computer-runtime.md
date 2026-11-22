@@ -151,7 +151,7 @@ Build the computer image, then run `VERIFY_DOCKER_TEAM_SCREENS=1 pnpm exec vites
 
 ### Browser sign-in storage
 
-The computer's browser keeps cookies under a per-computer key the supervisor derives from `DATA_DIR/secrets/browser-store.key` and writes to `/tmp/robots/browser-store-key` in the container, never into the bot's home. `robots-browser` serves it through an in-container keyring and starts Chromium with `--password-store=gnome-libsecret`; a profile saved under the old public key is resealed on its first start. Without its key, a sealed profile is not opened. Build the computer image, then run `VERIFY_DOCKER_BROWSER_SESSIONS=1 pnpm exec vitest run infra/sandboxes/supervisor/src/browser-sessions.docker.test.ts` to check migration, an imported sign-in surviving a browser kill, removal, and that the public key no longer opens the profile.
+The computer's browser keeps cookies under a per-computer key the supervisor derives from `DATA_DIR/secrets/browser-store.key` and writes to `/tmp/robots/browser-store-key` in the container, never into the bot's home. `robots-browser` serves it through an in-container keyring and starts Chromium with `--password-store=gnome-libsecret`. Cookies saved under the old public key are resealed on the profile's first start; the saved-passwords database is not resealed and keeps Chromium's public key. Without its key, a sealed profile is not opened. Build the computer image, then run `VERIFY_DOCKER_BROWSER_SESSIONS=1 pnpm exec vitest run infra/sandboxes/supervisor/src/browser-sessions.docker.test.ts` to check migration, an imported sign-in surviving a browser kill, removal, and that the public key no longer opens the profile.
 
 ## Computer maintenance
 
