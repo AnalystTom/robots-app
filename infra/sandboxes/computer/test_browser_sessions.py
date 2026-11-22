@@ -204,6 +204,11 @@ def main():
                "a profile with a row Chromium cannot re-seal was not left pending")
     assert live_cookie("unreachable_sign_in") is None, "Chromium re-set the row this check needs unreadable"
     assert "unreachable_sign_in" in rows(), "the unreadable row left the profile before its closed start"
+    subprocess.run(["/usr/local/bin/robots-browser", "about:blank"],
+                   env=dict(os.environ, DISPLAY=":1", HOME="/home/robots"),
+                   stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
+    assert "unreachable_sign_in" in rows(), "a launch with a live browser dropped the unreadable row"
+    assert os.path.exists(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING)), "a live launch cleared the pending marker"
     assert live_cookie("legacy_sign_in") is not None, "a live sign-in was lost while the row was pending"
     kill_browser()
     launch()
