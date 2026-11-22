@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { ROBOT_PARTS, robotCharacterValue } from "@robots/contracts";
-import { LOGO_BODY_PATH, ROBOT_PRESETS, robotCharacterSvg, withRobotPart } from "@robots/core";
+import { robotCharacterValue } from "@robots/contracts";
+import { LOGO_BODY_PATH, robotCharacterSvg } from "@robots/core";
 import type { ReactNode } from "react";
 import { act, createElement, useRef } from "react";
 import type { Root } from "react-dom/client";
@@ -8,22 +8,137 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import NewBot from "../app/new-bot";
 
-const CHARACTER_NAMES = [
-  "Assistant",
-  "Researcher",
-  "Coder",
-  "Writer",
-  "Analyst",
-  "Creator",
-  "Chef",
-  "Hero",
-  "Professor",
-  "Detective",
-  "Keynote",
-  "Hustler",
-  "Host",
-  "Critic",
-];
+const CHARACTERS = [
+  {
+    name: "Assistant",
+    look: { colour: "green", headwear: "antenna", face: "happy", outfit: "vest", extra: "none" },
+  },
+  {
+    name: "Researcher",
+    look: {
+      colour: "blue",
+      headwear: "deerstalker",
+      face: "magnifier",
+      outfit: "tweed",
+      extra: "none",
+    },
+  },
+  {
+    name: "Coder",
+    look: { colour: "teal", headwear: "hood", face: "terminal", outfit: "hoodie", extra: "none" },
+  },
+  {
+    name: "Writer",
+    look: {
+      colour: "purple",
+      headwear: "mortarboard",
+      face: "glasses",
+      outfit: "turtleneck",
+      extra: "none",
+    },
+  },
+  {
+    name: "Analyst",
+    look: {
+      colour: "slate",
+      headwear: "top-hat",
+      face: "monocle",
+      outfit: "tuxedo",
+      extra: "none",
+    },
+  },
+  {
+    name: "Creator",
+    look: {
+      colour: "pink",
+      headwear: "antenna",
+      face: "hearts",
+      outfit: "t-shirt",
+      extra: "ring-light",
+    },
+  },
+  {
+    name: "Chef",
+    look: {
+      colour: "orange",
+      headwear: "chef-hat",
+      face: "happy",
+      outfit: "chef-jacket",
+      extra: "steam",
+    },
+  },
+  {
+    name: "Hero",
+    look: {
+      colour: "red",
+      headwear: "antenna",
+      face: "aviators",
+      outfit: "cape",
+      extra: "confetti",
+    },
+  },
+  {
+    name: "Professor",
+    look: {
+      colour: "teal",
+      headwear: "mortarboard",
+      face: "monocle",
+      outfit: "tweed",
+      extra: "none",
+    },
+  },
+  {
+    name: "Detective",
+    look: {
+      colour: "purple",
+      headwear: "deerstalker",
+      face: "magnifier",
+      outfit: "cape",
+      extra: "none",
+    },
+  },
+  {
+    name: "Keynote",
+    look: {
+      colour: "slate",
+      headwear: "antenna",
+      face: "glasses",
+      outfit: "turtleneck",
+      extra: "none",
+    },
+  },
+  {
+    name: "Hustler",
+    look: {
+      colour: "orange",
+      headwear: "antenna",
+      face: "aviators",
+      outfit: "vest",
+      extra: "none",
+    },
+  },
+  {
+    name: "Host",
+    look: {
+      colour: "blue",
+      headwear: "top-hat",
+      face: "happy",
+      outfit: "tuxedo",
+      extra: "confetti",
+    },
+  },
+  {
+    name: "Critic",
+    look: {
+      colour: "red",
+      headwear: "chef-hat",
+      face: "grumpy",
+      outfit: "chef-jacket",
+      extra: "steam",
+    },
+  },
+] as const;
+const CHARACTER_NAMES = CHARACTERS.map((character) => character.name);
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
@@ -267,22 +382,20 @@ it("shows every character, draws the picked one recoloured in the preview, and c
   for (const name of CHARACTER_NAMES) expect(radio(name)).not.toBeNull();
   const startedOn = CHARACTER_NAMES.findIndex(checked);
   expect(CHARACTER_NAMES.filter(checked)).toHaveLength(1);
-  expect(previewXml()).toBe(robotCharacterSvg(ROBOT_PRESETS[startedOn]!.look));
+  expect(previewXml()).toBe(robotCharacterSvg(CHARACTERS[startedOn]!.look));
 
-  for (const [index, name] of CHARACTER_NAMES.entries()) {
-    await tap(radio(name));
-    expect(CHARACTER_NAMES.filter(checked)).toEqual([name]);
-    expect(previewXml()).toBe(robotCharacterSvg(ROBOT_PRESETS[index]!.look));
+  for (const character of CHARACTERS) {
+    await tap(radio(character.name));
+    expect(CHARACTER_NAMES.filter(checked)).toEqual([character.name]);
+    expect(previewXml()).toBe(robotCharacterSvg(character.look));
     expect(drawsLogo()).toBe(false);
   }
 
-  const chef = ROBOT_PRESETS.find((preset) => preset.id === "chef")!.look;
-  const redChef = robotCharacterValue(withRobotPart(chef, "colour", ROBOT_PARTS.colour[1]));
+  const chef = CHARACTERS.find((character) => character.name === "Chef")!.look;
+  const redChef = { ...chef, colour: "red" } as const;
   await tap(radio("Chef"));
   await tap(radio("Color 2"));
-  expect(previewXml()).toBe(
-    robotCharacterSvg(withRobotPart(chef, "colour", ROBOT_PARTS.colour[1])),
-  );
+  expect(previewXml()).toBe(robotCharacterSvg(redChef));
   expect(drawsLogo()).toBe(false);
   expect(checked("Chef")).toBe(true);
   expect(checked("Color 2")).toBe(true);
@@ -290,7 +403,9 @@ it("shows every character, draws the picked one recoloured in the preview, and c
   await typeName("Gordon");
   await tap(createButton());
   await vi.waitFor(() => expect(createdBot()).toBeDefined());
-  expect(createdBot()).toEqual(expect.objectContaining({ name: "Gordon", color: redChef }));
+  expect(createdBot()).toEqual(
+    expect.objectContaining({ name: "Gordon", color: robotCharacterValue(redChef) }),
+  );
 });
 
 it("keeps Create off until the account's bot style is known", async () => {
