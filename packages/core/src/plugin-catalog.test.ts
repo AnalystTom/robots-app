@@ -7,6 +7,7 @@ import {
   matchesPluginQuery,
   matchesWordPrefixes,
   pluginCategory,
+  recommendedAppDescription,
 } from "./plugin-catalog.js";
 
 function entry(
@@ -103,5 +104,14 @@ describe("installedPluginParts", () => {
   it("reads chosen parts and treats older installs as complete", () => {
     expect(installedPluginParts({ parts: ["skills"] })).toEqual(["skills"]);
     expect(installedPluginParts({})).toEqual(["connector", "skills"]);
+  });
+});
+
+describe("recommendedAppDescription", () => {
+  it("gives RoBots copy to the managed app it names, not to a plugin with the same name", () => {
+    expect(recommendedAppDescription({ name: "Stripe", slug: "stripe" })).toBe(
+      "Look up payments, customers and subscriptions.",
+    );
+    expect(recommendedAppDescription({ name: "Neon Color", slug: "neon-color" })).toBeUndefined();
   });
 });

@@ -167,10 +167,10 @@ const RECOMMENDED: ReadonlyArray<readonly [name: string, description: string]> =
   ["docusign", "Prepare envelopes and track signatures."],
 ];
 const RECOMMENDED_RANK = new Map(RECOMMENDED.map(([name], index) => [name, index]));
-const RECOMMENDED_DESCRIPTION = new Map(RECOMMENDED);
 
-export function recommendedPluginDescription(name: string): string | undefined {
-  return RECOMMENDED_DESCRIPTION.get(name);
+export function recommendedAppDescription(app: { name: string; slug: string }): string | undefined {
+  const keys = new Set([brandKey(app.name), brandKey(app.slug)]);
+  return RECOMMENDED.find(([name]) => keys.has(brandKey(name)))?.[1];
 }
 
 type CategorySource = Pick<PluginMarketplaceEntry, "name" | "category">;

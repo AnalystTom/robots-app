@@ -3,7 +3,7 @@ import { comparePlugins, matchesPluginQuery, pluginCategory } from "@robots/core
 import { z } from "zod";
 import type { PluginCompleteness, PluginTextReader } from "./plugin-connectors.js";
 import { classifyPluginFiles, parsePluginSource } from "./plugin-connectors.js";
-import { pluginDisplayName, robotsPluginDescription } from "./plugin-description.js";
+import { pluginDisplayName, withoutHostAttribution } from "./plugin-description.js";
 import { fetchSafeWebText } from "./web-ssrf.js";
 
 const REGISTRIES = [
@@ -98,7 +98,7 @@ export function parsePluginMarketplace(
         id: `${registry.name}:${installSource}`,
         name: entry.name,
         displayName: pluginDisplayName(entry.name),
-        description: robotsPluginDescription(entry.description ?? "", entry.name),
+        description: withoutHostAttribution(entry.description ?? ""),
         keywords: entry.keywords ?? [],
         category: entry.category?.toLowerCase() ?? null,
         logo: null,

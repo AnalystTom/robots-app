@@ -20,6 +20,7 @@ import {
   matchesRemoteMcpApp,
   OTHER_PLUGINS,
   REMOTE_MCP_APPS,
+  recommendedAppDescription,
   remoteMcpAppServer,
 } from "@robots/core";
 import { Button, SectionHeading, Spinner } from "@robots/ui-web";
@@ -169,12 +170,31 @@ export function PluginBrowse({
         : entry.hasConnector && !installedPlugin(entry.installedSource),
     )
     .slice(0, SECTION_SIZE);
+  const availableItems = availableTiles.flatMap((tile) =>
+    tile.item && !tile.missing ? [tile.item] : [],
+  );
+  const shownItems = new Set(
+    [
+      ...connectedApps,
+      ...availableItems,
+      ...recommended.flatMap(({ item }) => (item ? [item] : [])),
+    ].map(catalogItemKey),
+  );
+  const shownPlugins = new Set(
+    [...installedApps, ...recommended.flatMap(({ entry, item }) => (item ? [] : [entry]))].map(
+      (entry) => entry.id,
+    ),
+  );
+  const homePlugins = browsingHome
+    ? plugins.filter((entry) => !shownPlugins.has(entry.id))
+    : plugins;
+  const moreApps = rendered.filter((item) => !shownItems.has(catalogItemKey(item)));
 
   function catalogTile(
     item: ConnectionCatalogItem,
     label: string,
     logo?: string | null,
-    opts?: { tileTestId?: boolean },
+    opts?: { tileTestId?: boolean; fallbackDescription?: string },
   ) {
     return (
       <CatalogTile
@@ -182,7 +202,11 @@ export function PluginBrowse({
         item={item}
         label={label}
         logo={logo}
-        description={pluginForApp.get(catalogItemKey(item))?.description}
+        description={
+          recommendedAppDescription(item) ??
+          pluginForApp.get(catalogItemKey(item))?.description ??
+          opts?.fallbackDescription
+        }
         tileTestId={opts?.tileTestId}
         context={tileContext}
       />
@@ -249,12 +273,12 @@ export function PluginBrowse({
           ) : null}
         </section>
       ) : null;
-    const uncategorized = plugins.filter((entry) => !entry.category);
+    const uncategorized = homePlugins.filter((entry) => !entry.category);
     const sections: Array<[string, string, PluginMarketplaceEntry[]]> = [
       ...categories.map((name): [string, string, PluginMarketplaceEntry[]] => [
         name,
         categoryLabel(name),
-        plugins.filter((entry) => entry.category === name),
+        homePlugins.filter((entry) => entry.category === name),
       ]),
       ...(uncategorized.length
         ? [[OTHER_PLUGINS, t`More`, uncategorized] as [string, string, PluginMarketplaceEntry[]]]
@@ -351,7 +375,9 @@ export function PluginBrowse({
             <RemoteMcpAppRow key={app.id} app={app} servers={mcpServers} onOpen={onOpenRemoteApp} />
           ))}
           {recommended.map(({ entry, item }) =>
-            item ? catalogTile(item, item.name, item.logo) : renderPluginRow(entry),
+            item
+              ? catalogTile(item, item.name, item.logo, { fallbackDescription: entry.description })
+              : renderPluginRow(entry),
           )}
         </BrowseSection>
       ) : null}
@@ -376,14 +402,14 @@ export function PluginBrowse({
       {showFeatured ? (
         <>
           {renderPluginSections()}
-          {catalogLoaded && catalog.length > 0 && !category ? (
+          {moreApps.length > 0 && !category ? (
             <SectionHeading as="h2" className="mt-8 mb-2 px-2.5">
               <Trans>More apps</Trans>
             </SectionHeading>
           ) : null}
-          {visible.length > 0 && !category ? (
+          {moreApps.length > 0 && !category ? (
             <div className="grid grid-cols-2 gap-2">
-              {rendered.map((item) =>
+              {moreApps.map((item) =>
                 catalogTile(item, item.name, item.logo, {
                   tileTestId: !showFeatured,
                 }),
