@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { robotPresetValue } from "@robots/core";
 import type { ReactNode } from "react";
-import { act, useState } from "react";
+import { act, createElement, useState } from "react";
 import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -46,13 +46,73 @@ vi.mock("react-native", () => {
       {children}
     </button>
   );
-  return { View, Text, Pressable };
+  return {
+    View,
+    Text,
+    Pressable,
+    AppState: { currentState: "active", addEventListener: () => ({ remove: () => undefined }) },
+    Appearance: {
+      getColorScheme: () => "light",
+      addChangeListener: () => ({ remove: () => undefined }),
+    },
+    Platform: {
+      OS: "ios",
+      select: <T,>(options: { ios?: T; default?: T }) => options.ios ?? options.default,
+    },
+    PlatformColor: (...names: string[]) => names[0],
+  };
 });
-vi.mock("../components/bot-avatar", () => ({
-  BotAvatar: ({ color }: { color: string }) => <img alt="" data-avatar={color} />,
+vi.mock("expo-secure-store", () => ({
+  getItemAsync: async () => null,
+  setItemAsync: async () => undefined,
+  deleteItemAsync: async () => undefined,
 }));
-vi.mock("./native", () => ({
-  useMobileTokens: () => ({ foreground: "#000", border: "#ccc", mutedForeground: "#666" }),
+
+vi.mock("react-native-reanimated", () => {
+  const passthrough = ({ children }: { children?: ReactNode }) =>
+    createElement("div", null, children);
+  return {
+    default: {
+      View: passthrough,
+      createAnimatedComponent: (component: unknown) => component,
+    },
+    cancelAnimation: () => undefined,
+    Easing: { linear: (value: number) => value, inOut: (value: unknown) => value, cubic: 0 },
+    ReduceMotion: { Never: "never" },
+    withSpring: (value: unknown) => value,
+    useAnimatedProps: () => ({}),
+    useDerivedValue: (sample: () => unknown) => ({ value: sample() }),
+    useAnimatedStyle: () => ({}),
+    useReducedMotion: () => true,
+    useSharedValue: <T,>(value: T) => ({ value }),
+    withRepeat: (value: unknown) => value,
+    withTiming: (value: unknown) => value,
+  };
+});
+vi.mock("react-native-svg", () => {
+  const element =
+    (tag: string) =>
+    ({ children, ...props }: { children?: ReactNode; d?: string }) =>
+      createElement(tag, { "data-d": props.d }, children);
+  return {
+    default: element("svg"),
+    Ellipse: element("ellipse"),
+    G: element("g"),
+    Path: element("path"),
+    Rect: element("rect"),
+    Defs: element("defs"),
+    ClipPath: element("clipPath"),
+    Mask: element("mask"),
+    LinearGradient: element("linearGradient"),
+    RadialGradient: element("radialGradient"),
+    Stop: element("stop"),
+    SvgXml: element("svg"),
+  };
+});
+vi.mock("expo-symbols", () => ({ SymbolView: () => null }));
+vi.mock("@react-native-vector-icons/ionicons", () => ({ default: () => null }));
+vi.mock("@react-native-vector-icons/material-design-icons", () => ({
+  MaterialDesignIcons: () => null,
 }));
 
 let container: HTMLDivElement;

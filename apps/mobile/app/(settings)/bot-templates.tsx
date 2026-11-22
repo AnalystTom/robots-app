@@ -20,6 +20,14 @@ import { openFromSettingsSheet } from "../../lib/settings-sheet";
 import { useSideInsets } from "../../lib/side-insets";
 import { errorText } from "../../lib/user-error";
 
+function refreshBotReads() {
+  return Promise.allSettled(
+    [rpcQuery("bots/templates").queryKey, rpcQuery("bots/list").queryKey].map((queryKey) =>
+      queryClient.invalidateQueries({ queryKey }),
+    ),
+  );
+}
+
 type TemplatePick = (
   | { kind: "bot"; template: BotTemplateListing }
   | { kind: "team"; teamId: string }
@@ -46,12 +54,7 @@ export default function BotTemplatesScreen() {
       if (pick.kind === "team") {
         const bots = await createBotTeam(
           () => send("bots/createTeamFromTemplate", { teamId: pick.teamId }),
-          () =>
-            Promise.allSettled(
-              [rpcQuery("bots/templates").queryKey, rpcQuery("bots/list").queryKey].map(
-                (queryKey) => queryClient.invalidateQueries({ queryKey }),
-              ),
-            ),
+          refreshBotReads,
         );
         return bots[0]!;
       }
