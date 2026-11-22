@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { useLinkFavicon } from "@robots/chat-ui/web";
 import type {
@@ -13,9 +14,10 @@ import {
   PluginPreviewSchema,
   skillSafetyBlock,
 } from "@robots/contracts";
-import { installedPluginParts } from "@robots/core";
+import { installedPluginParts, namesAgentProduct, recommendedPluginCopy } from "@robots/core";
 import { Button, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, Check, ChevronLeft, FileText, Plug } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { connectMcpOauth } from "../../lib/mcp-connect";
 import { rpc } from "../../lib/rpc";
@@ -31,6 +33,7 @@ export type PluginSelection = {
   installedSource: string;
   name: string;
   description?: string;
+  curated?: string;
   logo?: string | null;
   site?: string | null;
 };
@@ -41,9 +44,20 @@ export function pluginSelection(entry: PluginMarketplaceEntry): PluginSelection 
     installedSource: entry.installedSource,
     name: entry.displayName,
     description: entry.description,
+    curated: recommendedPluginCopy(entry),
     logo: entry.logo,
     site: pluginSite(entry),
   };
+}
+
+export function displayDescription(
+  curated: string | undefined,
+  registry: string | undefined,
+  name: string,
+): string {
+  if (curated) return curated;
+  if (registry && !namesAgentProduct(registry)) return registry;
+  return t`Connect ${name} to your bots.`;
 }
 
 function pluginSite(entry: Pick<PluginMarketplaceEntry, "homepage" | "domains">): string | null {
@@ -85,7 +99,7 @@ export function PluginLogo({
     />
   ) : (
     <div
-      className={`${box} grid shrink-0 place-items-center border border-border/60 bg-favicon-plate font-semibold text-foreground`}
+      className={`${box} grid shrink-0 place-items-center border border-border/60 bg-accent font-semibold text-foreground`}
     >
       {Array.from(name)[0]?.toUpperCase()}
     </div>
@@ -98,6 +112,37 @@ export const ROW_BUTTON =
   "flex min-w-0 flex-1 items-center gap-3 text-start focus-visible:outline-none";
 
 export const ROW_HOVER = "hover:bg-accent/60 has-[button:focus-visible]:bg-accent/60";
+
+export function IntegrationRow({
+  icon,
+  name,
+  description,
+  action,
+  testId,
+  onOpen,
+}: {
+  icon: ReactNode;
+  name: string;
+  description?: string;
+  action: ReactNode;
+  testId?: string;
+  onOpen: () => void;
+}) {
+  return (
+    <div data-testid={testId} className={`${ROW_SHELL} ${ROW_HOVER}`}>
+      <button type="button" onClick={onOpen} className={ROW_BUTTON}>
+        {icon}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-body-lg font-medium text-foreground">{name}</span>
+          {description ? (
+            <span className="block truncate text-body-sm text-muted-foreground">{description}</span>
+          ) : null}
+        </span>
+      </button>
+      {action}
+    </div>
+  );
+}
 
 export function PluginRow({
   name,
@@ -115,20 +160,18 @@ export function PluginRow({
   onOpen: () => void;
 }) {
   return (
-    <div data-testid="plugin-row" className={`${ROW_SHELL} ${ROW_HOVER}`}>
-      <button type="button" onClick={onOpen} className={ROW_BUTTON}>
-        <PluginLogo name={name} logo={logo} site={site} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-body-lg font-medium text-foreground">{name}</span>
-          {description ? (
-            <span className="block truncate text-body-sm text-muted-foreground">{description}</span>
-          ) : null}
-        </span>
-      </button>
-      <Button type="button" variant="secondary" size="sm" onClick={onOpen}>
-        {installed ? <Trans>Added</Trans> : <Trans>Add</Trans>}
-      </Button>
-    </div>
+    <IntegrationRow
+      testId="plugin-row"
+      icon={<PluginLogo name={name} logo={logo} site={site} />}
+      name={name}
+      description={description}
+      onOpen={onOpen}
+      action={
+        <Button type="button" variant="secondary" size="sm" onClick={onOpen}>
+          {installed ? <Trans>Added</Trans> : <Trans>Add</Trans>}
+        </Button>
+      }
+    />
   );
 }
 
@@ -443,11 +486,13 @@ export function PluginDetail({
         <div className="flex shrink-0 gap-2 pt-2">{headerAction()}</div>
       </div>
 
-      {detail?.description || selection.description ? (
-        <p className="text-body-lg leading-6 text-muted-foreground">
-          {detail?.description || selection.description}
-        </p>
-      ) : null}
+      <p className="text-body-lg leading-6 text-muted-foreground">
+        {displayDescription(
+          selection.curated,
+          detail?.description || selection.description,
+          selection.name,
+        )}
+      </p>
 
       {install ? (
         <AvailabilityControl

@@ -12,6 +12,7 @@ import type { RemoteMcpApp } from "@robots/core";
 import {
   CONNECTION_CATALOG_PAGE_SIZE,
   catalogItemKey,
+  curatedAppCopy,
   customMcpServerInput,
   installedPluginParts,
   managedAppFor,
@@ -38,7 +39,11 @@ import type {
   ManagedAppLink,
   PluginSelection,
 } from "../components/integrations/plugin-marketplace";
-import { PluginDetail, pluginSelection } from "../components/integrations/plugin-marketplace";
+import {
+  displayDescription,
+  PluginDetail,
+  pluginSelection,
+} from "../components/integrations/plugin-marketplace";
 import { reachesOtherSpaces, useOwnSpaces } from "../components/integrations/space-availability";
 import { useBotName } from "../components/integrations/use-bot-name";
 import type { connectedAppMarks } from "../lib/connected-apps";
@@ -189,6 +194,14 @@ export function PluginsOverlay({
   function openPlugin(selection: PluginSelection) {
     setCatalogError(null);
     setPlugin(selection);
+  }
+
+  function appDescription(item: ConnectionCatalogItem) {
+    return displayDescription(
+      curatedAppCopy([item.name, item.slug]),
+      pluginForApp.get(catalogItemKey(item))?.description,
+      item.name,
+    );
   }
 
   function openApp(item: ConnectionCatalogItem) {
@@ -599,7 +612,7 @@ export function PluginsOverlay({
               item={detailItem}
               state={state}
               botName={botName}
-              description={pluginForApp.get(catalogItemKey(detailItem))?.description}
+              description={appDescription(detailItem)}
             />
           ) : view === "manage" ? (
             <ManageView

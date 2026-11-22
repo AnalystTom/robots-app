@@ -5,7 +5,7 @@ import { catalogItemKey } from "@robots/core";
 import { Button, SectionHeading } from "@robots/ui-web";
 import { Check, ChevronLeft, CircleAlert, TriangleAlert } from "lucide-react";
 import type { ReactElement, ReactNode } from "react";
-import { ROW_BUTTON, ROW_HOVER, ROW_SHELL } from "../../components/integrations/plugin-marketplace";
+import { IntegrationRow, PluginLogo } from "../../components/integrations/plugin-marketplace";
 import type { PluginConnections } from "./use-plugin-connections";
 
 export function ConnectorIcon({ name, logo }: { name: string; logo?: string | null }) {
@@ -99,12 +99,14 @@ export function CatalogTile({
   item,
   label,
   logo,
+  description,
   tileTestId: tileTestIdOption,
   context,
 }: {
   item: ConnectionCatalogItem;
   label: string;
   logo?: string | null;
+  description?: string;
   tileTestId?: boolean;
   context: TileContext;
 }) {
@@ -112,18 +114,14 @@ export function CatalogTile({
   const connected = connections.itemConnected(item);
   const tileTestId = tileTestIdOption !== false && connected;
   return (
-    <div
-      data-testid={tileTestId ? `connection-tile-${item.slug.toLowerCase()}` : undefined}
-      className={`${ROW_SHELL} ${ROW_HOVER}`}
-    >
-      <button type="button" className={ROW_BUTTON} onClick={() => onOpenApp(item)}>
-        <ConnectorIcon name={label} logo={logo} />
-        <div className="min-w-0 flex-1 text-start">
-          <div className="truncate text-body-lg font-medium text-foreground">{label}</div>
-        </div>
-      </button>
-      <CatalogActions item={item} context={context} />
-    </div>
+    <IntegrationRow
+      testId={tileTestId ? `connection-tile-${item.slug.toLowerCase()}` : undefined}
+      icon={<PluginLogo name={label} logo={logo} />}
+      name={label}
+      description={description}
+      onOpen={() => onOpenApp(item)}
+      action={<CatalogActions item={item} context={context} />}
+    />
   );
 }
 
