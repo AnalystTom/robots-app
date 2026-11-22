@@ -64,23 +64,28 @@ describe("bot templates", () => {
     const avatars = BOT_TEMPLATES.map((template) => template.avatar);
     expect(avatars.filter((avatar) => !presets.has(avatar))).toEqual([]);
     expect(new Set(avatars).size).toBe(avatars.length);
-    expect(parseRobotCharacter(findBotTemplate("pr-reviewer")!.avatar)).toMatchObject({
-      headwear: "chef-hat",
-      outfit: "chef-jacket",
+  });
+
+  it("lead with the website's crew, under the same names, ids and robots", () => {
+    expect(
+      BOT_TEMPLATES.slice(0, 6).map((template) => [template.id, template.name, template.avatar]),
+    ).toEqual([
+      ["chief-of-staff", "Chief of Staff", robotPresetValue("host")],
+      ["developer", "Dev", robotPresetValue("hoodie")],
+      ["researcher", "Researcher", robotPresetValue("professor")],
+      ["sales", "Sales", robotPresetValue("hustler")],
+      ["gtm", "GTM", robotPresetValue("creator")],
+      ["refund-bot", "Refund Bot", robotPresetValue("critic")],
+    ]);
+    expect(parseRobotCharacter(findBotTemplate("refund-bot")!.avatar)).toMatchObject({
+      face: "grumpy",
     });
   });
 
-  it("offers a useful range of bots", () => {
-    expect(BOT_TEMPLATES.length).toBeGreaterThanOrEqual(8);
-    expect(BOT_TEMPLATES.length).toBeLessThanOrEqual(12);
-    expect(BOT_TEMPLATES.map((template) => template.id)).toEqual(
-      expect.arrayContaining([
-        "inbox-triage",
-        "morning-briefing",
-        "pr-reviewer",
-        "topic-watch",
-        "social-poster",
-      ]),
+  it("keep the extras below the crew to a short, useful list", () => {
+    expect(BOT_TEMPLATES.length).toBeLessThanOrEqual(ROBOT_PRESETS.length);
+    expect(BOT_TEMPLATES.slice(6).map((template) => template.id)).toEqual(
+      expect.arrayContaining(["inbox-triage", "morning-briefing", "pr-reviewer", "topic-watch"]),
     );
   });
 

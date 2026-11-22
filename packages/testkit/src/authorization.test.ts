@@ -294,6 +294,7 @@ describeWithDatabase("API authorization and resource isolation", () => {
       ["bots/importSetupState"],
       ["bots/templates"],
       ["bots/createFromTemplate", { templateId: "morning-briefing", version: 1 }],
+      ["bots/createTeamFromTemplate", { teamId: "team-autopilot" }],
       ["bots/reorder"],
       ["bots/restoreInstructions"],
       ["bots/setComputer"],

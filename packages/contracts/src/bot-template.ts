@@ -56,6 +56,10 @@ export const CreateBotFromTemplateInput = z.strictObject({
   name: z.string().trim().min(1).max(BOT_NAME_MAX_LENGTH).optional(),
 });
 
+export const CreateBotTeamFromTemplateInput = z.strictObject({ teamId: slug });
+
+export const CreateBotTeamFromTemplateOutput = z.object({ bots: z.array(BotSchema).min(1) });
+
 export const CreateBotFromTemplateOutput = z.object({
   bot: BotSchema,
   created: z.boolean(),

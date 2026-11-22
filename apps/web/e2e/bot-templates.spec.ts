@@ -16,8 +16,31 @@ test("the template gallery creates a ready-made bot in one tap, wearing its robo
     .click();
   const dialog = page.getByRole("dialog", { name: "RoBot templates", exact: true });
   const cards = dialog.getByTestId("bot-template-card");
-  await expect(cards).toHaveCount(12);
+  await expect(cards).toHaveCount(14);
+  await expect(cards.locator("h3")).toHaveText([
+    "Chief of Staff",
+    "Dev",
+    "Researcher",
+    "Sales",
+    "GTM",
+    "Refund Bot",
+    "Inbox triage",
+    "Morning briefing",
+    "Meeting prep",
+    "PR reviewer",
+    "Issue triage",
+    "Release notes",
+    "Weekly recap",
+    "Topic watch",
+  ]);
   await expect(dialog.getByText("Needs you", { exact: true })).toHaveCount(0);
+
+  const team = dialog.getByTestId("bot-template-team");
+  await expect(team).toContainText("Autopilot team");
+  await expect(team.locator(".robots-bot-avatar-picture img")).toHaveCount(6);
+  await expect(
+    team.getByRole("button", { name: "Create Autopilot team", exact: true }),
+  ).toBeVisible();
 
   const triage = cards.filter({ hasText: "Inbox triage" });
   await expect(triage).toContainText("Sorts new email and drafts the replies");
@@ -26,7 +49,7 @@ test("the template gallery creates a ready-made bot in one tap, wearing its robo
   await expect(cardRobot).toHaveAttribute("src", /^data:image\/svg\+xml,/);
   const robotSrc = await cardRobot.getAttribute("src");
   await expect(
-    cards.filter({ hasText: "Social poster" }).getByRole("listitem", { name: "Launchpost" }),
+    cards.filter({ hasText: "GTM" }).getByRole("listitem", { name: "Launchpost" }),
   ).toBeVisible();
   await captureScreenshot(page, testInfo, "bot-templates");
 

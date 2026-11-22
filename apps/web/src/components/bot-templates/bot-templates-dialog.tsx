@@ -1,7 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Bot, BotTemplateListing, ConnectionCatalogItem } from "@robots/contracts";
 import { isBotTemplateChanged } from "@robots/contracts";
-import { botTemplateAppMarks } from "@robots/core";
+import { BOT_TEMPLATE_TEAMS, botTemplateAppMarks } from "@robots/core";
 import {
   BotAvatar,
   Button,
@@ -20,6 +20,10 @@ import { ErrorNotice } from "../ErrorNotice";
 import { PluginLogo } from "../integrations/plugin-marketplace";
 import { useBotTemplateCopy } from "./bot-template-copy";
 
+type TemplatePick =
+  | { kind: "bot"; template: BotTemplateListing }
+  | { kind: "team"; teamId: string };
+
 export function BotTemplatesDialog({
   onClose,
   onOpenBot,
@@ -33,16 +37,20 @@ export function BotTemplatesDialog({
   const templates = useQuery({ ...queries.bots.templates.queryOptions(), staleTime: 0 });
   const catalog = useQuery(queries.connections.catalog.queryOptions({ input: {} }));
   const open = useSave({
-    save: async ({ template }: { template: BotTemplateListing }, client) =>
-      template.botId
-        ? client.bots.get({ botId: template.botId })
-        : (
-            await client.bots.createFromTemplate({
-              templateId: template.id,
-              version: template.version,
-              name: copy(template).name,
-            })
-          ).bot,
+    save: async (pick: TemplatePick, client): Promise<Bot> => {
+      if (pick.kind === "team") {
+        const { bots } = await client.bots.createTeamFromTemplate({ teamId: pick.teamId });
+        return bots[0]!;
+      }
+      const { template } = pick;
+      if (template.botId) return client.bots.get({ botId: template.botId });
+      const { bot } = await client.bots.createFromTemplate({
+        templateId: template.id,
+        version: template.version,
+        name: copy(template).name,
+      });
+      return bot;
+    },
     stale: [queries.bots.templates.queryKey()],
     closesScreen: true,
     onSaved: onOpenBot,
@@ -74,10 +82,23 @@ export function BotTemplatesDialog({
               isBotTemplateChanged(open.error)
                 ? t`This template was just updated. Try again.`
                 : open.error,
-              open.input?.template.botId ? t`Could not open the bot` : t`Could not create the bot`,
+              open.input?.kind === "bot" && open.input.template.botId
+                ? t`Could not open the bot`
+                : t`Could not create the bot`,
             )}
           />
         ) : null}
+        {BOT_TEMPLATE_TEAMS.map((team) => (
+          <TeamCard
+            key={team.id}
+            crew={team.templateIds.flatMap(
+              (id) => templates.data.find((template) => template.id === id) ?? [],
+            )}
+            busy={open.pending}
+            creating={open.pending && open.input?.kind === "team"}
+            onPick={() => open.run({ kind: "team", teamId: team.id })}
+          />
+        ))}
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {templates.data.map((template) => (
             <TemplateCard
@@ -86,8 +107,10 @@ export function BotTemplatesDialog({
               copy={copy(template)}
               catalog={catalog.data ?? []}
               busy={open.pending}
-              creating={open.pending && open.input?.template.id === template.id}
-              onPick={() => open.run({ template })}
+              creating={
+                open.pending && open.input?.kind === "bot" && open.input.template.id === template.id
+              }
+              onPick={() => open.run({ kind: "bot", template })}
             />
           ))}
         </ul>
@@ -180,5 +203,42 @@ function TemplateCard({
         )}
       </div>
     </li>
+  );
+}
+
+function TeamCard({
+  crew,
+  busy,
+  creating,
+  onPick,
+}: {
+  crew: BotTemplateListing[];
+  busy: boolean;
+  creating: boolean;
+  onPick: () => void;
+}) {
+  const { t } = useLingui();
+  const name = t`Autopilot team`;
+  return (
+    <section
+      data-testid="bot-template-team"
+      aria-label={name}
+      className="flex min-w-0 flex-wrap items-center gap-4 rounded-2xl border border-border/70 p-4"
+    >
+      <div className="flex shrink-0 -space-x-3">
+        {crew.map((member) => (
+          <BotAvatar key={member.id} color={member.avatar} size={40} />
+        ))}
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-body-lg font-medium text-foreground">{name}</h3>
+        <p className="text-body-sm text-muted-foreground">
+          <Trans>Chief of Staff runs Dev, Researcher, Sales, GTM and Refund Bot.</Trans>
+        </p>
+      </div>
+      <Button size="sm" disabled={busy} aria-label={t`Create ${name}`} onClick={onPick}>
+        {creating ? <Trans>Creating…</Trans> : <Trans>Create team</Trans>}
+      </Button>
+    </section>
   );
 }

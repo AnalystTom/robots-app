@@ -4,7 +4,7 @@ import path from "node:path";
 import { ComposioConnector, FakeComposioClient } from "@robots/adapters";
 import type { Bot, BotTemplateListing, MessageBlock } from "@robots/contracts";
 import { BOT_TEMPLATE_CHANGED } from "@robots/contracts";
-import { buildSkillMd, findBotTemplate } from "@robots/core";
+import { buildSkillMd, findBotTemplate, findBotTemplateTeam } from "@robots/core";
 import type { PrismaClient } from "@robots/db";
 import { createDb } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -158,6 +158,32 @@ describeIntegration("bot templates", () => {
     expect(skills.map((row) => row.name)).toEqual(["Inbox triage"]);
     const routine = await db.routine.findFirstOrThrow({ where: { botId: fresh.bot.id } });
     expect(routine.prompt).toBe("Triage my new email with @Inbox triage.");
+  });
+
+  it("creates the whole team once, lead first, each bot in its own robot", async () => {
+    const cookie = await signup(app, `template-team-${stamp}@robots.test`);
+    const owner = await ownerOf(cookie);
+    const team = findBotTemplateTeam("team-autopilot")!;
+
+    const first = await rpc<{ bots: Bot[] }>(app, cookie, "bots/createTeamFromTemplate", {
+      teamId: team.id,
+    });
+    expect(first.bots.map((bot) => [bot.name, bot.color])).toEqual(
+      team.templateIds.map((id) => {
+        const template = findBotTemplate(id)!;
+        return [template.name, template.avatar];
+      }),
+    );
+    expect(first.bots[0]!.name).toBe("Chief of Staff");
+
+    const again = await rpc<{ bots: Bot[] }>(app, cookie, "bots/createTeamFromTemplate", {
+      teamId: team.id,
+    });
+    expect(again.bots.map((bot) => bot.id)).toEqual(first.bots.map((bot) => bot.id));
+    expect(await db.bot.count({ where: owner })).toBe(6);
+    expect((await raw(app, cookie, "bots/createTeamFromTemplate", { teamId: "nope" })).status).toBe(
+      404,
+    );
   });
 
   it("renames its skill on a clash and points the routine at the new name", async () => {

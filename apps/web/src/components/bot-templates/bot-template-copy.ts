@@ -8,29 +8,45 @@ export type BotTemplateCopy = Pick<BotTemplate, "name" | "summary">;
 export const BOT_TEMPLATE_COPY: Readonly<
   Record<string, { name: MessageDescriptor; summary: MessageDescriptor }>
 > = {
-  "morning-briefing": {
-    name: msg`Morning briefing`,
-    summary: msg`Your day at a glance, every weekday morning`,
+  "chief-of-staff": {
+    name: msg`Chief of Staff`,
+    summary: msg`Takes your requests, hands each one to the right bot and brings you only the decisions that are yours.`,
+  },
+  developer: {
+    name: msg`Dev`,
+    summary: msg`Just ask for coding work. Reproduces the bug, writes the fix, runs the tests and asks before it opens a pull request.`,
+  },
+  researcher: {
+    name: msg`Researcher`,
+    summary: msg`Works from a research prompt: reads the sources, writes plain-language notes and links a source for every claim.`,
+  },
+  sales: {
+    name: msg`Sales`,
+    summary: msg`Gets the money. Follows up on warm leads, keeps the pipeline honest and flags the deals that have gone quiet.`,
+  },
+  gtm: {
+    name: msg`GTM`,
+    summary: msg`Takes what you shipped to market: launch posts and outreach drafts. Nothing goes out until you say so.`,
+  },
+  "refund-bot": {
+    name: msg`Refund Bot`,
+    summary: msg`Checks refund requests against your policy, approves what fits, and asks you before any refund over your limit.`,
   },
   "inbox-triage": {
     name: msg`Inbox triage`,
     summary: msg`Sorts new email and drafts the replies`,
   },
-  "pr-reviewer": {
-    name: msg`PR reviewer`,
-    summary: msg`Reviews pull requests waiting on you`,
-  },
-  "topic-watch": {
-    name: msg`Topic watch`,
-    summary: msg`A weekly digest of what changed on topics you follow`,
-  },
-  "social-poster": {
-    name: msg`Social poster`,
-    summary: msg`Drafts your posts and schedules them once you approve`,
+  "morning-briefing": {
+    name: msg`Morning briefing`,
+    summary: msg`Your day at a glance, every weekday morning`,
   },
   "meeting-prep": {
     name: msg`Meeting prep`,
     summary: msg`A short brief before each of today's meetings`,
+  },
+  "pr-reviewer": {
+    name: msg`PR reviewer`,
+    summary: msg`Reviews pull requests waiting on you`,
   },
   "issue-triage": {
     name: msg`Issue triage`,
@@ -44,17 +60,9 @@ export const BOT_TEMPLATE_COPY: Readonly<
     name: msg`Weekly recap`,
     summary: msg`What you got done last week, ready to share`,
   },
-  "channel-catch-up": {
-    name: msg`Channel catch-up`,
-    summary: msg`Sums up busy channels so you can skip the scroll`,
-  },
-  "research-assistant": {
-    name: msg`Research assistant`,
-    summary: msg`Digs into a question and reports back with sources`,
-  },
-  "meal-planner": {
-    name: msg`Meal planner`,
-    summary: msg`Plans the week's dinners and the shopping list`,
+  "topic-watch": {
+    name: msg`Topic watch`,
+    summary: msg`A weekly digest of what changed on topics you follow`,
   },
 };
 

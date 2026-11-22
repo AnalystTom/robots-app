@@ -121,7 +121,9 @@ async function render() {
   await act(async () => root.render(<BotTemplatesScreen />));
   await settle();
 }
-const action = () => container.querySelector("button") as HTMLButtonElement;
+const buttons = () => [...container.querySelectorAll("button")] as HTMLButtonElement[];
+const action = () => buttons().find((button) => button.textContent !== "Create team")!;
+const teamAction = () => buttons().find((button) => button.textContent === "Create team")!;
 const reads = () => mocks.rpc.mock.calls.filter(([proc]) => proc === "bots/templates").length;
 function hold(call: string) {
   let finish!: (outcome: unknown) => void;
@@ -258,4 +260,16 @@ it.each([
   await create.finish(outcome);
   expectNothingOpened();
   expect(mocks.alert).not.toHaveBeenCalled();
+});
+
+it("creates the whole team in one tap and opens its lead", async () => {
+  const create = hold("bots/createTeamFromTemplate");
+  await render();
+  await act(async () => teamAction().click());
+  expect(create.calls()[0]?.slice(0, 2)).toEqual([
+    "bots/createTeamFromTemplate",
+    { teamId: "team-autopilot" },
+  ]);
+  await create.finish({ bots: [bot, { id: "bot-10", name: "Dev" }] });
+  expectOpened();
 });

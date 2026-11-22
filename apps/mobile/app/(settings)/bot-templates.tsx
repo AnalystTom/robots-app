@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import type { Bot, BotTemplateListing } from "@robots/contracts";
 import { isBotTemplateChanged } from "@robots/contracts";
-import { botTemplateAppMarks } from "@robots/core";
+import { BOT_TEMPLATE_TEAMS, botTemplateAppMarks } from "@robots/core";
 import { useQuery } from "@tanstack/react-query";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useCallback } from "react";
@@ -18,6 +18,11 @@ import { addToSearchInbox, searchInboxSession } from "../../lib/search-inbox";
 import { openFromSettingsSheet } from "../../lib/settings-sheet";
 import { useSideInsets } from "../../lib/side-insets";
 import { errorText } from "../../lib/user-error";
+
+type TemplatePick = (
+  | { kind: "bot"; template: BotTemplateListing }
+  | { kind: "team"; teamId: string }
+) & { askedIn: SearchInboxSession };
 
 export default function BotTemplatesScreen() {
   const router = useRouter();
@@ -36,22 +41,25 @@ export default function BotTemplatesScreen() {
   );
 
   const open = useSave({
-    save: async (
-      { template }: { template: BotTemplateListing; askedIn: SearchInboxSession },
-      send,
-    ) =>
-      template.botId
-        ? queryClient.fetchQuery({
-            ...rpcQuery("bots/get", { botId: template.botId }),
-            staleTime: 0,
-          })
-        : (
-            await send("bots/createFromTemplate", {
-              templateId: template.id,
-              version: template.version,
-              name: botTemplateCopy(template).name,
-            })
-          ).bot,
+    save: async (pick: TemplatePick, send): Promise<Bot> => {
+      if (pick.kind === "team") {
+        const { bots } = await send("bots/createTeamFromTemplate", { teamId: pick.teamId });
+        return bots[0]!;
+      }
+      const { template } = pick;
+      if (template.botId) {
+        return queryClient.fetchQuery({
+          ...rpcQuery("bots/get", { botId: template.botId }),
+          staleTime: 0,
+        });
+      }
+      const { bot } = await send("bots/createFromTemplate", {
+        templateId: template.id,
+        version: template.version,
+        name: botTemplateCopy(template).name,
+      });
+      return bot;
+    },
     onSaved: (bot: Bot, { askedIn }) => {
       if (!navigation.isFocused()) return;
       addToSearchInbox({ kind: "bot", bot }, askedIn);
@@ -60,9 +68,10 @@ export default function BotTemplatesScreen() {
         params: { botId: bot.id, name: bot.name },
       });
     },
-    onFailed: (cause, { template }) => {
+    onFailed: (cause, pick) => {
       if (!navigation.isFocused()) return;
-      if (template.botId) Alert.alert(t`Could not load bot`, errorText(cause, t`Try again.`));
+      if (pick.kind === "bot" && pick.template.botId)
+        Alert.alert(t`Could not load bot`, errorText(cause, t`Try again.`));
       else if (isBotTemplateChanged(cause)) {
         Alert.alert(t`This template was just updated. Try again.`);
         void refetch();
@@ -93,6 +102,42 @@ export default function BotTemplatesScreen() {
         {templates.isPending ? (
           <ActivityIndicator color={native.secondaryLabel} accessibilityLabel={t`Loading…`} />
         ) : null}
+        {templates.data
+          ? BOT_TEMPLATE_TEAMS.map((team) => {
+              const crew = team.templateIds.flatMap(
+                (id) => templates.data.find((template) => template.id === id) ?? [],
+              );
+              const name = t`Autopilot team`;
+              return (
+                <View key={team.id} testID="bot-template-team" style={styles.card}>
+                  <View style={styles.crew}>
+                    {crew.map((member) => (
+                      <BotAvatar key={member.id} color={member.avatar} size={36} />
+                    ))}
+                  </View>
+                  <View>
+                    <Text accessibilityRole="header" style={styles.name}>
+                      {name}
+                    </Text>
+                    <Text style={styles.summary}>
+                      {t`Chief of Staff runs Dev, Researcher, Sales, GTM and Refund Bot.`}
+                    </Text>
+                  </View>
+                  <NativeActionButton
+                    fill={false}
+                    size="compact"
+                    label={t`Create team`}
+                    accessibilityLabel={t`Create ${name}`}
+                    busy={open.pending && open.input?.kind === "team"}
+                    disabled={open.pending}
+                    onPress={() =>
+                      open.run({ kind: "team", teamId: team.id, askedIn: searchInboxSession() })
+                    }
+                  />
+                </View>
+              );
+            })
+          : null}
         {templates.data?.map((template) => {
           const { name, summary } = botTemplateCopy(template);
           const marks = botTemplateAppMarks(template, catalog.data ?? []);
@@ -121,9 +166,13 @@ export default function BotTemplatesScreen() {
                   prominence={template.botId ? "secondary" : "primary"}
                   label={template.botId ? t`Open` : t`Create`}
                   accessibilityLabel={template.botId ? t`Open ${name}` : t`Create ${name}`}
-                  busy={open.pending && open.input?.template.id === template.id}
+                  busy={
+                    open.pending &&
+                    open.input?.kind === "bot" &&
+                    open.input.template.id === template.id
+                  }
                   disabled={open.pending}
-                  onPress={() => open.run({ template, askedIn: searchInboxSession() })}
+                  onPress={() => open.run({ kind: "bot", template, askedIn: searchInboxSession() })}
                 />
               </View>
             </View>
@@ -152,5 +201,6 @@ function createStyles() {
     summary: { color: native.secondaryLabel, fontSize: 15, marginTop: 2 },
     footer: { flexDirection: "row", alignItems: "center", gap: 10 },
     marks: { flexDirection: "row", alignItems: "center", gap: 6 },
+    crew: { flexDirection: "row", gap: 4 },
   });
 }

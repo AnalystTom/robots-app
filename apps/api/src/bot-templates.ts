@@ -19,6 +19,7 @@ import {
   botTemplateApps,
   buildSkillMd,
   findBotTemplate,
+  findBotTemplateTeam,
   renameRoutineSkillMentions,
   renameSkillMd,
   scanSkillSafety,
@@ -227,6 +228,30 @@ export async function createBotFromTemplate<PreparedKey>(
     },
   };
   return writeImportedBot(services, actor, request, signal);
+}
+
+export async function createBotTeamFromTemplate<PreparedKey>(
+  services: AgentImportServices<PreparedKey>,
+  appCatalog: () => Promise<ConnectionCatalogItem[]>,
+  actor: Actor,
+  input: { teamId: string },
+  signal?: AbortSignal,
+) {
+  const team = findBotTemplateTeam(input.teamId);
+  if (!team) throw new ORPCError("NOT_FOUND", { message: "No team has that id." });
+  const bots = [];
+  for (const templateId of team.templateIds) {
+    const template = findBotTemplate(templateId)!;
+    const { bot } = await createBotFromTemplate(
+      services,
+      appCatalog,
+      actor,
+      { templateId, version: template.version },
+      signal,
+    );
+    bots.push(bot);
+  }
+  return { bots };
 }
 
 function escapeRegExp(value: string): string {
