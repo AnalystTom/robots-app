@@ -1,8 +1,12 @@
 import type { RobotLook, RobotSlot } from "@robots/contracts";
-import { ROBOT_COLOUR_FILLS, ROBOT_PARTS, robotCharacterValue } from "@robots/contracts";
+import {
+  ROBOT_COLOUR_FILLS,
+  ROBOT_PARTS,
+  ROBOT_SLOTS,
+  robotCharacterValue,
+} from "@robots/contracts";
 import { ROBOT_COLOUR_GLOWS, ROBOT_PART_ART } from "./robot-character-parts.js";
 
-/** The ready-made robots, each a fixed set of parts. */
 export const READY_MADE_ROBOTS = {
   hoodie: { colour: "green", headwear: "hood", face: "terminal", outfit: "hoodie", extra: "none" },
   chef: {
@@ -52,7 +56,101 @@ export const READY_MADE_ROBOTS = {
 
 export type ReadyMadeRobot = keyof typeof READY_MADE_ROBOTS;
 
-/** What a builder starts from when the bot has no robot yet. */
+export const ROBOT_PRESETS = [
+  {
+    id: "assistant",
+    look: { colour: "green", headwear: "antenna", face: "happy", outfit: "vest", extra: "none" },
+  },
+  {
+    id: "researcher",
+    look: {
+      colour: "blue",
+      headwear: "deerstalker",
+      face: "magnifier",
+      outfit: "tweed",
+      extra: "none",
+    },
+  },
+  {
+    id: "coder",
+    look: { colour: "teal", headwear: "hood", face: "terminal", outfit: "hoodie", extra: "none" },
+  },
+  {
+    id: "writer",
+    look: {
+      colour: "purple",
+      headwear: "mortarboard",
+      face: "glasses",
+      outfit: "turtleneck",
+      extra: "none",
+    },
+  },
+  {
+    id: "analyst",
+    look: {
+      colour: "slate",
+      headwear: "top-hat",
+      face: "monocle",
+      outfit: "tuxedo",
+      extra: "none",
+    },
+  },
+  {
+    id: "creator",
+    look: {
+      colour: "pink",
+      headwear: "antenna",
+      face: "hearts",
+      outfit: "t-shirt",
+      extra: "ring-light",
+    },
+  },
+  {
+    id: "chef",
+    look: {
+      colour: "orange",
+      headwear: "chef-hat",
+      face: "happy",
+      outfit: "chef-jacket",
+      extra: "steam",
+    },
+  },
+  {
+    id: "hero",
+    look: {
+      colour: "red",
+      headwear: "antenna",
+      face: "aviators",
+      outfit: "cape",
+      extra: "confetti",
+    },
+  },
+  { id: "professor", look: READY_MADE_ROBOTS.professor },
+  { id: "detective", look: READY_MADE_ROBOTS.detective },
+  { id: "keynote", look: READY_MADE_ROBOTS.keynote },
+  { id: "hustler", look: READY_MADE_ROBOTS.hustler },
+  { id: "host", look: READY_MADE_ROBOTS.host },
+  { id: "critic", look: READY_MADE_ROBOTS.chef },
+] as const satisfies ReadonlyArray<{ id: string; look: RobotLook }>;
+
+export type RobotPresetId = (typeof ROBOT_PRESETS)[number]["id"];
+
+export function robotPresetValue(id: RobotPresetId): string {
+  const preset = ROBOT_PRESETS.find((candidate) => candidate.id === id) ?? ROBOT_PRESETS[0];
+  return robotCharacterValue(preset.look);
+}
+
+export function randomRobotPreset(random: () => number = Math.random): RobotPresetId {
+  return pick(ROBOT_PRESETS, random).id;
+}
+
+export function robotPresetOf(look: RobotLook): RobotPresetId | null {
+  const match = ROBOT_PRESETS.find((preset) =>
+    ROBOT_SLOTS.every((slot) => slot === "colour" || preset.look[slot] === look[slot]),
+  );
+  return match?.id ?? null;
+}
+
 export const DEFAULT_ROBOT_LOOK: RobotLook = {
   colour: "blue",
   headwear: "antenna",
@@ -69,10 +167,6 @@ function pick<T>(options: readonly T[], random: () => number): T {
   return options[Math.floor(random() * options.length)] ?? options[0]!;
 }
 
-/**
- * A random robot: random headwear, face and outfit with no extra, so new bots look distinct.
- * The colour is the caller's when given.
- */
 export function randomRobotLook(
   random: () => number = Math.random,
   colour: RobotLook["colour"] = pick(ROBOT_PARTS.colour, random),
@@ -90,7 +184,6 @@ export function randomRobotCharacterValue(random: () => number = Math.random): s
   return robotCharacterValue(randomRobotLook(random));
 }
 
-/** The look with one slot changed. */
 export function withRobotPart<Slot extends RobotSlot>(
   look: RobotLook,
   slot: Slot,
@@ -105,11 +198,6 @@ const NECK = '<rect x="110" y="174" width="36" height="22" rx="8" fill="#a9b8c6"
 const HEAD =
   '<rect x="58" y="68" width="140" height="116" rx="36" fill="#f1f5f8"/><path d="M58 146h140v2a36 36 0 0 1-36 36H94a36 36 0 0 1-36-36z" fill="#dde5ec"/><rect x="74" y="88" width="108" height="72" rx="24" fill="#1b2632"/><rect x="86" y="95" width="34" height="7" rx="3.5" fill="#fff" opacity=".12"/>';
 
-/**
- * The robot as a standalone SVG document. Every piece is fixed artwork chosen by part id, so the
- * result is safe to use as an image source. Layers: backdrop, extra behind, outfit, neck, collar,
- * headwear behind, ears, steam, head, face, headwear in front, face in front.
- */
 export function robotCharacterSvg(look: RobotLook): string {
   const hat = ROBOT_PART_ART.headwear[look.headwear];
   const eyes = ROBOT_PART_ART.face[look.face];
@@ -136,7 +224,6 @@ export function robotCharacterSvg(look: RobotLook): string {
 
 const dataUris = new Map<string, string>();
 
-/** An image source for a robot character, drawn once per look and kept (at most one per combination). */
 export function robotCharacterDataUri(look: RobotLook): string {
   const key = robotCharacterValue(look);
   let uri = dataUris.get(key);

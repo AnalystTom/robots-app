@@ -1,7 +1,14 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_NAME_MAX_LENGTH } from "@robots/contracts";
-import { newBotLook, newBotLookInput, newBotPreviewIdentity } from "@robots/core";
+import {
+  botLookState,
+  newBotLook,
+  newBotLookInput,
+  newBotPreviewIdentity,
+  robotPresetOf,
+  robotPresetValue,
+} from "@robots/core";
 import {
   BotAvatar,
   Button,
@@ -14,25 +21,20 @@ import {
 } from "@robots/ui-web";
 import { useRef, useState } from "react";
 import { errorText } from "../../lib/user-error";
-import type { RobotPresetId } from "./robot-presets";
-import { RobotPresetPicker, randomRobotPreset, robotPresetValue } from "./robot-presets";
+import { RobotPresetPicker } from "./robot-presets";
 
 export interface CreateBotDialogInput {
   name: string;
   color: string;
-  /** Reserve the logo preview's persistent seed through creation and retries. */
   id?: string;
-  /** The organic family the preview drew; omitted when a studio shape is picked. */
   avatarFamily?: number;
 }
 
-/** Mounted only while open; the parent unmounts it from `onCancel` or after `onCreate`. */
 export function CreateBotDialog({
   avatarSet,
   onCancel,
   onCreate,
 }: {
-  /** The account's set: the server gives it to the new bot, so the preview draws it too. */
   avatarSet: BotAvatarSet;
   onCancel: () => void;
   onCreate: (input: CreateBotDialogInput) => Promise<void>;
@@ -40,8 +42,9 @@ export function CreateBotDialog({
   const { t } = useLingui();
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
-  const [preset, setPreset] = useState<RobotPresetId>(randomRobotPreset);
-  const [look, setLook] = useState(() => ({ ...newBotLook(), color: robotPresetValue(preset) }));
+  const [look, setLook] = useState(newBotLook);
+  const pickedRobot = botLookState(look.color).robot;
+  const preset = pickedRobot ? robotPresetOf(pickedRobot) : null;
   const identity = newBotPreviewIdentity(avatarSet, look);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +112,6 @@ export function CreateBotDialog({
           <RobotPresetPicker
             value={preset}
             onChange={(next) => {
-              setPreset(next);
               setLook((current) => ({ ...current, color: robotPresetValue(next) }));
             }}
           />

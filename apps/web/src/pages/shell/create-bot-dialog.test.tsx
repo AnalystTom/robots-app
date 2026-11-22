@@ -2,7 +2,7 @@
 
 import type { BotAvatarSet } from "@robots/contracts";
 import { parseBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
-import { robotCharacterDataUri } from "@robots/core";
+import { ROBOT_PRESETS, robotCharacterDataUri } from "@robots/core";
 import type { ReactNode } from "react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -17,7 +17,23 @@ vi.mock("@lingui/react/macro", () => {
 });
 
 import { CreateBotDialog } from "./create-bot-dialog";
-import { ROBOT_PRESETS } from "./robot-presets";
+
+const CHARACTER_NAMES = [
+  "Assistant",
+  "Researcher",
+  "Coder",
+  "Writer",
+  "Analyst",
+  "Creator",
+  "Chef",
+  "Hero",
+  "Professor",
+  "Detective",
+  "Keynote",
+  "Hustler",
+  "Host",
+  "Critic",
+];
 
 let container: HTMLDivElement;
 let root: Root;
@@ -109,7 +125,8 @@ describe("CreateBotDialog", () => {
   it("offers preset robots and sends the one picked", async () => {
     const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
     await render(onCreate);
-    expect(document.querySelectorAll('[role="radio"]')).toHaveLength(ROBOT_PRESETS.length);
+    for (const name of CHARACTER_NAMES) expect(button(name)).toBeDefined();
+    expect(document.querySelectorAll('[role="radio"]')).toHaveLength(CHARACTER_NAMES.length);
     expect(document.querySelector('[data-testid="robot-builder"]')).toBeNull();
     await click(button("Researcher"));
     expect(button("Researcher").getAttribute("aria-checked")).toBe("true");
