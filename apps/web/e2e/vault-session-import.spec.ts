@@ -106,6 +106,7 @@ test("imports a browser sign-in from the desktop app into the vault and removes 
   const row = settings.getByTestId("vault-credential-row").filter({ hasText: "x.com" });
   await expect(row).toBeVisible();
   await expect(row).toContainText("Thomas in Chrome");
+  await expect(row).toContainText("Signed in");
   const saved = await rpc<VaultRow[]>(page, "vault/list", {});
   const item = saved.find((entry) => entry.title === "x.com");
   expect(item?.auth).toEqual({ type: "session" });

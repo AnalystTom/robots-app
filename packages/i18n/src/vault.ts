@@ -36,12 +36,25 @@ export function vaultPolicyLabels(): Record<VaultPolicy, string> {
   };
 }
 
-export function vaultSignInStateLabel(state: "signing_in" | "signed_in" | "next_start"): string {
+type SignInState = "signing_in" | "signed_in" | "next_start";
+
+export function vaultSignInStateLabel(state: SignInState): string {
   if (state === "signed_in") return i18n._({ id: "Signed in", message: "Signed in" });
   if (state === "next_start") {
     return i18n._({ id: "Will sign in at next start", message: "Will sign in at next start" });
   }
   return i18n._({ id: "Signing in…", message: "Signing in…" });
+}
+
+export function vaultSubtitleWithSignIn(
+  line: string,
+  delivery: readonly { state: SignInState }[] | undefined,
+): string {
+  const states = new Set(delivery?.map((entry) => entry.state));
+  const [shared] = states;
+  return states.size === 1 && shared
+    ? [line, vaultSignInStateLabel(shared)].filter(Boolean).join(" · ")
+    : line;
 }
 
 /**

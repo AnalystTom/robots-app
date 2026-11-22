@@ -25,6 +25,7 @@ import {
   vaultImportProblemLines,
   vaultImportText,
   vaultSaveNotice,
+  vaultSubtitleWithSignIn,
 } from "@robots/i18n/vault";
 import { useQuery } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
@@ -582,7 +583,10 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
                       }}
                       onLongPress={onLongPress}
                       title={item.title}
-                      detail={vaultItemSubtitle(item) || undefined}
+                      detail={
+                        vaultSubtitleWithSignIn(vaultItemSubtitle(item), item.signInDelivery) ||
+                        undefined
+                      }
                       chevron="right"
                       leading={
                         <VaultTile

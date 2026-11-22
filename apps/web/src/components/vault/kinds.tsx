@@ -3,7 +3,7 @@ import { useLinkFavicon } from "@robots/chat-ui/web";
 import type { BotSecretMetadata, VaultKind } from "@robots/contracts";
 import { vaultItemSubtitle } from "@robots/contracts";
 import { registrableDomain } from "@robots/core/egress";
-import { vaultSignInStateLabel } from "@robots/i18n/vault";
+import { vaultSubtitleWithSignIn } from "@robots/i18n/vault";
 import { cn } from "@robots/ui-web";
 import type { LucideIcon } from "lucide-react";
 import { Braces, CreditCard, Globe, KeyRound, MapPin, SquareTerminal } from "lucide-react";
@@ -117,15 +117,9 @@ export function VaultTile({
 export function useVaultSubtitle() {
   const { t } = useLingui();
   const { one } = useVaultKindLabels();
-  return (item: BotSecretMetadata): string => {
-    const line = vaultItemSubtitle(item, {
-      apiKey: one.api_key,
-      expires: (expiry) => t`Expires ${expiry}`,
-    });
-    const states = new Set(item.signInDelivery?.map((entry) => entry.state));
-    const [shared] = states;
-    return states.size === 1 && shared
-      ? [line, vaultSignInStateLabel(shared)].filter(Boolean).join(" · ")
-      : line;
-  };
+  return (item: BotSecretMetadata): string =>
+    vaultSubtitleWithSignIn(
+      vaultItemSubtitle(item, { apiKey: one.api_key, expires: (expiry) => t`Expires ${expiry}` }),
+      item.signInDelivery,
+    );
 }

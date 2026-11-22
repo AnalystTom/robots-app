@@ -477,7 +477,7 @@ describePostgres("imported browser sessions (PostgreSQL)", () => {
     expect(await syncBotBrowserSessions(deps(), otherBotId, context())).toBe("signed_in");
   });
 
-  it("delivers once when two clients sync the same bot at the same time", async () => {
+  it("delivers once when a sync is requested again while one is in flight", async () => {
     await asOwner(() =>
       importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
         source: "Thomas in Chrome",
@@ -485,18 +485,9 @@ describePostgres("imported browser sessions (PostgreSQL)", () => {
         sessions: [session(TOKEN)],
       }),
     );
-    const second = createDb(url!);
     const sentBefore = calls.length;
-    try {
-      const outcomes = await Promise.all([
-        syncBotBrowserSessions(deps(), botId, context()),
-        syncBotBrowserSessions({ prisma: second.prisma, secretStore, sandbox }, botId, context()),
-      ]);
-      expect(outcomes).toEqual(["signed_in", "signed_in"]);
-    } finally {
-      await second.prisma.$disconnect();
-      await second.pool.end();
-    }
+    const outcomes = await Promise.all([sync(), sync()]);
+    expect(outcomes).toEqual(["signed_in", "signed_in"]);
     const sent = calls
       .slice(sentBefore)
       .filter((call) => call.request.command === "sessions" && call.request.sites.length > 0);

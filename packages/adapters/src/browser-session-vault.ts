@@ -16,7 +16,6 @@ import {
 import type { PrismaClient, ThreadEvents } from "@robots/db";
 import { runAsSystem, runAsTenant, spaceIsShared, withTransactionRetry } from "@robots/db";
 import { getLogger } from "@robots/logging";
-import { advisoryLock } from "./advisory-lock.js";
 import type { BotSecretScope } from "./bot-secrets.js";
 import {
   assertVaultInUse,
@@ -289,20 +288,38 @@ function batches(sites: SiteSession[]): SiteSession[][] {
   return out;
 }
 
-const SYNC_TRANSACTION_MS = 120_000;
+interface SyncRun {
+  dirty: boolean;
+  run: Promise<SessionDelivery>;
+}
+
+const runningSyncs = new Map<string, SyncRun>();
 
 export function syncBotBrowserSessions(
   deps: SessionSyncDeps,
   botId: string,
   context: Pick<AdapterContext, "operationId" | "traceId" | "signal">,
 ): Promise<SessionDelivery> {
-  return deps.prisma.$transaction(
-    async (tx) => {
-      await advisoryLock(tx, "browser_session_sync", botId);
-      return syncBotBrowserSessionsOnce(deps, botId, context);
-    },
-    { timeout: SYNC_TRANSACTION_MS },
-  );
+  const active = runningSyncs.get(botId);
+  if (active) {
+    active.dirty = true;
+    return active.run;
+  }
+  const state: SyncRun = { dirty: false, run: Promise.resolve("failed") };
+  state.run = (async () => {
+    try {
+      let delivery = await syncBotBrowserSessionsOnce(deps, botId, context);
+      while (state.dirty) {
+        state.dirty = false;
+        delivery = await syncBotBrowserSessionsOnce(deps, botId, context);
+      }
+      return delivery;
+    } finally {
+      runningSyncs.delete(botId);
+    }
+  })();
+  runningSyncs.set(botId, state);
+  return state.run;
 }
 
 async function failedSync(deps: SessionSyncDeps, spaceId: string): Promise<"failed"> {
