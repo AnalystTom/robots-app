@@ -19,8 +19,9 @@ sign-in or an app to connect.
 
 **Bot templates** are ready-made bots for common jobs: a morning briefing, inbox triage, pull
 request reviews, and a weekly digest of topics you follow. Open them with **Templates** in
-**Connect apps** or **Skills**. Each template shows an example of what the bot sends and everything it adds before you
-choose **Create bot**.
+**Connect apps** or **Skills**. Each card shows the bot's robot, its name, a one-line job and the
+apps it works with. Choose **Create** on a card to add that bot, or **Create team** to add the
+Autopilot team, which adds its members in one step.
 
 A template adds the bot's instructions, a skill to your library, and a routine that stays paused
 until you turn it on. Nothing is connected for you: the new chat asks for the apps the bot works

@@ -214,9 +214,7 @@ describeIntegration("bot templates", () => {
     }
     expect(partial.failed).toEqual(["sales"]);
     expect(partial.bots.map((bot) => bot.name)).toEqual(
-      team.templateIds
-        .filter((id) => id !== "sales")
-        .map((id) => findBotTemplate(id)!.name),
+      team.templateIds.filter((id) => id !== "sales").map((id) => findBotTemplate(id)!.name),
     );
     expect(await db.bot.count({ where: owner })).toBe(team.templateIds.length - 1);
 
