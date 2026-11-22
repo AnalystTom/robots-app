@@ -2,8 +2,6 @@ import { createHash } from "node:crypto";
 import { isIPv4 } from "node:net";
 import path from "node:path";
 import { TERMINAL_SERVER_PROGRAM } from "./terminal-server.js";
-// Each live Chrome needs a private debugger port. This is the TCP address-space
-// boundary, not a product limit on bots or saved browser profiles.
 export const MAX_DESKTOP_DISPLAY = 65535 - 9221;
 export const BROWSER_APPLICATIONS = new Set([
   "brave",
@@ -25,6 +23,8 @@ export interface DesktopEnvironment {
   preservePrimaryDisplay?: boolean;
   portStart?: number;
   bindHost?: string;
+  toolsDir?: string;
+  hostBrowser?: boolean;
 }
 export const DEFAULT_DESKTOP_ENV: DesktopEnvironment = {
   homeDir: "/home/robots",
@@ -34,7 +34,6 @@ export const DEFAULT_DESKTOP_ENV: DesktopEnvironment = {
   bindHost: "127.0.0.1",
   preservePrimaryDisplay: true,
 };
-/** Rebuildable tool caches live outside the saved home. Tools create these under /tmp. */
 export const COMPUTER_CACHE_ENV = {
   XDG_CACHE_HOME: "/tmp/robots-cache/xdg",
   npm_config_cache: "/tmp/robots-cache/npm",
@@ -96,7 +95,6 @@ function layoutVariables(index: number | undefined, env: DesktopEnvironment) {
   ];
 }
 
-// Expand only generated layout variables and the validated view token.
 function quoteLayout(value: string) {
   return value
     .split(/(\$\{desktop_[a-z_]+\})/)
@@ -123,8 +121,6 @@ function browserRunningFunction(profile: string, pidFile: string) {
   const flag = shellQuote(`--user-data-dir=${profile}`);
   const profileQuoted = shellQuote(profile);
   return [
-    // Match the configured flag in either NUL-separated argv or Chromium's one-line
-    // setproctitle. Searching for the whole flag keeps spaces and " --" inside the path.
     "  cmdline_text() {",
     "    tr '\\0' '\\n' <\"/proc/$1/cmdline\" 2>/dev/null || true",
     "  }",
@@ -151,9 +147,6 @@ function browserRunningFunction(profile: string, pidFile: string) {
     '    kill -0 "$1" 2>/dev/null || return 1',
     '    case "$(readlink "/proc/$1/exe" 2>/dev/null)" in */bash|*/dash|*/sh|*/timeout) return 1 ;; esac',
     `    if ! has_arg "$1" ${flag}; then return 1; fi`,
-    // Browser.close reads --remote-debugging-port from this PID. Renderers inherit
-    // --user-data-dir (and sometimes the port) but always carry --type=.
-    // Drop the profile flag first so "--type=" or a port inside that path is not a flag.
     `    if ! has_prefix "$1" '--remote-debugging-port=' ${flag}; then return 1; fi`,
     `    if has_prefix "$1" '--type=' ${flag}; then return 1; fi`,
     `    mkdir -p "$(dirname ${pidFile})" 2>/dev/null || true`,
@@ -163,16 +156,16 @@ function browserRunningFunction(profile: string, pidFile: string) {
     "browser_running() {",
     `  tracked=$(cat ${pidFile} 2>/dev/null || true)`,
     `  lock=$(readlink ${profileQuoted}/SingletonLock 2>/dev/null || true)`,
-    // Pid files and SingletonLock miss the browser after a supervisor restart or a wrapper
-    // whose lock does not point at the process that still has --user-data-dir.
     // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
     '  for pid in "$tracked" "${lock##*-}"; do',
     '    if browser_matches "$pid"; then return 0; fi',
     "  done",
     "  if [ -d /proc ]; then",
-    "    for proc_dir in /proc/[0-9]*; do",
+    `    for cmdline_file in $(grep -lsaF -- ${flag} /proc/[0-9]*/cmdline 2>/dev/null); do`,
     // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
-    '      pid="${proc_dir#/proc/}"',
+    '      pid="${cmdline_file#/proc/}"',
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
+    '      pid="${pid%/cmdline}"',
     '      if browser_matches "$pid"; then return 0; fi',
     "    done",
     "  fi",
@@ -185,7 +178,6 @@ export function browserLauncherPath(displayNumber: number | string) {
   return `/tmp/robots/browser-launch-${displayNumber}`;
 }
 
-// Bookworm installs the portal backends as flat files. Same paths as the boot script.
 const DESKTOP_PORTAL = "/usr/libexec/xdg-desktop-portal";
 const DESKTOP_PORTAL_GTK = "/usr/libexec/xdg-desktop-portal-gtk";
 
@@ -204,9 +196,6 @@ function portalStartLine(binary: string, display: string, log: string) {
   return `DISPLAY=${display} DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" nohup ${binary} 8>&- 9>&- </dev/null >${log} 2>&1 &`;
 }
 
-// dbus-daemon copies its own environment into the activation environment.
-// Publish the screen display before any backend starts, or an activated GTK
-// portal inherits the image display and the explicitly started one exits.
 function screenActivationLine(display: string) {
   return `if command -v dbus-update-activation-environment >/dev/null 2>&1; then dbus-update-activation-environment DISPLAY=${display} || exit 1; fi`;
 }
@@ -218,7 +207,6 @@ function screenClaimGtkLines(display: string, log: string) {
     "  screen_gtk_pid=$!",
     "  screen_gtk_ready=0",
     "  for i in $(seq 1 50); do",
-    // Right after the fork the pid still runs the shell or nohup until it execs the portal.
     '    screen_starting "$screen_gtk_pid" xdg-desktop-portal-gtk || break',
     "    if dbus-send --session --print-reply --dest=org.freedesktop.DBus \\",
     "        /org/freedesktop/DBus org.freedesktop.DBus.NameHasOwner \\",
@@ -241,8 +229,6 @@ function screenClaimGtkLines(display: string, log: string) {
   ];
 }
 
-// Pid files outlive the container, and the kernel reuses the numbers.
-// Trust a recorded pid only when its start time and executable still match.
 function screenSessionMatchers() {
   return [
     "screen_starttime() {",
@@ -251,7 +237,6 @@ function screenSessionMatchers() {
     "    *')'*) ;;",
     "    *) return 1 ;;",
     "  esac",
-    // Field 22 of stat is field 20 after the last ')'. $20 is not that field.
     // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
     "  screen_rest=${screen_stat##*)}",
     "  set -f",
@@ -267,7 +252,6 @@ function screenSessionMatchers() {
     '  screen_starttime "$1" || return 1',
     '  printf \'%s %s\\n\' "$1" "$screen_starttime_value" >"$2"',
     "}",
-    // A pid this script just forked. Start time is recorded after the claim.
     "screen_live() {",
     "  case \"$1\" in ''|*[!0-9]*|0|1) return 1 ;; esac",
     '  kill -0 "$1" 2>/dev/null || return 1',
@@ -319,10 +303,8 @@ function screenSessionMatchers() {
   ];
 }
 
-// One GTK portal process draws on a single DISPLAY. The boot backend stays on
-// displayStart; every other screen needs its own session bus and backend.
 function renderStartScreenSessionCommand(index: number | undefined, env: DesktopEnvironment) {
-  if (index === 0) return [];
+  if (index === 0 || env.hostBrowser) return [];
   const layout = commandLayout(index, env);
   const paths = screenSessionPaths(String(layout.displayNumber));
   const lines = [
@@ -375,7 +357,7 @@ function renderStartScreenSessionCommand(index: number | undefined, env: Desktop
 }
 
 function renderStopScreenSessionCommand(index: number | undefined, env: DesktopEnvironment) {
-  if (index === 0) return [];
+  if (index === 0 || env.hostBrowser) return [];
   const layout = commandLayout(index, env);
   const paths = screenSessionPaths(String(layout.displayNumber));
   const lines = [
@@ -412,11 +394,34 @@ function browserSessionBusLines(index: number | undefined, env: DesktopEnvironme
   return [`if [ -r ${bus} ]; then . ${bus}; else unset DBUS_SESSION_BUS_ADDRESS; fi`];
 }
 
-function browserLauncherCommand(
+function hostBrowserLauncherCommand(
   index: number | undefined,
   screenId: string,
   env: DesktopEnvironment,
 ) {
+  const layout = commandLayout(index, env);
+  const browserConfig = shellQuote(`${env.browserProfilesDir}/config`);
+  return [
+    "#!/bin/bash",
+    "set -eu",
+    ...(index === undefined
+      ? // biome-ignore lint/suspicious/noTemplateCurlyInString: generated shell parameter expansion
+        ['desktop_display="${0##*-}"', "desktop_debug=$((9221 + desktop_display))"]
+      : []),
+    "browser=$(command -v chromium || command -v chromium-browser)",
+    "unset WAYLAND_DISPLAY",
+    `export DISPLAY=${layout.display} HOME=${shellQuote(env.homeDir)} XDG_CONFIG_HOME=${browserConfig}`,
+    `mkdir -p ${browserConfig}`,
+    `exec "$browser" --ozone-platform=x11 --disable-gpu --disable-extensions --enable-unsafe-swiftshader --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=gnome-libsecret --restore-last-session --start-maximized --remote-debugging-address=127.0.0.1 --remote-debugging-port=${layout.debugPort} --user-data-dir=${shellQuote(browserProfilePathForScreen(screenId, env))} "$@"`,
+  ].join("\n");
+}
+
+export function browserLauncherCommand(
+  index: number | undefined,
+  screenId: string,
+  env: DesktopEnvironment,
+) {
+  if (env.hostBrowser) return hostBrowserLauncherCommand(index, screenId, env);
   const layout = commandLayout(index, env);
   return [
     "#!/bin/bash",
@@ -427,12 +432,7 @@ function browserLauncherCommand(
       : []),
     "browser=$(command -v robots-browser || command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)",
     `export DISPLAY=${layout.display} HOME=${shellQuote(env.homeDir)}`,
-    // Docker exec does not inherit the session bus exported by container startup.
-    // The boot portal draws on displayStart; other screens must source their own bus.
     ...browserSessionBusLines(index, env),
-    // The image preloads libnss_wrapper so arbitrary UIDs resolve. Chromium's
-    // process stays up with these flags while that library is loaded, and the
-    // debugging port never opens. Drop only that entry for this exec.
     // biome-ignore lint/suspicious/noTemplateCurlyInString: generated shell parameter expansion
     'if [ -n "${LD_PRELOAD:-}" ]; then',
     '  _kept=""',
@@ -456,7 +456,6 @@ function browserLauncherCommand(
   ].join("\n");
 }
 
-// Browser.close flushes cookies and profile databases; SIGTERM alone can discard recent cookies.
 const CLOSE_BROWSER = `import base64, json, os, socket, sys, urllib.request
 pid = sys.argv[1]
 profile = ''
@@ -512,7 +511,6 @@ export function browserCloseProgram() {
   return CLOSE_BROWSER;
 }
 
-/** Exit status of a browser stop that found a browser open on the profile again. */
 export const BROWSER_STILL_RUNNING_EXIT = 76;
 
 export function stopBrowserCommand(screenId: string, env = DEFAULT_DESKTOP_ENV) {
@@ -522,7 +520,6 @@ export function stopBrowserCommand(screenId: string, env = DEFAULT_DESKTOP_ENV) 
   );
 }
 
-/** Close one Chromium profile with Browser.close, then SIGTERM, before a checkpoint copies it. */
 export function stopBrowserProfileCommand(profile: string, pidFile: string) {
   return [
     ...browserRunningFunction(profile, pidFile),
@@ -532,8 +529,6 @@ export function stopBrowserProfileCommand(profile: string, pidFile: string) {
     `  if browser_matches "$pid"; then kill "$pid" 2>/dev/null || true; for i in $(seq 1 40); do browser_matches "$pid" || break; sleep 0.25; done; fi`,
     `  browser_matches "$pid" && kill -KILL "$pid" 2>/dev/null || true`,
     `fi`,
-    // A supervisor may have replaced the selected PID while it was closing.
-    // Rediscover once before removing lock state rather than on every close poll.
     `if browser_running; then echo 'browser still running' >&2; exit ${BROWSER_STILL_RUNNING_EXIT}; fi`,
     `rm -f ${pidFile}`,
     `rm -f ${shellQuote(profile)}/SingletonLock ${shellQuote(profile)}/SingletonCookie ${shellQuote(profile)}/SingletonSocket`,
@@ -565,16 +560,10 @@ function stopProfileDirectoriesCommand(profileList: string) {
   ].join("\n");
 }
 
-/** Quiesce managed profiles before a full workspace export; orchestration excludes active peers. */
 export function stopAllDesktopBrowsersCommand(env = DEFAULT_DESKTOP_ENV) {
   return stopProfileDirectoriesCommand(`${shellQuote(env.browserProfilesDir)}/chromium-bot-*`);
 }
 
-/**
- * Close every durable Chromium profile before Docker stops the container.
- * Screen assignments live only in the supervisor process, and PID 1 exits as soon as Xvfb
- * dies, so a stop that skips Browser.close SIGKILLs Chrome before cookie databases flush.
- */
 export function quiesceBrowserProfilesCommand(env = DEFAULT_DESKTOP_ENV) {
   const root = shellQuote(env.browserProfilesDir);
   return stopProfileDirectoriesCommand(
@@ -582,7 +571,6 @@ export function quiesceBrowserProfilesCommand(env = DEFAULT_DESKTOP_ENV) {
   );
 }
 
-/** Reset discovered runtime processes after a supervisor restart; profiles remain durable. */
 export function resetDesktopRuntimeCommand(env = DEFAULT_DESKTOP_ENV) {
   const port = String(env.portStart ?? 6080);
   const gatewayPattern = `^([^ ]*/)?python[0-9.]* +(-m +websockify|[^ ]*websockify[^ ]*) +.*[ :]${port}( |$)`;
@@ -614,7 +602,6 @@ export function resetDesktopRuntimeCommand(env = DEFAULT_DESKTOP_ENV) {
     `  index=$((display - ${env.displayStart}))`,
     `  bash -eu -c ${shellQuote(stop)} desktop "$index"`,
     "done",
-    // Retire the default image's legacy primary VNC process too.
     "pkill -f '^([^ ]*/)?x11vnc .* -rfbport 5900( |$)' || true",
     `rm -f ${TARGETS}/view-* ${TARGETS}/control-* /tmp/robots/browser-pid-* /tmp/robots/browser-profile-* /tmp/robots/browser-launch-*`,
   ].join("\n");
@@ -622,13 +609,9 @@ export function resetDesktopRuntimeCommand(env = DEFAULT_DESKTOP_ENV) {
 
 const TARGETS = "/tmp/robots/desktop-targets";
 
-// Menu exec strings run through `/bin/sh -c`, where `#` starts a comment; rgb:a/b/c keeps
-// hex colors intact. infra/sandboxes/computer/fluxbox.menu carries the same entry.
-// selectToClipboard puts selections in CLIPBOARD, which x11vnc forwards to the host.
 export const TERMINAL_MENU_COMMAND =
   "xterm -bg rgb:11/11/13 -fg rgb:e8/e8/ea -cr rgb:e8/e8/ea -title Terminal -xrm 'XTerm*selectToClipboard: true'";
 
-// Keep fixed mapping files present: TokenFile may be reading the directory concurrently.
 function revokeTargetCommand(kind: "view" | "control" | "terminal", display: number | string) {
   return `mkdir -p ${TARGETS}; : >/tmp/robots/${kind}-target-next-${display}; mv /tmp/robots/${kind}-target-next-${display} ${TARGETS}/${kind}-${display}`;
 }
@@ -657,7 +640,6 @@ function stopTerminalCommand(layout: DesktopLayout) {
   const pattern = quoteLayout(terminalServerPattern(`${socketPrefix}[^ ]+`));
   return [
     revokeTargetCommand("terminal", layout.displayNumber),
-    // Killing the server closes every relayed connection; each shell then gets SIGHUP.
     `pkill -f ${pattern} || true`,
     `for i in $(seq 1 10); do pgrep -f ${pattern} >/dev/null || break; sleep 0.1; done`,
     `pkill -KILL -f ${pattern} || true`,
@@ -665,7 +647,7 @@ function stopTerminalCommand(layout: DesktopLayout) {
   ].join("\n");
 }
 
-function gatewayCommand(port: string, host = "127.0.0.1") {
+function gatewayCommand(port: string, host = "127.0.0.1", toolsDir?: string) {
   host = gatewayHost(host);
   const probeHost = gatewayProbeHost(host);
   const hostPattern = host.replaceAll(".", "[.]");
@@ -675,12 +657,10 @@ function gatewayCommand(port: string, host = "127.0.0.1") {
     `${processPattern}--token-source=${TARGETS} +${hostPattern}:${port}( |$)`,
   );
   return [
-    proxyEnvironmentCommand(),
+    proxyEnvironmentCommand(toolsDir),
     `mkdir -p ${TARGETS}`,
-    // This lock only covers gateway startup; desktop startup remains independent.
     `exec 10>/tmp/robots/gateway-${port}.lock; flock -w 120 10`,
     `if ! pgrep -f ${gatewayPattern} >/dev/null || ! (echo >/dev/tcp/${probeHost}/${port}) >/dev/null 2>&1; then`,
-    // Older images boot a single-screen gateway on this port. Retire it under the startup lock.
     `  pkill -f ${portPattern} || true`,
     `  for i in $(seq 1 20); do if ! (echo >/dev/tcp/${probeHost}/${port}) >/dev/null 2>&1; then break; fi; sleep 0.1; done`,
     `  if (echo >/dev/tcp/${probeHost}/${port}) >/dev/null 2>&1; then echo 'screen gateway port is busy' >&2; exit 1; fi`,
@@ -717,7 +697,6 @@ function renderStopScreenTransportsCommand(index: number | undefined, env = DEFA
   const layout = commandLayout(index, env);
   return [
     ...layoutVariables(index, env),
-    // Drop authorization first, then terminate VNC so already connected gateway clients disconnect.
     revokeTargetCommand("view", layout.displayNumber),
     revokeTargetCommand("control", layout.displayNumber),
     stopVncCommand("view", layout),
@@ -736,7 +715,6 @@ function renderStopExtraScreenCommand(
   const fluxHome = `/tmp/fluxbox-home-${layout.displayNumber}`;
   return [
     "set -eu",
-    // Stop every client before touching browser state or recycling the display.
     renderStopScreenTransportsCommand(index, env),
     stopBrowserCommand(screenId, env),
     `rm -f /tmp/robots/browser-profile-${layout.displayNumber} ${browserLauncherPath(layout.displayNumber)}`,
@@ -757,15 +735,21 @@ function renderStopExtraScreenCommand(
   ].join("\n");
 }
 
-/** Create only this bot's profile; its contents survive every desktop release. */
 export function prepareBrowserProfileCommand(screenId: string, env = DEFAULT_DESKTOP_ENV) {
   return `mkdir -p ${shellQuote(browserProfilePathForScreen(screenId, env))}`;
 }
 
-function proxyEnvironmentCommand() {
+function proxyEnvironmentCommand(toolsDir?: string) {
+  const novncDirs = [
+    ...(toolsDir ? [`${toolsDir}/share/novnc`] : []),
+    "/usr/share/novnc",
+    "/opt/noVNC",
+  ].map(shellQuote);
   return [
     'if command -v websockify >/dev/null 2>&1; then proxy=$(command -v websockify); elif [ -x /opt/noVNC/utils/websockify/run ]; then proxy=/opt/noVNC/utils/websockify/run; else echo "websockify is required" >&2; exit 1; fi',
-    'if [ -d /usr/share/novnc ]; then web=/usr/share/novnc; elif [ -d /opt/noVNC ]; then web=/opt/noVNC; else echo "noVNC is required" >&2; exit 1; fi',
+    "web=",
+    `for dir in ${novncDirs.join(" ")}; do if [ -d "$dir" ]; then web=$dir; break; fi; done`,
+    'if [ -z "$web" ]; then echo "noVNC is required" >&2; exit 1; fi',
   ].join("\n");
 }
 
@@ -786,11 +770,7 @@ function renderEnsureScreenCommand(
           `for i in $(seq 1 100); do xdpyinfo -display ${layout.display} >/dev/null 2>&1 && break; sleep 0.1; done`,
         ]
       : [
-          // A display created before the Terminal entry already answers xdpyinfo, so the
-          // branch below does not run. Rewrite the menu anyway; fluxbox rereads that file,
-          // so leave the display and window manager running.
           `mkdir -p ${fluxHome}/.fluxbox`,
-          // Keep apps a derived image adds to its menu; its browser entries open this screen's browser.
           `{ [ -r /etc/robots/fluxbox/menu ] && sed "s#{robots-browser\\([ }]\\)#{${browserLauncherPath(layout.displayNumber)}\\1#g" /etc/robots/fluxbox/menu || printf '[begin] (Desktop)\\n[exec] (Browser) {%s}\\n[exec] (Terminal) {%s}\\n[end]\\n' ${browserLauncherPath(layout.displayNumber)} ${shellQuote(TERMINAL_MENU_COMMAND)}; } >${fluxHome}/.fluxbox/menu`,
           `if ! xdpyinfo -display ${layout.display} >/dev/null 2>&1; then`,
           `  mkdir -p /tmp/robots ${fluxHome}/.fluxbox /tmp/.X11-unix`,
@@ -801,10 +781,7 @@ function renderEnsureScreenCommand(
           `  if [ -f /etc/robots/fluxbox/init ]; then cp /etc/robots/fluxbox/init ${fluxHome}/.fluxbox/init; else printf "session.screen0.toolbar.visible: false\\n" >${fluxHome}/.fluxbox/init; fi`,
           `  cp /etc/robots/fluxbox/apps ${fluxHome}/.fluxbox/apps 2>/dev/null || true`,
           `  printf '\\nsession.menuFile: %s\\n' ${fluxHome}/.fluxbox/menu >>${fluxHome}/.fluxbox/init`,
-          // A stock image's style sets its wallpaper through fbsetbg, which opens an error dialog
-          // on the screen when no wallpaper tool is installed. Paint the computer image's color.
           `  mkdir -p ${fluxHome}/bin && printf '#!/bin/sh\\nexec xsetroot -solid "#111113"\\n' >${fluxHome}/bin/fbsetbg && chmod +x ${fluxHome}/bin/fbsetbg`,
-          // Without $HOME/.fluxbox, fluxbox copies the system's default settings over its -rc file.
           `  mkdir -p ${shellQuote(`${env.homeDir}/.fluxbox`)}`,
           `  PATH=${fluxHome}/bin:$PATH HOME=${shellQuote(env.homeDir)} CHROME_USER_DATA_DIR=${shellQuote(profile)} BROWSER=${browserLauncherPath(layout.displayNumber)} DISPLAY=${layout.display} nohup fluxbox -rc ${fluxHome}/.fluxbox/init 8>&- 9>&- </dev/null >${log}-fluxbox.log 2>&1 &`,
           "fi",
@@ -826,14 +803,14 @@ function renderEnsureScreenCommand(
     `  printf '%s\\n' "$desired" >/tmp/robots/view-target-next-${layout.displayNumber}`,
     `  mv /tmp/robots/view-target-next-${layout.displayNumber} ${targetFile}`,
     "fi",
-    gatewayCommand(layout.viewPort, layout.bindHost),
+    gatewayCommand(layout.viewPort, layout.bindHost, env.toolsDir),
   ];
   return [
     "set -eu",
     ...layoutVariables(index, env),
     `desktop_view_token=${shellQuote(viewToken)}`,
     '[[ "$desktop_view_token" =~ ^[a-zA-Z0-9_-]{1,64}$ ]] || exit 75',
-    proxyEnvironmentCommand(),
+    proxyEnvironmentCommand(env.toolsDir),
     `mkdir -p /tmp/robots`,
     `printf %s ${shellQuote(browserLauncherCommand(index, screenId, env))} >${browserLauncherPath(layout.displayNumber)}`,
     `chmod 700 ${browserLauncherPath(layout.displayNumber)}`,
@@ -856,8 +833,6 @@ function renderEnsureScreenCommand(
     'while [ "$waited" -lt 80 ]; do',
     "  if browser_running; then",
     `    (echo >/dev/tcp/127.0.0.1/${layout.debugPort}) >/dev/null 2>&1 && break`,
-    // The browser found running can be closed, by its window or a home save, before its port
-    // answers. Start it again once rather than wait out a browser that is gone.
     '  elif [ "$relaunched" -eq 0 ] && ! { [ -n "$launched" ] && kill -0 "$launched" 2>/dev/null; }; then',
     "    relaunched=1",
     "    waited=0",
@@ -882,6 +857,7 @@ export function interactiveScreenCommand(
   interactive: boolean,
   controlToken?: string,
   layout: DesktopLayout = screenPorts(0),
+  toolsDir?: string,
 ) {
   const tokenFile = `/tmp/robots/control-token-${layout.displayNumber}`;
   const targetFile = `${TARGETS}/control-${layout.displayNumber}`;
@@ -889,7 +865,6 @@ export function interactiveScreenCommand(
     "set -eu",
     revokeTargetCommand("control", layout.displayNumber),
     stopVncCommand("control", layout),
-    // The terminal belongs to the control lease and ends with it.
     stopTerminalCommand(layout),
     `rm -f ${tokenFile}`,
   ].join("\n");
@@ -910,27 +885,20 @@ export function interactiveScreenCommand(
     `if ! { [ -f ${tokenFile} ] && [ "$(cat ${tokenFile})" = ${shellQuote(controlToken)} ] && [ -S ${socket} ] && pgrep -f ${process} >/dev/null; }; then`,
     stopProcesses,
     `mkdir -p ${TARGETS} /tmp/robots/sockets`,
-    // A person is typing here: shorter polling and batching show input sooner.
     `nohup x11vnc -display ${layout.display} -forever -shared -nopw -rfbport 0 -unixsock ${socket} -xkb -ncache 0 -wait 5 -defer 5 8>&- 9>&- </dev/null >/tmp/robots/x11vnc-control-${layout.displayNumber}.log 2>&1 &`,
     `for i in $(seq 1 50); do [ -S ${socket} ] && pgrep -f ${process} >/dev/null && break; sleep 0.1; done`,
     `[ -S ${socket} ] && pgrep -f ${process} >/dev/null || exit 1`,
     `printf %s ${shellQuote(controlToken)} >${tokenFile}`,
     "fi",
-    // Repair missing/empty routes even when the input-capable process is already alive.
     `desired=$(printf '%s: unix_socket:%s\\n' ${shellQuote(controlToken)} ${socket})`,
     `if [ ! -f ${targetFile} ] || [ "$(cat ${targetFile})" != "$desired" ]; then`,
     `  printf '%s\\n' "$desired" >/tmp/robots/control-target-next-${layout.displayNumber}`,
     `  mv /tmp/robots/control-target-next-${layout.displayNumber} ${targetFile}`,
     "fi",
-    gatewayCommand(layout.controlPort, layout.bindHost),
+    gatewayCommand(layout.controlPort, layout.bindHost, toolsDir),
   ].join("\n");
 }
 
-/**
- * Open a terminal session for the current control lease. The lease's PTY server is reused, so
- * a second browser tab gets its own shell without ending the first; a server left from an
- * earlier lease is replaced.
- */
 export function terminalCommand(
   controlToken: string,
   terminalToken: string,
@@ -940,12 +908,11 @@ export function terminalCommand(
 ) {
   return [
     startTerminalCommand(controlToken, terminalToken, cwd, env, layout),
-    proxyEnvironmentCommand(),
-    gatewayCommand(layout.controlPort, layout.bindHost),
+    proxyEnvironmentCommand(env.toolsDir),
+    gatewayCommand(layout.controlPort, layout.bindHost, env.toolsDir),
   ].join("\n");
 }
 
-/** Everything in `terminalCommand` except the shared screen gateway. */
 export function startTerminalCommand(
   controlToken: string,
   terminalToken: string,
@@ -961,8 +928,6 @@ export function startTerminalCommand(
   const next = `/tmp/robots/terminal-target-next-${display}`;
   const entry = `printf '%s: unix_socket:%s\\n' ${shellQuote(terminalToken)} ${socket}`;
   return [
-    // Callers differ (the Docker supervisor runs plain `bash -c`); an unpublished token must
-    // fail here, not hand out a URL the gateway refuses.
     "set -e",
     `[ -f ${tokenFile} ] && [ "$(cat ${tokenFile})" = ${shellQuote(controlToken)} ] || exit 75`,
     `if [ -S ${socket} ] && pgrep -f ${quoteLayout(terminalServerPattern(socket))} >/dev/null; then`,
@@ -970,7 +935,6 @@ export function startTerminalCommand(
     "else",
     stopTerminalCommand(layout),
     `  mkdir -p ${TARGETS} /tmp/robots/sockets`,
-    // Displays share the program file; replace it whole so a starting server never reads half.
     `  printf %s ${shellQuote(TERMINAL_SERVER_PROGRAM)} >${TERMINAL_SERVER}.$$`,
     `  mv ${TERMINAL_SERVER}.$$ ${TERMINAL_SERVER}`,
     `  HOME=${shellQuote(env.homeDir)} nohup python3 ${TERMINAL_SERVER} ${socket} ${shellQuote(cwd)} /tmp/robots/terminal-state-${display} 8>&- 9>&- </dev/null >/tmp/robots/terminal-${display}.log 2>&1 &`,
@@ -1032,7 +996,6 @@ export function desktopWorkCommand(
   ].join("\n");
 }
 
-/** Allocate a live slot while keeping the durable profile keyed by bot identity. */
 export function managedDesktopCommand(
   screenId: string,
   leaseId: string | undefined,
@@ -1073,12 +1036,16 @@ print(index)
   ].join("\n");
 }
 
-/**
- * Run `argv` with DISPLAY on the screen assigned to `screenId`, so screen tools in a bot's
- * shell see its own desktop. Without an assignment the inherited DISPLAY stays.
- */
+export function desktopRegistryLockPath() {
+  return `${REGISTRY}/.lock`;
+}
+
+export function screenSlotPath(screenId: string) {
+  return `${REGISTRY}/${browserKeyForScreen(screenId)}.slot`;
+}
+
 export function screenDisplayArgv(argv: readonly string[], screenId: string, displayStart: number) {
-  const slot = `${REGISTRY}/${browserKeyForScreen(screenId)}.slot`;
+  const slot = screenSlotPath(screenId);
   const program = [
     `index=$(sed -n 1p ${shellQuote(slot)} 2>/dev/null)`,
     `case "$index" in ''|*[!0-9]*) ;; *) DISPLAY=:$((index + ${displayStart})); export DISPLAY ;; esac`,
@@ -1087,7 +1054,6 @@ export function screenDisplayArgv(argv: readonly string[], screenId: string, dis
   return ["sh", "-c", program, "sh", ...argv];
 }
 
-/** Tear down before freeing a slot; failed teardown leaves it reserved for retry. */
 export function releaseDesktopCommand(
   screenId: string,
   leaseId: string | undefined,
@@ -1100,10 +1066,6 @@ export function releaseDesktopCommand(
     'index=$(sed -n "1p" "$slot")',
     "flock -u 9; exec 9>&-",
     `bash -eu -c ${shellQuote(renderStopExtraScreenCommand(undefined, screenId, env))} desktop "$index"`,
-    // Chromium has stopped. Publish that before clearing the slot so a later
-    // lock or removal failure is not read as a browser that is still running.
-    // set -e leaves that failure non-zero, and the slot is removed only while
-    // the shared registry lock is held.
     'printf "ROBOTS_DESKTOP_RELEASED=%s\\n" "$index"',
     'exec 9>"$dir/.lock"',
     "flock -w 120 9",
@@ -1111,11 +1073,6 @@ export function releaseDesktopCommand(
   ].join("\n");
 }
 
-/**
- * Guard a control transition with the persisted allocation and execution fence.
- * Revoking without a token ends any control on the display but keeps its slot, fence,
- * view, and browser for the bot's next run.
- */
 export function desktopControlCommand(
   screenId: string,
   leaseId: string | undefined,
@@ -1129,11 +1086,10 @@ export function desktopControlCommand(
     ...acceptLeaseCommand(leaseId, !interactive),
     'index=$(sed -n "1p" "$slot")',
     "flock -u 9; exec 9>&-",
-    `bash -eu -c ${shellQuote([...layoutVariables(undefined, env), interactiveScreenCommand(interactive, token, commandLayout(undefined, env))].join("\n"))} desktop "$index"`,
+    `bash -eu -c ${shellQuote([...layoutVariables(undefined, env), interactiveScreenCommand(interactive, token, commandLayout(undefined, env), env.toolsDir)].join("\n"))} desktop "$index"`,
   ].join("\n");
 }
 
-/** Open a terminal on this bot's assigned display; it requires the display's current control token. */
 export function desktopTerminalCommand(
   screenId: string,
   leaseId: string | undefined,

@@ -57,10 +57,6 @@ export interface LinuxDesktopHost {
     context: AdapterContext,
   ): Promise<{ code: number; stdout: string; stderr?: string }>;
   screenUrl(computer: ComputerRef, port: number, context: AdapterContext): Promise<string>;
-  /**
-   * Runs a command with `input` on its stdin, never in its command line, which other processes
-   * and the provider's logs can read. Providers with the page browser installed implement it.
-   */
   runWithInput?(
     computer: ComputerRef,
     command: string,
@@ -70,11 +66,9 @@ export interface LinuxDesktopHost {
   ): Promise<{ code: number; stdout: string }>;
 }
 
-/** The supervisor's limit on one page-browser call, which the helper's own waits fit inside. */
 const PAGE_BROWSER_TIMEOUT_MS = 25_000;
 const PAGE_BROWSER_MAX_OUTPUT = 512 * 1024;
 
-/** Point a bot's commands at its own screen, as Docker computers do, unless the caller chose a display. */
 export function onBotScreen(
   request: CommandRequest,
   context: AdapterContext,
@@ -93,7 +87,6 @@ export function onBotScreen(
   };
 }
 
-/** Provider SDKs supply only command execution, workspace paths, and protected port URLs. */
 export class LinuxDesktop {
   constructor(private readonly host: LinuxDesktopHost) {}
 
@@ -247,7 +240,6 @@ export class LinuxDesktop {
     };
   }
 
-  /** The page tools on this screen's Chrome, through the computer image's helper. */
   async pageBrowser(
     computer: ComputerRef,
     request: PageBrowserCommand,
@@ -264,14 +256,11 @@ export class LinuxDesktop {
         [
           `DISPLAY=${layout.display}`,
           `ROBOTS_CDP_PORT=${layout.debugPort}`,
-          // Uploads are confined to the bot's home, which is the workspace here.
           `HOME=${shellQuote(env.workspaceDir)}`,
-          "ROBOTS_BROWSER_ARGS_STDIN=1",
-          "/usr/local/bin/robots-page-browser",
+          ...pageBrowserProgram(env.toolsDir),
           request.command,
         ].join(" "),
       ),
-      // Origin-bound fills carry saved logins and cards.
       `${JSON.stringify(request)}\n`,
       PAGE_BROWSER_TIMEOUT_MS,
       context,
@@ -287,9 +276,6 @@ export class LinuxDesktop {
     }
     if (Buffer.byteLength(result.stdout) > PAGE_BROWSER_MAX_OUTPUT)
       throw new Error("Page browser unavailable or interrupted");
-    // Exit 2 is the page browser refusing the command before touching the page (an older
-    // computer image does not know it). Pass its reply on, so a caller can tell "cannot
-    // check" from a check that failed.
     if (result.code === 2) {
       const refused = refusedCommand(result.stdout);
       if (refused) return refused;
@@ -307,17 +293,11 @@ export class LinuxDesktop {
     const env = await this.host.environment(computer, context);
     const key = screenSessionKey(context);
     if (context.keepScreenWarm && !context.cancelRunWork && !context.signal.aborted) {
-      // Revoke the run's control and keep the display and browser for this bot's next run.
-      // A stale fence (75) is already someone else's screen. If revocation is uncertain,
-      // fall through to full teardown rather than retaining control.
       const control = await this.host
         .run(computer, desktopControlCommand(key, context.screenLeaseId, env, false), context)
         .catch(() => undefined);
       if (control?.code === 0 || control?.code === 75) return;
     }
-    // A stale release is a successful no-op. A failed stop must retain the slot
-    // for retry. Once the browser has stopped, a later slot-cleanup error must
-    // not look like Chromium is still running.
     const result = await this.host.run(
       computer,
       releaseDesktopCommand(key, context.screenLeaseId, env),
@@ -332,6 +312,15 @@ export class LinuxDesktop {
   }
 }
 
+function pageBrowserProgram(toolsDir: string | undefined) {
+  if (!toolsDir) return ["ROBOTS_BROWSER_ARGS_STDIN=1", "/usr/local/bin/robots-page-browser"];
+  return [
+    `ROBOTS_AGENT_BROWSER=${shellQuote(`${toolsDir}/bin/agent-browser`)}`,
+    "ROBOTS_BROWSER_ARGS_STDIN=1",
+    shellQuote(`${toolsDir}/bin/robots-page-browser`),
+  ];
+}
+
 function browserActionCommand(
   action: ComputerAction,
   layout: Parameters<typeof extraDisplayActionCommand>[0],
@@ -339,8 +328,6 @@ function browserActionCommand(
 ) {
   if (action.kind === "focus") {
     const command = focusOrLaunchActionCommand(action, layout);
-    // The browser launcher is absolute. Other apps and URIs are workspace-relative,
-    // same as the launch path below.
     if (isChromiumBrowser(action.application)) return command;
     return `cd ${shellQuote(env.workspaceDir)}\n${command}`;
   }
@@ -358,8 +345,6 @@ function browserActionCommand(
           ? (action.uri ?? "about:blank")
           : undefined;
   if (browser !== undefined) {
-    // A workspace file is a tab in this screen's browser, as on Docker computers. xdg-open
-    // ran the image's viewer in the foreground and held the action until the command timeout.
     const exists =
       file === undefined
         ? ""
@@ -369,19 +354,13 @@ function browserActionCommand(
   return `cd ${shellQuote(workspace)}\n${extraDisplayActionCommand(layout, action)}`;
 }
 
-// Chrome-family WM_CLASS components. Matched whole, so "xterm" does not raise "uxterm".
 const CHROME_WM_CLASSES =
   "chromium|chromium-browser|google-chrome|google-chrome-stable|chrome|brave-browser";
 
-// Launch maps every BROWSER_APPLICATIONS name, including firefox, onto the
-// Chromium launcher. Focus must use that same set or it cannot raise the window launch opened.
 function isChromiumBrowser(application: string) {
   return BROWSER_APPLICATIONS.has(application.toLowerCase());
 }
 
-// Same 0.2s quick-failure window as robots-focus-or-launch. A GUI that stays
-// up is success; an immediate non-zero exit fails the focus before the old
-// window is raised or a new one is awaited.
 const FOCUS_LAUNCH_PROBE = [
   "import subprocess,sys",
   "try:",
@@ -391,12 +370,6 @@ const FOCUS_LAUNCH_PROBE = [
   "raise SystemExit(code)",
 ].join("\n");
 
-/**
- * Raise an app's existing window by WM_CLASS, else spawn it — the focus primitive
- * robots-focus-or-launch provides inside the computer image, inline for provider desktops.
- * A URI still starts the launcher (Chrome forwards URLs into its live window) without
- * waiting for that process to exit before the match is raised.
- */
 function focusOrLaunchActionCommand(
   action: Extract<ComputerAction, { kind: "focus" }>,
   layout: Parameters<typeof extraDisplayActionCommand>[0],
@@ -405,8 +378,6 @@ function focusOrLaunchActionCommand(
   const binary = (action.application.split("/").pop() ?? "").replaceAll(/[^A-Za-z0-9_-]/g, "");
   const quotedApp = shellQuote(action.application);
   const quotedArg = action.uri === undefined ? "" : ` ${shellQuote(action.uri)}`;
-  // Like robots-focus-or-launch, the launch never adopts the app's lifetime: a GUI that stays
-  // up must not hold the command open, and one that exits at once with an error still fails.
   const launch = browser
     ? `nohup ${browserLauncherPath(layout.displayNumber)} ${shellQuote(action.uri ?? "about:blank")} </dev/null >/tmp/robots/browser-open-${layout.displayNumber}.log 2>&1 &`
     : `DISPLAY=${layout.display} python3 -c ${shellQuote(FOCUS_LAUNCH_PROBE)} ${quotedApp}${quotedArg} || exit $?`;
@@ -430,8 +401,6 @@ function focusOrLaunchActionCommand(
     "  IFS=$old_ifs",
     '  [ "$matched" -eq 1 ] || continue',
     '  [ -z "$fallback" ] && fallback=$id',
-    // Several Chrome profiles can share a display. Prefer the screen profile when
-    // a window advertises --user-data-dir; otherwise keep the first class match.
     ...(browser
       ? [
           '  if [ -n "$CHROME_USER_DATA_DIR" ]; then',
@@ -460,7 +429,6 @@ function focusOrLaunchActionCommand(
   ].join("\n");
 }
 
-/** Install the same X11 tools in minimal Ubuntu sandboxes, only if their image lacks them. */
 const FIND_MISSING_DESKTOP_TOOLS = [
   'missing=""',
   // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
@@ -469,13 +437,6 @@ const FIND_MISSING_DESKTOP_TOOLS = [
   'if [ ! -d /usr/share/novnc ] && [ ! -d /opt/noVNC ]; then missing="$missing novnc"; fi',
 ];
 
-/**
- * Same as infra/sandboxes/computer/browser-policy.json. RoBots keeps credentials itself, so
- * the browser's save-password, address, and card prompts only cover the page. Pop-ups open: a
- * page that opens a report once it has made it is past the click's user activation, and the
- * pop-up blocker would drop it without a sign the page tools can see. Only the hosted sandboxes
- * that are the bot's own computer are prepared with it, never the person's own computer.
- */
 export const BROWSER_POLICY = JSON.stringify({
   PasswordManagerEnabled: false,
   AutofillAddressEnabled: false,
@@ -483,7 +444,6 @@ export const BROWSER_POLICY = JSON.stringify({
   DefaultPopupsSetting: 1,
 });
 
-/** Managed policy directories for Chromium, Ubuntu's Chromium, Google Chrome, and Brave. */
 const BROWSER_POLICY_DIRS = [
   "/etc/chromium/policies/managed",
   "/etc/chromium-browser/policies/managed",
@@ -496,29 +456,22 @@ export const PREPARE_LINUX_DESKTOP = [
   ...FIND_MISSING_DESKTOP_TOOLS,
   'if [ "$(id -u)" -eq 0 ]; then root=""; else root="sudo -n"; fi',
   'if [ -n "$missing" ]; then',
-  // Separate commands: set -e ignores a failure on the left of &&.
   "  $root apt-get update -qq",
   "  if ! $root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-remove $missing; then",
-  // Provider images can arrive with unrelated, unfinished package dependencies. Let APT
-  // solve those without specifying the desktop packages, and never remove existing tools.
   "    $root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --fix-broken --no-remove",
   "    $root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-remove $missing",
   "  fi",
   "fi",
-  // Bots read pages visually; without a color emoji font every emoji is an empty box. The
-  // desktop works without it, so an image whose package manager is broken still runs.
   "if [ ! -e /usr/share/fonts/truetype/noto/NotoColorEmoji.ttf ]; then",
   '  { $root apt-get update -qq && $root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq fonts-noto-color-emoji; } || echo "could not install the emoji font" >&2',
   "fi",
   `policy=${shellQuote(BROWSER_POLICY)}`,
   `for dir in ${BROWSER_POLICY_DIRS.join(" ")}; do`,
   '  [ "$(cat "$dir/robots-browser.json" 2>/dev/null)" = "$policy" ] && continue',
-  // A sandbox without root keeps working; its browser just shows the prompts.
   '  printf \'%s\\n\' "$policy" | $root sh -c \'mkdir -p "$1" && cat > "$1/robots-browser.json"\' sh "$dir" || echo "could not set browser policy in $dir" >&2',
   "done",
 ].join("\n");
 
-/** Installs Google Chrome on images that ship without a browser. */
 export const INSTALL_LINUX_BROWSER = [
   "if ! command -v google-chrome >/dev/null && ! command -v chromium >/dev/null; then",
   '  if [ "$(id -u)" -eq 0 ]; then root=""; else root="sudo -n"; fi',
@@ -529,7 +482,6 @@ export const INSTALL_LINUX_BROWSER = [
   "fi",
 ].join("\n");
 
-/** Fails unless every desktop tool is installed and a virtual display answers. */
 export const VERIFY_LINUX_DESKTOP = [
   "set -eu",
   ...FIND_MISSING_DESKTOP_TOOLS,
@@ -546,7 +498,6 @@ export const VERIFY_LINUX_DESKTOP = [
   'if [ "$ready" -ne 1 ]; then echo "Xvfb did not start" >&2; exit 1; fi',
 ].join("\n");
 
-/** The page browser's own reply when it refused a command, or nothing when the output is not one. */
 function refusedCommand(stdout: string): PageBrowserResult | undefined {
   try {
     const reply = JSON.parse(stdout) as { ok?: unknown; error?: unknown };

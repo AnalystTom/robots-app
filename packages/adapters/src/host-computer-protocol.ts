@@ -5,6 +5,13 @@ import { macAppCall } from "./mac-apps-protocol.js";
 
 export const HOST_COMPUTER_MAX_BYTES = 12 * 1024 * 1024;
 export const HOST_COMPUTER_MAX_FILE_BYTES = 8 * 1024 * 1024;
+export const HOST_DESKTOP_MAX_RUN_MS = 2 * 60_000;
+export class HostComputerRemoteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "HostComputerRemoteError";
+  }
+}
 const file = z.object({
   path: z.string().max(4096),
   content: z.string().max(HOST_COMPUTER_MAX_BYTES),
@@ -42,7 +49,29 @@ export const hostComputerRequest = z.discriminatedUnion("method", [
       "stop",
       "destroy",
       "environment",
+      "desktopEnvironment",
+      "browserProfiles",
     ]),
+  }),
+  z.object({
+    ...base,
+    method: z.literal("desktopRun"),
+    script: z
+      .string()
+      .min(1)
+      .max(1024 * 1024),
+    input: z
+      .string()
+      .max(1024 * 1024)
+      .optional(),
+    timeoutMs: z.number().int().positive().max(HOST_DESKTOP_MAX_RUN_MS),
+  }),
+  z.object({
+    ...base,
+    method: z.literal("importBrowserSessions"),
+    screen: z.string().min(1).max(256),
+    profile: z.string().min(1).max(512),
+    sites: z.array(z.string().min(1).max(253)).min(1).max(50),
   }),
   z.object({ ...base, method: z.literal("execute"), command }),
   z.object({ ...base, method: z.literal("workspaceDirectories"), directories }),
@@ -68,7 +97,15 @@ export interface HostComputerEnvironment {
   platform: string;
   home: string;
   shell: string;
+  screen?: boolean;
 }
+
+export interface HostDesktopRun {
+  code: number;
+  stdout: string;
+  stderr: string;
+}
+
 export type HostComputerFrame<T> =
   | { value: T }
   | { done: true }
@@ -78,6 +115,7 @@ export type HostComputerFrame<T> =
 export function hostComputerDeadlineMs(request: HostComputerRequest) {
   if (request.method === "execute")
     return boundedSandboxCommandTimeoutMs(request.command.timeoutMs) + 30_000;
+  if (request.method === "desktopRun") return request.timeoutMs + 10_000;
   return request.method.startsWith("screen") || request.method === "macApp"
     ? 2 * 60_000
     : 10 * 60_000;

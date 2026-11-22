@@ -69,6 +69,8 @@ import {
   ComputerScreenSchema,
   ComputerStatusSchema,
   ComputerUpdateSchema,
+  HostBrowserImportSchema,
+  HostBrowserProfileSchema,
 } from "./computer.js";
 import { PairedDeviceSchema, PairingCodeSchema } from "./device-pairing.js";
 import { CreateDocInput, DocRevisionSchema, DocSchema } from "./docs.js";
@@ -851,6 +853,18 @@ export const appContract = {
       .input(botId)
       .output(z.array(ComputerCommandSchema.extend({ createdAt: z.string() }))),
     screenUrl: oc.input(botId).output(ComputerScreenSchema),
+    hostBrowserProfiles: oc
+      .input(botId)
+      .output(z.object({ profiles: z.array(HostBrowserProfileSchema) })),
+    importHostBrowserSessions: oc
+      .input(
+        z.object({
+          botId: Id,
+          profile: z.string().min(1).max(512),
+          sites: z.array(z.string().min(1).max(253)).min(1).max(50),
+        }),
+      )
+      .output(HostBrowserImportSchema),
     preview: oc
       .input(
         z.object({

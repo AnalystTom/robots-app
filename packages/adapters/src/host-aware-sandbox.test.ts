@@ -9,6 +9,7 @@ import { DesktopSandboxProvider } from "./desktop-sandbox.js";
 import { DockerSandboxProvider } from "./docker-sandbox.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
 import { createRunSandbox, HostAwareSandbox, sandboxKindForBot } from "./host-aware-sandbox.js";
+import { HostComputerAccessDeniedError } from "./host-computer-access.js";
 import { HostComputerSandbox } from "./host-computer-sandbox.js";
 
 const ctx = {
@@ -45,7 +46,10 @@ describe("host-aware sandbox", () => {
   it("refuses an old host reference once the deployment switches back to Docker", async () => {
     const host = new DesktopSandboxProvider();
     const execute = vi.spyOn(host, "execute");
-    const sandbox = new HostAwareSandbox(new FakeSandboxProvider(), host, async () => false);
+    const sandbox = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => false,
+      forUser: async () => null,
+    });
     const computer: ComputerRef = {
       id: "old-host",
       botId: "host",
@@ -97,7 +101,10 @@ describe("host-aware sandbox", () => {
   it("routes billing capability by computer kind rather than the current host setting", () => {
     const isolated: SandboxProvider = new FakeSandboxProvider();
     isolated.billsWhileRunning = vi.fn(() => true);
-    const sandbox = new HostAwareSandbox(isolated, new DesktopSandboxProvider(), async () => true);
+    const sandbox = new HostAwareSandbox(isolated, new DesktopSandboxProvider(), {
+      forHome: async () => true,
+      forUser: async () => new Date(0),
+    });
     const computer: ComputerRef = {
       id: "computer",
       providerRef: "computer",
@@ -113,12 +120,85 @@ describe("host-aware sandbox", () => {
     );
   });
 
-  it("does not expose page commands when neither provider supports them", () => {
-    const sandbox = new HostAwareSandbox(
-      new FakeSandboxProvider(),
-      new DesktopSandboxProvider(),
-      async () => false,
+  it("lets only deployment admins reach this computer's screen and page tools", async () => {
+    const host: SandboxProvider = new FakeSandboxProvider();
+    host.pageBrowser = async () => ({ ok: true, url: "", title: "", tree: "", elements: [] });
+    const provisioned = await host.provision({ botId: "member-bot", homePath: "" }, ctx);
+    const computer: ComputerRef = { ...provisioned, kind: "desktop" };
+    const observe = vi.spyOn(host, "observe");
+    const memberSandbox = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => true,
+      forUser: async () => null,
+    });
+    await expect(memberSandbox.observe(computer, ctx)).rejects.toBeInstanceOf(
+      HostComputerAccessDeniedError,
     );
+    await expect(
+      memberSandbox.pageBrowser!(computer, { command: "snapshot" }, ctx),
+    ).rejects.toBeInstanceOf(HostComputerAccessDeniedError);
+    expect(observe).not.toHaveBeenCalled();
+
+    const adminSandbox = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => true,
+      forUser: async () => new Date(0),
+    });
+    await expect(adminSandbox.observe(computer, ctx)).resolves.toBeDefined();
+    expect(observe).toHaveBeenCalledWith(computer, ctx);
+    await host.destroy(computer, ctx);
+  });
+
+  it("refuses host commands and files to a member of an admin's space", async () => {
+    const host: SandboxProvider = new FakeSandboxProvider();
+    const provisioned = await host.provision({ botId: "files-bot", homePath: "" }, ctx);
+    const computer: ComputerRef = { ...provisioned, kind: "desktop" };
+    const readFile = vi.spyOn(host, "readFile");
+    const member = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => true,
+      forUser: async () => null,
+    });
+    await expect(member.readFile(computer, "notes.txt", ctx)).rejects.toBeInstanceOf(
+      HostComputerAccessDeniedError,
+    );
+    await expect(member.listFiles(computer, ".", ctx)).rejects.toBeInstanceOf(
+      HostComputerAccessDeniedError,
+    );
+    expect(readFile).not.toHaveBeenCalled();
+    await host.destroy(computer, ctx);
+  });
+
+  it("reports this computer's screen only to deployment admins", async () => {
+    const host: SandboxProvider = new FakeSandboxProvider();
+    host.environment = async () => ({
+      platform: "linux",
+      home: "/home/host",
+      shell: "bash",
+      screen: true,
+    });
+    const provisioned = await host.provision({ botId: "env-bot", homePath: "" }, ctx);
+    const computer: ComputerRef = { ...provisioned, kind: "desktop" };
+    const member = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => true,
+      forUser: async () => null,
+    });
+    await expect(member.environment(computer, ctx)).resolves.toEqual({
+      platform: "linux",
+      home: "/home/host",
+      shell: "bash",
+      screen: false,
+    });
+    const admin = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => true,
+      forUser: async () => new Date(0),
+    });
+    await expect(admin.environment(computer, ctx)).resolves.toMatchObject({ screen: true });
+    await host.destroy(computer, ctx);
+  });
+
+  it("does not expose page commands when neither provider supports them", () => {
+    const sandbox = new HostAwareSandbox(new FakeSandboxProvider(), new DesktopSandboxProvider(), {
+      forHome: async () => false,
+      forUser: async () => null,
+    });
     expect(sandbox.pageBrowser).toBeUndefined();
   });
 
@@ -158,7 +238,10 @@ describe("host-aware sandbox", () => {
   it("provisions on the host provider when enabled", async () => {
     const isolated = new FakeSandboxProvider();
     const host = new DesktopSandboxProvider();
-    const sandbox = new HostAwareSandbox(isolated, host, async () => true);
+    const sandbox = new HostAwareSandbox(isolated, host, {
+      forHome: async () => true,
+      forUser: async () => new Date(0),
+    });
     const computer = await sandbox.provision({ botId: "switch", homePath: "/tmp/switch" }, ctx);
     expect(computer.kind).toBe("desktop");
     await sandbox.destroy(computer, ctx);
@@ -172,11 +255,10 @@ describe("host-aware sandbox", () => {
     async (hostEnabled, kind) => {
       const isolated = new FakeSandboxProvider();
       const provision = vi.spyOn(isolated, "provision");
-      const sandbox = new HostAwareSandbox(
-        isolated,
-        new DesktopSandboxProvider(),
-        async () => hostEnabled,
-      );
+      const sandbox = new HostAwareSandbox(isolated, new DesktopSandboxProvider(), {
+        forHome: async () => hostEnabled,
+        forUser: async () => (hostEnabled ? new Date(0) : null),
+      });
       await expect(sandbox.provisionKind()).resolves.toBe(kind);
       expect(provision).not.toHaveBeenCalled();
     },
@@ -185,7 +267,10 @@ describe("host-aware sandbox", () => {
   it("provisions on the isolated provider when this-mac is off", async () => {
     const isolated = new FakeSandboxProvider();
     const host = new DesktopSandboxProvider();
-    const sandbox = new HostAwareSandbox(isolated, host, async () => false);
+    const sandbox = new HostAwareSandbox(isolated, host, {
+      forHome: async () => false,
+      forUser: async () => null,
+    });
     const computer = await sandbox.provision({ botId: "iso", homePath: "/tmp/iso" }, ctx);
     expect(computer.kind).toBe("fake");
     await sandbox.destroy(computer, ctx);
@@ -212,11 +297,10 @@ describe("host-aware sandbox", () => {
       await expect(createRunSandbox("desktop", {})).rejects.toThrow(
         "SANDBOX_PROVIDER=desktop runs bot commands directly on this host",
       );
-      // The desktop app's backend reaches this computer only through the authenticated bridge.
       const bridged = new HostAwareSandbox(
         new FakeSandboxProvider(),
         new HostComputerSandbox("", ""),
-        async () => true,
+        { forHome: async () => true, forUser: async () => new Date(0) },
       );
       expect(bridged.describe().id).toBe("fake");
       expect(new HostComputerSandbox("", "").describe().id).toBe("desktop");
@@ -240,7 +324,10 @@ describe("host-aware sandbox", () => {
       return { ok: true, url: "https://example.test", title: "Example", tree: "", elements: [] };
     };
     const host = new DesktopSandboxProvider();
-    const sandbox = new HostAwareSandbox(isolated, host, async () => false);
+    const sandbox = new HostAwareSandbox(isolated, host, {
+      forHome: async () => false,
+      forUser: async () => null,
+    });
     const computer = await sandbox.provision({ botId: "page", homePath: "/tmp/page" }, ctx);
     expect(typeof sandbox.pageBrowser).toBe("function");
     await expect(

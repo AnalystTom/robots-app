@@ -130,6 +130,7 @@ export { HonchoMemoryProvider } from "./honcho-memory-provider.js";
 export * from "./host-aware-sandbox.js";
 export * from "./host-computer-access.js";
 export * from "./host-computer-device.js";
+export { HostComputerRemoteError } from "./host-computer-protocol.js";
 export * from "./http-decisions.js";
 export * from "./inbound-delivery.js";
 export * from "./inbound-email.js";
