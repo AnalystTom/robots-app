@@ -38,7 +38,11 @@ test("Integrations installs a plugin, completes real broker OAuth against a fake
   const dialog = page.getByRole("dialog", { name: "Integrations", exact: true });
   const section = dialog.getByTestId("plugin-section").filter({ hasText: "Productivity" });
   await expect(section.getByText("Planning Notes", { exact: true })).toBeVisible();
-  await expect(section.getByText("Plan work and write notes", { exact: true })).toBeVisible();
+  const planningRow = section.getByTestId("plugin-row").filter({ hasText: "Planning Notes" });
+  await expect(
+    planningRow.getByText("Connect Planning Notes to your bots.", { exact: true }),
+  ).toBeVisible();
+  await expect(planningRow).not.toContainText("Cursor");
   // A skill pack has nothing to connect, so it is offered under Skills instead.
   await expect(dialog.getByText("Review Kit", { exact: true })).toHaveCount(0);
   await captureScreenshot(page, testInfo, "integrations-plugins");
@@ -107,6 +111,14 @@ test("Integrations installs a plugin, completes real broker OAuth against a fake
   await dialog.getByRole("button", { name: "Close integrations", exact: true }).click();
   await page.reload();
   await page.getByRole("button", { name: "Connect apps", exact: true }).click();
+  const connectedPlanning = dialog
+    .getByTestId("connected-integrations")
+    .getByTestId("plugin-row")
+    .filter({ hasText: "Planning Notes" });
+  await expect(
+    connectedPlanning.getByText("Connect Planning Notes to your bots.", { exact: true }),
+  ).toBeVisible();
+  await expect(connectedPlanning).not.toContainText("Cursor");
   await dialog.getByRole("button", { name: /^\d+ connected$/ }).click();
   const apps = dialog.getByTestId("connected-apps").getByTestId("installed-plugin");
   await expect(apps).toContainText("Planning Notes");

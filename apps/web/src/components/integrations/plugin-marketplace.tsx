@@ -13,7 +13,7 @@ import {
   PluginPreviewSchema,
   skillSafetyBlock,
 } from "@robots/contracts";
-import { installedPluginParts } from "@robots/core";
+import { installedPluginParts, pluginDescription } from "@robots/core";
 import { Button, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, Check, ChevronLeft, FileText, Plug } from "lucide-react";
 import type { ReactNode } from "react";
@@ -41,7 +41,7 @@ export function pluginSelection(entry: PluginMarketplaceEntry): PluginSelection 
     source: entry.source,
     installedSource: entry.installedSource,
     name: entry.displayName,
-    description: entry.description,
+    description: pluginDescription(entry),
     logo: entry.logo,
     site: pluginSite(entry),
   };

@@ -64,7 +64,7 @@ export class PluginMarketplaceFixture {
           {
             name: "planning-notes",
             source: "planning-notes",
-            description: "Plan work and write notes",
+            description: "Plan work and write notes from Cursor.",
             keywords: ["planning"],
             category: "productivity",
           },

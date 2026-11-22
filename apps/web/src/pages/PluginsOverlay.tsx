@@ -12,9 +12,11 @@ import type { RemoteMcpApp } from "@robots/core";
 import {
   CONNECTION_CATALOG_PAGE_SIZE,
   catalogItemKey,
+  curatedAppCopy,
   customMcpServerInput,
   installedPluginParts,
   managedAppFor,
+  pluginDescription,
 } from "@robots/core";
 import {
   Button,
@@ -189,6 +191,11 @@ export function PluginsOverlay({
   function openPlugin(selection: PluginSelection) {
     setCatalogError(null);
     setPlugin(selection);
+  }
+
+  function appDescription(item: ConnectionCatalogItem) {
+    const entry = pluginForApp.get(catalogItemKey(item));
+    return curatedAppCopy([item.name, item.slug]) ?? (entry && pluginDescription(entry));
   }
 
   function openApp(item: ConnectionCatalogItem) {
@@ -599,7 +606,7 @@ export function PluginsOverlay({
               item={detailItem}
               state={state}
               botName={botName}
-              description={pluginForApp.get(catalogItemKey(detailItem))?.description}
+              description={appDescription(detailItem)}
             />
           ) : view === "manage" ? (
             <ManageView
