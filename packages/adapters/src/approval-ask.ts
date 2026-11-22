@@ -11,7 +11,7 @@ import {
   sanitizeMessagingLabel,
   toolRequiresExplicitApproval,
 } from "@robots/core";
-import { isRiskyFetchTarget, urlSite } from "@robots/core/egress";
+import { urlSite } from "@robots/core/egress";
 import { USER_COMPUTER_SCREEN_TOOLS, userComputerAppName } from "./user-computer-tools.js";
 
 export const MAX_APPROVAL_SUMMARY_LENGTH = 500;
@@ -182,7 +182,6 @@ export function buildApprovalAskBlock(
     };
   }
   const fetchSite = webFetchSite(toolName, args);
-  const riskyFetch = toolName === "web_fetch" && isRiskyFetchTarget(String(args.url ?? ""));
   const summary = describeApprovalAction(toolName, args, options?.batch);
   const detail = formatApprovalDetail(
     toolName,
@@ -211,7 +210,7 @@ export function buildApprovalAskBlock(
             { id: "allow", label: "Create space", outcome: "created" },
             { id: "deny", label: "Cancel", outcome: "cancelled" },
           ]
-        : onceOnly || riskyFetch
+        : onceOnly
           ? [
               { id: "allow", label: "Allow once" },
               { id: "deny", label: "Deny" },

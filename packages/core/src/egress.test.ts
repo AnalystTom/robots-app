@@ -198,6 +198,8 @@ describe("isRiskyFetchTarget", () => {
     "http://203.0.113.7/setup.exe",
     "https://example.com/setup.exe",
     "https://example.com/setup.exe.",
+    "https://example.com/setup.exe;x.html",
+    "https://example.com/setup.exe%00.html",
     "https://example.com/setup.exe%20",
     "https://example.com/Setup.EXE",
     "https://example.com/setup%2Eexe",

@@ -226,11 +226,12 @@ export async function gateToolCall(
     connectorKind,
     connectorProviders,
   );
+  const riskyTarget = fetchUrl !== undefined && isRiskyFetchTarget(fetchUrl);
   const siteGate =
     fetchUrl && fetchSite
       ? outboundSiteGate({
           site: fetchSite,
-          risky: isRiskyFetchTarget(fetchUrl),
+          risky: riskyTarget,
           trusted:
             name === "web_fetch" ||
             ctx.trust.searchResultUrls.has(fetchUrl) ||
@@ -594,7 +595,7 @@ export async function gateToolCall(
     reviewReason,
     summary: request.fleetSummary,
     batch: connectorTool?.batch,
-    onceOnly: asksEveryTime,
+    onceOnly: asksEveryTime || (name === "web_fetch" && riskyTarget),
   };
 
   if (applied?.duplicate) {
