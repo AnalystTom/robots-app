@@ -32,6 +32,14 @@ browsers otherwise start only when needed. `0`, the default, leaves each to the 
 The supervisor reaches Docker at `/var/run/docker.sock` (or `//./pipe/docker_engine` on Windows). Set
 `DOCKER_SOCKET` for rootless Docker, Colima or another path; `DOCKER_HOST` wins when both are set.
 
+If you run the supervisor outside Compose as a service of a non-root user (for example a systemd
+user unit), that user must be in the `docker` group, and the service manager must have started
+after the user joined it: a running manager keeps the groups it started with, so every computer
+boot fails with `connect EACCES /var/run/docker.sock`. Check with
+`grep Groups /proc/<supervisor pid>/status`. Reboot, or restart that user's manager as root
+(`systemctl restart user@<uid>.service`), to pick up the group. Without root, start the supervisor
+as `newgrp docker -c '<command>'` until the next reboot.
+
 ## Restricted computer egress
 
 Restricted egress gives Docker computers the public internet (browsing, DNS, apt, git
