@@ -74,7 +74,7 @@ export const ImportSessionsInput = settingsScopeInput.extend({
 });
 export type ImportSessionsInput = z.infer<typeof ImportSessionsInput>;
 
-export const SessionDelivery = z.enum(["signed_in", "next_start", "failed"]);
+export const SessionDelivery = z.enum(["pending", "signed_in", "next_start", "failed"]);
 export type SessionDelivery = z.infer<typeof SessionDelivery>;
 
 export const ImportSessionsResult = z.object({

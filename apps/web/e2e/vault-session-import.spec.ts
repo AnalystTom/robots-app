@@ -92,7 +92,7 @@ test("imports a browser sign-in from the desktop app into the vault and removes 
   await submit.click();
 
   await expect(importPage.getByTestId("vault-session-delivery")).toContainText(
-    /Signs in when its computer|Signed in/,
+    /Signing in|Signs in when its computer|Signed in/,
   );
   expect(
     await page.evaluate(() => (window as unknown as { __sessionReads: unknown[] }).__sessionReads),

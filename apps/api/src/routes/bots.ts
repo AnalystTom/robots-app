@@ -19,6 +19,9 @@ import {
   relabelVaultItem,
   revealBotSecret,
   SAVED_LOGIN_UNREADABLE,
+  SESSION_IMPORT_TOO_LARGE,
+  SESSIONS_NEED_OWN_SPACE,
+  SESSIONS_NOT_ON_THIS_COMPUTER,
   SPACE_VAULT_NOT_IN_USE,
   sessionItemBots,
   signingOutSites,
@@ -135,7 +138,14 @@ function mapBotSecretStoreError(error: unknown): unknown {
   if (error instanceof ORPCError) return error;
   if (
     error instanceof Error &&
-    (error.message === UNSUPPORTED_ACCESS || error.message === UNKNOWN_BOTS)
+    [
+      UNSUPPORTED_ACCESS,
+      UNKNOWN_BOTS,
+      SESSIONS_NEED_OWN_SPACE,
+      SESSION_IMPORT_TOO_LARGE,
+      SESSIONS_NOT_ON_THIS_COMPUTER,
+      "Credential limit reached",
+    ].includes(error.message)
   )
     return new ORPCError("BAD_REQUEST", { message: error.message });
   const mapped = mapBotSecretInputError(error);
@@ -1069,9 +1079,13 @@ export function botsRoutes(ctx: RouterContext) {
       import: authed.vault.import.handler(({ context, input }) =>
         importVaultLogins(deps, context.actor, input),
       ),
-      importSessions: authed.vault.importSessions.handler(({ context, input }) =>
-        importSessions(deps, vaultScope(context.actor, input.scope), input),
-      ),
+      importSessions: authed.vault.importSessions.handler(async ({ context, input }) => {
+        try {
+          return await importSessions(deps, vaultScope(context.actor, input.scope), input);
+        } catch (error) {
+          throw mapBotSecretStoreError(error);
+        }
+      }),
       activity: authed.vault.activity.handler(async ({ context, input }) => {
         const uses = await listVaultItemUses(
           deps.prisma,

@@ -99,6 +99,7 @@ export function VaultSessionImportPage({
         : (refusals[importing.error.code] ?? t`Nothing to import from those sites.`);
 
   const delivery: Record<SessionDelivery, string> = {
+    pending: t`Signing in…`,
     signed_in: t`Signed in`,
     next_start: t`Signs in when its computer starts`,
     failed: t`Signs in when its computer next starts`,

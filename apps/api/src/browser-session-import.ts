@@ -1,15 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { ORPCError } from "@orpc/server";
 import type { SessionVaultScope } from "@robots/adapters";
-import {
-  importBrowserSessions,
-  SESSION_IMPORT_TOO_LARGE,
-  SESSIONS_NEED_OWN_SPACE,
-  SESSIONS_NOT_ON_THIS_COMPUTER,
-  sessionItemBots,
-  syncBotBrowserSessions,
-  UNKNOWN_BOTS,
-} from "@robots/adapters";
+import { importBrowserSessions, sessionItemBots, syncBotBrowserSessions } from "@robots/adapters";
 import type { ImportSessionsInput, ImportSessionsResult } from "@robots/contracts";
 import { retry } from "@robots/core";
 import { recordSecurityEvent } from "@robots/db";
@@ -32,12 +23,6 @@ function syncContext() {
   return { operationId: id, traceId: id, signal: new AbortController().signal };
 }
 
-const REFUSALS = [
-  SESSIONS_NEED_OWN_SPACE,
-  SESSION_IMPORT_TOO_LARGE,
-  SESSIONS_NOT_ON_THIS_COMPUTER,
-  UNKNOWN_BOTS,
-];
 const SIGN_OUT_ATTEMPTS = 4;
 
 export async function importSessions(
@@ -45,22 +30,11 @@ export async function importSessions(
   scope: SessionVaultScope,
   input: ImportSessionsInput,
 ): Promise<ImportSessionsResult> {
-  let sites: string[];
-  try {
-    sites = await importBrowserSessions(
-      { prisma: deps.prisma, secretStore: deps.secrets },
-      scope,
-      input,
-    );
-  } catch (error) {
-    if (error instanceof Error && REFUSALS.includes(error.message)) {
-      throw new ORPCError("BAD_REQUEST", { message: error.message });
-    }
-    if (error instanceof Error && error.message === "Credential limit reached") {
-      throw new ORPCError("BAD_REQUEST", { message: error.message });
-    }
-    throw error;
-  }
+  const sites = await importBrowserSessions(
+    { prisma: deps.prisma, secretStore: deps.secrets },
+    scope,
+    input,
+  );
   await recordSecurityEvent({
     type: "credential.created",
     userId: scope.userId,
@@ -75,14 +49,8 @@ export async function importSessions(
       botCount: input.botIds.length,
     },
   });
-  const bots = [];
-  for (const botId of input.botIds) {
-    bots.push({
-      botId,
-      delivery: await syncBotBrowserSessions(syncDeps(deps), botId, syncContext()),
-    });
-  }
-  return { sites, bots };
+  syncSessionBots(deps, input.botIds);
+  return { sites, bots: input.botIds.map((botId) => ({ botId, delivery: "pending" as const })) };
 }
 
 export function removedSessionBots(
