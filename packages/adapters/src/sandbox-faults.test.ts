@@ -131,8 +131,12 @@ describe.each([
       context,
     );
     if (provider instanceof HostComputerSandbox) {
-      await expect(provider.observe()).rejects.toThrow("Local screen control is unavailable");
-      await expect(provider.act()).rejects.toThrow("Local screen control is unavailable");
+      await expect(provider.observe(computer, context)).rejects.toThrow(
+        "Local screen control is unavailable",
+      );
+      await expect(
+        provider.act(computer, { actions: [{ kind: "wait", ms: 1 }] }, context),
+      ).rejects.toThrow("Local screen control is unavailable");
       return;
     }
     const before = await provider.observe(computer, context);
@@ -180,7 +184,6 @@ describe.each([
     await provider.destroy(resumed, context);
     const replacement = await provisionPrepared(provider, reconnect, context);
     if (provider instanceof DesktopSandboxProvider || provider instanceof HostComputerSandbox) {
-      // A configured desktop root retains its workspace through destroy.
       expect(replacement.fresh).toBe(false);
       expect(
         new TextDecoder().decode(await provider.readFile(replacement, "state.txt", context)),

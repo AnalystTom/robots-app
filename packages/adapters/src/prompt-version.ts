@@ -26,15 +26,8 @@ import { GROUP_UNADDRESSED_REPLY_GUIDANCE, runReplyGuidance } from "./run-replie
 import { CONTEXT_POLICY_SETTINGS } from "./runtime-context.js";
 import { TASK_CATALOG_GUIDANCE } from "./task-catalog.prompt.js";
 
-// Replaced by the server bundler; development reads the same authored files once.
 declare const __ROBOTS_PROMPT_SOURCE_VERSION__: string;
 
-/**
- * Everything we change when tuning a bot's behavior, rendered from fixed placeholders: the system
- * prompt templates with every built-in tool offered and with none, the built-in tool descriptions,
- * the reply-quote format, the history replay format version and the context policy. Never reads user data, so it is the same on every run
- * of one release.
- */
 export function promptVersionParts() {
   const bot = { name: "Bot", description: "Helps.", instructions: "Do the job." };
   const allTools = new Set(builtinAgentTools.map((tool) => tool.name));
@@ -63,7 +56,10 @@ export function promptVersionParts() {
         ),
       ),
     ),
-    hosts: ["wuying", "local"].map((kind) => hostComputerInstruction(kind, host)),
+    hosts: [
+      ...["wuying", "local"].map((kind) => hostComputerInstruction(kind, host)),
+      hostComputerInstruction("local", { ...host, screen: true }),
+    ],
     dockerComputer: toolSets.map((disabled) => dockerComputerToolInstruction("docker", disabled)),
     workspaces: [PRIVATE_WORKSPACE_INSTRUCTION, teamWorkspaceInstruction("bot")],
     taskCatalog: TASK_CATALOG_GUIDANCE,
@@ -123,11 +119,6 @@ export function promptVersionOf(parts: unknown): string {
 
 let cached: string | undefined;
 
-/**
- * Stored on each run, so outcomes can be compared between prompt and replay versions. Computed on
- * first use rather than at import: some tool descriptions read settings the entry point loads
- * after its imports run, and reading them early would fix the wrong text in place.
- */
 export function promptVersion(): string {
   cached ??= promptVersionOf(promptVersionParts());
   return cached;

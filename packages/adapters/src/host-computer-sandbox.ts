@@ -1,29 +1,59 @@
 import type {
   AdapterContext,
   CommandRequest,
+  ComputerActionRequest,
   ComputerFileEntry,
+  ComputerInput,
   ComputerRef,
+  ControlLeaseRef,
+  HostBrowserImportRequest,
+  HostBrowserImportResult,
+  HostBrowserProfile,
+  PageBrowserCommand,
+  PageBrowserResult,
   PortableFile,
   ProcessEvent,
   SandboxProvider,
+  ScreenRequest,
+  ScreenSession,
   WorkspaceDirectoryRequest,
 } from "@robots/adapter-kit";
 import { boundedSandboxCommandTimeoutMs } from "@robots/core";
+import type { DesktopEnvironment } from "@robots/core/node/desktop-runtime";
+import { screenSessionKey } from "./computer-screens.js";
 import { describeDesktopSandbox } from "./desktop-sandbox.js";
 import type {
   HostComputerEnvironment,
   HostComputerFrame,
   HostComputerRequest,
+  HostDesktopRun,
 } from "./host-computer-protocol.js";
 import {
   HOST_COMPUTER_MAX_BYTES,
   HOST_COMPUTER_MAX_FILE_BYTES,
+  HOST_DESKTOP_MAX_RUN_MS,
+  HostComputerRemoteError,
   hostComputerDeadlineMs,
 } from "./host-computer-protocol.js";
+import { LinuxDesktop } from "./linux-desktop.js";
 import { shouldSkipPortableWorkspaceFile } from "./workspace-save-policy.js";
 
-/** Authenticated native host transport. Commands are never retried after a lost response. */
+const NO_SCREEN = "Local screen control is unavailable. Use commands to work with files and apps.";
+
 export class HostComputerSandbox implements SandboxProvider {
+  private readonly desktop = new LinuxDesktop({
+    environment: (computer, context) =>
+      this.one<DesktopEnvironment>(
+        { method: "desktopEnvironment", botId: computer.botId },
+        context,
+      ),
+    run: (computer, script, context) =>
+      this.desktopRun(computer, script, undefined, HOST_DESKTOP_MAX_RUN_MS, context),
+    runWithInput: (computer, script, input, timeoutMs, context) =>
+      this.desktopRun(computer, script, input, timeoutMs, context),
+    screenUrl: async (_computer, port) => `http://${new URL(this.url).hostname}:${port}/embed.html`,
+  });
+
   constructor(
     private readonly url: string,
     private readonly token: string,
@@ -77,7 +107,7 @@ export class HostComputerSandbox implements SandboxProvider {
             throw new Error("Local computer response is too large");
           const frame = JSON.parse(pending.slice(0, newline)) as HostComputerFrame<T>;
           pending = pending.slice(newline + 1);
-          if ("error" in frame) throw new Error(frame.error);
+          if ("error" in frame) throw new HostComputerRemoteError(frame.error);
           if ("heartbeat" in frame) {
             newline = pending.indexOf("\n");
             continue;
@@ -99,7 +129,6 @@ export class HostComputerSandbox implements SandboxProvider {
       reader.releaseLock();
     }
   }
-  /** One request outside a computer's lifecycle, such as screen control of this computer. */
   stream<T>(input: HostComputerRequest, signal: AbortSignal): AsyncIterable<T> {
     return this.request<T>(input, {
       operationId: "host-computer",
@@ -118,6 +147,25 @@ export class HostComputerSandbox implements SandboxProvider {
   environment(computer: ComputerRef, context: AdapterContext) {
     return this.one<HostComputerEnvironment>(
       { method: "environment", botId: computer.botId },
+      context,
+    );
+  }
+  private async hasScreen(computer: ComputerRef, context: AdapterContext) {
+    return (await this.environment(computer, context)).screen === true;
+  }
+  private async screen(computer: ComputerRef, context: AdapterContext) {
+    if (!(await this.hasScreen(computer, context))) throw new Error(NO_SCREEN);
+    return this.desktop;
+  }
+  private desktopRun(
+    computer: ComputerRef,
+    script: string,
+    input: string | undefined,
+    timeoutMs: number,
+    context: AdapterContext,
+  ) {
+    return this.one<HostDesktopRun>(
+      { method: "desktopRun", botId: computer.botId, script, input, timeoutMs },
       context,
     );
   }
@@ -228,18 +276,83 @@ export class HostComputerSandbox implements SandboxProvider {
   async destroy(computer: ComputerRef, context: AdapterContext) {
     await this.one({ method: "destroy", botId: computer.botId }, context);
   }
-  async connectScreen(): Promise<never> {
-    throw new Error(
-      "Local screen control is unavailable. Use commands to work with files and apps.",
+  async connectScreen(
+    computer: ComputerRef,
+    request: ScreenRequest,
+    context: AdapterContext,
+  ): Promise<ScreenSession> {
+    if (!(await this.hasScreen(computer, context)))
+      return { url: null, mimeType: "text/html", close: async () => undefined };
+    return this.desktop.connectScreen(computer, request, context);
+  }
+  async setScreenControl(
+    computer: ComputerRef,
+    interactive: boolean,
+    context: AdapterContext,
+    controlToken?: string,
+  ) {
+    if (!interactive && !(await this.hasScreen(computer, context))) return;
+    await (await this.screen(computer, context)).setScreenControl(
+      computer,
+      interactive,
+      context,
+      controlToken,
     );
   }
-  async sendInput(): Promise<never> {
-    throw new Error("Local screen control is unavailable");
+  async releaseScreen(computer: ComputerRef, context: AdapterContext) {
+    if (await this.hasScreen(computer, context))
+      await this.desktop.releaseScreen(computer, context);
   }
-  async observe(): Promise<never> {
-    throw new Error("Local screen control is unavailable");
+  async sendInput(
+    computer: ComputerRef,
+    input: ComputerInput,
+    _lease: ControlLeaseRef,
+    context: AdapterContext,
+  ) {
+    await (await this.screen(computer, context)).sendInput(computer, input, context);
   }
-  async act(): Promise<never> {
-    throw new Error("Local screen control is unavailable");
+  async observe(computer: ComputerRef, context: AdapterContext) {
+    return (await this.screen(computer, context)).observe(computer, context);
+  }
+  async act(computer: ComputerRef, request: ComputerActionRequest, context: AdapterContext) {
+    return (await this.screen(computer, context)).act(computer, request, context);
+  }
+  async pageBrowser(
+    computer: ComputerRef,
+    request: PageBrowserCommand,
+    context: AdapterContext,
+  ): Promise<PageBrowserResult> {
+    if (!(await this.hasScreen(computer, context)))
+      return {
+        ok: false,
+        uncertain: false,
+        fallback: "computer_act",
+        error: "Page browser is unavailable on this computer.",
+      };
+    return this.desktop.pageBrowser(computer, request, context);
+  }
+  hostBrowserProfiles(computer: ComputerRef, context: AdapterContext) {
+    return this.one<HostBrowserProfile[]>(
+      { method: "browserProfiles", botId: computer.botId },
+      context,
+    );
+  }
+  async importHostBrowserSessions(
+    computer: ComputerRef,
+    request: HostBrowserImportRequest,
+    context: AdapterContext,
+  ) {
+    const desktop = await this.screen(computer, context);
+    await desktop.connectScreen(computer, { view: "stream" }, context);
+    return this.one<HostBrowserImportResult>(
+      {
+        method: "importBrowserSessions",
+        botId: computer.botId,
+        screen: screenSessionKey(context),
+        profile: request.profile,
+        sites: request.sites,
+      },
+      context,
+    );
   }
 }

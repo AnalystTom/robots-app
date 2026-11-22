@@ -4,6 +4,8 @@ import type { Bot, ComputerReleaseReason, ComputerStatus, TaughtSkill } from "@r
 import { BotAvatar, Button } from "@robots/ui-web";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
+import { useState } from "react";
+import { HostBrowserSignInDialog } from "../../components/HostBrowserSignInDialog";
 import { TeachCaptureOverlay } from "../../components/teach/TeachCaptureOverlay";
 import { TeachComputerOverlayControl } from "../../components/teach/TeachComputerOverlay";
 import { TeachRecordingChrome, TeachStopButton } from "../../components/teach/TeachRecordingChrome";
@@ -28,7 +30,6 @@ type ComputerOverlayProps = {
   booting: boolean;
   sendError: string | null;
   embeddedScreenUrl: string | null;
-  /** Changes to load the screen again in a new frame. */
   screenFrameKey?: string;
   heldScreen?: { url: string; key: string } | null;
   screenFrameRef: (frame: HTMLIFrameElement | null) => void;
@@ -68,8 +69,14 @@ export function ComputerOverlay({
   onRefreshTeaching,
   onClose,
 }: ComputerOverlayProps) {
+  const [signingIn, setSigningIn] = useState(false);
+  const hostScreen =
+    computer?.kind === "desktop" && computer.state === "running" && Boolean(embeddedScreenUrl);
   return (
     <div className="fixed inset-0 z-30 bg-background">
+      {hostScreen ? (
+        <HostBrowserSignInDialog botId={bot.id} open={signingIn} onOpenChange={setSigningIn} />
+      ) : null}
       <div
         data-testid="computer-viewport"
         className="fixed inset-x-0 top-0 flex flex-col bg-background pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]"
@@ -149,6 +156,17 @@ export function ComputerOverlay({
                 <Trans>Take control</Trans>
               </Button>
             ) : null}
+            {hostScreen && !recordingSkill ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                data-testid="host-browser-sign-in-open"
+                onClick={() => setSigningIn(true)}
+              >
+                <Trans>Sign in from this computer</Trans>
+              </Button>
+            ) : null}
             {!recordingSkill ? (
               <TeachComputerOverlayControl
                 key={bot.id}
@@ -178,7 +196,7 @@ export function ComputerOverlay({
           </div>
         ) : null}
         <div className="relative min-h-0 flex-1 bg-background">
-          {computer?.kind === "desktop" ? (
+          {computer?.kind === "desktop" && !embeddedScreenUrl ? (
             <DesktopKindEmptyState className="grid h-full place-items-center px-8 text-center text-body text-muted-foreground/80" />
           ) : computer?.state === "running" && embeddedScreenUrl && !computerScreenError ? (
             <>

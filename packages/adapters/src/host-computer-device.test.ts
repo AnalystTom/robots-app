@@ -32,15 +32,20 @@ describe("this computer's screen on the desktop app's own server", () => {
       findUnique: async () => ({ computerHost, updatedAt: grantedAt }),
     },
     user: {
+      findFirst: async () => ({ id: "user" }),
       findUnique: async ({ where }: { where: { id: string } }) =>
         ({
           admin: { email: "Admin@Example.test", emailVerified: true },
+          user: { email: "owner@example.test", emailVerified: true },
           unverified: { email: "admin@example.test", emailVerified: false },
           member: { email: "member@example.test", emailVerified: true },
         })[where.id] ?? null,
     },
   } as unknown as PrismaClient;
-  const desktopApp: HostComputerAccess = { adminEmails: [], singleAccount: true };
+  const desktopApp: HostComputerAccess = {
+    adminEmails: ["owner@example.test"],
+    singleAccount: true,
+  };
   const sharedServer: HostComputerAccess = {
     adminEmails: ["admin@example.test"],
     singleAccount: false,

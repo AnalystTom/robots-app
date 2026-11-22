@@ -67,3 +67,32 @@ start with your own bots, never from routines or other people's messages.
 > [!WARNING]
 > A bot with access to your computer can read your files and run programs as you. Only turn it on
 > for a computer you would let your bots use unattended.
+
+### A screen on a Linux server
+
+A self-hosted Linux server that lets its admins' bots use the server itself can also give each of
+those bots its own screen and browser there. Admins' bots use the page and screen tools, and admins
+can **Take control** from web, desktop and mobile as on any other computer. Only admins can use this
+computer. Other members' bots in that space cannot run commands, read files, view or control the
+screen, or use the sign-in browser. They can still stop runs, cancel their commands, release the
+screen and revoke control, since those only end activity and expose nothing. On the desktop app, the
+owner of the app's account is the admin.
+
+The host computer service needs Xvfb, x11vnc, fluxbox, xdotool, wmctrl, scrot, xterm, xdpyinfo,
+websockify and Chromium on its `PATH`. The screen is on when `ROBOTS_HOST_TOOLS_DIR` names a tools
+folder, and it is only available on Linux. Without it the service runs commands only. The folder's
+`share/novnc` holds noVNC with this repository's `embed.html`, `clipboard-bridge.js` and
+`mobile-keyboard.js`, and its `bin` holds `robots-page-browser`, `page_secrets.py` and
+`agent-browser`. Bot screens use X display 100 upward and the screen gateway ports from 6180 upward.
+
+Each bot's browser keeps its own profile beside the bots' folders and stores its sign-ins with the
+desktop keyring, not the public key the isolated computers use.
+
+The browser's remote debugging port listens on `127.0.0.1` at 9221 plus the bot's display number.
+Any other account or process on the server can reach it, so run this only on a server with a single
+human login account.
+
+**Sign in from this computer**, on that screen, copies the sessions of the sites you pick from a
+Chrome or Chromium profile on the server into the bot's browser. Only admins can use it. A site with
+no current sign-in in that profile is skipped, and the dialog names it. The import fails only when
+none of the chosen sites has one. Cookie values never leave the server.
