@@ -412,11 +412,11 @@ function hostBrowserLauncherCommand(
     "unset WAYLAND_DISPLAY",
     `export DISPLAY=${layout.display} HOME=${shellQuote(env.homeDir)} XDG_CONFIG_HOME=${browserConfig}`,
     `mkdir -p ${browserConfig}`,
-    `exec "$browser" --ozone-platform=x11 --disable-gpu --enable-unsafe-swiftshader --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=gnome-libsecret --restore-last-session --start-maximized --remote-debugging-address=127.0.0.1 --remote-debugging-port=${layout.debugPort} --user-data-dir=${shellQuote(browserProfilePathForScreen(screenId, env))} "$@"`,
+    `exec "$browser" --ozone-platform=x11 --disable-gpu --disable-extensions --enable-unsafe-swiftshader --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=gnome-libsecret --restore-last-session --start-maximized --remote-debugging-address=127.0.0.1 --remote-debugging-port=${layout.debugPort} --user-data-dir=${shellQuote(browserProfilePathForScreen(screenId, env))} "$@"`,
   ].join("\n");
 }
 
-function browserLauncherCommand(
+export function browserLauncherCommand(
   index: number | undefined,
   screenId: string,
   env: DesktopEnvironment,
