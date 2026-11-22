@@ -44,6 +44,7 @@ export * from "./echo.js";
 export * from "./email-typo.js";
 export * from "./events.js";
 export * from "./farewell.js";
+export * from "./fast-mode.js";
 export * from "./featured-connectors.js";
 export * from "./format-file-size.js";
 export * from "./format-time-until.js";

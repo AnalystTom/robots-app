@@ -39,6 +39,7 @@ import {
   SILENT_ALLOWED_TOOL_CONTINUATION_PROMPT,
   SILENT_TOOL_CONTINUATION_PROMPT,
 } from "./continuation.prompt.js";
+import { withFastMode } from "./fast-mode-payload.js";
 import { neutralizeSpeakerLabels } from "./history-speakers.js";
 import { estimatePiImageTokens } from "./pi-image-context.js";
 import {
@@ -452,7 +453,11 @@ export class PiAgentRuntime implements AgentRuntime {
                 target.models,
                 target.model,
                 ctx,
-                withCloudflareAuth(target.config, options),
+                withFastMode(
+                  target.model,
+                  withCloudflareAuth(target.config, options),
+                  request.fastMode,
+                ),
                 target.config.maxTokens,
                 () => target.credentials?.accessToken ?? target.apiKey,
                 (preparedOptions) =>

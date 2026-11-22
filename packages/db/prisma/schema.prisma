@@ -945,6 +945,7 @@ model Bot {
   modelProvider     String?
   modelId           String?
   thinkingLevel     String?
+  fastMode          Boolean           @default(false)
   disabledBuiltinTools String[] @default([])
   webhookSecretId   String?
   teamChatAmbientEnabled Boolean @default(false)

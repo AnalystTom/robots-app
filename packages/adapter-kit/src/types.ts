@@ -651,6 +651,7 @@ export interface AgentRunRequest {
   /** Exclusive workflow cost bucket; retrieval tool turns are detected for answer calls. */
   usageOperationKind?: UsageOperationKind;
   botId: string;
+  fastMode?: boolean;
   threadId: string;
   runId: string;
   routineId?: string | null;

@@ -4,6 +4,7 @@ import { isTerminatingReplyResult, terminatingReplyText } from "./approval-effec
 import { withAutomatedLabels } from "./automated-messages.js";
 import { DELEGATION_TOOL_NAMES } from "./builtin.tool-definition.js";
 import { withCloudflareAuth } from "./cloudflare-ai-gateway.js";
+import { withFastMode } from "./fast-mode-payload.js";
 import { estimatePiImageTokens } from "./pi-image-context.js";
 import { COMPUTER_MODE_TOOLS } from "./pi-runtime-computer-mode.js";
 import {
@@ -199,7 +200,11 @@ export async function executeSubagent(
         target.models,
         target.model,
         ctx,
-        withCloudflareAuth(requestModel, options),
+        withFastMode(
+          target.model,
+          withCloudflareAuth(requestModel, options),
+          host.request.fastMode,
+        ),
         target.config.maxTokens,
         () => selectedModel.credentials?.accessToken ?? selectedModel.apiKey,
         (preparedOptions) =>

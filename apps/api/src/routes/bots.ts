@@ -486,6 +486,7 @@ export function botsRoutes(ctx: RouterContext) {
             modelProvider: source.modelProvider,
             modelId: source.modelId,
             thinkingLevel: source.thinkingLevel,
+            fastMode: source.fastMode,
             disabledBuiltinTools: source.disabledBuiltinTools,
             replyMode: source.replyMode,
           })
@@ -580,6 +581,7 @@ export function botsRoutes(ctx: RouterContext) {
               ? { modelProvider: input.modelProvider, modelId: input.modelId ?? null }
               : {}),
             ...(input.thinkingLevel !== undefined ? { thinkingLevel } : {}),
+            ...(input.fastMode !== undefined ? { fastMode: input.fastMode } : {}),
             ...(input.teamChatAmbientEnabled !== undefined
               ? { teamChatAmbientEnabled: input.teamChatAmbientEnabled }
               : {}),

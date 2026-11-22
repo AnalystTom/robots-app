@@ -161,6 +161,7 @@ async function* spaceRecords(
       modelProvider: bot.modelProvider,
       modelId: bot.modelId,
       thinkingLevel: bot.thinkingLevel,
+      fastMode: bot.fastMode,
       disabledBuiltinTools: bot.disabledBuiltinTools,
       teamChatAmbientEnabled: bot.teamChatAmbientEnabled,
       teamChatRules: bot.teamChatRules,

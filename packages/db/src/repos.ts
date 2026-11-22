@@ -97,6 +97,7 @@ function mapBot(
     modelProvider?: string | null;
     modelId?: string | null;
     thinkingLevel?: string | null;
+    fastMode?: boolean;
     teamChatAmbientEnabled?: boolean;
     teamChatRules?: string;
     crossSpaceCommunication?: boolean;
@@ -146,6 +147,7 @@ function mapBot(
     modelProvider: bot.modelProvider ? canonicalPiProviderId(bot.modelProvider) : null,
     modelId: bot.modelId ?? null,
     thinkingLevel: (bot.thinkingLevel as Bot["thinkingLevel"]) ?? null,
+    fastMode: bot.fastMode ?? false,
     teamChatAmbientEnabled: bot.teamChatAmbientEnabled ?? false,
     teamChatRules: bot.teamChatRules ?? "",
     crossSpaceCommunication: bot.crossSpaceCommunication ?? true,
@@ -435,6 +437,7 @@ export function createRepos(
         notifyOnFinish: boolean;
         dailyCheckIns?: boolean;
         fleetManagement?: boolean;
+        fastMode?: boolean;
         replyMode?: string;
         color?: string;
         avatarSet?: BotAvatarSet;
@@ -551,6 +554,7 @@ export function createRepos(
               notifyOnFinish: input.notifyOnFinish,
               dailyCheckIns: input.dailyCheckIns,
               fleetManagement: input.fleetManagement,
+              fastMode: input.fastMode,
               replyMode: input.replyMode,
               color: avatar.color,
               avatarSet,

@@ -1904,6 +1904,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           const runtimeEvents = deps.runtime.run(
             {
               botId: bot.id,
+              fastMode: bot.fastMode,
               verbatimMcpServers,
               threadId: thread.id,
               runId,

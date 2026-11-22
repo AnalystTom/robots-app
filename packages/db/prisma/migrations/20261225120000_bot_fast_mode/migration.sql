@@ -1,0 +1,1 @@
+ALTER TABLE "bots" ADD COLUMN "fastMode" BOOLEAN NOT NULL DEFAULT false;

@@ -16,6 +16,7 @@ const SETTINGS: Partial<Record<Field, AnalyticsBotSetting>> = {
   modelProvider: "model",
   modelId: "model",
   thinkingLevel: "thinking",
+  fastMode: "fast_mode",
   teamChatAmbientEnabled: "team_chat",
   teamChatRules: "team_chat",
   crossSpaceCommunication: "cross_space",

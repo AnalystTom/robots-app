@@ -907,6 +907,7 @@ class AccountImporter implements ArchiveSink {
             memoryScope: record.memoryScope,
             voiceId: record.voiceId,
             autoSpeak: record.autoSpeak,
+            fastMode: record.fastMode,
             teamChatAmbientEnabled: record.teamChatAmbientEnabled,
             teamChatRules: record.teamChatRules,
             crossSpaceCommunication: record.crossSpaceCommunication,

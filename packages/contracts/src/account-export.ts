@@ -76,6 +76,7 @@ export const AccountExportRecordSchema = z.discriminatedUnion("type", [
     modelProvider: z.string().nullable(),
     modelId: z.string().nullable(),
     thinkingLevel: z.string().nullable(),
+    fastMode: z.boolean().default(false),
     disabledBuiltinTools: z.array(z.string()),
     teamChatAmbientEnabled: z.boolean(),
     teamChatRules: z.string(),
