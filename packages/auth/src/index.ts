@@ -633,24 +633,20 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
           requireEmailVerification = policy.allowlist.length > 0;
         }
         const { findSession, updateUser } = ctx.context.internalAdapter;
-        const directoryClaim = Boolean(env.directoryProvisioning) && isOidcCallback(ctx);
+        const implicitLinking =
+          env.directoryProvisioning && isOidcCallback(ctx)
+            ? { disableImplicitLinking: false, requireLocalEmailVerified: false }
+            : ctx.path === "/callback/:id" && providerId === "google"
+              ? { disableImplicitLinking: false, requireLocalEmailVerified: true }
+              : undefined;
         return {
           context: {
             context: {
-              ...(policy || directoryClaim
+              ...(policy || implicitLinking
                 ? {
                     options: {
                       ...(policy ? { emailAndPassword: { requireEmailVerification } } : {}),
-                      ...(directoryClaim
-                        ? {
-                            account: {
-                              accountLinking: {
-                                disableImplicitLinking: false,
-                                requireLocalEmailVerified: false,
-                              },
-                            },
-                          }
-                        : {}),
+                      ...(implicitLinking ? { account: { accountLinking: implicitLinking } } : {}),
                     },
                   }
                 : {}),
