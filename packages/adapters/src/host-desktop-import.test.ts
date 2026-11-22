@@ -149,13 +149,19 @@ async function fakeBrowser(
   port: number,
   userDataDir: string,
   onCookies?: (cookies: Array<{ domain?: string; url?: string; name: string }>) => void,
+  processTitle?: string,
 ) {
   const idle = path.join(home, "idle.js");
   await writeFile(idle, "setInterval(() => {}, 1000);\n");
   children.push(
     spawn(
       process.execPath,
-      [idle, `--remote-debugging-port=${port}`, `--user-data-dir=${userDataDir}`],
+      processTitle === undefined
+        ? [idle, `--remote-debugging-port=${port}`, `--user-data-dir=${userDataDir}`]
+        : [
+            "-e",
+            `process.title = ${JSON.stringify(processTitle)}; setInterval(() => {}, 1000);`,
+          ],
       {
         stdio: "ignore",
       },
@@ -249,6 +255,33 @@ describe.skipIf(process.platform !== "linux")("sign-in import into a screen's br
     expect(sent.map((cookie) => cookie.name)).toEqual(["auth_token"]);
   }, 30_000);
 
+  it("imports into a browser whose process title is its space-joined command line", async () => {
+    await chromeProfile([{ host: ".x.com", name: "auth_token", value: "token-x" }]);
+    const screenId = `title-${randomBytes(4).toString("hex")}`;
+    const port = await registerSlot(screenId, await freePort());
+    const { desktop, userDataDir } = desktopFor(screenId);
+    const sent: Array<{ domain?: string; url?: string; name: string }> = [];
+    await fakeBrowser(
+      port,
+      userDataDir,
+      (cookies) => {
+        sent.push(...cookies);
+        saveCookiesInto(userDataDir, cookies);
+      },
+      `chromium --remote-debugging-port=${port} --user-data-dir=${userDataDir}`,
+    );
+
+    await expect(
+      desktop(port).importSessions(
+        screenId,
+        "chrome:Default",
+        ["x.com"],
+        AbortSignal.timeout(20_000),
+      ),
+    ).resolves.toEqual({ sites: [{ site: "x.com", cookies: 1 }] });
+    expect(sent.map((cookie) => cookie.name)).toEqual(["auth_token"]);
+  }, 30_000);
+
   it("fails naming every site when none of them has a usable sign-in", async () => {
     await chromeProfile([
       { host: ".x.com", name: "auth_token", value: "old", expires: PAST_CHROME_TIME },
@@ -296,6 +329,45 @@ describe.skipIf(process.platform !== "linux")("sign-in import into a screen's br
     servers.push(server);
     server.on("connection", (socket) => connections.add(socket));
     await new Promise<void>((resolve) => server.listen(port, "127.0.0.1", () => resolve()));
+
+    await expect(
+      desktop(port).importSessions(
+        screenId,
+        "chrome:Default",
+        ["x.com"],
+        AbortSignal.timeout(10_000),
+      ),
+    ).rejects.toThrow("not running for this screen");
+    expect(upgrades).toBe(0);
+  });
+
+  it("never sends sign-ins to a titled browser that runs another screen's profile", async () => {
+    await chromeProfile([{ host: ".x.com", name: "auth_token", value: "token-x" }]);
+    const screenId = `titled-race-${randomBytes(4).toString("hex")}`;
+    const port = await registerSlot(screenId, await freePort());
+    const { desktop } = desktopFor(screenId);
+    let upgrades = 0;
+    const server = createServer((request, response) => {
+      if (request.url !== "/json/version") return response.writeHead(404).end();
+      response.end(JSON.stringify({ webSocketDebuggerUrl: `ws://127.0.0.1:${port}/x` }));
+    });
+    server.on("upgrade", (_request, socket) => {
+      upgrades += 1;
+      socket.destroy();
+    });
+    servers.push(server);
+    server.on("connection", (socket) => connections.add(socket));
+    await new Promise<void>((resolve) => server.listen(port, "127.0.0.1", () => resolve()));
+    children.push(
+      spawn(
+        process.execPath,
+        [
+          "-e",
+          `process.title = ${JSON.stringify(`chromium --remote-debugging-port=${port} --user-data-dir=${home}/other-profile-extra`)}; setInterval(() => {}, 1000);`,
+        ],
+        { stdio: "ignore" },
+      ),
+    );
 
     await expect(
       desktop(port).importSessions(

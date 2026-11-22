@@ -196,19 +196,23 @@ async function withRegistryLock<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 
+function commandLineHasArgument(commandLine: string, argument: string) {
+  const escaped = argument.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|[\\0 ])${escaped}(?=[\\0 ]|$)`).test(commandLine);
+}
+
 async function runsProfileOnPort(port: number, userDataDir: string) {
   for (const entry of await readdir("/proc")) {
     if (!/^\d+$/.test(entry)) continue;
-    const argv = await readFile(`/proc/${entry}/cmdline`, "utf8").then(
-      (text): string[] => text.split("\0"),
-      (error: NodeJS.ErrnoException): string[] => {
-        if (error.code === "ENOENT" || error.code === "EACCES") return [];
+    const commandLine = await readFile(`/proc/${entry}/cmdline`, "utf8").catch(
+      (error: NodeJS.ErrnoException) => {
+        if (error.code === "ENOENT" || error.code === "EACCES") return "";
         throw error;
       },
     );
     if (
-      argv.includes(`--remote-debugging-port=${port}`) &&
-      argv.includes(`--user-data-dir=${userDataDir}`)
+      commandLineHasArgument(commandLine, `--remote-debugging-port=${port}`) &&
+      commandLineHasArgument(commandLine, `--user-data-dir=${userDataDir}`)
     )
       return true;
   }
