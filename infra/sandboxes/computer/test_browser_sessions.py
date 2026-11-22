@@ -97,6 +97,14 @@ def opened_with(password, host, encrypted):
     return result.stdout[32:].decode("utf-8", "replace")
 
 
+def lock_owner_pid():
+    try:
+        target = os.readlink(os.path.join(PROFILE, "SingletonLock"))
+    except OSError:
+        return None
+    return target.rsplit("-", 1)[-1]
+
+
 def start_chromium_without_debugger():
     env = dict(os.environ, DISPLAY=":1", HOME="/home/robots")
     binary = shutil.which("chromium") or shutil.which("chromium-browser")
@@ -232,9 +240,12 @@ def main():
     kill_browser()
     add_unreachable_row(b"v10" + bytes(range(64)))
     open(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING), "w").close()
+    for stale in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+        if os.path.lexists(os.path.join(PROFILE, stale)):
+            os.remove(os.path.join(PROFILE, stale))
     unmanaged = start_chromium_without_debugger()
     try:
-        wait_until(lambda: os.path.lexists(os.path.join(PROFILE, "SingletonLock")), 30,
+        wait_until(lambda: lock_owner_pid() == str(unmanaged.pid), 30,
                    "the browser without a debugger did not take the profile lock")
         subprocess.run(["/usr/local/bin/robots-browser", "about:blank"],
                        env=dict(os.environ, DISPLAY=":1", HOME="/home/robots"),
