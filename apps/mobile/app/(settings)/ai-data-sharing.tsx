@@ -13,7 +13,7 @@ import {
   SettingsSwitch,
   useStackedSettings,
 } from "../../components/settings-group";
-import { aiDataDisclosure } from "../../lib/ai-consent";
+import { aiDataDisclosure, promptAiConsent } from "../../lib/ai-consent";
 import {
   aiDataSharingPlaceholder,
   aiPrivacyLinks,
@@ -51,11 +51,13 @@ export default function AiDataSharing() {
           ? await send("aiConsent/revoke", { key: null })
           : !ask.allowed
             ? await send("aiConsent/revoke", { key: ask.recipient.key })
-            : await send("aiConsent/allow", {
-                scope: status.scope,
-                version: status.version,
-                keys: [ask.recipient.key],
-              });
+            : (await promptAiConsent([ask.recipient], status.privacyUrl))
+              ? await send("aiConsent/allow", {
+                  scope: status.scope,
+                  version: status.version,
+                  keys: [ask.recipient.key],
+                })
+              : null;
       if (saved) await writeSaved(queryClient, statusRead.queryKey, () => saved);
     },
     onFailed: (cause) =>

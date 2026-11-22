@@ -21,13 +21,20 @@ export type AiConsentRequest = {
   denied: boolean;
 };
 
-type QueuedRequest = AiConsentRequest & { decide(allowed: boolean): void };
+type QueuedRequest = Omit<AiConsentRequest, "denied"> & { decide(allowed: boolean): void };
 
 let queue: QueuedRequest[] = [];
+let snapshot: AiConsentRequest | null = null;
+let blocked: AiConsentRequest | null = null;
 const listeners = new Set<() => void>();
 
-function publish(next: QueuedRequest[]) {
+function publish(next: QueuedRequest[], nextBlocked: AiConsentRequest | null = blocked) {
   queue = next;
+  blocked = nextBlocked;
+  const [shown] = queue;
+  snapshot =
+    blocked ??
+    (shown ? { recipients: shown.recipients, privacyUrl: shown.privacyUrl, denied: false } : null);
   for (const listener of listeners) listener();
 }
 
@@ -39,7 +46,7 @@ function subscribe(listener: () => void) {
 }
 
 function currentRequest(): AiConsentRequest | null {
-  return queue[0] ?? null;
+  return snapshot;
 }
 
 export function promptAiConsent(
@@ -47,7 +54,7 @@ export function promptAiConsent(
   privacyUrl = AI_PRIVACY_URL,
 ): Promise<boolean> {
   return new Promise((decide) => {
-    publish([...queue, { recipients, privacyUrl, denied: false, decide }]);
+    publish([...queue, { recipients, privacyUrl, decide }]);
   });
 }
 
@@ -69,11 +76,10 @@ export function denyAiConsent() {
     BackHandler.exitApp();
     return;
   }
-  publish([{ ...shown, denied: true }, ...rest]);
+  publish(rest, { recipients: shown.recipients, privacyUrl: shown.privacyUrl, denied: true });
+  shown.decide(false);
 }
 
 export function reviewAiConsentAgain() {
-  const [shown, ...rest] = queue;
-  if (!shown) return;
-  publish([{ ...shown, denied: false }, ...rest]);
+  publish(queue, null);
 }

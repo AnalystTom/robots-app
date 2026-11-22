@@ -123,19 +123,23 @@ describe("AI data sharing consent screen", () => {
     expect(consent.decided()).toBe(true);
   });
 
-  it("blocks on iOS when denied until the person reviews it again", async () => {
+  it("settles a denied iOS prompt as declined and blocks until the person reviews it again", async () => {
     Platform.OS = "ios";
     const consent = await ask([openai]);
     await click("Deny");
+    await consent.pending;
+    expect(consent.decided()).toBe(false);
     expect(BackHandler.exitApp).not.toHaveBeenCalled();
     expect(text()).toContain("RoBots needs this to work");
     expect(text()).not.toContain("Approve");
-    expect(consent.decided()).toBeUndefined();
 
     await click("Review again");
+    expect(container.querySelector("[data-testid='ai-consent-screen']")).toBeNull();
+
+    const next = await ask([openai]);
     expect(text()).toContain("Share data with OpenAI?");
     await click("Approve");
-    await consent.pending;
-    expect(consent.decided()).toBe(true);
+    await next.pending;
+    expect(next.decided()).toBe(true);
   });
 });
