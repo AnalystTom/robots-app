@@ -97,6 +97,15 @@ def opened_with(password, host, encrypted):
     return result.stdout[32:].decode("utf-8", "replace")
 
 
+def start_chromium_without_debugger():
+    env = dict(os.environ, DISPLAY=":1", HOME="/home/robots")
+    binary = shutil.which("chromium") or shutil.which("chromium-browser")
+    with open("/tmp/robots/test-browser.log", "ab") as log:
+        return subprocess.Popen([binary, "--no-sandbox", "--password-store=gnome-libsecret",
+                                 f"--user-data-dir={PROFILE}", "about:blank"], env=env,
+                                stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+
+
 def add_unreachable_row(encrypted):
     path = browser_sessions.cookies_db(PROFILE)
     connection = sqlite3.connect(path)
@@ -219,6 +228,23 @@ def main():
     cookie = live_cookie("legacy_sign_in")
     assert cookie and cookie["value"] == LEGACY["value"], "the closed start lost a live sign-in"
     print("purged: the unreadable row was dropped at the next closed start and the profile marked keyed")
+
+    kill_browser()
+    add_unreachable_row(b"v10" + bytes(range(64)))
+    open(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING), "w").close()
+    unmanaged = start_chromium_without_debugger()
+    try:
+        wait_until(lambda: os.path.lexists(os.path.join(PROFILE, "SingletonLock")), 30,
+                   "the browser without a debugger did not take the profile lock")
+        subprocess.run(["/usr/local/bin/robots-browser", "about:blank"],
+                       env=dict(os.environ, DISPLAY=":1", HOME="/home/robots"),
+                       stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
+        assert "unreachable_sign_in" in rows(), "a launch under a held profile lock dropped the unreadable row"
+        assert os.path.exists(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING)), "a held profile lost its pending marker"
+    finally:
+        unmanaged.kill()
+        unmanaged.wait()
+    print("held: a profile held by a browser without a debugger keeps its unreadable row and pending marker")
 
     kill_browser()
     subprocess.run(["pkill", "-KILL", "-x", "gnome-keyring-d"], check=False)
