@@ -35,9 +35,19 @@ if [[ ! -f /etc/arch-release ]]; then
 fi
 
 dest="${RUNNER_TEMP:-/tmp}/host-tools/$1"
-archive="$dest.pkg.tar.zst"
+archive="$(bash "$(dirname "${BASH_SOURCE[0]}")/ci-cache-dir.sh" host-tools)/$(basename "$package")"
+pacman_copy="/var/cache/pacman/pkg/$(basename "$package")"
+verified() { echo "$sha256  $1" | sha256sum -c - >/dev/null 2>&1; }
 mkdir -p "$dest"
-curl -fsSL --retry 3 -o "$archive" "https://archive.archlinux.org/packages/$package"
+if ! verified "$archive"; then
+  if [[ -f $pacman_copy ]] && verified "$pacman_copy"; then
+    cp "$pacman_copy" "$archive"
+  else
+    curl -fsSL --retry 3 --connect-timeout 20 --max-time 120 -o "$archive.$$" \
+      "https://archive.archlinux.org/packages/$package"
+    mv -f "$archive.$$" "$archive"
+  fi
+fi
 echo "$sha256  $archive" | sha256sum -c -
 tar --zstd -xf "$archive" -C "$dest" usr/bin
 echo "$dest/usr/bin" >> "${GITHUB_PATH:-/dev/stdout}"

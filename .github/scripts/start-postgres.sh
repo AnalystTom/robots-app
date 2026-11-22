@@ -3,7 +3,7 @@ set -euo pipefail
 
 VERSION=18.7.0
 SHA256=10a1954a80519c634b59a9c452c3a4c5ea24c409fa0a65ba28b76f36157edecc
-CACHE_DIR="${POSTGRES_CACHE_DIR:-${RUNNER_TEMP:-/tmp}/postgres-binaries-cache}"
+CACHE_DIR="${POSTGRES_CACHE_DIR:-$(bash "$(dirname "${BASH_SOURCE[0]}")/ci-cache-dir.sh" postgres-binaries)}"
 JAR="$CACHE_DIR/embedded-postgres-binaries-linux-amd64-$VERSION.jar"
 ROOT="${RUNNER_TEMP:-/tmp}/ci-postgres"
 INSTALL="$ROOT/install"
@@ -11,9 +11,10 @@ DATA="$ROOT/data"
 
 mkdir -p "$CACHE_DIR"
 if ! echo "$SHA256  $JAR" | sha256sum -c - >/dev/null 2>&1; then
-  curl -fsSL --retry 3 -o "$JAR" \
+  curl -fsSL --retry 3 --connect-timeout 20 --max-time 300 -o "$JAR.$$" \
     "https://repo1.maven.org/maven2/io/zonky/test/postgres/embedded-postgres-binaries-linux-amd64/$VERSION/embedded-postgres-binaries-linux-amd64-$VERSION.jar"
-  echo "$SHA256  $JAR" | sha256sum -c -
+  echo "$SHA256  $JAR.$$" | sha256sum -c -
+  mv -f "$JAR.$$" "$JAR"
 fi
 
 rm -rf "$ROOT"

@@ -279,13 +279,10 @@ jobs:
           mkdir -p "$RUNNER_TEMP/shots"
           sudo find /srv/pr-screenshots -maxdepth 1 -type f -name '*.png' -size -5242881c -exec cp -t "$RUNNER_TEMP/shots" {} +
           sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/shots"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: Keep screenshots on the runner
         if: steps.claude.outputs.structured_output != '' || steps.codex.outputs.result != ''
-        with:
-          name: pr-screenshots-${{ inputs.pull_request }}
-          path: ${{ runner.temp }}/shots
-          if-no-files-found: ignore
-          retention-days: 3
+        working-directory: ${{ runner.temp }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/local-artifact.sh" upload "pr-screenshots-${{ inputs.pull_request }}" shots
 
   # Trusted half: checks the agent's files and captions, then rewrites only its own section of
   # the description. Never runs anything the agent produced.
@@ -306,12 +303,11 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        # An empty list uploads nothing; any other result must bring its files.
+      - name: Collect screenshots from the runner
         if: contains(needs.screenshots.outputs.result, '"file"')
-        with:
-          name: pr-screenshots-${{ inputs.pull_request }}
-          path: ${{ runner.temp }}/shots
+        run: |
+          bash .github/scripts/local-artifact.sh download "pr-screenshots-${{ inputs.pull_request }}" "$RUNNER_TEMP/runner-shots"
+          mv "$RUNNER_TEMP/runner-shots/pr-screenshots-${{ inputs.pull_request }}/shots" "$RUNNER_TEMP/shots"
       - name: Update the description
         id: publish
         env:
@@ -377,6 +373,7 @@ jobs:
           fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: steps.publish.outputs.complete == 'true'
+        continue-on-error: true
         with:
           name: pr-screenshot-reviewed-${{ needs.screenshots.outputs.pr }}-${{ inputs.head_sha }}
           path: ${{ runner.temp }}/pr-screenshots-out/complete.txt

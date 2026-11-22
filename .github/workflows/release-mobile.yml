@@ -27,7 +27,7 @@ jobs:
   ios:
     name: Build iOS and submit it for App Store review
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -51,7 +51,7 @@ jobs:
             exit 1
           fi
 
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: ./.github/actions/setup-pnpm
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24

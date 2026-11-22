@@ -10,7 +10,7 @@ on:
         type: boolean
         default: false
       upload_artifacts:
-        description: Retain the report and diagnostics as GitHub artifacts
+        description: Retain the report and diagnostics on the runner
         required: false
         type: boolean
         default: false
@@ -66,28 +66,15 @@ jobs:
       - id: areas
         if: inputs.changed_areas
         run: bash .github/scripts/changed-areas.sh >> "$GITHUB_OUTPUT"
-      - name: Restore Postgres binaries cache
-        if: steps.areas.outputs.e2e != 'false'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ runner.temp }}/postgres-binaries-cache
-          key: postgres-binaries-${{ hashFiles('.github/scripts/start-postgres.sh') }}
       - name: Start Postgres
         if: steps.areas.outputs.e2e != 'false'
         run: bash .github/scripts/start-postgres.sh
       - uses: ./.github/actions/setup-workspace
         if: steps.areas.outputs.e2e != 'false'
-        with:
-          playwright: "true"
       - name: Install Chromium
         if: steps.areas.outputs.e2e != 'false'
         timeout-minutes: 5
-        # Skip --with-deps: GitHub ubuntu-latest already has Chromium's OS libraries,
-        # and apt-get against azure.archive.ubuntu.com can stall until the job timeout.
         run: pnpm --filter @robots/web exec playwright install chromium
-      # Chinese, Japanese, and Korean pages render as boxes in screenshots without these fonts. The
-      # .deb is cached so a hit needs no network; no assertion depends on the glyphs, so a failed
-      # download only warns instead of failing the shard.
       - name: Check CJK fonts
         if: steps.areas.outputs.e2e != 'false'
         id: cjk-need
@@ -100,58 +87,26 @@ jobs:
             exit 0
           fi
           echo "install=true" >> "$GITHUB_OUTPUT"
-      - name: CJK fonts cache key
-        if: steps.cjk-need.outputs.install == 'true'
-        id: cjk-key
-        # The package is frozen within an Ubuntu release, so the release alone names it.
-        run: echo "key=fonts-noto-cjk-$(. /etc/os-release && echo "$VERSION_CODENAME")-$(dpkg --print-architecture)" >> "$GITHUB_OUTPUT"
-      - name: Restore CJK fonts cache
-        if: steps.cjk-need.outputs.install == 'true'
-        id: cjk-cache
-        continue-on-error: true
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ runner.temp }}/fonts-noto-cjk
-          key: ${{ steps.cjk-key.outputs.key }}
       - name: Install CJK fonts
         if: steps.cjk-need.outputs.install == 'true'
-        id: cjk-fonts
         continue-on-error: true
         timeout-minutes: 8
-        env:
-          DEB_DIR: ${{ runner.temp }}/fonts-noto-cjk
-          CACHE_HIT: ${{ steps.cjk-cache.outputs.cache-hit }}
-        # The runner's Azure mirror can stall on this 61 MB package, so a miss uses the main archive.
         run: |
-          if [ "$CACHE_HIT" != "true" ]; then
-            if [ -f /etc/apt/apt-mirrors.txt ]; then
-              sudo -n sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
-            fi
-            rm -rf "$DEB_DIR" && mkdir -p "$DEB_DIR" && cd "$DEB_DIR"
+          deb_dir="$(bash .github/scripts/ci-cache-dir.sh "fonts-noto-cjk-$(. /etc/os-release && echo "${VERSION_CODENAME:-}")-$(dpkg --print-architecture)")"
+          if ! compgen -G "$deb_dir/*.deb" >/dev/null; then
+            download_dir="$(mktemp -d)"
             apt_opts=(-o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20)
-            for attempt in 1 2; do
-              if sudo -n timeout 60s apt-get "${apt_opts[@]}" update &&
-                timeout 150s apt-get "${apt_opts[@]}" download fonts-noto-cjk; then
-                break
-              fi
-              rm -f ./*.deb
-              if [ "$attempt" = 2 ]; then
-                echo "::warning::Could not download fonts-noto-cjk; screenshots will show CJK text as boxes."
-                exit 1
-              fi
-            done
+            if ! (cd "$download_dir" && sudo -n timeout 60s apt-get "${apt_opts[@]}" update &&
+              timeout 150s apt-get "${apt_opts[@]}" download fonts-noto-cjk); then
+              echo "::warning::Could not download fonts-noto-cjk; screenshots will show CJK text as boxes."
+              exit 1
+            fi
+            mv "$download_dir"/*.deb "$deb_dir"/
           fi
-          if ! sudo -n dpkg -i "$DEB_DIR"/*.deb; then
+          if ! sudo -n dpkg -i "$deb_dir"/*.deb; then
             echo "::warning::Could not install fonts-noto-cjk; screenshots will show CJK text as boxes."
             exit 1
           fi
-      - name: Save CJK fonts cache
-        if: steps.cjk-need.outputs.install == 'true' && steps.cjk-cache.outputs.cache-hit != 'true' && steps.cjk-fonts.outcome == 'success'
-        continue-on-error: true
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ runner.temp }}/fonts-noto-cjk
-          key: ${{ steps.cjk-key.outputs.key }}
       - name: Run Playwright tests
         if: steps.areas.outputs.e2e != 'false'
         id: playwright_tests
@@ -160,17 +115,9 @@ jobs:
           E2E_SKIP_NIGHTLY: ${{ !inputs.nightly && '1' || '' }}
           E2E_SKIP_HEAVY: "1"
         run: pnpm test:e2e -- --shard="$SHARD"
-      - name: Upload shard results
+      - name: Keep shard results on the runner
         if: always() && steps.areas.outputs.e2e != 'false'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: playwright-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            blob-report
-            apps/web/test-results
-          # Matches the combined artifact, so re-running failed shards later still finds the others.
-          retention-days: 7
-          if-no-files-found: ignore
+        run: bash .github/scripts/local-artifact.sh upload "playwright-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}" blob-report apps/web/test-results
 
   # Long page-browser and pages specs run alone so they cannot share a machine with each other.
   # page-browser keeps one worker: its helper launches a second Chromium and flakes under peer load.
@@ -197,19 +144,11 @@ jobs:
       - id: areas
         if: inputs.changed_areas
         run: bash .github/scripts/changed-areas.sh >> "$GITHUB_OUTPUT"
-      - name: Restore Postgres binaries cache
-        if: steps.areas.outputs.e2e != 'false'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ runner.temp }}/postgres-binaries-cache
-          key: postgres-binaries-${{ hashFiles('.github/scripts/start-postgres.sh') }}
       - name: Start Postgres
         if: steps.areas.outputs.e2e != 'false'
         run: bash .github/scripts/start-postgres.sh
       - uses: ./.github/actions/setup-workspace
         if: steps.areas.outputs.e2e != 'false'
-        with:
-          playwright: "true"
       - name: Install Chromium
         if: steps.areas.outputs.e2e != 'false'
         timeout-minutes: 5
@@ -227,16 +166,9 @@ jobs:
           E2E_SKIP_NIGHTLY: ${{ !inputs.nightly && '1' || '' }}
           E2E_WORKERS: ${{ matrix.workers }}
         run: pnpm test:e2e -- --spec="${{ matrix.spec }}.spec.ts"
-      - name: Upload heavy results
+      - name: Keep heavy results on the runner
         if: always() && steps.areas.outputs.e2e != 'false'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: playwright-heavy-${{ matrix.spec }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            blob-report
-            apps/web/test-results
-          retention-days: 7
-          if-no-files-found: ignore
+        run: bash .github/scripts/local-artifact.sh upload "playwright-heavy-${{ matrix.spec }}-${{ github.run_id }}-${{ github.run_attempt }}" blob-report apps/web/test-results
 
   playwright:
     name: Web E2E
@@ -255,17 +187,12 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
-          cache: ${{ inputs.publish_report && 'pnpm' || '' }}
       - run: pnpm install --frozen-lockfile
         if: inputs.publish_report
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          pattern: playwright-shard-*-${{ github.run_id }}-*
-          path: ${{ runner.temp }}/shards
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          pattern: playwright-heavy-*-${{ github.run_id }}-*
-          path: ${{ runner.temp }}/heavy
+      - name: Collect shard results from the runner
+        run: |
+          bash .github/scripts/local-artifact.sh download "playwright-shard-*-${{ github.run_id }}-*" "$RUNNER_TEMP/shards"
+          bash .github/scripts/local-artifact.sh download "playwright-heavy-*-${{ github.run_id }}-*" "$RUNNER_TEMP/heavy"
       - name: Combine shard results
         shell: bash
         env:
@@ -331,17 +258,9 @@ jobs:
           else
             printf 'failure\n' > test-report/e2e/outcome.txt
           fi
-      - name: Upload Playwright artifacts
+      - name: Keep Playwright artifacts on the runner
         if: ${{ !cancelled() && inputs.upload_artifacts }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: playwright-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            playwright-report
-            apps/web/test-results
-            test-report/e2e
-          retention-days: 7
-          if-no-files-found: warn
+        run: bash .github/scripts/local-artifact.sh upload "playwright-artifacts-${{ github.run_id }}-${{ github.run_attempt }}" playwright-report apps/web/test-results test-report/e2e
       - name: Publish Playwright visual report
         if: ${{ !cancelled() && inputs.publish_report }}
         env:

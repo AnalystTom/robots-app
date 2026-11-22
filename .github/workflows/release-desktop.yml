@@ -17,7 +17,7 @@ concurrency:
 jobs:
   validate:
     name: Validate stable release
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, big-machine]
     outputs:
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
@@ -96,7 +96,7 @@ jobs:
           MAC_ONLY: ${{ vars.DESKTOP_RELEASE_MAC_ONLY }}
         run: |
           set -euo pipefail
-          include='[{"os":"macos-26","artifact":"macos"},{"os":"ubuntu-24.04","artifact":"linux"},{"os":"windows-2022","artifact":"windows"}]'
+          include='[{"os":"macos-26","artifact":"macos"},{"os":["self-hosted","big-machine"],"artifact":"linux"},{"os":"windows-2022","artifact":"windows"}]'
           case "$MAC_ONLY" in
             true) include='[{"os":"macos-26","artifact":"macos"}]' ;;
             false|"") ;;
@@ -468,7 +468,7 @@ jobs:
   publish:
     name: Attest and publish complete release
     needs: [validate, build]
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 15
     permissions:
       actions: read
