@@ -314,19 +314,41 @@ export async function readHostBrowserCookies(
   const keys: CookieKeys = {
     v10: cookieKey(PUBLIC_PASSWORD),
     v11: needsKeyring
-      ? (await keyring.passwords(profile.keyringApplication)).map(cookieKey)
+      ? (await keyringPasswords(keyring, profile.keyringApplication)).map(cookieKey)
       : undefined,
   };
   const nowSeconds = Math.floor(now / 1000);
-  return sites.map((site) => ({
-    site,
-    cookies: chosen
-      .filter((row) => cookieBelongsToSite(row.host_key, site))
-      .flatMap((row) => {
-        const cookie = toBrowserCookie(row, decryptCookieValue(row, keys), nowSeconds);
-        return cookie ? [cookie] : [];
-      }),
-  }));
+  return sites.map((site): HostBrowserSiteCookies => {
+    try {
+      return {
+        site,
+        cookies: chosen
+          .filter((row) => cookieBelongsToSite(row.host_key, site))
+          .flatMap((row) => {
+            const cookie = toBrowserCookie(row, decryptCookieValue(row, keys), nowSeconds);
+            return cookie ? [cookie] : [];
+          }),
+      };
+    } catch (error) {
+      if (!(error instanceof HostBrowserCookieError)) throw error;
+      return { site, cookies: [], unreadable: error.message };
+    }
+  });
+}
+
+export interface HostBrowserSiteCookies {
+  site: string;
+  cookies: HostBrowserCookie[];
+  unreadable?: string;
+}
+
+async function keyringPasswords(keyring: HostKeyring, application: string) {
+  try {
+    return await keyring.passwords(application);
+  } catch (error) {
+    if (error instanceof HostBrowserCookieError) return [];
+    throw error;
+  }
 }
 
 export async function savedCookieNames(userDataDir: string) {

@@ -140,7 +140,8 @@ export function createHostDesktop(
     const usable = found.filter(({ cookies }) => cookies.length > 0);
     if (usable.length === 0)
       throw new HostBrowserCookieError(
-        `No current sign-in for ${found.map(({ site }) => site).join(", ")} in that profile`,
+        found.find(({ unreadable }) => unreadable)?.unreadable ??
+          `No current sign-in for ${found.map(({ site }) => site).join(", ")} in that profile`,
       );
     const cookies = usable.flatMap((site) => site.cookies);
     const userDataDir = browserProfilePathForScreen(screenId, environment(home));

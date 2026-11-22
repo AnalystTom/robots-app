@@ -194,25 +194,48 @@ describe("host browser cookies", () => {
     ).rejects.toThrow("No current sign-in for x.com in that profile");
   });
 
-  it("refuses a value whose host hash does not match its host", async () => {
+  it("marks a site unreadable when a value's host hash does not match its host", async () => {
     await profile([{ host: ".x.com", name: "auth_token", value: "moved", hostHash: ".evil.test" }]);
-    await expect(
-      readHostBrowserCookies(home, "chrome:Default", ["x.com"], keyring(), NOW),
-    ).rejects.toThrow("could not be decrypted");
+    const [x] = await readHostBrowserCookies(home, "chrome:Default", ["x.com"], keyring(), NOW);
+    expect(x).toEqual({
+      site: "x.com",
+      cookies: [],
+      unreadable: expect.stringContaining("could not be decrypted"),
+    });
   });
 
-  it("refuses an encryption scheme it does not know instead of guessing", async () => {
+  it("marks a site unreadable for an encryption scheme it does not know instead of guessing", async () => {
     await profile([{ host: ".x.com", name: "auth_token", value: "token", prefix: "v12" }]);
-    await expect(
-      readHostBrowserCookies(home, "chrome:Default", ["x.com"], keyring(), NOW),
-    ).rejects.toThrow("cannot read");
+    const [x] = await readHostBrowserCookies(home, "chrome:Default", ["x.com"], keyring(), NOW);
+    expect(x?.cookies).toEqual([]);
+    expect(x?.unreadable).toContain("cannot read");
   });
 
   it("asks for the keyring to be unlocked when it gives no key", async () => {
     await profile([{ host: ".x.com", name: "auth_token", value: "token" }]);
-    await expect(
-      readHostBrowserCookies(home, "chrome:Default", ["x.com"], keyring([]), NOW),
-    ).rejects.toThrow("Unlock this computer's keyring");
+    const [x] = await readHostBrowserCookies(home, "chrome:Default", ["x.com"], keyring([]), NOW);
+    expect(x?.cookies).toEqual([]);
+    expect(x?.unreadable).toContain("Unlock this computer's keyring");
+  });
+
+  it("keeps the other sites readable when one site cannot be decrypted", async () => {
+    await profile([
+      { host: ".x.com", name: "auth_token", value: "token-x", prefix: "v10" },
+      { host: ".y.test", name: "sid", value: "moved", prefix: "v10", hostHash: ".evil.test" },
+    ]);
+    const [x, y] = await readHostBrowserCookies(
+      home,
+      "chrome:Default",
+      ["x.com", "y.test"],
+      keyring(),
+      NOW,
+    );
+    expect(x?.cookies.map((cookie) => cookie.value)).toEqual(["token-x"]);
+    expect(y).toEqual({
+      site: "y.test",
+      cookies: [],
+      unreadable: expect.stringContaining("could not be decrypted"),
+    });
   });
 
   it("leaves the keyring alone when only public-key cookies are chosen", async () => {
