@@ -1,7 +1,6 @@
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
 import { createCipheriv, createHash, randomBytes } from "node:crypto";
-import { mkdirSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import type { IncomingMessage, Server } from "node:http";
 import { createServer } from "node:http";
@@ -158,10 +157,7 @@ async function fakeBrowser(
       process.execPath,
       processTitle === undefined
         ? [idle, `--remote-debugging-port=${port}`, `--user-data-dir=${userDataDir}`]
-        : [
-            "-e",
-            `process.title = ${JSON.stringify(processTitle)}; setInterval(() => {}, 1000);`,
-          ],
+        : ["-e", `process.title = ${JSON.stringify(processTitle)}; setInterval(() => {}, 1000);`],
       {
         stdio: "ignore",
       },
