@@ -309,12 +309,7 @@ describe.skipIf(process.platform !== "linux")("sign-in import into a screen's br
 
     const result = await desktopFor(screenId)
       .desktop(port)
-      .importSessions(
-        screenId,
-        "chrome:Default",
-        ["x.com", "y.test"],
-        AbortSignal.timeout(20_000),
-      );
+      .importSessions(screenId, "chrome:Default", ["x.com", "y.test"], AbortSignal.timeout(20_000));
     expect(result).toEqual({
       sites: [
         { site: "x.com", cookies: 1 },
