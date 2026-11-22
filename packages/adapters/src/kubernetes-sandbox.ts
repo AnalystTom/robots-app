@@ -48,6 +48,7 @@ const HOME_VOLUME = "home";
 const READY_PORT = 6080;
 const DESKTOP_PORT_START = 6100;
 export interface KubernetesSandboxOptions {
+  browserStoreSecret?: string;
   namespace?: string;
   runtimeClassName?: string;
   computerImage?: string;
@@ -86,7 +87,7 @@ export class KubernetesSandboxProvider implements SandboxProvider {
   private readonly homeColocateNamespace: string | undefined;
   private readonly homeColocateLabels: Record<string, string>;
   private clientsValue: KubernetesSandboxSdk | undefined;
-  private readonly shell = new ExecComputer((...exec) => this.execRaw(...exec), "Kubernetes");
+  private readonly shell: ExecComputer;
 
   private readonly desktops = new LinuxDesktop({
     environment: async (computer, context) => {
@@ -119,6 +120,11 @@ export class KubernetesSandboxProvider implements SandboxProvider {
   });
 
   constructor(options: KubernetesSandboxOptions = {}, clients?: KubernetesSandboxSdk) {
+    this.shell = new ExecComputer(
+      (...exec) => this.execRaw(...exec),
+      "Kubernetes",
+      options.browserStoreSecret,
+    );
     this.namespace = options.namespace?.trim() || DEFAULT_NAMESPACE;
     this.runtimeClassName = options.runtimeClassName?.trim() || undefined;
     this.computerImage = options.computerImage?.trim() || DEFAULT_COMPUTER_IMAGE;

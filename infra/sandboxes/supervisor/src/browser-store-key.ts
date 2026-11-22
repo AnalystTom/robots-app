@@ -1,11 +1,11 @@
-import { createHmac, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { retry } from "@robots/core";
+import { browserStoreKey, WRITE_BROWSER_STORE_KEY_ARGV } from "@robots/core/node/browser-store-key";
 import type Docker from "dockerode";
 import { runContainerCommand } from "./exec.js";
 
-export const BROWSER_STORE_KEY_PATH = "/tmp/robots/browser-store-key";
 const MASTER_FILE = "browser-store.key";
 
 const masters = new Map<string, Promise<Buffer>>();
@@ -34,10 +34,11 @@ function master(dataDir: string): Promise<Buffer> {
   return found;
 }
 
-export async function browserStoreKey(dataDir: string, computerKey: string): Promise<string> {
-  return createHmac("sha256", await master(dataDir))
-    .update(`browser-store:${computerKey}`)
-    .digest("base64url");
+export async function computerBrowserStoreKey(
+  dataDir: string,
+  computerKey: string,
+): Promise<string> {
+  return browserStoreKey(await master(dataDir), computerKey);
 }
 
 export function computerStoreKeyId(labels: Record<string, string> | undefined, fallback: string) {
@@ -48,16 +49,11 @@ const DELIVERY_ATTEMPTS = 4;
 const DELIVERY_BACKOFF_MS = 500;
 
 async function writeBrowserStoreKey(container: Docker.Container, key: string): Promise<void> {
-  const result = await runContainerCommand(
-    container,
-    [
-      "sh",
-      "-c",
-      `umask 077 && mkdir -p /tmp/robots && IFS= read -r key && printf '%s' "$key" > "$0.next" && mv -f "$0.next" "$0"`,
-      BROWSER_STORE_KEY_PATH,
-    ],
-    { signal: new AbortController().signal, stdin: `${key}\n`, timeoutMs: 10_000 },
-  );
+  const result = await runContainerCommand(container, [...WRITE_BROWSER_STORE_KEY_ARGV], {
+    signal: new AbortController().signal,
+    stdin: `${key}\n`,
+    timeoutMs: 10_000,
+  });
   if (result.code !== 0) throw new Error("The browser's key could not be delivered.");
 }
 
@@ -66,7 +62,7 @@ export async function deliverBrowserStoreKey(
   dataDir: string,
   computerKey: string,
 ): Promise<void> {
-  const key = await browserStoreKey(dataDir, computerKey);
+  const key = await computerBrowserStoreKey(dataDir, computerKey);
   await retry(() => writeBrowserStoreKey(container, key), {
     attempts: DELIVERY_ATTEMPTS,
     retryable: () => true,

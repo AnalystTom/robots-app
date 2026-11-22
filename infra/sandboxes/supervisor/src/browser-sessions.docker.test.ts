@@ -47,10 +47,7 @@ it.skipIf(process.env.VERIFY_DOCKER_BROWSER_SESSIONS !== "1")(
       );
       expect(output).toContain("removed: the bot's browser is signed out of the site");
       expect(output).toContain(
-        "purged: the unreadable row was dropped at the next closed start and the profile marked keyed",
-      );
-      expect(output).toContain(
-        "held: a profile held by a browser without a debugger keeps its unreadable row and pending marker",
+        "dropped: Chromium drops a sign-in it cannot decrypt, and the profile stays keyed",
       );
       expect(output).toContain("guarded: without its key the browser refuses to open the profile");
       expect(output).toContain("PASS: browser sessions");

@@ -10,6 +10,7 @@ import type {
   ProcessEvent,
 } from "@robots/adapter-kit";
 import { boundedSandboxCommandTimeoutMs } from "@robots/core";
+import { browserStoreKey, WRITE_BROWSER_STORE_KEY_ARGV } from "@robots/core/node/browser-store-key";
 import { COMPUTER_CACHE_ENV } from "@robots/core/node/desktop-runtime";
 import {
   normalizeWorkspacePath,
@@ -71,6 +72,7 @@ export class ExecComputer {
     private readonly exec: RawExec,
     /** Names the provider in error messages. */
     private readonly label: string,
+    private readonly browserStoreSecret?: string,
   ) {}
 
   async prepare(computer: ComputerRef, context: AdapterContext): Promise<void> {
@@ -83,6 +85,26 @@ export class ExecComputer {
     if (result.code !== 0) {
       throw new Error(result.stderr || `could not prepare ${this.label} computer`);
     }
+    if (this.browserStoreSecret)
+      await this.deliverBrowserStoreKey(computer, this.browserStoreSecret, context);
+  }
+
+  private async deliverBrowserStoreKey(
+    computer: ComputerRef,
+    secret: string,
+    context: AdapterContext,
+  ) {
+    const key = browserStoreKey(secret, computer.botId);
+    const result = await this.collect(
+      computer,
+      [...WRITE_BROWSER_STORE_KEY_ARGV],
+      context,
+      MAX_FILE_BYTES,
+      Readable.from([`${key}\n`]),
+      30_000,
+    );
+    if (result.code !== 0)
+      throw new Error(`could not give the ${this.label} computer its browser key`);
   }
 
   async *execute(

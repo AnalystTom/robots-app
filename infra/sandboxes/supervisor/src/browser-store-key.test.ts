@@ -4,7 +4,7 @@ import { join } from "node:path";
 import type Docker from "dockerode";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  browserStoreKey,
+  computerBrowserStoreKey,
   computerStoreKeyId,
   deliverBrowserStoreKey,
 } from "./browser-store-key.js";
@@ -24,14 +24,14 @@ afterEach(async () => {
 
 describe("browser store key", () => {
   it("is stable for one computer and different for another", async () => {
-    const first = await browserStoreKey(dataDir, "computer-a");
-    expect(await browserStoreKey(dataDir, "computer-a")).toBe(first);
-    expect(await browserStoreKey(dataDir, "computer-b")).not.toBe(first);
+    const first = await computerBrowserStoreKey(dataDir, "computer-a");
+    expect(await computerBrowserStoreKey(dataDir, "computer-a")).toBe(first);
+    expect(await computerBrowserStoreKey(dataDir, "computer-b")).not.toBe(first);
     expect(first).toMatch(/^[A-Za-z0-9_-]{43}$/);
   });
 
   it("keeps its master secret beside the bot homes, never inside one", async () => {
-    await browserStoreKey(dataDir, "computer-a");
+    await computerBrowserStoreKey(dataDir, "computer-a");
     const master = join(dataDir, "secrets", "browser-store.key");
     expect((await stat(master)).mode & 0o777).toBe(0o600);
     expect((await stat(join(dataDir, "secrets"))).mode & 0o777).toBe(0o700);
@@ -53,7 +53,7 @@ describe("browser store key", () => {
     await deliverBrowserStoreKey({} as Docker.Container, dataDir, "computer-a");
     expect(exec).toHaveBeenCalledTimes(3);
     expect(exec.mock.calls[2]?.[2]?.stdin).toBe(
-      `${await browserStoreKey(dataDir, "computer-a")}\n`,
+      `${await computerBrowserStoreKey(dataDir, "computer-a")}\n`,
     );
   }, 20_000);
 

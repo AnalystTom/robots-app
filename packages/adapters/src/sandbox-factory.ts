@@ -73,6 +73,7 @@ export interface SandboxProviderOptions {
   wuyingMcpUrl?: string;
   wuyingMcpToken?: string;
   dataDir?: string;
+  browserStoreSecret?: string;
 }
 
 function missingRemoteKey(
@@ -190,6 +191,7 @@ export async function createSandboxProvider(
         homeClaim: opts.kubernetesHomeClaim,
         homeColocateNamespace: opts.kubernetesHomeColocateNamespace,
         homeColocateLabels: opts.kubernetesHomeColocateLabels,
+        browserStoreSecret: opts.browserStoreSecret,
       });
     case "incus": {
       const required = {
@@ -210,6 +212,7 @@ export async function createSandboxProvider(
         memoryLimit: opts.incusMemoryLimit,
         processLimit: opts.incusProcessLimit,
         unreferencedMachines: opts.unreferencedMachines,
+        browserStoreSecret: opts.browserStoreSecret,
       });
     }
     case "local-vm": {
@@ -219,6 +222,7 @@ export async function createSandboxProvider(
         computerImage: opts.localVmComputerImage,
         cpus: opts.localVmCpus,
         memory: opts.localVmMemory,
+        browserStoreSecret: opts.browserStoreSecret,
       });
     }
     case "wuying": {

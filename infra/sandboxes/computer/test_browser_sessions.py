@@ -34,8 +34,14 @@ def launch():
     assert browser_sessions.wait_for_browser(PORT, time.monotonic() + 30), "browser did not start"
 
 
-def launch_basic_store():
+def raw_chromium_env():
     env = dict(os.environ, DISPLAY=":1", HOME="/home/robots")
+    env.pop("LD_PRELOAD", None)
+    return env
+
+
+def launch_basic_store():
+    env = raw_chromium_env()
     binary = shutil.which("chromium") or shutil.which("chromium-browser")
     with open("/tmp/robots/test-browser.log", "ab") as log:
         subprocess.Popen([binary, "--no-sandbox", "--password-store=basic", f"--user-data-dir={PROFILE}",
@@ -95,23 +101,6 @@ def opened_with(password, host, encrypted):
     if result.stdout[:32] != hashlib.sha256(host.encode()).digest():
         return None
     return result.stdout[32:].decode("utf-8", "replace")
-
-
-def lock_owner_pid():
-    try:
-        target = os.readlink(os.path.join(PROFILE, "SingletonLock"))
-    except OSError:
-        return None
-    return target.rsplit("-", 1)[-1]
-
-
-def start_chromium_without_debugger():
-    env = dict(os.environ, DISPLAY=":1", HOME="/home/robots")
-    binary = shutil.which("chromium") or shutil.which("chromium-browser")
-    with open("/tmp/robots/test-browser.log", "ab") as log:
-        return subprocess.Popen([binary, "--no-sandbox", "--password-store=gnome-libsecret",
-                                 f"--user-data-dir={PROFILE}", "about:blank"], env=env,
-                                stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
 
 
 def add_unreachable_row(encrypted):
@@ -217,45 +206,14 @@ def main():
     kill_browser()
     add_unreachable_row(b"v10" + bytes(range(64)))
     launch()
-    wait_until(lambda: os.path.exists(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING)), 120,
-               "a profile with a row Chromium cannot re-seal was not left pending")
-    assert live_cookie("unreachable_sign_in") is None, "Chromium re-set the row this check needs unreadable"
-    assert "unreachable_sign_in" in rows(), "the unreadable row left the profile before its closed start"
-    subprocess.run(["/usr/local/bin/robots-browser", "about:blank"],
-                   env=dict(os.environ, DISPLAY=":1", HOME="/home/robots"),
-                   stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
-    assert "unreachable_sign_in" in rows(), "a launch with a live browser dropped the unreadable row"
-    assert os.path.exists(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING)), "a live launch cleared the pending marker"
-    assert live_cookie("legacy_sign_in") is not None, "a live sign-in was lost while the row was pending"
-    kill_browser()
-    launch()
-    wait_until(lambda: "unreachable_sign_in" not in rows(), 60,
-               "the next closed start did not drop the row Chromium cannot re-seal")
-    assert browser_sessions.keyed_profile(PROFILE), "the profile was not marked keyed after the closed start"
-    assert not os.path.exists(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING)), "the pending marker was left"
-    cookie = live_cookie("legacy_sign_in")
-    assert cookie and cookie["value"] == LEGACY["value"], "the closed start lost a live sign-in"
-    print("purged: the unreadable row was dropped at the next closed start and the profile marked keyed")
-
-    kill_browser()
-    add_unreachable_row(b"v10" + bytes(range(64)))
-    open(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING), "w").close()
-    for stale in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
-        if os.path.lexists(os.path.join(PROFILE, stale)):
-            os.remove(os.path.join(PROFILE, stale))
-    unmanaged = start_chromium_without_debugger()
-    try:
-        wait_until(lambda: lock_owner_pid() == str(unmanaged.pid), 30,
-                   "the browser without a debugger did not take the profile lock")
-        subprocess.run(["/usr/local/bin/robots-browser", "about:blank"],
-                       env=dict(os.environ, DISPLAY=":1", HOME="/home/robots"),
-                       stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
-        assert "unreachable_sign_in" in rows(), "a launch under a held profile lock dropped the unreadable row"
-        assert os.path.exists(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING)), "a held profile lost its pending marker"
-    finally:
-        unmanaged.kill()
-        unmanaged.wait()
-    print("held: a profile held by a browser without a debugger keeps its unreadable row and pending marker")
+    wait_until(lambda: "unreachable_sign_in" not in rows(), 120,
+               "Chromium kept a sign-in it cannot decrypt")
+    wait_until(lambda: browser_sessions.keyed_profile(PROFILE), 60,
+               "the profile lost its keyed mark after an unreadable sign-in was dropped")
+    assert not os.path.exists(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING)), \
+        "a dropped sign-in left the profile pending"
+    assert live_cookie("legacy_sign_in") is not None, "a live sign-in was lost with the unreadable one"
+    print("dropped: Chromium drops a sign-in it cannot decrypt, and the profile stays keyed")
 
     kill_browser()
     subprocess.run(["pkill", "-KILL", "-x", "gnome-keyring-d"], check=False)

@@ -68,6 +68,7 @@ const IMAGE_COMMAND = "/usr/bin/env -u LD_PRELOAD /usr/local/bin/robots-computer
 const BOT_ID_KEY = "user.robots-bot-id";
 
 export interface IncusSandboxOptions {
+  browserStoreSecret?: string;
   /** HTTPS address of the Incus API, such as `https://incus.example.test:8443`. */
   url: string;
   clientCert: string;
@@ -159,7 +160,7 @@ export class IncusSandboxProvider implements SandboxProvider {
   private readonly processLimit: string;
   private readonly readyTimeoutMs: number;
   private readonly client: IncusClient;
-  private readonly shell = new ExecComputer((...exec) => this.execRaw(...exec), "Incus");
+  private readonly shell: ExecComputer;
 
   private readonly desktops = new LinuxDesktop({
     environment: async (computer, context) => {
@@ -185,6 +186,11 @@ export class IncusSandboxProvider implements SandboxProvider {
   });
 
   constructor(options: IncusSandboxOptions, client?: IncusClient) {
+    this.shell = new ExecComputer(
+      (...exec) => this.execRaw(...exec),
+      "Incus",
+      options.browserStoreSecret,
+    );
     this.machines = options.unreferencedMachines;
     this.project = options.project?.trim() || DEFAULT_PROJECT;
     this.computerImage = options.computerImage?.trim() || DEFAULT_COMPUTER_IMAGE;
