@@ -595,7 +595,7 @@ export async function gateToolCall(
     reviewReason,
     summary: request.fleetSummary,
     batch: connectorTool?.batch,
-    onceOnly: asksEveryTime || (name === "web_fetch" && riskyTarget),
+    onceOnly: asksEveryTime || riskyTarget,
   };
 
   if (applied?.duplicate) {

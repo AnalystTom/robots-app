@@ -3765,7 +3765,7 @@ describeJourneys("required product journeys", () => {
     ]);
   });
 
-  it("20e: always allowing a paid request's site stops asking for that site, and only that site", async () => {
+  it("20e: a paid request to a high-risk site offers only Allow once, and asks again on the next run", async () => {
     const cookie = await signup(app, `always-site-j-${stamp}@robots.test`, "Always Site");
     const bot = await rpc<Bot>(app, cookie, "bots/create", {
       name: "Chief",
@@ -3784,31 +3784,21 @@ describeJourneys("required product journeys", () => {
       bot.id,
       (snap) => snap.run?.status === "waiting_input",
     );
-    expect(JSON.stringify(waiting.messages)).toContain("Always allow example.test");
-    await answerPendingApproval(app, cookie, bot.id, first.runId, "always", waiting);
+    expect(JSON.stringify(waiting.messages)).toContain("Allow once");
+    expect(JSON.stringify(waiting.messages)).not.toContain("Always allow");
+    await answerPendingApproval(app, cookie, bot.id, first.runId, "allow", waiting);
     await waitFor(
       app,
       cookie,
       bot.id,
       (snap) => !snap.run || ["completed", "failed", "cancelled"].includes(snap.run.status),
     );
-    // A new run, so nothing approved in the first one carries over.
-    await sendAndWait(app, cookie, bot.id, "show a paid request card again");
-    expect(
-      (
-        await rpc<Array<{ effect: string; matchKind: string; matchValue: string }>>(
-          app,
-          cookie,
-          "approvalRules/list",
-        )
-      ).map(({ effect, matchKind, matchValue }) => ({ effect, matchKind, matchValue })),
-    ).toEqual([{ effect: "always_allow", matchKind: "site", matchValue: "example.test" }]);
-
     await rpc(app, cookie, "threads/send", {
       botId: bot.id,
-      text: "show a paid request card on other",
+      text: "show a paid request card again",
     });
     await waitFor(app, cookie, bot.id, (snap) => snap.run?.status === "waiting_input");
+    expect(await rpc<unknown[]>(app, cookie, "approvalRules/list")).toEqual([]);
   });
 
   it("21: in Ask mode, routine destination writes pause on the same approval card", async () => {
