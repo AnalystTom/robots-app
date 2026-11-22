@@ -152,7 +152,7 @@ A contact is a name, address, phone or email, the user's own or someone else's, 
 Owners can manage what is saved without asking the bot. Open **Settings → Vault** on web, the
 desktop app or mobile. It lists every item by its title, which the owner can change (a card without
 one shows as "Visa ·· 4242", a login as its site), with a line from the item: a login's username, a
-card's expiry, a contact's name and city. New adds a login, card, contact, API key or variable.
+card's expiry, a contact's name and city. New adds a login, card, contact, API key or variable, and its import options are described below.
 Opening an item shows its fields; protected values show only after you confirm it's you. From
 there you can edit an item, add a note on when the bot should use it, which `list_secrets` shows
 the bot, or remove it after confirming. Remove deletes the saved value immediately. Asking the bot
