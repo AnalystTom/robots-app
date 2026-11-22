@@ -21,6 +21,8 @@ COMMIT_POLL_SECONDS = 1.0
 MARKER_URL = "https://commit.robots.invalid/"
 MARKER_PREFIX = "robots_commit_"
 PAST = 1
+STORE_MARK = ".robots-password-store"
+ENCRYPTED_STORE = "gnome-libsecret"
 
 
 def belongs_to_site(domain: str, site: str) -> bool:
@@ -145,6 +147,14 @@ def wait_for_commit(profile: str, marker: str, deadline: float,
     return False
 
 
+def keyed_profile(profile: str) -> bool:
+    try:
+        with open(os.path.join(profile, STORE_MARK), encoding="utf-8") as mark:
+            return mark.read().strip() == ENCRYPTED_STORE
+    except OSError:
+        return False
+
+
 def apply_sessions(port: int, request: dict[str, Any],
                    commit_seconds: float = COMMIT_SECONDS) -> dict[str, Any]:
     sites = request.get("sites") or []
@@ -154,6 +164,8 @@ def apply_sessions(port: int, request: dict[str, Any],
     profile = profile_dir_for_port(port)
     if not profile:
         raise RuntimeError("The browser's profile could not be found.")
+    if not keyed_profile(profile):
+        return {"ok": False, "error": "The browser's key is not ready, so the sign-ins were not saved."}
     client = page_secrets.connect(port)
     try:
         current = browser_cookies(client)

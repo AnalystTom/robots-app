@@ -25,12 +25,15 @@ import {
   vaultFields,
 } from "./bot-secrets.js";
 import { toComputerRef } from "./computer-support.js";
+import { sandboxKindForBot } from "./host-aware-sandbox.js";
 import { persistPreparedSecret } from "./secret-persistence.js";
 import { openVaultValue, sealVaultValue } from "./vault-values.js";
 
 export const SESSIONS_NEED_OWN_SPACE =
   "Sign-ins can only be imported into a Space that only you use.";
 export const SESSION_IMPORT_TOO_LARGE = "Too many sign-ins at once. Pick fewer sites.";
+export const SESSIONS_NOT_ON_THIS_COMPUTER =
+  "Sign-ins can only go to a bot on your own Docker computer, not this computer.";
 
 const SESSION_AUTH = { type: "session" } as const;
 const SESSION_TYPE = { path: ["type"], equals: "session" };
@@ -66,6 +69,20 @@ export async function importBrowserSessions(
     throw new Error(SESSION_IMPORT_TOO_LARGE);
   }
   await assertVaultInUse(prisma, scope);
+  const targets = await runAsTenant({ spaceId: scope.spaceId, userId: scope.userId }, () =>
+    prisma.bot.findMany({
+      where: { spaceId: scope.spaceId, id: { in: [...input.botIds] } },
+      select: { computer: { select: { kind: true } } },
+    }),
+  );
+  for (const target of targets) {
+    if (await onThisComputer(prisma, target.computer)) throw new Error(SESSIONS_NOT_ON_THIS_COMPUTER);
+  }
+  await assertRoomFor(
+    prisma,
+    scope,
+    input.sessions.map((session) => sessionSiteOrigin(session.site)),
+  );
   const sites: string[] = [];
   for (const session of input.sessions) {
     await withTransactionRetry(async () => {
@@ -129,6 +146,37 @@ export async function importBrowserSessions(
 }
 
 export type SessionVaultScope = BotSecretScope;
+
+async function onThisComputer(
+  prisma: PrismaClient,
+  computer: { kind: string } | null,
+): Promise<boolean> {
+  if (!computer) return false;
+  const settings = await runAsSystem("deployment computer host lookup", () =>
+    prisma.deploymentSettings.findUnique({
+      where: { id: "default" },
+      select: { computerHost: true },
+    }),
+  );
+  return sandboxKindForBot(computer.kind, settings?.computerHost) === "desktop";
+}
+
+async function assertRoomFor(
+  prisma: PrismaClient,
+  scope: BotSecretScope,
+  origins: readonly string[],
+): Promise<void> {
+  const vault = await vaultFields(prisma, scope);
+  const stored = await prisma.vaultCredential.findMany({
+    where: { ...vault, auth: SESSION_TYPE },
+    select: { origin: true },
+  });
+  const known = new Set(stored.map((row) => row.origin));
+  const added = new Set(origins.filter((origin) => !known.has(origin))).size;
+  if ((await prisma.vaultCredential.count({ where: vault })) + added > VAULT_ITEM_LIMIT) {
+    throw new Error("Credential limit reached");
+  }
+}
 
 export async function sessionItemBots(
   prisma: PrismaClient,
@@ -227,6 +275,7 @@ export async function syncBotBrowserSessions(
     const toClear = applied.map((row) => row.site).filter((site) => !keep.has(site));
     if (!toSet.length && !toClear.length) return "signed_in";
     const computer = bot.computer;
+    if (await onThisComputer(deps.prisma, computer)) return "failed";
     if (computer?.state !== "running" || !computer.providerRef) return "next_start";
     if (!deps.sandbox.pageBrowser) return "failed";
     const sites = await Promise.all(

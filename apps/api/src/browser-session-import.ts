@@ -5,11 +5,13 @@ import {
   importBrowserSessions,
   SESSION_IMPORT_TOO_LARGE,
   SESSIONS_NEED_OWN_SPACE,
+  SESSIONS_NOT_ON_THIS_COMPUTER,
   sessionItemBots,
   syncBotBrowserSessions,
   UNKNOWN_BOTS,
 } from "@robots/adapters";
 import type { ImportSessionsInput, ImportSessionsResult } from "@robots/contracts";
+import { retry } from "@robots/core";
 import { recordSecurityEvent } from "@robots/db";
 import { bestEffort } from "@robots/logging";
 import type { RouterDeps } from "./router.js";
@@ -25,7 +27,13 @@ function syncContext() {
   return { operationId: id, traceId: id, signal: new AbortController().signal };
 }
 
-const REFUSALS = [SESSIONS_NEED_OWN_SPACE, SESSION_IMPORT_TOO_LARGE, UNKNOWN_BOTS];
+const REFUSALS = [
+  SESSIONS_NEED_OWN_SPACE,
+  SESSION_IMPORT_TOO_LARGE,
+  SESSIONS_NOT_ON_THIS_COMPUTER,
+  UNKNOWN_BOTS,
+];
+const SIGN_OUT_ATTEMPTS = 4;
 
 export async function importSessions(
   deps: SessionDeps,
@@ -84,7 +92,14 @@ export function signOutRemovedSessions(deps: SessionDeps, botIds: readonly strin
   for (const botId of botIds) {
     void bestEffort(
       "sign a removed session out of its bot's browser",
-      syncBotBrowserSessions(syncDeps(deps), botId, syncContext()),
+      retry(
+        async () => {
+          if ((await syncBotBrowserSessions(syncDeps(deps), botId, syncContext())) === "failed") {
+            throw new Error("The bot's browser did not take the sign-out.");
+          }
+        },
+        { attempts: SIGN_OUT_ATTEMPTS, retryable: () => true },
+      ),
     );
   }
 }

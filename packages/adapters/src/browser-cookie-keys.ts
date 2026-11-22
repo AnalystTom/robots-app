@@ -83,19 +83,6 @@ async function linuxKeyringPasswords(browser: KeyedBrowser, run: RunCommand): Pr
     const password = result.stdout.replace(/\r?\n$/, "");
     if (result.code === 0 && password) passwords.push(password);
   }
-  const keyName = browser.keyName.linux;
-  if (!passwords.length && keyName) {
-    const result = await run(
-      "kwallet-query",
-      ["--read-password", `${keyName} Safe Storage`, "--folder", `${keyName} Keys`, "kdewallet"],
-      { timeoutMs: KEYRING_TIMEOUT_MS },
-    );
-    if (result.timedOut) throw KEY_LOCKED;
-    if (!result.missing) reachedKeyring = true;
-    const password = result.stdout.replace(/\r?\n$/, "");
-    if (result.code === 0 && password && !/^Failed to read/.test(password))
-      passwords.push(password);
-  }
   if (!passwords.length && !reachedKeyring) {
     throw new BrowserSessionsError(
       "key_unavailable",

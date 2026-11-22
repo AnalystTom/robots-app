@@ -97,6 +97,20 @@ def live_cookie(name):
     return None
 
 
+def seed_basic_store_sign_in():
+    client = page_secrets.connect(PORT)
+    try:
+        client.call("Storage.setCookies", {"cookies": [browser_sessions.cdp_cookie(LEGACY)]}, timeout_s=20.0)
+        marker = browser_sessions.MARKER_PREFIX + "seed"
+        client.call("Storage.setCookies", {"cookies": [{
+            "name": marker, "value": "1", "url": browser_sessions.MARKER_URL, "secure": True,
+            "expires": int(time.time()) + 600,
+        }]}, timeout_s=10.0)
+    finally:
+        client.close()
+    assert browser_sessions.wait_for_commit(PROFILE, marker, time.monotonic() + 60), "the seeded sign-in was not saved"
+
+
 def wait_until(check, seconds, message):
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
@@ -116,13 +130,15 @@ def main():
     os.replace(KEY_FILE, HELD_KEY)
 
     launch()
-    result = browser_sessions.apply_sessions(PORT, {"sites": [{"site": "example.com", "cookies": [LEGACY]}], "clear": []})
-    assert result["ok"], result
+    seed_basic_store_sign_in()
+    refused = browser_sessions.apply_sessions(PORT, {"sites": [{"site": "example.net", "cookies": [IMPORTED]}], "clear": []})
+    assert not refused["ok"], "an import was saved under the public key"
+    assert "imported_sign_in" not in rows(), "a refused import reached the disk"
     kill_browser()
     host, value = rows()["legacy_sign_in"]
     assert value[:3] == b"v10", value[:3]
     assert opened_with(PUBLIC_PASSWORD, host, value) == LEGACY["value"], "basic store did not use the public key"
-    print("before: the basic store keeps the sign-in under the public key")
+    print("before: the basic store keeps the sign-in under the public key, and imports are refused")
 
     os.replace(HELD_KEY, KEY_FILE)
     launch()

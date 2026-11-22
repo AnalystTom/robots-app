@@ -3,7 +3,8 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { encryptCookieForTest, linuxCookieKeys } from "@robots/adapters/browser-cookie-crypto";
+import { linuxCookieKeys } from "@robots/adapters/browser-cookie-crypto";
+import { encryptCookieForTest } from "@robots/adapters/browser-cookie-crypto.test-support";
 import {
   platformKeySource,
   profileSessionsReader,
@@ -27,8 +28,10 @@ const target = { webContents: contents, url: "https://app.example.com" };
 let home: string;
 
 beforeEach(async () => {
+  listed.length = 0;
+  asked.length = 0;
   home = await mkdtemp(join(tmpdir(), "robots-desktop-sessions-"));
-  const userDataDir = join(home, ".config", "chromium");
+  const userDataDir = join(home, ".config", "google-chrome");
   await mkdir(join(userDataDir, "Default", "Network"), { recursive: true });
   await writeFile(
     join(userDataDir, "Local State"),
@@ -56,8 +59,9 @@ afterEach(async () => {
 });
 
 const asked: Array<{ server: string; profile: string; sites: readonly string[] }> = [];
+const listed: string[] = [];
 
-function handlers(answer = true) {
+function handlers(answer = true, allowListing = true) {
   return createBrowserSessionsHandlers(
     () => target,
     profileSessionsReader(
@@ -66,6 +70,10 @@ function handlers(answer = true) {
         throw new Error("a v10 profile never asks the keyring");
       }),
     ),
+    async (server) => {
+      listed.push(server);
+      return allowListing;
+    },
     async ({ server, profile, sites }) => {
       asked.push({ server, profile: `${profile.name} ${profile.browser}`, sites });
       return answer;
@@ -78,26 +86,32 @@ describe("desktop browser sessions bridge", () => {
     const bridge = handlers();
     expect(await bridge.profiles(appEvent)).toEqual([
       {
-        id: "chromium/0/Default",
+        id: "chrome/0/Default",
         name: "Work",
-        browser: "Chromium",
+        browser: "Chrome",
         sites: [{ site: "x.com", cookies: 1 }],
       },
     ]);
-    const read = await bridge.read(appEvent, "chromium/0/Default", ["x.com"]);
+    expect(listed).toEqual(["app.example.com"]);
+    const read = await bridge.read(appEvent, "chrome/0/Default", ["x.com"]);
     expect(read).toMatchObject({
       ok: true,
       sessions: [{ site: "x.com", cookies: [{ name: "auth_token", value: "fixture-token" }] }],
     });
     expect(asked.at(-1)).toEqual({
       server: "app.example.com",
-      profile: "Work Chromium",
+      profile: "Work Chrome",
       sites: ["x.com"],
     });
   });
 
+  it("lists nothing when the person declines the listing prompt", async () => {
+    expect(await handlers(true, false).profiles(appEvent)).toBeNull();
+    expect(listed).toEqual(["app.example.com"]);
+  });
+
   it("reads nothing when the person declines the native prompt", async () => {
-    expect(await handlers(false).read(appEvent, "chromium/0/Default", ["x.com"])).toEqual({
+    expect(await handlers(false).read(appEvent, "chrome/0/Default", ["x.com"])).toEqual({
       ok: false,
       code: "cancelled",
       error: "The import was cancelled.",
@@ -107,14 +121,14 @@ describe("desktop browser sessions bridge", () => {
   it("answers nothing to a subframe or a malformed request", async () => {
     const bridge = handlers();
     expect(await bridge.profiles(subframeEvent)).toBeNull();
-    expect(await bridge.read(subframeEvent, "chromium/0/Default", ["x.com"])).toBeNull();
-    expect(await bridge.read(appEvent, "chromium/0/Default", ["not a site"])).toBeNull();
-    expect(await bridge.read(appEvent, "chromium/0/Default", [])).toBeNull();
+    expect(await bridge.read(subframeEvent, "chrome/0/Default", ["x.com"])).toBeNull();
+    expect(await bridge.read(appEvent, "chrome/0/Default", ["not a site"])).toBeNull();
+    expect(await bridge.read(appEvent, "chrome/0/Default", [])).toBeNull();
     expect(await bridge.read(appEvent, 7, ["x.com"])).toBeNull();
   });
 
   it("turns a refusal into a code the page can explain", async () => {
-    expect(await handlers().read(appEvent, "chrome/0/Default", ["x.com"])).toEqual({
+    expect(await handlers().read(appEvent, "chromium/0/Default", ["x.com"])).toEqual({
       ok: false,
       code: "profile_not_found",
       error: "That browser profile is gone.",

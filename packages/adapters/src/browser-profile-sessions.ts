@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { BrowserProfileSummary, SessionCookie, SiteSession } from "@robots/contracts";
-import { cookieBelongsToSite, SESSION_COOKIES_PER_SITE } from "@robots/contracts";
+import { cookieBelongsToSite } from "@robots/contracts";
 import { hostSite } from "@robots/core/egress";
 import type { CookieKeys } from "./browser-cookie-crypto.js";
 import {
@@ -35,48 +35,8 @@ export const BROWSER_FAMILIES: readonly BrowserFamily[] = [
       darwin: ["$HOME/Library/Application Support/Google/Chrome"],
       win32: ["$LOCALAPPDATA/Google/Chrome/User Data"],
     },
-    keyName: { linux: "Chrome", darwin: "Chrome" },
+    keyName: { darwin: "Chrome" },
     keyringApplications: ["chrome"],
-  },
-  {
-    id: "chromium",
-    label: "Chromium",
-    dirs: {
-      linux: [
-        "$CONFIG/chromium",
-        "$HOME/snap/chromium/common/chromium",
-        "$HOME/.var/app/org.chromium.Chromium/config/chromium",
-      ],
-      darwin: ["$HOME/Library/Application Support/Chromium"],
-      win32: ["$LOCALAPPDATA/Chromium/User Data"],
-    },
-    keyName: { linux: "Chromium", darwin: "Chromium" },
-    keyringApplications: ["chromium"],
-  },
-  {
-    id: "brave",
-    label: "Brave",
-    dirs: {
-      linux: [
-        "$CONFIG/BraveSoftware/Brave-Browser",
-        "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser",
-      ],
-      darwin: ["$HOME/Library/Application Support/BraveSoftware/Brave-Browser"],
-      win32: ["$LOCALAPPDATA/BraveSoftware/Brave-Browser/User Data"],
-    },
-    keyName: { linux: "Brave", darwin: "Brave" },
-    keyringApplications: ["brave"],
-  },
-  {
-    id: "edge",
-    label: "Edge",
-    dirs: {
-      linux: ["$CONFIG/microsoft-edge", "$HOME/.var/app/com.microsoft.Edge/config/microsoft-edge"],
-      darwin: ["$HOME/Library/Application Support/Microsoft Edge"],
-      win32: ["$LOCALAPPDATA/Microsoft/Edge/User Data"],
-    },
-    keyName: { linux: "Chromium", darwin: "Microsoft Edge" },
-    keyringApplications: ["microsoft-edge", "chromium"],
   },
 ];
 
@@ -362,7 +322,7 @@ export function profileSessionsReader(
           cookies.push(sessionCookie(row, value));
         }
         if (cookies.length)
-          sessions.push({ site, cookies: cookies.slice(0, SESSION_COOKIES_PER_SITE) });
+          sessions.push({ site, cookies });
       }
       return sessions;
     },

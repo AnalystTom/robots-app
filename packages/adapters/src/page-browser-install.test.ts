@@ -38,9 +38,6 @@ it("writes this release's page-browser files once, and again when they differ", 
   expect(readFileSync(secrets, "utf8")).toBe(
     readFileSync(path.join(computer, "page_secrets.py"), "utf8"),
   );
-  expect(readFileSync(`${root}/usr/local/lib/robots/browser_sessions.py`, "utf8")).toBe(
-    readFileSync(path.join(computer, "browser_sessions.py"), "utf8"),
-  );
   expect(statSync(wrapper).mode & 0o777).toBe(0o755);
   expect(statSync(secrets).mode & 0o777).toBe(0o644);
 

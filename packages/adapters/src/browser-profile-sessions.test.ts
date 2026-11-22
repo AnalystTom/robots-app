@@ -7,11 +7,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CookieCipherVersion, CookieKeys } from "./browser-cookie-crypto.js";
 import {
   cbcKey,
-  encryptCookieForTest,
   linuxCookieKeys,
   macCookieKeys,
   windowsCookieKeys,
 } from "./browser-cookie-crypto.js";
+import { encryptCookieForTest } from "./browser-cookie-crypto.test-support.js";
 import type { CommandResult, RunCommand } from "./browser-cookie-keys.js";
 import { platformKeySource } from "./browser-cookie-keys.js";
 import type { BrowserHost } from "./browser-profile-sessions.js";
@@ -124,7 +124,7 @@ function linuxHost(): BrowserHost {
 const linuxV10 = linuxCookieKeys([]);
 const linuxV11 = linuxCookieKeys([KEYRING_PASSWORD]);
 
-describe("chromium profile sessions", () => {
+describe("Chrome profile sessions", () => {
   it("lists sites by registrable domain, leaving out expired and partitioned cookies", async () => {
     await writeProfile({
       userDataDir: join(root, ".config", "google-chrome"),
@@ -160,7 +160,7 @@ describe("chromium profile sessions", () => {
 
   it("reads v10 cookies on Linux without asking the keyring, and only the chosen site", async () => {
     await writeProfile({
-      userDataDir: join(root, ".config", "chromium"),
+      userDataDir: join(root, ".config", "google-chrome"),
       dbVersion: 24,
       keys: linuxV10,
       cookies: [
@@ -177,7 +177,7 @@ describe("chromium profile sessions", () => {
       platformKeySource("linux", run),
       () => NOW_MS,
     );
-    const sessions = await reader.read("chromium/0/Default", ["x.com"]);
+    const sessions = await reader.read("chrome/0/Default", ["x.com"]);
     expect(run.calls).toEqual([]);
     expect(sessions).toHaveLength(1);
     expect(SiteSession.parse(sessions[0])).toEqual(sessions[0]);
@@ -334,7 +334,7 @@ describe("chromium profile sessions", () => {
   });
 
   it("decrypts Windows cookies with the DPAPI-unwrapped key", async () => {
-    const userDataDir = join(root, "AppData", "Local", "Microsoft", "Edge", "User Data");
+    const userDataDir = join(root, "AppData", "Local", "Google", "Chrome", "User Data");
     const wrapped = Buffer.concat([Buffer.from("DPAPI"), Buffer.from("opaque-blob")]);
     await writeProfile({
       userDataDir,
@@ -349,9 +349,47 @@ describe("chromium profile sessions", () => {
       platformKeySource("win32", run),
       () => NOW_MS,
     );
-    const [session] = await reader.read("edge/0/Default", ["x.com"]);
+    const [session] = await reader.read("chrome/0/Default", ["x.com"]);
     expect(session?.cookies[0]?.value).toBe("token-win");
     expect(run.calls[0]?.input).toBe(Buffer.from("opaque-blob").toString("base64"));
+  });
+
+  it("lists Google Chrome only, not other Chromium browsers", async () => {
+    await writeProfile({
+      userDataDir: join(root, ".config", "chromium"),
+      dbVersion: 24,
+      keys: linuxV10,
+      cookies: [{ host: ".x.com", name: "auth_token", value: "token-chromium" }],
+    });
+    const reader = profileSessionsReader(
+      linuxHost(),
+      platformKeySource("linux", fakeRun({})),
+      () => NOW_MS,
+    );
+    expect(await reader.profiles()).toEqual([]);
+  });
+
+  it("imports every cookie of a chosen site, however many there are", async () => {
+    const cookies = Array.from({ length: 200 }, (_, index) => ({
+      host: ".x.com",
+      name: `cookie_${index}`,
+      value: `value-${index}`,
+    }));
+    await writeProfile({
+      userDataDir: join(root, ".config", "google-chrome"),
+      dbVersion: 24,
+      keys: linuxV10,
+      cookies,
+    });
+    const reader = profileSessionsReader(
+      linuxHost(),
+      platformKeySource("linux", fakeRun({})),
+      () => NOW_MS,
+    );
+    const [session] = await reader.read("chrome/0/Default", ["x.com"]);
+    expect(session?.cookies.map((cookie) => cookie.value)).toEqual(
+      cookies.map((cookie) => cookie.value),
+    );
   });
 
   it("refuses a profile id it did not list", async () => {

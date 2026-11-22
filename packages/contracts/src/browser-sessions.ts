@@ -2,7 +2,6 @@ import { z } from "zod";
 import { Id } from "./ids.js";
 import { settingsScopeInput } from "./settings-scope.js";
 
-export const SESSION_COOKIES_PER_SITE = 150;
 export const SESSION_SITES_PER_IMPORT = 50;
 export const SESSION_BOTS_PER_IMPORT = 20;
 
@@ -49,7 +48,7 @@ export type SessionCookie = z.infer<typeof SessionCookie>;
 export const SiteSession = z
   .object({
     site: SessionSite,
-    cookies: z.array(SessionCookie).min(1).max(SESSION_COOKIES_PER_SITE),
+    cookies: z.array(SessionCookie).min(1),
   })
   .refine(
     (session) =>
@@ -58,7 +57,7 @@ export const SiteSession = z
   );
 export type SiteSession = z.infer<typeof SiteSession>;
 
-export const SessionSiteCookies = z.array(SessionCookie).max(SESSION_COOKIES_PER_SITE);
+export const SessionSiteCookies = z.array(SessionCookie);
 
 export const ImportSessionsInput = settingsScopeInput.extend({
   source: z.string().trim().min(1).max(120),
