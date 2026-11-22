@@ -325,7 +325,8 @@ vi.mock("react-native-svg", () => {
 function serveRpc(me: () => Promise<unknown>) {
   mocks.rpc.mockImplementation((path: string) => {
     if (path === "me") return me();
-    if (path === "bots/list") return Promise.resolve([{ id: "existing-bot" }]);
+    if (path === "bots/list")
+      return Promise.resolve([{ id: "existing-bot", userId: "user-other" }]);
     if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
     return Promise.resolve(undefined);
   });
@@ -384,8 +385,10 @@ it("shows every character and only those, draws the picked one in the preview, a
   await render();
 
   for (const name of CHARACTER_NAMES) expect(radio(name)).not.toBeNull();
-  expect(CHARACTER_NAMES.filter(checked)).toHaveLength(0);
-  expect(drawsLogo()).toBe(true);
+  const startedOn = CHARACTER_NAMES.findIndex(checked);
+  expect(CHARACTER_NAMES.filter(checked)).toHaveLength(1);
+  expect(previewXml()).toBe(robotCharacterSvg(CHARACTERS[startedOn]!.look));
+  expect(drawsLogo()).toBe(false);
 
   for (const character of CHARACTERS) {
     await tap(radio(character.name));
@@ -412,14 +415,52 @@ it("shows every character and only those, draws the picked one in the preview, a
   );
 });
 
-it("creates a RoBots bot with no colour when no look is picked, so the server chooses one", async () => {
+it("creates the robot the preview preselected, so the stored bot is the one shown", async () => {
   serveRpc(() => Promise.resolve({ botAvatarSet: "robots" }));
   await render();
+  const startedOn = CHARACTER_NAMES.findIndex(checked);
   await typeName("Gordon");
   await tap(createButton());
   await vi.waitFor(() => expect(createdBot()).toBeDefined());
-  expect(createdBot()).toEqual(expect.objectContaining({ name: "Gordon" }));
-  expect(createdBot()).not.toHaveProperty("color");
+  expect(createdBot()).toEqual(
+    expect.objectContaining({
+      name: "Gordon",
+      color: robotCharacterValue(CHARACTERS[startedOn]!.look),
+    }),
+  );
+});
+
+it("preselects the robot the user's own bots wear least, not one another member wears", async () => {
+  const hero = CHARACTERS.find((character) => character.name === "Hero")!;
+  const own = CHARACTERS.filter((character) => character.name !== "Hero").map((character) =>
+    robotCharacterValue(character.look),
+  );
+  const bots = [
+    ...own.map((color, index) => ({ id: `own-${index}`, userId: "user-me", color })),
+    { id: "other-1", userId: "user-other", color: robotCharacterValue(hero.look) },
+    { id: "other-2", userId: "user-other", color: robotCharacterValue(hero.look) },
+  ];
+  mocks.rpc.mockImplementation((path: string) => {
+    if (path === "me") return Promise.resolve({ botAvatarSet: "robots", userId: "user-me" });
+    if (path === "bots/list") return Promise.resolve(bots);
+    return Promise.resolve(undefined);
+  });
+  const random = vi.spyOn(Math, "random").mockReturnValue(0);
+  try {
+    await render();
+    expect(CHARACTER_NAMES.filter(checked)).toEqual(["Hero"]);
+    await typeName("Gordon");
+    await tap(createButton());
+    await vi.waitFor(() => expect(createdBot()).toBeDefined());
+    expect(createdBot()).toEqual(
+      expect.objectContaining({
+        name: "Gordon",
+        color: "robot:red.antenna.aviators.cape.confetti",
+      }),
+    );
+  } finally {
+    random.mockRestore();
+  }
 });
 
 it("sends a robot picked on an Original account with the RoBots set", async () => {

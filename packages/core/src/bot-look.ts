@@ -8,6 +8,7 @@ import {
 } from "./avatar-shape.js";
 import { DEFAULT_BOT_AVATAR_COLOR, resolvePersonaColorDef } from "./bot-avatar-colors.js";
 import { newClientId } from "./client-id.js";
+import { leastWornRobotValue } from "./robot-presets.js";
 
 export const ORGANIC_PREVIEW_IDENTITIES = ORGANIC_AVATAR_LOOKS.map(organicAvatarSampleIdentity);
 
@@ -30,15 +31,22 @@ export function newBotLook(avatarSet: BotAvatarSet): NewBotLook {
   do {
     id = `c${newClientId().replaceAll("-", "").slice(0, 24)}`;
   } while (organicAvatarFamily(id) === ORGANIC_AVATAR_HEART_FAMILY);
-  return newBotLookForSet(
-    { id, color: pick(BOT_COLORS), identity: pick(ORGANIC_PREVIEW_IDENTITIES) },
-    avatarSet,
-  );
+  return {
+    id,
+    color: avatarSet === "robots" ? null : pick(BOT_COLORS),
+    identity: pick(ORGANIC_PREVIEW_IDENTITIES),
+  };
 }
 
-export function newBotLookForSet(look: NewBotLook, avatarSet: BotAvatarSet): NewBotLook {
+export function newBotLookForSet(
+  look: NewBotLook,
+  avatarSet: BotAvatarSet,
+  wornColors: readonly string[],
+): NewBotLook {
   if (avatarSet === "robots") {
-    return look.color !== null && botLookState(look.color).robot ? look : { ...look, color: null };
+    return look.color !== null && botLookState(look.color).robot
+      ? look
+      : { ...look, color: leastWornRobotValue(wornColors) };
   }
   return look.color === null || botLookState(look.color).robot
     ? { ...look, color: pick(BOT_COLORS) }

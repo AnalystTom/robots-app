@@ -2,7 +2,7 @@
 
 import type { BotAvatarSet } from "@robots/contracts";
 import { parseBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
-import { ROBOT_PRESETS } from "@robots/core";
+import { ROBOT_PRESETS, robotCharacterDataUri, robotPresetValue } from "@robots/core";
 import type { ReactNode } from "react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -60,10 +60,16 @@ afterEach(() => {
 async function render(
   onCreate: (input: CreateBotDialogInput) => Promise<void>,
   avatarSet: BotAvatarSet = "organic",
+  ownBotColors: readonly string[] = [],
 ) {
   await act(async () => {
     root.render(
-      <CreateBotDialog avatarSet={avatarSet} onCancel={() => undefined} onCreate={onCreate} />,
+      <CreateBotDialog
+        avatarSet={avatarSet}
+        ownBotColors={ownBotColors}
+        onCancel={() => undefined}
+        onCreate={onCreate}
+      />,
     );
   });
 }
@@ -101,16 +107,24 @@ describe("CreateBotDialog", () => {
     expect(button("Create").disabled).toBe(false);
   });
 
-  it("sends no robot on a RoBots account until one is picked, so the server chooses", async () => {
+  it("preselects the robot the user's own bots wear least, and creates the one previewed", async () => {
+    const ownWorn = ROBOT_PRESETS.filter((preset) => preset.id !== "hero").map((preset) =>
+      robotPresetValue(preset.id),
+    );
     const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
-    await render(onCreate, "robots");
+    await render(onCreate, "robots", [...ownWorn, "#8B5CF6"]);
+    expect(button("Hero").getAttribute("aria-checked")).toBe("true");
+    const preview = document.querySelector<HTMLImageElement>(
+      '[data-testid="create-bot-dialog"] img',
+    )!;
+    expect(preview.getAttribute("src")).toBe(
+      robotCharacterDataUri(parseRobotCharacter("robot:red.antenna.aviators.cape.confetti")!),
+    );
     await typeName("Scout");
     await click(button("Create"));
-    const input = onCreate.mock.lastCall![0];
-    expect(input).not.toHaveProperty("color");
-    expect(input.id).toMatch(/^c[a-z0-9]{24}$/);
-    expect(input).not.toHaveProperty("avatarFamily");
-    expect(input).not.toHaveProperty("avatarSet");
+    expect(onCreate.mock.lastCall![0]).toEqual(
+      expect.objectContaining({ color: "robot:red.antenna.aviators.cape.confetti" }),
+    );
   });
 
   it("starts Original accounts on an organic body, not a robot", async () => {

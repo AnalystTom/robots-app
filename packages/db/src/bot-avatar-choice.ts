@@ -2,14 +2,12 @@ import { randomInt } from "node:crypto";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_COLORS, parseBotAvatarValue } from "@robots/contracts";
 import {
+  leastWornRobotValue,
   ORGANIC_AVATAR_HEART_FAMILY,
   ORGANIC_AVATAR_LOOKS,
   organicAvatarFamily,
   organicAvatarLook,
-  ROBOT_PRESETS,
   resolvePersonaColorDef,
-  robotPresetOf,
-  robotPresetValue,
   seededLogoAvatarColor,
 } from "@robots/core";
 
@@ -41,17 +39,9 @@ export function chooseRobotCharacter(
   existing: readonly { color: string }[],
   random: Random = cryptoRandom,
 ): string {
-  const worn = existing.flatMap((bot) => {
-    const avatar = parseBotAvatarValue(bot.color);
-    const preset = avatar.kind === "robot" ? robotPresetOf(avatar.look) : null;
-    return preset ? [preset] : [];
-  });
-  return robotPresetValue(
-    pickLeastUsed(
-      ROBOT_PRESETS.map((preset) => preset.id),
-      worn,
-      random,
-    ),
+  return leastWornRobotValue(
+    existing.map((bot) => bot.color),
+    random,
   );
 }
 

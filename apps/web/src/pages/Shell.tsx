@@ -1344,6 +1344,7 @@ function SpaceShell() {
           closeMobileSidebar={() => setMobileSidebarOpen(false)}
           createBot={createBot}
           botAvatarSet={bootstrapMe?.botAvatarSet}
+          ownBotColors={bots.filter((bot) => bot.userId === userId).map((bot) => bot.color)}
           discardChatAttachments={composer.discardThreadAttachments}
           clearOpenThread={() => {
             thread.resetHistory();

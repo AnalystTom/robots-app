@@ -676,6 +676,28 @@ describe("bot settings device voice menu", () => {
     });
   });
 
+  it("discards a pending robot pick when the Icon set is switched, so Save never stores RoBots", async () => {
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
+    );
+    const setOption = (label: string) =>
+      [...container.querySelectorAll<HTMLButtonElement>('[data-menu="Icon set"] button')].find(
+        (button) => button.textContent === label,
+      )!;
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[role="radio"][aria-label="Hero"]')!.click(),
+    );
+    await act(async () => setOption("Original").click());
+    expect(setOption("Original").dataset.state).toBe("on");
+    expect(
+      [...container.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent === "Save",
+      ),
+    ).toBeUndefined();
+    expect(mocks.rpc).not.toHaveBeenCalledWith("bots/update", expect.anything());
+  });
+
   it("shows a stored off-list robot as the selected Current look and saves only a picked preset", async () => {
     mocks.color = "robot:green.top-hat.grumpy.cape.none";
     await render();

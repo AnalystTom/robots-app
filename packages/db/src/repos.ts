@@ -76,6 +76,7 @@ function mapBot(
   bot: {
     id: string;
     spaceId: string;
+    userId: string;
     name: string;
     description: string;
     instructions: string;
@@ -119,6 +120,7 @@ function mapBot(
   return {
     id: bot.id,
     spaceId: bot.spaceId,
+    userId: bot.userId,
     name: bot.name,
     title: "",
     description: bot.description,
@@ -511,7 +513,7 @@ export function createRepos(
           const roster =
             avatarSet === "organic" || input.color === undefined
               ? await tx.bot.findMany({
-                  where: { spaceId: actor.spaceId, archivedAt: null },
+                  where: { spaceId: actor.spaceId, userId: actor.userId, archivedAt: null },
                   select: { id: true, color: true },
                 })
               : [];
