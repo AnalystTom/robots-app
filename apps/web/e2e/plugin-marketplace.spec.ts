@@ -394,8 +394,6 @@ test("integration fallback icons preserve non-BMP initials", async ({ page }, te
   const tile = dialog.getByTestId("connected-apps");
   await expect(tile.getByText("𠮷", { exact: true })).toBeVisible();
   await tile.getByRole("button", { name: "Added", exact: true }).click();
-  await expect(
-    dialog.getByTestId("connection-detail").getByText("𠮷", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByTestId("connection-detail").getByText("𠮷", { exact: true })).toBeVisible();
   await captureScreenshot(page, testInfo, "integrations-unicode-connector");
 });
