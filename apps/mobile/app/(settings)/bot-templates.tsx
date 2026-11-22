@@ -2,7 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import type { Bot, BotTemplateListing } from "@robots/contracts";
 import { isBotTemplateChanged } from "@robots/contracts";
 import { BOT_TEMPLATE_TEAMS, botTemplateAppMarks } from "@robots/core";
-import { botTeamIncompleteError } from "@robots/i18n/bot-team";
+import { createBotTeam } from "@robots/i18n/bot-team";
 import { useQuery } from "@tanstack/react-query";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useCallback } from "react";
@@ -44,17 +44,15 @@ export default function BotTemplatesScreen() {
   const open = useSave({
     save: async (pick: TemplatePick, send): Promise<Bot> => {
       if (pick.kind === "team") {
-        const { bots, failed } = await send("bots/createTeamFromTemplate", {
-          teamId: pick.teamId,
-        });
-        if (failed.length) {
-          await Promise.allSettled(
-            [rpcQuery("bots/templates").queryKey, rpcQuery("bots/list").queryKey].map((queryKey) =>
-              queryClient.invalidateQueries({ queryKey }),
+        const bots = await createBotTeam(
+          () => send("bots/createTeamFromTemplate", { teamId: pick.teamId }),
+          () =>
+            Promise.allSettled(
+              [rpcQuery("bots/templates").queryKey, rpcQuery("bots/list").queryKey].map(
+                (queryKey) => queryClient.invalidateQueries({ queryKey }),
+              ),
             ),
-          );
-          throw botTeamIncompleteError(bots.length, bots.length + failed.length);
-        }
+        );
         return bots[0]!;
       }
       const { template } = pick;

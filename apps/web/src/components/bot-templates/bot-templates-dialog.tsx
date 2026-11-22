@@ -2,7 +2,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type { Bot, BotTemplateListing, ConnectionCatalogItem } from "@robots/contracts";
 import { isBotTemplateChanged } from "@robots/contracts";
 import { BOT_TEMPLATE_TEAMS, botTemplateAppMarks } from "@robots/core";
-import { botTeamIncompleteError } from "@robots/i18n/bot-team";
+import { createBotTeam } from "@robots/i18n/bot-team";
 import {
   BotAvatar,
   Button,
@@ -13,8 +13,9 @@ import {
   DialogTitle,
   Spinner,
 } from "@robots/ui-web";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
+import { refreshBotReads } from "../../lib/import-bot-template";
 import { useSave, useSpaceQueries } from "../../lib/query";
 import { errorDetails } from "../../lib/user-error";
 import { ErrorNotice } from "../ErrorNotice";
@@ -34,22 +35,16 @@ export function BotTemplatesDialog({
 }) {
   const { t } = useLingui();
   const queries = useSpaceQueries();
-  const queryClient = useQueryClient();
   const copy = useBotTemplateCopy();
   const templates = useQuery({ ...queries.bots.templates.queryOptions(), staleTime: 0 });
   const catalog = useQuery(queries.connections.catalog.queryOptions({ input: {} }));
   const open = useSave({
     save: async (pick: TemplatePick, client): Promise<Bot> => {
       if (pick.kind === "team") {
-        const { bots, failed } = await client.bots.createTeamFromTemplate({ teamId: pick.teamId });
-        if (failed.length) {
-          await Promise.allSettled(
-            [queries.bots.templates.queryKey(), queries.bots.list.queryKey()].map((queryKey) =>
-              queryClient.invalidateQueries({ queryKey }),
-            ),
-          );
-          throw botTeamIncompleteError(bots.length, bots.length + failed.length);
-        }
+        const bots = await createBotTeam(
+          () => client.bots.createTeamFromTemplate({ teamId: pick.teamId }),
+          () => refreshBotReads(queries),
+        );
         return bots[0]!;
       }
       const { template } = pick;

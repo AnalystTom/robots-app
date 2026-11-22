@@ -92,18 +92,9 @@ test("a team that stops short keeps its bots, and Retry finishes it without dupl
   await signup(page, `template-team-${Date.now()}@robots.test`, "password12", "Team Test");
   await completeOnboarding(page);
 
-  const teamIds = ["chief-of-staff", "developer", "researcher", "sales", "gtm", "refund-bot"];
   const templates = await rpc<BotTemplateListing[]>(page, "bots/templates", {});
-  const made = new Map<string, Bot>();
-  for (const id of teamIds.filter((item) => item !== "sales")) {
-    const template = templates.find((item) => item.id === id)!;
-    const { bot } = await rpc<{ bot: Bot; created: boolean }>(page, "bots/createFromTemplate", {
-      templateId: id,
-      version: template.version,
-    });
-    made.set(id, bot);
-  }
-  const partialBots = teamIds.filter((id) => id !== "sales").map((id) => made.get(id)!);
+  const names = (id: string) => templates.find((item) => item.id === id)!.name;
+  const salesName = names("sales");
 
   await page.getByRole("button", { name: "Connect apps", exact: true }).click();
   await page
@@ -117,7 +108,21 @@ test("a team that stops short keeps its bots, and Retry finishes it without dupl
   await page.route("**/rpc/bots/createTeamFromTemplate", async (route) => {
     teamCalls += 1;
     if (teamCalls > 1) return route.continue();
-    await route.fulfill({ json: { json: { bots: partialBots, failed: ["sales"] } } });
+    const response = await route.fetch();
+    const { json: real } = (await response.json()) as {
+      json: { bots: Bot[]; failed: string[] };
+    };
+    const sales = real.bots.find((bot) => bot.name === salesName)!;
+    await rpc(page, "bots/archive", { botId: sales.id });
+    await route.fulfill({
+      response,
+      json: {
+        json: {
+          bots: real.bots.filter((bot) => bot.id !== sales.id),
+          failed: ["sales"],
+        },
+      },
+    });
   });
   await dialog
     .getByTestId("bot-template-team")
@@ -130,15 +135,12 @@ test("a team that stops short keeps its bots, and Retry finishes it without dupl
 
   await dialog.getByRole("button", { name: "Retry", exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page).toHaveURL(new RegExp(`/app/${made.get("chief-of-staff")!.id}`));
   expect(teamCalls).toBe(2);
 
   const bots = await rpc<Bot[]>(page, "bots/list", {});
-  for (const id of teamIds) {
-    const name = templates.find((item) => item.id === id)!.name;
-    expect(bots.filter((bot) => bot.name === name)).toHaveLength(1);
-  }
-  for (const bot of partialBots) {
-    expect(bots.map((item) => item.id)).toContain(bot.id);
+  const lead = bots.find((bot) => bot.name === names("chief-of-staff"))!;
+  await expect(page).toHaveURL(new RegExp(`/app/${lead.id}`));
+  for (const id of ["chief-of-staff", "developer", "researcher", "sales", "gtm", "refund-bot"]) {
+    expect(bots.filter((bot) => bot.name === names(id))).toHaveLength(1);
   }
 });

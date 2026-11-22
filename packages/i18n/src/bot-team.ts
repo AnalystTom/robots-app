@@ -1,6 +1,6 @@
 import { i18n } from "@lingui/core";
 
-export function botTeamIncompleteError(created: number, total: number): Error {
+function botTeamIncompleteError(created: number, total: number): Error {
   return new Error(
     i18n._({
       id: "JZS9j_",
@@ -8,4 +8,14 @@ export function botTeamIncompleteError(created: number, total: number): Error {
       values: { created, total },
     }),
   );
+}
+
+export async function createBotTeam<Bot>(
+  create: () => Promise<{ bots: Bot[]; failed: string[] }>,
+  refreshBotReads: () => unknown,
+): Promise<Bot[]> {
+  const { bots, failed } = await create();
+  if (!failed.length) return bots;
+  await refreshBotReads();
+  throw botTeamIncompleteError(bots.length, bots.length + failed.length);
 }
