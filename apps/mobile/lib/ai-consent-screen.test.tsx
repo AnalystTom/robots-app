@@ -110,6 +110,29 @@ describe("AI data sharing consent screen", () => {
     expect(container.querySelector("[data-testid='ai-consent-screen']")).toBeNull();
   });
 
+  it("settles every queued and late iOS request as declined when denied", async () => {
+    Platform.OS = "ios";
+    const first = await ask([openai]);
+    const queued = await ask([openaiMemory]);
+    await click("Deny");
+    await Promise.all([first.pending, queued.pending]);
+    expect(first.decided()).toBe(false);
+    expect(queued.decided()).toBe(false);
+    expect(first.grant).not.toHaveBeenCalled();
+    expect(queued.grant).not.toHaveBeenCalled();
+
+    const late = await ask([openai]);
+    await late.pending;
+    expect(late.decided()).toBe(false);
+    expect(text()).toContain("RoBots needs this to work");
+
+    await click("Review again");
+    expect(text()).toContain("Share data with OpenAI?");
+    await click("Approve");
+    await vi.waitFor(() => expect(first.grant).toHaveBeenCalledOnce());
+    expect(queued.grant).not.toHaveBeenCalled();
+  });
+
   it("closes the app on Android when denied and asks again on return", async () => {
     const consent = await ask([openai]);
     await click("Deny");

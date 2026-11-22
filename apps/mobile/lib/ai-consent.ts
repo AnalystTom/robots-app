@@ -63,6 +63,10 @@ export function promptAiConsent(
   grant: ConsentGrant,
 ): Promise<boolean> {
   return new Promise((decide) => {
+    if (blocked) {
+      decide(false);
+      return;
+    }
     publish([...queue, { recipients, privacyUrl, grant, decide }]);
   });
 }
@@ -85,8 +89,9 @@ export function denyAiConsent() {
     BackHandler.exitApp();
     return;
   }
-  publish(rest, { recipients: shown.recipients, privacyUrl: shown.privacyUrl, grant: shown.grant });
+  publish([], { recipients: shown.recipients, privacyUrl: shown.privacyUrl, grant: shown.grant });
   shown.decide(false);
+  for (const request of rest) request.decide(false);
 }
 
 export function reviewAiConsentAgain() {
@@ -102,7 +107,6 @@ export function reviewAiConsentAgain() {
           if (allowed) void bestEffort("grant AI data sharing after review", grant());
         },
       },
-      ...queue,
     ],
     null,
   );
