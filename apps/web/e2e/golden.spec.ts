@@ -151,7 +151,7 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
     .getByText("Gmail", { exact: true })
     .locator("xpath=ancestor::*[count(.//button)>=2][1]");
   await gmailRow.getByRole("button", { name: "Add", exact: true }).click();
-  const gmailTile = page.getByTestId("connected-apps").getByTestId("connection-tile-gmail");
+  const gmailTile = page.getByTestId("connected-integrations").getByTestId("connection-tile-gmail");
   await expect(gmailTile.getByRole("button", { name: "Added", exact: true })).toBeVisible();
   await expect(featured.getByText("Gmail", { exact: true })).toHaveCount(0);
   await captureScreenshot(page, testInfo, "11a-connected-plugins");

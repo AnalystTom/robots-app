@@ -13,7 +13,7 @@ test("Launchpost is listed in Connect apps and opens to a one-click Connect", as
   const row = available.getByTestId("plugin-row").filter({ hasText: "Launchpost" });
   await expect(row).toContainText("Schedule and publish social posts.");
   const sections = dialog.locator(
-    '[data-testid="connected-apps"], [data-testid="mac-apps"], [data-testid="featured-connectors"]',
+    '[data-testid="connected-integrations"], [data-testid="mac-apps"], [data-testid="featured-connectors"]',
   );
   expect(
     await sections.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-testid"))),

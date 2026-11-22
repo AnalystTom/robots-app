@@ -307,7 +307,7 @@ export function PluginBrowse({
       ) : null}
 
       {browsingHome && connectedApps.length + connectedRemote.length + installedApps.length ? (
-        <BrowseSection title={<Trans>Connected</Trans>} testId="connected-apps">
+        <BrowseSection title={<Trans>Connected</Trans>} testId="connected-integrations">
           {connectedApps.map((item) =>
             catalogTile(item, item.name, item.logo, { tileTestId: true }),
           )}
