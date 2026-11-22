@@ -91,6 +91,7 @@ function inboxBot(): Bot {
     modelProvider: "openai",
     modelId: "gpt-4.1",
     thinkingLevel: null,
+    fastMode: false,
     teamChatAmbientEnabled: false,
     teamChatRules: "",
     webhookConfigured: false,
