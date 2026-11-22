@@ -6,6 +6,12 @@ import { macAppCall } from "./mac-apps-protocol.js";
 export const HOST_COMPUTER_MAX_BYTES = 12 * 1024 * 1024;
 export const HOST_COMPUTER_MAX_FILE_BYTES = 8 * 1024 * 1024;
 export const HOST_DESKTOP_MAX_RUN_MS = 2 * 60_000;
+export class HostComputerRemoteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "HostComputerRemoteError";
+  }
+}
 const file = z.object({
   path: z.string().max(4096),
   content: z.string().max(HOST_COMPUTER_MAX_BYTES),

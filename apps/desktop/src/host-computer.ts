@@ -18,9 +18,11 @@ function wholeNumber(value: string | undefined, name: string, fallback: number, 
   return parsed;
 }
 
-function hostDesktopOptions(userDataDir: string, env: NodeJS.ProcessEnv) {
-  return {
-    toolsDir: env.ROBOTS_HOST_TOOLS_DIR || path.join(userDataDir, "host-tools"),
+function hostDesktop(root: string, env: NodeJS.ProcessEnv) {
+  const toolsDir = env.ROBOTS_HOST_TOOLS_DIR?.trim();
+  if (process.platform !== "linux" || !toolsDir) return undefined;
+  return createHostDesktop(root, {
+    toolsDir,
     displayStart: wholeNumber(
       env.ROBOTS_HOST_DISPLAY_START,
       "ROBOTS_HOST_DISPLAY_START",
@@ -33,7 +35,7 @@ function hostDesktopOptions(userDataDir: string, env: NodeJS.ProcessEnv) {
       DEFAULT_SCREEN_PORT_START,
       65535,
     ),
-  };
+  });
 }
 
 export async function prepareHostComputer(
@@ -54,7 +56,7 @@ export async function prepareHostComputer(
   } catch {}
   let server: Awaited<ReturnType<typeof startHostComputerServer>>;
   const root = path.join(userDataDir, "computers");
-  const desktop = createHostDesktop(root, hostDesktopOptions(userDataDir, process.env));
+  const desktop = hostDesktop(root, process.env);
   const options = { root, token, screen, macApps, desktop };
   try {
     server = await startHostComputerServer({ ...options, port });

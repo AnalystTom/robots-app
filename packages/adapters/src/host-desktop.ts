@@ -1,11 +1,16 @@
 import { spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { once } from "node:events";
+import { mkdir, readdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import type { HostBrowserImportResult } from "@robots/adapter-kit";
 import { pollUntil } from "@robots/core";
 import type { DesktopEnvironment } from "@robots/core/node/desktop-runtime";
-import { browserProfilePathForScreen, screenSlotPath } from "@robots/core/node/desktop-runtime";
+import {
+  browserProfilePathForScreen,
+  desktopRegistryLockPath,
+  screenSlotPath,
+} from "@robots/core/node/desktop-runtime";
 import type { HostBrowserCookie, HostKeyring } from "./host-browser-cookies.js";
 import {
   HostBrowserCookieError,
@@ -131,11 +136,13 @@ export function createHostDesktop(
     const missing = found.find(({ cookies }) => cookies.length === 0);
     if (missing)
       throw new HostBrowserCookieError(`No current sign-in for ${missing.site} in that profile`);
-    const port = await debugPort(screenId);
     const cookies = found.flatMap((site) => site.cookies);
-    await setBrowserCookies(port, cookies, signal);
-    const expected = cookies.map(importedCookieIdentity);
     const userDataDir = browserProfilePathForScreen(screenId, environment(home));
+    await withRegistryLock(async () => {
+      const port = await debugPort(screenId);
+      await setBrowserCookies(port, cookies, userDataDir, signal);
+    });
+    const expected = cookies.map(importedCookieIdentity);
     await pollUntil(
       async () => {
         const saved = await savedCookieNames(userDataDir);
@@ -161,7 +168,55 @@ export function createHostDesktop(
 
 export type HostDesktop = ReturnType<typeof createHostDesktop>;
 
-async function setBrowserCookies(port: number, cookies: HostBrowserCookie[], signal: AbortSignal) {
+async function withRegistryLock<T>(work: () => Promise<T>): Promise<T> {
+  const lock = desktopRegistryLockPath();
+  await mkdir(path.dirname(lock), { recursive: true });
+  const holder = spawn("flock", ["-w", "120", lock, "sh", "-c", "echo locked; read _"], {
+    stdio: ["pipe", "pipe", "ignore"],
+  });
+  const closed = once(holder, "close");
+  try {
+    await new Promise<void>((resolve, reject) => {
+      holder.stdout.once("data", () => resolve());
+      holder.once("error", reject);
+      holder.once("close", () =>
+        reject(new HostBrowserCookieError("The bot's screen is busy. Try again.")),
+      );
+    });
+    return await work();
+  } finally {
+    holder.stdin.end();
+    await closed;
+  }
+}
+
+async function runsProfileOnPort(port: number, userDataDir: string) {
+  for (const entry of await readdir("/proc")) {
+    if (!/^\d+$/.test(entry)) continue;
+    const argv = await readFile(`/proc/${entry}/cmdline`, "utf8").then(
+      (text): string[] => text.split("\0"),
+      (error: NodeJS.ErrnoException): string[] => {
+        if (error.code === "ENOENT" || error.code === "EACCES") return [];
+        throw error;
+      },
+    );
+    if (
+      argv.includes(`--remote-debugging-port=${port}`) &&
+      argv.includes(`--user-data-dir=${userDataDir}`)
+    )
+      return true;
+  }
+  return false;
+}
+
+async function setBrowserCookies(
+  port: number,
+  cookies: HostBrowserCookie[],
+  userDataDir: string,
+  signal: AbortSignal,
+) {
+  if (!(await runsProfileOnPort(port, userDataDir)))
+    throw new HostBrowserCookieError("The bot's browser is not running for this screen");
   const version = await fetch(`http://127.0.0.1:${port}/json/version`, { signal });
   const { webSocketDebuggerUrl } = (await version.json()) as { webSocketDebuggerUrl?: unknown };
   if (

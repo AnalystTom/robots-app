@@ -43,7 +43,7 @@ import {
   settleReleasedTakeoverCards,
   teamChatRunFromOwner,
 } from "@robots/db";
-import { enrichLogContext, getLogger } from "@robots/logging";
+import { bestEffort, enrichLogContext, getLogger } from "@robots/logging";
 import { formatAgentEnvironmentInstruction } from "./agent-environment.prompt.js";
 import { createApprovedEffectReplayQueue } from "./approval-effect.js";
 import { PARTIAL_REPLY_NOTE } from "./automated-messages.prompt.js";
@@ -1156,20 +1156,23 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           .filter(Boolean)
           .join("\n\n");
         const hostEnvironment = sandboxKindCapabilities(computerKind).nativeShell
-          ? await deps.sandbox
-              .environment?.(
-                {
-                  id: storedComputer.providerRef ?? storedComputer.id,
-                  botId: storedComputer.homeKey,
-                  kind: computerKind as ComputerRef["kind"],
-                  providerRef: storedComputer.providerRef ?? "",
-                },
-                {
-                  ...context,
-                  signal: AbortSignal.any([context.signal, AbortSignal.timeout(2000)]),
-                },
-              )
-              .catch(() => undefined)
+          ? await bestEffort(
+              "read this computer's environment",
+              Promise.resolve(
+                deps.sandbox.environment?.(
+                  {
+                    id: storedComputer.providerRef ?? storedComputer.id,
+                    botId: storedComputer.homeKey,
+                    kind: computerKind as ComputerRef["kind"],
+                    providerRef: storedComputer.providerRef ?? "",
+                  },
+                  {
+                    ...context,
+                    signal: AbortSignal.any([context.signal, AbortSignal.timeout(2000)]),
+                  },
+                ),
+              ),
+            )
           : undefined;
         const graphical = sandboxKindCapabilities(computerKind).runsOnUserMachine
           ? hostEnvironment?.screen === true

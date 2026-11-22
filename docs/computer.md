@@ -77,10 +77,11 @@ that space can still run commands on the server, but they cannot use its screen,
 sign-ins.
 
 The host computer service needs Xvfb, x11vnc, fluxbox, xdotool, wmctrl, scrot, xterm, xdpyinfo,
-websockify and Chromium on its `PATH`. It takes its settings from these environment variables:
+websockify and Chromium on its `PATH`. The screen is off unless `ROBOTS_HOST_TOOLS_DIR` is set, and it
+is only available on Linux. Without it the service runs commands only. It takes its settings from
+these environment variables:
 
-- `ROBOTS_HOST_TOOLS_DIR`: the tools folder, default `host-tools` in the service's data folder. Its
-  `share/novnc` holds noVNC with this repository's `embed.html`, `clipboard-bridge.js` and
+- `ROBOTS_HOST_TOOLS_DIR`: the tools folder. Setting it turns the screen on. Its `share/novnc` holds noVNC with this repository's `embed.html`, `clipboard-bridge.js` and
   `mobile-keyboard.js`, and its `bin` holds `robots-page-browser`, `page_secrets.py` and
   `agent-browser`.
 - `ROBOTS_HOST_DISPLAY_START`: the first X display number for bot screens, default `100`. Pick
