@@ -16,7 +16,7 @@ concurrency:
 jobs:
   update:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 55
     permissions:
       contents: read
@@ -41,7 +41,7 @@ jobs:
         id: base
         if: steps.existing.outputs.count == '0'
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: ./.github/actions/setup-pnpm
         if: steps.existing.outputs.count == '0'
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         if: steps.existing.outputs.count == '0'
@@ -156,15 +156,10 @@ jobs:
             test -s "$RUNNER_TEMP/dependency-update/pr.md"
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: Keep the update patch on the runner
         if: steps.patch.outputs.changed == 'true'
-        with:
-          name: weekly-dependency-update
-          path: |
-            ${{ runner.temp }}/dependency-update/update.patch
-            ${{ runner.temp }}/dependency-update/pr.md
-          retention-days: 1
-          if-no-files-found: error
+        working-directory: ${{ runner.temp }}/dependency-update
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/local-artifact.sh" upload weekly-dependency-update update.patch pr.md
       - name: Remove login cache
         if: always() && steps.prepare.outcome == 'success'
         run: |
@@ -174,7 +169,7 @@ jobs:
   publish:
     needs: update
     if: needs.update.outputs.changed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 10
     permissions:
       contents: read
@@ -183,10 +178,10 @@ jobs:
         with:
           ref: ${{ needs.update.outputs.base }}
           persist-credentials: false
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: weekly-dependency-update
-          path: ${{ runner.temp }}/dependency-update
+      - name: Collect the update patch from the runner
+        run: |
+          bash .github/scripts/local-artifact.sh download weekly-dependency-update "$RUNNER_TEMP/runner-artifacts"
+          mv "$RUNNER_TEMP/runner-artifacts/weekly-dependency-update" "$RUNNER_TEMP/dependency-update"
       - name: Validate and apply patch
         run: bash .github/scripts/apply-dependency-update.sh "$RUNNER_TEMP/dependency-update/update.patch"
       - name: Push branch and open PR

@@ -78,7 +78,7 @@ describe("desktop release workflow", () => {
       `include: ${expression("fromJSON(needs.validate.outputs.platforms)")}`,
     );
     expect(workflow).toContain(
-      `include='[{"os":"macos-26","artifact":"macos"},{"os":"ubuntu-24.04","artifact":"linux"},{"os":"windows-2022","artifact":"windows"}]'`,
+      `include='[{"os":"macos-26","artifact":"macos"},{"os":["self-hosted","big-machine"],"artifact":"linux"},{"os":"windows-2022","artifact":"windows"}]'`,
     );
     expect(workflow.split("windows-2022")).toHaveLength(2);
     expect(workflow).toContain("test -f release-artifacts/latest.yml");

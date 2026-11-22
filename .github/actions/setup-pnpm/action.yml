@@ -1,5 +1,5 @@
 name: Setup pnpm
-description: Install pnpm into this job's temp directory, keep its store there, give git an empty job-local config, and detach from any desktop session the runner inherited, so host settings cannot change a job's output.
+description: Install pnpm into this job's temp directory, keep its content-addressed store in the runner's persistent CI cache, give git an empty job-local config, and detach from any desktop session the runner inherited, so host settings cannot change a job's output.
 runs:
   using: composite
   steps:
@@ -8,10 +8,11 @@ runs:
       run: |
         set -euo pipefail
         : > "$RUNNER_TEMP/gitconfig"
+        store="$(bash "$GITHUB_ACTION_PATH/../../scripts/ci-cache-dir.sh" pnpm-store)"
         {
           echo "GIT_CONFIG_GLOBAL=$RUNNER_TEMP/gitconfig"
           echo "GIT_CONFIG_NOSYSTEM=1"
-          echo "pnpm_config_store_dir=$RUNNER_TEMP/pnpm-store"
+          echo "pnpm_config_store_dir=$store"
           echo "DISPLAY="
           echo "WAYLAND_DISPLAY="
           echo "XDG_SESSION_TYPE="
