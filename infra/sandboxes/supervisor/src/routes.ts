@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { boundedSandboxCommandTimeoutMs } from "@robots/core";
-import { bestEffort, getLogger } from "@robots/logging";
+import { getLogger } from "@robots/logging";
 import { requestLogging } from "@robots/logging/hono";
 import type Docker from "dockerode";
 import type { Context } from "hono";
@@ -271,13 +271,10 @@ app.post("/computers", async (c) => {
         ) {
           const started = !info.State.Running;
           if (started) await existing.start();
-          await bestEffort(
-            "deliver the browser store key",
-            deliverBrowserStoreKey(
-              existing,
-              dataDir,
-              computerStoreKeyId(info.Config.Labels, existing.id),
-            ),
+          await deliverBrowserStoreKey(
+            existing,
+            dataDir,
+            computerStoreKeyId(info.Config.Labels, existing.id),
           );
           return c.json({
             id: existing.id,
@@ -372,13 +369,10 @@ app.post("/computers", async (c) => {
           await createdNetwork?.remove().catch(() => undefined);
           throw error;
         }
-        await bestEffort(
-          "deliver the browser store key",
-          deliverBrowserStoreKey(
-            container,
-            dataDir,
-            computerStoreKeyId(options.Labels, container.id),
-          ),
+        await deliverBrowserStoreKey(
+          container,
+          dataDir,
+          computerStoreKeyId(options.Labels, container.id),
         );
         return c.json({
           id: container.id,
