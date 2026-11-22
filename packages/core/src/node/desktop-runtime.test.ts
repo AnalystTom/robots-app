@@ -22,6 +22,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   BROWSER_STILL_RUNNING_EXIT,
   browserCloseProgram,
+  browserLauncherCommand,
   browserProfilePathForScreen,
   DEFAULT_DESKTOP_ENV,
   desktopControlCommand,
@@ -538,6 +539,38 @@ describe("shared Linux desktop lifecycle", () => {
       );
     },
   );
+
+  it("launches a host screen's browser without system-installed extensions", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "desktop-host-browser-test-"));
+    roots.push(root);
+    const bin = path.join(root, "bin");
+    mkdirSync(bin);
+    const argvFile = path.join(root, "argv");
+    writeFileSync(
+      path.join(bin, "chromium"),
+      `#!/bin/sh\nprintf '%s\\n' "$@" >${shellQuote(argvFile)}\n`,
+      { mode: 0o755 },
+    );
+    const launcher = path.join(root, "launcher");
+    writeFileSync(
+      launcher,
+      browserLauncherCommand(0, "bot", {
+        ...env,
+        homeDir: root,
+        workspaceDir: root,
+        browserProfilesDir: path.join(root, "profiles"),
+        hostBrowser: true,
+      }),
+      { mode: 0o700 },
+    );
+    const result = spawnSync("bash", [launcher], {
+      encoding: "utf8",
+      env: { PATH: `${bin}:/usr/bin:/bin` },
+      timeout: 5000,
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(readFileSync(argvFile, "utf8").split("\n")).toContain("--disable-extensions");
+  });
 
   it("starts a screen's window manager so it keeps its settings and cannot open a wallpaper error dialog", () => {
     const root = mkdtempSync(path.join(tmpdir(), "desktop-wallpaper-test-"));
