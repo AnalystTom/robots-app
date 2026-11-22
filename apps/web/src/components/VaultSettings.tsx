@@ -283,6 +283,9 @@ export function VaultSettings({
           text.toLowerCase().includes(needle),
         )),
   );
+  const signingOutShown = signingOutSites.filter(
+    (site) => !needle || site.toLowerCase().includes(needle),
+  );
   const openedItem = items?.find((item) => item.name === opened);
 
   // Bots are offered once it's known this Space can use them, even in an editor already open.
@@ -470,7 +473,7 @@ export function VaultSettings({
           <Trans>Could not load credentials.</Trans>
         </p>
       ) : null}
-      {shown.length || signingOutSites.length ? (
+      {shown.length || signingOutShown.length ? (
         <ul data-testid="vault-card" className="overflow-hidden rounded-xl bg-muted/50">
           {shown.map((item) => {
             const kind = item.auth ? vaultKind(item.auth.type) : null;
@@ -513,7 +516,7 @@ export function VaultSettings({
               </li>
             );
           })}
-          {signingOutSites.map((site) => (
+          {signingOutShown.map((site) => (
             <li
               key={`signing-out-${site}`}
               data-testid="vault-signing-out-row"
@@ -533,7 +536,7 @@ export function VaultSettings({
             </li>
           ))}
         </ul>
-      ) : needle && items?.length ? (
+      ) : needle && (items?.length || signingOutSites.length) ? (
         <p className="py-6 text-center text-body-sm text-muted-foreground">
           <Trans>No matches</Trans>
         </p>

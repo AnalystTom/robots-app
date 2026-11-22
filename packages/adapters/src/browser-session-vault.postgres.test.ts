@@ -4,7 +4,14 @@ import type { SiteSession } from "@robots/contracts";
 import { VAULT_ITEM_LIMIT } from "@robots/contracts";
 import { asSystem, createDb, runAsTenant } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { forgetBotSecret, listBotSecrets, listVaultItems, revealBotSecret } from "./bot-secrets.js";
+import {
+  forgetBotSecret,
+  listBotSecrets,
+  listVaultItems,
+  relabelVaultItem,
+  revealBotSecret,
+  UNSUPPORTED_ACCESS,
+} from "./bot-secrets.js";
 import {
   importBrowserSessions,
   SESSIONS_NEED_OWN_SPACE,
@@ -367,6 +374,28 @@ describePostgres("imported browser sessions (PostgreSQL)", () => {
     ]);
     expect(await applied()).toEqual(["x.com"]);
     const [row] = await system.vaultCredential.findMany({ where: { userId: owner } });
+    await asOwner(() => forgetBotSecret(db.prisma, scope, row!.name));
+    expect(await sync()).toBe("signed_in");
+  });
+
+  it("refuses to change which bots a sign-in reaches, so none is left signed in", async () => {
+    await asOwner(() =>
+      importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
+        source: "Thomas in Chrome",
+        botIds: [botId],
+        sessions: [session(TOKEN)],
+      }),
+    );
+    expect(await sync()).toBe("signed_in");
+    const [row] = await system.vaultCredential.findMany({ where: { userId: owner } });
+    await expect(
+      asOwner(() =>
+        relabelVaultItem(db.prisma, scope, row!.name, {
+          bots: { allBots: false, botIds: [] },
+        }),
+      ),
+    ).rejects.toThrow(UNSUPPORTED_ACCESS);
+    expect(await applied()).toEqual(["x.com"]);
     await asOwner(() => forgetBotSecret(db.prisma, scope, row!.name));
     expect(await sync()).toBe("signed_in");
   });

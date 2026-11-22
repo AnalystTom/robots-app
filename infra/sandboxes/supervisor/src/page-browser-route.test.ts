@@ -90,6 +90,38 @@ it("resolves the owned display and refuses an older fence before running the hel
   expect(mock.exec).not.toHaveBeenCalled();
 });
 
+it("accepts a site with more cookies than one request used to allow", async () => {
+  const cookies = Array.from({ length: 151 }, (_, index) => ({
+    name: `cookie_${index}`,
+    value: "fake-session-token",
+    domain: "example.test",
+    hostOnly: false,
+    path: "/",
+    secure: true,
+    httpOnly: true,
+    sameSite: "None",
+    expires: 4102444800,
+  }));
+  const response = await supervisorApp.request("/computers/computer-sessions-cap/browser", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${resolveSupervisorToken(process.env)}`,
+      "content-type": "application/json",
+      "x-robots-bot-id": "home",
+      "x-robots-space-id": "space",
+      "x-robots-screen-id": "first",
+      "x-robots-screen-lease-id": "run:2",
+    },
+    body: JSON.stringify({
+      command: "sessions",
+      sites: [{ site: "example.test", cookies }],
+      clear: [],
+    }),
+  });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ ok: true });
+});
+
 it("rejects another computer identity before any command executes", async () => {
   expect(
     await (await snapshot("computer-identity", "first", "run:1", "foreign-home")).json(),
