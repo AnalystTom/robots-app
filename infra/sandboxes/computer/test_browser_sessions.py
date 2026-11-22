@@ -97,6 +97,21 @@ def opened_with(password, host, encrypted):
     return result.stdout[32:].decode("utf-8", "replace")
 
 
+def add_unreachable_row(encrypted):
+    path = browser_sessions.cookies_db(PROFILE)
+    connection = sqlite3.connect(path)
+    try:
+        listed = ", ".join(row[1] for row in connection.execute("PRAGMA table_info(cookies)")
+                           if row[1] not in ("host_key", "name", "value", "encrypted_value"))
+        connection.execute(
+            f"INSERT INTO cookies (host_key, name, value, encrypted_value, {listed}) "
+            f"SELECT ?, ?, '', ?, {listed} FROM cookies WHERE name = 'legacy_sign_in' LIMIT 1",
+            ("unreachable.example", "unreachable_sign_in", encrypted))
+        connection.commit()
+    finally:
+        connection.close()
+
+
 def live_cookie(name):
     client = page_secrets.connect(PORT)
     try:
@@ -181,6 +196,24 @@ def main():
     assert live_cookie("imported_sign_in") is None, "removing the sign-in left it in the browser"
     assert "imported_sign_in" not in rows(), "removing the sign-in left it on disk"
     print("removed: the bot's browser is signed out of the site")
+
+    kill_browser()
+    add_unreachable_row(b"v10" + bytes(range(64)))
+    launch()
+    wait_until(lambda: os.path.exists(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING)), 120,
+               "a profile with a row Chromium cannot re-seal was not left pending")
+    assert live_cookie("unreachable_sign_in") is None, "Chromium re-set the row this check needs unreadable"
+    assert "unreachable_sign_in" in rows(), "the unreadable row left the profile before its closed start"
+    assert live_cookie("legacy_sign_in") is not None, "a live sign-in was lost while the row was pending"
+    kill_browser()
+    launch()
+    wait_until(lambda: "unreachable_sign_in" not in rows(), 60,
+               "the next closed start did not drop the row Chromium cannot re-seal")
+    assert browser_sessions.keyed_profile(PROFILE), "the profile was not marked keyed after the closed start"
+    assert not os.path.exists(os.path.join(PROFILE, browser_sessions.RESEAL_PENDING)), "the pending marker was left"
+    cookie = live_cookie("legacy_sign_in")
+    assert cookie and cookie["value"] == LEGACY["value"], "the closed start lost a live sign-in"
+    print("purged: the unreadable row was dropped at the next closed start and the profile marked keyed")
 
     kill_browser()
     subprocess.run(["pkill", "-KILL", "-x", "gnome-keyring-d"], check=False)

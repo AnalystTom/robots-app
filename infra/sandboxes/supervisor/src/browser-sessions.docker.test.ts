@@ -46,6 +46,9 @@ it.skipIf(process.env.VERIFY_DOCKER_BROWSER_SESSIONS !== "1")(
         "imported: committed, survives SIGKILL, unreadable with the public key",
       );
       expect(output).toContain("removed: the bot's browser is signed out of the site");
+      expect(output).toContain(
+        "purged: the unreadable row was dropped at the next closed start and the profile marked keyed",
+      );
       expect(output).toContain("guarded: without its key the browser refuses to open the profile");
       expect(output).toContain("PASS: browser sessions");
     } finally {

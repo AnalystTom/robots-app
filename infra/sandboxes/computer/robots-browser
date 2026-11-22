@@ -464,8 +464,10 @@ if [ -z "$KEYRING" ] || ! "$KEYRING" 2>>/tmp/robots/browser-keyring.log; then
   echo "Browser could not start securely - try restarting the computer" >&2
   exit 1
 fi
-/usr/bin/python3 -I /usr/local/lib/robots/browser_sessions.py finish-migration "$ACTUAL_PROFILE" \
-  >>/tmp/robots/browser-reseal.log 2>&1 </dev/null || true
+if [ -z "$live_pid" ]; then
+  /usr/bin/python3 -I /usr/local/lib/robots/browser_sessions.py finish-migration "$ACTUAL_PROFILE" \
+    >>/tmp/robots/browser-reseal.log 2>&1 </dev/null || true
+fi
 nohup /usr/bin/python3 -I /usr/local/lib/robots/browser_sessions.py reseal "$ACTUAL_PROFILE" "$ACTUAL_PORT" \
   >>/tmp/robots/browser-reseal.log 2>&1 </dev/null &
 FLAGS="--test-type --no-sandbox --disable-dev-shm-usage --disable-gpu --enable-unsafe-swiftshader $LANGUAGE_FLAGS --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=gnome-libsecret --restore-last-session --start-maximized --remote-debugging-address=127.0.0.1 --remote-debugging-port=$DEBUG_PORT"
