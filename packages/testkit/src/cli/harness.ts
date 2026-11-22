@@ -8,6 +8,7 @@ import type { runAsSystem as RunAsSystem } from "@robots/db";
 import { createModelConnectionFixtureFetch } from "../model-connection-fixture.js";
 import { pinLocalSecretStore } from "../pin-secret-store.js";
 import { PluginMarketplaceFixture } from "../plugin-marketplace-fixture.js";
+import { freeLoopbackPort } from "./free-port.js";
 import { startPostgres } from "./postgres.js";
 import { runProcess } from "./process.js";
 
@@ -75,8 +76,8 @@ async function main() {
     runtimeUrl.username = "robots_app";
     runtimeUrl.password = "robots-test-runtime";
     const databaseUrl = runtimeUrl.toString();
-    const apiPort = Number(process.env.API_PORT ?? 3110);
-    const webPort = Number(process.env.WEB_PORT ?? 5180);
+    const apiPort = Number(process.env.API_PORT ?? (await freeLoopbackPort()));
+    const webPort = Number(process.env.WEB_PORT ?? (await freeLoopbackPort()));
     const webOrigin = `http://127.0.0.1:${webPort}`;
 
     process.env.DATABASE_URL = databaseUrl;

@@ -18,8 +18,8 @@ is billed only while running. See [Fly pricing](https://fly.io/docs/about/pricin
 ## How it stays safe for forks
 
 - `preview-build.yml` runs the pull request's code to build the image, with a read-only token and
-  no secrets, and uploads the image as an artifact.
-- `preview-deploy.yml` runs from the default branch with the deploy token. It only loads that
+  no secrets, and leaves the image in the self-hosted runner's Docker, tagged with its run.
+- `preview-deploy.yml` runs from the default branch with the deploy token. It only tags that
   image and pushes it to Fly; it never runs the pull request's code or scripts.
 - A preview generates its own secrets on first boot and holds no credential for anything else. Its
   machine size comes from this directory's `fly.toml` on the default branch, not the pull request.

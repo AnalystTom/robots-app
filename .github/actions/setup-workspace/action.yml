@@ -1,16 +1,12 @@
 name: Setup workspace
-description: Install pnpm and Node, restore install and build caches, and install the workspace for CI jobs.
+description: Install pnpm and Node, point install, Electron and turbo caches at the runner's persistent CI cache, and install the workspace for CI jobs.
 inputs:
   electron:
-    description: Download and cache the Electron binary (needed for desktop smoke and native computer jobs).
-    required: false
-    default: "false"
-  playwright:
-    description: Restore the Playwright browser cache under ~/.cache/ms-playwright.
+    description: Download the Electron binary (needed for desktop smoke and native computer jobs).
     required: false
     default: "false"
   turbo:
-    description: Which turbo local cache to restore (none, check, or build).
+    description: Which turbo local cache to use (none, check, or build).
     required: false
     default: "none"
   filter:
@@ -20,53 +16,34 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+    - uses: ./.github/actions/setup-pnpm
 
     - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       with:
         node-version: 24
-        cache: pnpm
 
-    - name: Cache Electron binary
-      if: inputs.electron == 'true'
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: ${{ runner.temp }}/electron-cache
-        key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
-
-    - name: Cache Playwright browsers
-      if: inputs.playwright == 'true'
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: ~/.cache/ms-playwright
-        key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-playwright-
-
-    - name: Restore turbo cache
-      if: inputs.turbo == 'check' || inputs.turbo == 'build'
-      uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-      with:
-        path: .turbo/cache
-        key: turbo-${{ inputs.turbo }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
-        restore-keys: |
-          turbo-${{ inputs.turbo }}-${{ hashFiles('pnpm-lock.yaml') }}-
-          turbo-${{ inputs.turbo }}-
+    - name: Use the persistent Electron and turbo caches
+      shell: bash
+      env:
+        SETUP_TURBO: ${{ inputs.turbo }}
+      run: |
+        set -euo pipefail
+        cache_dir() { bash "$GITHUB_ACTION_PATH/../../scripts/ci-cache-dir.sh" "$1"; }
+        echo "electron_config_cache=$(cache_dir electron)" >> "$GITHUB_ENV"
+        if [[ "$SETUP_TURBO" == check || "$SETUP_TURBO" == build ]]; then
+          turbo_dir="$(cache_dir "turbo-$SETUP_TURBO")"
+          find "$turbo_dir" -type f -mtime +14 -delete
+          echo "TURBO_CACHE_DIR=$turbo_dir" >> "$GITHUB_ENV"
+        fi
 
     - name: Install dependencies
       shell: bash
       env:
         SETUP_ELECTRON: ${{ inputs.electron }}
         SETUP_FILTER: ${{ inputs.filter }}
-        RUNNER_TEMP: ${{ runner.temp }}
       run: |
         set -euo pipefail
-        # Electron treats any set ELECTRON_SKIP_BINARY_DOWNLOAD as skip, so only
-        # export it when this job does not need the binary.
-        if [[ "${SETUP_ELECTRON}" == "true" ]]; then
-          export electron_config_cache="${RUNNER_TEMP}/electron-cache"
-          mkdir -p "$electron_config_cache"
-        else
+        if [[ "${SETUP_ELECTRON}" != "true" ]]; then
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1
           export pnpm_config_prefer_offline=true
         fi

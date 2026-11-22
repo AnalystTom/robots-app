@@ -30,7 +30,7 @@ concurrency:
 jobs:
   build:
     name: Build preview image
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -39,15 +39,10 @@ jobs:
       - name: Build
         env:
           GIT_SHA: ${{ github.event.pull_request.head.sha }}
+          PREVIEW_IMAGE: robots-preview:run-${{ github.run_id }}
         run: |
+          docker image ls --filter 'reference=robots-preview:run-*' --filter until=72h --quiet | xargs -r docker image rm --force
           docker build -f infra/compose/Dockerfile --build-arg GIT_SHA="$GIT_SHA" \
             -t robots-server:preview .
-          docker build --build-arg SERVER_IMAGE=robots-server:preview -t robots-preview:pr \
+          docker build --build-arg SERVER_IMAGE=robots-server:preview -t "$PREVIEW_IMAGE" \
             infra/preview
-          docker save robots-preview:pr | zstd -T0 -3 -q -o "$RUNNER_TEMP/preview-image.tar.zst"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: preview-image
-          path: ${{ runner.temp }}/preview-image.tar.zst
-          retention-days: 1
-          compression-level: 0

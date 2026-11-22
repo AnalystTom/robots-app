@@ -24,7 +24,7 @@ while IFS= read -r file; do
     *) all_packages=true ;;
   esac
   case "$file" in
-    .github/workflows/ci.yml | .github/workflows/playwright.yml | .github/actions/setup-workspace/* | .github/scripts/changed-areas.sh | .github/scripts/restore-postgres-image.sh | pnpm-lock.yaml | package.json)
+    .github/workflows/ci.yml | .github/workflows/playwright.yml | .github/actions/setup-workspace/* | .github/actions/setup-pnpm/* | .github/scripts/changed-areas.sh | .github/scripts/start-postgres.sh | pnpm-lock.yaml | package.json)
       native=true
       compose=true
       ;;

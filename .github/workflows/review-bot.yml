@@ -27,7 +27,7 @@ jobs:
        (github.event.comment.user.login == 'coderabbitai[bot]' &&
         contains(github.event.comment.body, 'rate limited by coderabbit.ai') &&
         contains(github.event.issue.labels.*.name, 'review:cr')))
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 5
     permissions:
       issues: write

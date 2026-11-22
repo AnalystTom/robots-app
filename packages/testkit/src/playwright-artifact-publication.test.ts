@@ -17,6 +17,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
 const extractor = path.join(repoRoot, "scripts/extract-playwright-artifacts.py");
+const localArtifact = path.join(repoRoot, ".github/scripts/local-artifact.sh");
 const workflow = readFileSync(
   path.join(repoRoot, ".github/workflows/publish-playwright-report.yml"),
   "utf8",
@@ -118,10 +119,13 @@ ${script}`;
   it("keeps extraction and explicit report inputs outside the trusted checkout", () => {
     expect(workflow).not.toContain("actions/download-artifact@");
     expect(workflow).toContain(
-      'gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > "$RUNNER_TEMP/playwright-artifacts.zip"',
+      'bash .github/scripts/local-artifact.sh download "$ARTIFACT_NAME" "$RUNNER_TEMP/runner-artifacts" "$RUN_ID"',
     );
     expect(workflow).toContain(
-      'python3 scripts/extract-playwright-artifacts.py \\\n            "$RUNNER_TEMP/playwright-artifacts.zip" "$RUNNER_TEMP/playwright-artifacts"',
+      'mv "$RUNNER_TEMP/runner-artifacts/$ARTIFACT_NAME" "$RUNNER_TEMP/playwright-artifacts"',
+    );
+    expect(readFileSync(localArtifact, "utf8")).toContain(
+      'python3 "$scripts/../../scripts/extract-playwright-artifacts.py" "$archive"',
     );
     expect(workflow).toContain(
       "PLAYWRIGHT_REPORT_DIR: ${{ runner.temp }}/playwright-artifacts/playwright-report",
@@ -154,6 +158,66 @@ ${script}`;
     expect(existsSync(destination)).toBe(false);
     expect(existsSync(path.join(root, "escape.txt"))).toBe(false);
   });
+
+  it.skipIf(process.platform === "win32")(
+    "keeps runner artifacts on disk and restores only their regular files",
+    () => {
+      const root = temporaryDirectory();
+      const workspace = path.join(root, "workspace");
+      const store = path.join(root, "store");
+      const secret = path.join(root, "secret.txt");
+      write(secret, "outside the workspace");
+      write(path.join(workspace, "blob-report/report-1.zip"), "blob");
+      write(path.join(workspace, "apps/web/test-results/example/checkpoint.png"), screenshot);
+      symlinkSync(secret, path.join(workspace, "apps/web/test-results/example/leak.txt"));
+      const env = {
+        ...process.env,
+        ROBOTS_CI_ARTIFACTS: store,
+        GITHUB_RUN_ID: "300",
+        GITHUB_REPOSITORY: "example/repo",
+      };
+      execFileSync(
+        "bash",
+        [
+          localArtifact,
+          "upload",
+          "playwright-shard-1-300-1",
+          "blob-report",
+          "apps/web/test-results",
+          "missing",
+        ],
+        { cwd: workspace, env, stdio: "pipe" },
+      );
+      expect(existsSync(path.join(store, "300/playwright-shard-1-300-1.zip"))).toBe(true);
+      const shards = path.join(root, "shards");
+      execFileSync("bash", [localArtifact, "download", "playwright-shard-*-300-*", shards], {
+        env,
+        stdio: "pipe",
+      });
+      const restored = path.join(shards, "playwright-shard-1-300-1");
+      expect(readFileSync(path.join(restored, "blob-report/report-1.zip"), "utf8")).toBe("blob");
+      expect(
+        readFileSync(path.join(restored, "apps/web/test-results/example/checkpoint.png")),
+      ).toEqual(screenshot);
+      expect(existsSync(path.join(restored, "apps/web/test-results/example/leak.txt"))).toBe(false);
+      execFileSync(
+        "bash",
+        [localArtifact, "download", "absent-*", path.join(root, "none"), "301"],
+        {
+          env,
+          stdio: "pipe",
+        },
+      );
+      expect(existsSync(path.join(root, "none/absent"))).toBe(false);
+      expect(() =>
+        execFileSync("bash", [localArtifact, "upload", "escape", "../secret.txt"], {
+          cwd: workspace,
+          env,
+          stdio: "pipe",
+        }),
+      ).toThrow();
+    },
+  );
 
   it("refuses an existing destination, including a filesystem link", () => {
     const root = temporaryDirectory();

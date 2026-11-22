@@ -29,7 +29,7 @@ jobs:
     name: Extract catalogs
     # A manual run from another branch would base the sync PR on unmerged work.
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 10
     permissions:
       contents: read
@@ -50,18 +50,15 @@ jobs:
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: Keep the catalog patch on the runner
         if: steps.diff.outputs.changed == 'true'
-        with:
-          name: translation-catalogs
-          path: ${{ runner.temp }}/catalogs.patch
-          retention-days: 1
-          if-no-files-found: error
+        working-directory: ${{ runner.temp }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/local-artifact.sh" upload translation-catalogs catalogs.patch
 
   publish:
     name: Update catalog PR
     needs: extract
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 10
     permissions:
       contents: read
@@ -72,17 +69,15 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - name: Collect the catalog patch from the runner
         if: needs.extract.outputs.changed == 'true'
-        with:
-          name: translation-catalogs
-          path: ${{ runner.temp }}/translation-catalogs
+        run: bash .github/scripts/local-artifact.sh download translation-catalogs "$RUNNER_TEMP/runner-artifacts"
       - name: Push branch and open, or close, the PR
         env:
           # The workflow token can neither open PRs nor start CI on what it pushes.
           GH_TOKEN: ${{ secrets.GH_DEPENDENCY_UPDATES_PAT }}
           # The runner context exists only at step level.
-          PATCH_DIR: ${{ runner.temp }}/translation-catalogs
+          PATCH_DIR: ${{ runner.temp }}/runner-artifacts/translation-catalogs
         run: |
           set -euo pipefail
           pr="$(gh pr list --state open --head "$BRANCH" --json number,isCrossRepository \
