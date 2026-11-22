@@ -226,17 +226,14 @@ export async function gateToolCall(
     connectorKind,
     connectorProviders,
   );
-  const untaintedPublicRead =
-    name === "web_fetch" &&
-    fetchUrl !== undefined &&
-    !isRiskyFetchTarget(fetchUrl) &&
-    !(await isRunTainted(ctx));
   const siteGate =
     fetchUrl && fetchSite
       ? outboundSiteGate({
           site: fetchSite,
+          risky: isRiskyFetchTarget(fetchUrl),
           trusted:
-            untaintedPublicRead ||
+            (name === "web_fetch" &&
+              !(new URL(fetchUrl).search !== "" && (await isRunTainted(ctx)))) ||
             ctx.trust.searchResultUrls.has(fetchUrl) ||
             (await ctx.trust.loadTrustedSites()).has(fetchSite),
           rules: await ctx.trust.loadApprovalRules(),
@@ -449,7 +446,7 @@ export async function gateToolCall(
   // A fetch to a new site is gated like any action, so it needs an effect to approve.
   const applied =
     READ_ONLY_AGENT_TOOLS.has(name) &&
-    siteGate !== "new" &&
+    !SITE_SENDING_TOOLS.has(name) &&
     !needsApprovalEarly &&
     nextApprovedTool !== name &&
     !approvedEffectKey
@@ -674,7 +671,7 @@ export async function gateToolCall(
   }
   // Past the gate: this destination is now one the run was given. A search result's exact
   // URL trusts only that URL, never the rest of its site.
-  if (fetchSite && (siteGate === "new" || untaintedPublicRead))
+  if (fetchSite && (siteGate === "new" || name === "web_fetch"))
     (await ctx.trust.loadTrustedSites()).add(fetchSite);
   if (viaConnector) {
     const trusted = await ctx.trust.loadTrustedConnectors();

@@ -1,4 +1,9 @@
-import { ipVersion, isCloudMetadataHost, isInternalHostname } from "@robots/contracts";
+import {
+  ipVersion,
+  isCloudMetadataHost,
+  isInternalHostname,
+  isNonPublicAddress,
+} from "@robots/contracts";
 import { parse } from "tldts";
 
 /**
@@ -77,13 +82,11 @@ export function sitesInText(text: string): Set<string> {
 }
 
 const DOWNLOAD_EXTENSIONS = new Set([
-  "7z",
   "apk",
   "appimage",
   "appx",
   "bat",
   "bin",
-  "bz2",
   "cmd",
   "com",
   "cpl",
@@ -93,10 +96,7 @@ const DOWNLOAD_EXTENSIONS = new Set([
   "dylib",
   "elf",
   "exe",
-  "gz",
   "hta",
-  "img",
-  "iso",
   "jar",
   "jnlp",
   "lnk",
@@ -105,20 +105,15 @@ const DOWNLOAD_EXTENSIONS = new Set([
   "pif",
   "pkg",
   "ps1",
-  "rar",
   "reg",
   "rpm",
   "run",
   "scr",
   "sh",
   "so",
-  "tar",
-  "tgz",
   "vbs",
   "wsf",
   "wsh",
-  "xz",
-  "zip",
 ]);
 
 export function isRiskyFetchTarget(input: string): boolean {
@@ -126,7 +121,8 @@ export function isRiskyFetchTarget(input: string): boolean {
   if (!url) return true;
   if (url.username || url.password) return true;
   const host = normalizedHost(url.hostname);
-  if (!host || ipVersion(host) !== 0) return true;
+  if (!host) return true;
+  if (ipVersion(host) !== 0) return isNonPublicAddress(host);
   if (isInternalHostname(host) || isCloudMetadataHost(host)) return true;
   const parsed = parse(host, { allowPrivateDomains: true, validateHostname: false });
   if (!parsed.domain || !(parsed.isIcann || parsed.isPrivate)) return true;

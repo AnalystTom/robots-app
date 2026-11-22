@@ -164,6 +164,9 @@ describe("isRiskyFetchTarget", () => {
     "https://web.archive.org/web/2024/https://launchpost.app",
     "https://example.com/download/",
     "https://EXAMPLE.COM./Page",
+    "http://8.8.8.8/",
+    "https://example.com/release.tar.gz",
+    "https://example.com/files.zip",
   ])("reads %s without asking", (url) => {
     expect(isRiskyFetchTarget(url)).toBe(false);
   });
@@ -190,13 +193,11 @@ describe("isRiskyFetchTarget", () => {
     "http://router.lan/",
     "http://intranet/",
     "https://docs.example.test/page",
-    "http://8.8.8.8/",
     "https://user:pass@example.com/",
     "https://example.com/setup.exe",
     "https://example.com/Setup.EXE",
     "https://example.com/setup%2Eexe",
     "https://example.com/tool.dmg?ref=home",
-    "https://example.com/release.tar.gz",
     "https://example.com/install.sh",
     "https://example.com/app.apk#top",
     "https://example.com/installer.run",

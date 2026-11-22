@@ -3007,7 +3007,7 @@ describe("outbound destinations", () => {
       const f = fixture({ builtin: true, sourceRole: "user", prompt: email });
       f.setCalls([
         { name: "web_search", args: { query: "news" }, executionId: "call-1" },
-        { name: "web_fetch", args: { url: "https://ada.li/" }, executionId: "call-2" },
+        { name: "web_fetch", args: { url: "https://ada.li/?q=secret" }, executionId: "call-2" },
       ]);
       await f.run();
       expect(f.fetchedUrls).toEqual([]);
@@ -3015,7 +3015,7 @@ describe("outbound destinations", () => {
       expect(isApprovalPausedResult(f.results[1])).toBe(true);
       expect(pausedCard(f)).toMatchObject({
         site: "ada.li",
-        detail: "url: https://ada.li/",
+        detail: "url: https://ada.li/?q=secret",
       });
     },
   );
@@ -3062,34 +3062,34 @@ describe("outbound destinations", () => {
     expect(f.fetchedUrls).toEqual(["https://api.example.com/x"]);
   });
 
-  it("fetches a search result's exact URL, but not other URLs on that site", async () => {
+  it("fetches a search result's exact URL, and asks before a new site with a query", async () => {
     const f = fixture({ builtin: true });
-    f.web.searchHits = [{ title: "Found", url: "https://found.test/article", snippet: "" }];
+    f.web.searchHits = [{ title: "Found", url: "https://found.org/article", snippet: "" }];
     f.setCalls([
       { name: "web_search", args: { query: "news" }, executionId: "call-1" },
-      { name: "web_fetch", args: { url: "https://found.test/article" }, executionId: "call-2" },
-      { name: "web_fetch", args: { url: "https://found.test/?q=secret" }, executionId: "call-3" },
+      { name: "web_fetch", args: { url: "https://found.org/article" }, executionId: "call-2" },
+      { name: "web_fetch", args: { url: "https://other.org/?q=secret" }, executionId: "call-3" },
     ]);
     await f.run();
-    expect(f.fetchedUrls).toEqual(["https://found.test/article"]);
+    expect(f.fetchedUrls).toEqual(["https://found.org/article"]);
     expect(isApprovalPausedResult(f.results[2])).toBe(true);
   });
 
-  it("reads a public page without asking in an untainted run, and keeps its site after outside content", async () => {
+  it("reads a second public page of another site without asking", async () => {
     const f = fixture({ builtin: true });
     f.setCalls([
       { name: "web_fetch", args: { url: "https://launchpost.app/" }, executionId: "call-1" },
-      { name: "web_fetch", args: { url: "https://launchpost.app/pricing" }, executionId: "call-2" },
+      { name: "web_fetch", args: { url: "https://tryrobots.app/docs" }, executionId: "call-2" },
     ]);
     await f.run();
-    expect(f.fetchedUrls).toEqual(["https://launchpost.app/", "https://launchpost.app/pricing"]);
+    expect(f.fetchedUrls).toEqual(["https://launchpost.app/", "https://tryrobots.app/docs"]);
     expect(f.pauseRunForInput).not.toHaveBeenCalled();
   });
 
-  it("asks before a new public site once the run has read outside content", async () => {
+  it("asks before a new site's URL with a query once the run has read outside content", async () => {
     const f = fixture({ builtin: true });
     f.setCalls([
-      { name: "web_fetch", args: { url: "https://launchpost.app/" }, executionId: "call-1" },
+      { name: "web_search", args: { query: "news" }, executionId: "call-1" },
       {
         name: "web_fetch",
         args: { url: "https://tryrobots.app/?q=secret" },
@@ -3097,12 +3097,83 @@ describe("outbound destinations", () => {
       },
     ]);
     await f.run();
-    expect(f.fetchedUrls).toEqual(["https://launchpost.app/"]);
+    expect(f.fetchedUrls).toEqual([]);
     expect(isApprovalPausedResult(f.results[1])).toBe(true);
     expect(pausedCard(f)).toMatchObject({
       site: "tryrobots.app",
       detail: "url: https://tryrobots.app/?q=secret",
     });
+  });
+
+  it("reads a site already visited in the run with a query, after outside content", async () => {
+    const f = fixture({ builtin: true });
+    f.setCalls([
+      { name: "web_fetch", args: { url: "https://launchpost.app/" }, executionId: "call-1" },
+      { name: "web_fetch", args: { url: "https://launchpost.app/?ref=1" }, executionId: "call-2" },
+    ]);
+    await f.run();
+    expect(f.fetchedUrls).toEqual(["https://launchpost.app/", "https://launchpost.app/?ref=1"]);
+    expect(f.pauseRunForInput).not.toHaveBeenCalled();
+  });
+
+  it("keeps a site read in an earlier attempt trusted in a resumed attempt", async () => {
+    const f = fixture({ builtin: true });
+    f.setCalls([
+      { name: "web_fetch", args: { url: "https://launchpost.app/" }, executionId: "call-1" },
+    ]);
+    await f.run();
+    f.prisma.attempt.count.mockResolvedValue(2);
+    f.setCalls([
+      { name: "web_fetch", args: { url: "https://launchpost.app/?ref=1" }, executionId: "call-2" },
+    ]);
+    await f.run();
+    expect(f.fetchedUrls).toEqual(["https://launchpost.app/", "https://launchpost.app/?ref=1"]);
+    expect(f.pauseRunForInput).not.toHaveBeenCalled();
+  });
+
+  it("asks before a risky target on a site the owner named", async () => {
+    const f = fixture({
+      builtin: true,
+      sourceRole: "user",
+      prompt: "Summarize https://example.com/guide",
+    });
+    f.setCalls([
+      { name: "web_fetch", args: { url: "https://example.com/setup.exe" }, executionId: "call-1" },
+    ]);
+    await f.run();
+    expect(f.fetchedUrls).toEqual([]);
+    expect(isApprovalPausedResult(f.results[0])).toBe(true);
+  });
+
+  it("asks before a risky target whose exact URL a search returned", async () => {
+    const f = fixture({ builtin: true });
+    f.web.searchHits = [
+      { title: "Metadata", url: "http://169.254.169.254/latest/meta-data/", snippet: "" },
+    ];
+    f.setCalls([
+      { name: "web_search", args: { query: "metadata" }, executionId: "call-1" },
+      {
+        name: "web_fetch",
+        args: { url: "http://169.254.169.254/latest/meta-data/" },
+        executionId: "call-2",
+      },
+    ]);
+    await f.run();
+    expect(f.fetchedUrls).toEqual([]);
+    expect(isApprovalPausedResult(f.results[1])).toBe(true);
+  });
+
+  it("asks before a risky target even when an Always allow rule covers its site", async () => {
+    const f = fixture({
+      builtin: true,
+      rules: [{ effect: "always_allow", matchKind: "site", matchValue: "example.com" }],
+    });
+    f.setCalls([
+      { name: "web_fetch", args: { url: "https://example.com/setup.exe" }, executionId: "call-1" },
+    ]);
+    await f.run();
+    expect(f.fetchedUrls).toEqual([]);
+    expect(isApprovalPausedResult(f.results[0])).toBe(true);
   });
 
   it.each([
@@ -3119,15 +3190,29 @@ describe("outbound destinations", () => {
     expect(isApprovalPausedResult(f.results[0])).toBe(true);
   });
 
-  it("refuses a public page in a webhook run, since a webhook run starts tainted", async () => {
+  it("fetches a public page on a plain path in a webhook run", async () => {
     const f = fixture({ builtin: true, trigger: "webhook" });
     f.setCalls([
       { name: "web_fetch", args: { url: "https://example.com/news" }, executionId: "call-1" },
     ]);
     await f.run();
+    expect(f.fetchedUrls).toEqual(["https://example.com/news"]);
+    expect(f.pauseRunForInput).not.toHaveBeenCalled();
+  });
+
+  it("refuses a new site with a query in a webhook run, without asking", async () => {
+    const f = fixture({ builtin: true, trigger: "webhook" });
+    f.setCalls([
+      {
+        name: "web_fetch",
+        args: { url: "https://tryrobots.app/?q=secret" },
+        executionId: "call-1",
+      },
+    ]);
+    await f.run();
     expect(f.fetchedUrls).toEqual([]);
     expect(f.results[0]).toEqual({
-      error: "Fetching example.com needs approval, and a webhook run cannot ask.",
+      error: "Fetching tryrobots.app needs approval, and a webhook run cannot ask.",
     });
     expect(f.pauseRunForInput).not.toHaveBeenCalled();
   });
@@ -3439,11 +3524,14 @@ describe("Auto Review of new sites", () => {
     });
     f.setCalls([
       { name: "web_search", args: { query: "tech news" }, executionId: "call-1" },
-      fetchCall("https://news.example.net/today", "call-2"),
+      fetchCall("https://news.example.net/today?page=1", "call-2"),
       fetchCall("https://attacker.test/", "call-3"),
     ]);
     await f.run();
-    expect(f.fetchedUrls).toEqual(["https://news.example.net/today", "https://attacker.test/"]);
+    expect(f.fetchedUrls).toEqual([
+      "https://news.example.net/today?page=1",
+      "https://attacker.test/",
+    ]);
     expect(reviewMock).toHaveBeenCalledTimes(2);
     expect(reviewRequest()).toMatchObject({ userTask: "Summarize today's tech news" });
     expect(reviewRequest(1)).toMatchObject({ userTask: "Summarize today's tech news" });
@@ -3539,9 +3627,9 @@ describe("Auto Review of new sites", () => {
         routines: [routine],
         prompt: webhookTask(routine),
       });
-      f.setCalls([fetchCall("https://ci.example.dev/builds/7")]);
+      f.setCalls([fetchCall("https://ci.example.dev/builds/7?run=7")]);
       await f.run();
-      expect(f.fetchedUrls).toEqual(["https://ci.example.dev/builds/7"]);
+      expect(f.fetchedUrls).toEqual(["https://ci.example.dev/builds/7?run=7"]);
       expect(reviewRequest()).toMatchObject({
         userTask: "Post the deploy status",
         newSite: true,
