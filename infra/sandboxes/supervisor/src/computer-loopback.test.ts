@@ -1,8 +1,10 @@
+import { mkdirSync } from "node:fs";
 import type * as NodeFsPromises from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
-import { Readable } from "node:stream";
+import { Duplex, Readable, Writable } from "node:stream";
 import { resolveSupervisorToken } from "@robots/core";
+import { WRITE_BROWSER_STORE_KEY_ARGV } from "@robots/core/node/browser-store-key";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   COMPUTER_IMAGE,
@@ -27,14 +29,55 @@ const mocks = vi.hoisted(() => ({
   },
   assertHomeWritable: vi.fn(),
   verifyRestrictedEgress: vi.fn(),
+  browserKeyWriteExitCode: 0,
 }));
+
+function isBrowserKeyWrite(options: { Cmd?: string[] }) {
+  const cmd = options.Cmd ?? [];
+  const tail = cmd.slice(cmd.length - WRITE_BROWSER_STORE_KEY_ARGV.length);
+  return (
+    tail.length === WRITE_BROWSER_STORE_KEY_ARGV.length &&
+    tail.every((arg, index) => arg === WRITE_BROWSER_STORE_KEY_ARGV[index])
+  );
+}
+
+function browserKeyWriteSession() {
+  return {
+    start: async () =>
+      Duplex.from({
+        readable: Readable.from([]),
+        writable: new Writable({
+          write(_chunk, _encoding, callback) {
+            callback();
+          },
+        }),
+      }),
+    inspect: async () => ({ ExitCode: mocks.browserKeyWriteExitCode }),
+  };
+}
+
+function withBrowserKeyWrite<T extends object>(container: T): T {
+  if (!container) return container;
+  return new Proxy(container, {
+    get(target, property, receiver) {
+      if (property !== "exec") return Reflect.get(target, property, receiver);
+      return async (options: { Cmd?: string[] }) => {
+        if (isBrowserKeyWrite(options)) return browserKeyWriteSession();
+        const exec = Reflect.get(target, "exec", receiver) as (o: unknown) => Promise<unknown>;
+        return exec(options);
+      };
+    },
+  });
+}
+
 vi.mock("dockerode", () => ({
   default: class {
     version = mocks.docker.version;
     getImage = mocks.docker.getImage;
-    getContainer = mocks.docker.getContainer;
+    getContainer = (id: string) => withBrowserKeyWrite(mocks.docker.getContainer(id));
     listContainers = mocks.docker.listContainers;
-    createContainer = mocks.docker.createContainer;
+    createContainer = async (options: unknown) =>
+      withBrowserKeyWrite(await mocks.docker.createContainer(options));
     createNetwork = mocks.docker.createNetwork;
     getNetwork = mocks.docker.getNetwork;
     listNetworks = mocks.docker.listNetworks;
@@ -56,9 +99,11 @@ let screenPort: string;
 beforeEach(async () => {
   vi.resetModules();
   vi.resetAllMocks();
+  mocks.browserKeyWriteExitCode = 0;
   mocks.verifyRestrictedEgress.mockResolvedValue(undefined);
   vi.stubEnv("HOSTNAME", "");
   vi.stubEnv("DATA_DIR", "/tmp/robots-loopback-test");
+  mkdirSync(path.join(process.env.DATA_DIR!, "secrets"), { recursive: true });
   vi.stubEnv("SANDBOX_SCREEN_NETWORK", "published");
   vi.stubEnv("SANDBOX_SCREEN_HOST", "127.0.0.1");
   screen = http.createServer((_req, res) => res.end("ok"));
@@ -448,6 +493,58 @@ describe("provisioning network rollback", () => {
       body: JSON.stringify({ botId: "bot", spaceId: "space", homePath }),
     });
   }
+
+  it("fails the start of a new computer whose browser key cannot be delivered", async () => {
+    const { container } = fixture();
+    mocks.browserKeyWriteExitCode = 1;
+    const response = await provision();
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "The browser's key could not be delivered.",
+    });
+    expect(container.start).toHaveBeenCalledOnce();
+  }, 20_000);
+
+  it("fails the start of a stopped computer whose browser key cannot be delivered", async () => {
+    mocks.browserKeyWriteExitCode = 1;
+    const info = {
+      Image: "test-image-id",
+      Config: {
+        User: hostComputerUser(),
+        Labels: { "robots.managed": "true", "robots.botId": "bot", "robots.spaceId": "space" },
+      },
+      HostConfig: {
+        NetworkMode: computerNetworkNameFor("bot"),
+        PortBindings: { "7070/tcp": [] },
+      },
+      State: { Running: false },
+      NetworkSettings: {
+        Networks: { [computerNetworkNameFor("bot")]: { NetworkID: "bot-network" } },
+      },
+    };
+    const existing = {
+      id: "existing",
+      inspect: vi.fn().mockResolvedValue(info),
+      start: vi.fn().mockResolvedValue(undefined),
+      remove: vi.fn().mockResolvedValue(undefined),
+    };
+    mocks.docker.getImage.mockReturnValue({
+      inspect: vi.fn().mockResolvedValue({ Id: info.Image }),
+    });
+    mocks.docker.getContainer.mockReturnValue(existing);
+    mocks.docker.listContainers.mockResolvedValue([{ Id: existing.id }]);
+    mocks.docker.getNetwork.mockReturnValue({
+      inspect: vi.fn().mockResolvedValue({ Id: "bot-network" }),
+    });
+
+    const response = await provision();
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "The browser's key could not be delivered.",
+    });
+    expect(existing.start).toHaveBeenCalledOnce();
+    expect(mocks.docker.createContainer).not.toHaveBeenCalled();
+  }, 20_000);
 
   it.each(["1.44", "1.45"])(
     "provisions named-volume homes only with subpath support (%s)",
