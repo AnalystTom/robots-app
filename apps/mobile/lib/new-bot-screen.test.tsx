@@ -542,3 +542,59 @@ it("keeps Create on and sends the previewed robot when the bot list cannot load"
     expect.objectContaining({ color: robotCharacterValue(character.look) }),
   );
 });
+
+function serveWithHeldBotList() {
+  let releaseBotList!: (bots: unknown) => void;
+  const botList = new Promise((resolve) => {
+    releaseBotList = resolve;
+  });
+  mocks.rpc.mockImplementation((path: string) => {
+    if (path === "me") return Promise.resolve({ botAvatarSet: "robots", userId: "user-me" });
+    if (path === "bots/list") return botList;
+    if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
+    return Promise.resolve(undefined);
+  });
+  return (bots: unknown) => act(async () => releaseBotList(bots));
+}
+
+function ownBotsWearingEveryRobotBut(name: string) {
+  return CHARACTERS.filter((character) => character.name !== name).map((character, index) => ({
+    id: `own-${index}`,
+    userId: "user-me",
+    color: robotCharacterValue(character.look),
+  }));
+}
+
+it("enables Create while the bot list is still loading, and sends the robot the preview showed", async () => {
+  const answerBotList = serveWithHeldBotList();
+  await render();
+  const previewed = CHARACTER_NAMES.filter(checked);
+  expect(previewed).toHaveLength(1);
+  await typeName("Gordon");
+  expect(createButton().disabled).toBe(false);
+  await tap(createButton());
+  await answerBotList(ownBotsWearingEveryRobotBut("Hero"));
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  const character = CHARACTERS.find((candidate) => candidate.name === previewed[0])!;
+  expect(createdBot()).toEqual(
+    expect.objectContaining({ color: robotCharacterValue(character.look) }),
+  );
+  expect(CHARACTER_NAMES.filter(checked)).toEqual(previewed);
+});
+
+it("moves the preview to the robot the user's bots wear least when the list arrives before any pick", async () => {
+  const answerBotList = serveWithHeldBotList();
+  await render();
+  await typeName("Gordon");
+  await answerBotList(ownBotsWearingEveryRobotBut("Hero"));
+  expect(CHARACTER_NAMES.filter(checked)).toEqual(["Hero"]);
+});
+
+it("keeps the robot the user picked when a late bot list arrives", async () => {
+  const answerBotList = serveWithHeldBotList();
+  await render();
+  await typeName("Gordon");
+  await tap(radio("Chef"));
+  await answerBotList(ownBotsWearingEveryRobotBut("Hero"));
+  expect(CHARACTER_NAMES.filter(checked)).toEqual(["Chef"]);
+});

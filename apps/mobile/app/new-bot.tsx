@@ -39,6 +39,7 @@ export default function NewBot() {
   const [error, setError] = useState<string | null>(null);
   const creating = useRef(false);
   const gone = useRef(false);
+  const lookChosen = useRef(false);
   const modelCheck = useRef<Promise<boolean>>(Promise.resolve(false));
   const trimmed = name.trim();
   const identity = newBotPreviewIdentity(avatarSet, look);
@@ -48,12 +49,18 @@ export default function NewBot() {
     const botsRead = bestEffort("read bots for the new bot's look", rpc("bots/list"));
     return rpc("me")
       .then(async (me) => {
-        const bots = (await botsRead) ?? [];
         if (gone.current) return;
         const set = resolveBotAvatarSet(me.botAvatarSet);
-        const ownColors = bots.filter((bot) => bot.userId === me.userId).map((bot) => bot.color);
         setAccountSet(set);
-        setLook((current) => newBotLookForSet(current, set, ownColors));
+        setLook((current) => newBotLookForSet(current, set, []));
+        const bots = await botsRead;
+        if (gone.current || !bots || set !== "robots") return;
+        const ownColors = bots.filter((bot) => bot.userId === me.userId).map((bot) => bot.color);
+        setLook((current) =>
+          lookChosen.current
+            ? current
+            : newBotLookForSet({ ...current, color: null }, set, ownColors),
+        );
       })
       .catch(() => {
         if (!gone.current) setAccountFailed(true);
@@ -80,6 +87,7 @@ export default function NewBot() {
 
   async function create() {
     if (!trimmed || !accountSet || creating.current) return;
+    lookChosen.current = true;
     creating.current = true;
     setPending(true);
     setError(null);
@@ -159,6 +167,7 @@ export default function NewBot() {
             avatarSet={avatarSet}
             disabled={pending}
             onChange={(color, picked) => {
+              lookChosen.current = true;
               setLook((current) => ({ ...current, color, identity: picked ?? current.identity }));
             }}
           />
