@@ -95,5 +95,4 @@ human login account.
 **Sign in from this computer**, on that screen, copies the sessions of the sites you pick from a
 Chrome or Chromium profile on the server into the bot's browser. Only admins can use it. A site with
 no current sign-in in that profile is skipped, and the dialog names it. The import fails only when
-none of the chosen sites has one. Cookie values
-never leave the server.
+none of the chosen sites has one. Cookie values never leave the server.
