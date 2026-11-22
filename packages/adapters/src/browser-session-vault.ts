@@ -287,7 +287,39 @@ function batches(sites: SiteSession[]): SiteSession[][] {
   return out;
 }
 
-export async function syncBotBrowserSessions(
+const syncing = new Map<string, { dirty: boolean; run: Promise<SessionDelivery> }>();
+
+export function syncBotBrowserSessions(
+  deps: SessionSyncDeps,
+  botId: string,
+  context: Pick<AdapterContext, "operationId" | "traceId" | "signal">,
+): Promise<SessionDelivery> {
+  const active = syncing.get(botId);
+  if (active) {
+    active.dirty = true;
+    return active.run;
+  }
+  const state: { dirty: boolean; run: Promise<SessionDelivery> } = {
+    dirty: false,
+    run: Promise.resolve("failed"),
+  };
+  state.run = (async () => {
+    try {
+      let delivery = await syncBotBrowserSessionsOnce(deps, botId, context);
+      while (state.dirty) {
+        state.dirty = false;
+        delivery = await syncBotBrowserSessionsOnce(deps, botId, context);
+      }
+      return delivery;
+    } finally {
+      syncing.delete(botId);
+    }
+  })();
+  syncing.set(botId, state);
+  return state.run;
+}
+
+async function syncBotBrowserSessionsOnce(
   deps: SessionSyncDeps,
   botId: string,
   context: Pick<AdapterContext, "operationId" | "traceId" | "signal">,
@@ -311,7 +343,10 @@ export async function syncBotBrowserSessions(
     if (!toSet.length && !toClear.length) return "signed_in";
     const computer = bot.computer;
     if (await onThisComputer(deps.prisma, computer)) return "failed";
-    if (computer?.state !== "running" || !computer.providerRef) return "next_start";
+    if (computer?.state !== "running" || !computer.providerRef) {
+      await deps.events?.publishSpaceChange?.(bot.spaceId, "vault");
+      return "next_start";
+    }
     if (!deps.sandbox.pageBrowser) return "failed";
     const sites = await Promise.all(
       toSet.map(async (entry) => ({ site: entry.site, cookies: await entry.open() })),
