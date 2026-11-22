@@ -104,5 +104,10 @@ describe("New bot dialog avatar set", () => {
     await act(async () => newBotButton().click());
     expect(newBotDialog()).not.toBeNull();
     expect(newBotDialog()?.querySelector(".robots-organic-avatar")).toBeNull();
+    expect(
+      newBotDialog()?.querySelectorAll(
+        '[role="radiogroup"][aria-label="Character"] [role="radio"]',
+      ),
+    ).toHaveLength(15);
   });
 });

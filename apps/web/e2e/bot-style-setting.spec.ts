@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  activeBotId,
   captureScreenshot,
   completeOnboarding,
   openNewBot,
@@ -38,25 +39,59 @@ test("bot style stays available when bootstrap omits the saved preference", asyn
   ).toHaveAttribute("aria-pressed", "true");
 });
 
-test("a new account starts on RoBots and an Original account keeps Original", async ({
+const ROBOT_CHARACTERS = [
+  "Assistant",
+  "Researcher",
+  "Coder",
+  "Writer",
+  "Analyst",
+  "Creator",
+  "Chef",
+  "Hero",
+  "Professor",
+  "Detective",
+  "Keynote",
+  "Hustler",
+  "Host",
+  "Critic",
+  "Hoodie",
+];
+
+test("a new account picks from the robot characters and an Original account keeps Original", async ({
   page,
 }, testInfo) => {
   await signup(page, `bot-style-default-${Date.now()}@robots.test`, "password12", "Tester");
   await completeOnboarding(page);
   expect((await rpc<{ botAvatarSet?: string }>(page, "me", {})).botAvatarSet).toBe("robots");
+  const chief = await rpc<{ color: string }>(page, "bots/get", { botId: activeBotId(page) });
+  expect(chief.color).toMatch(/^robot:/);
+
   await openNewBot(page);
   const dialog = page.getByTestId("create-bot-dialog");
-  await expect(dialog.locator(".robots-logo-avatar").first()).toBeVisible();
+  const characters = dialog.getByRole("radiogroup", { name: "Character" });
+  await expect(characters.getByRole("radio")).toHaveCount(ROBOT_CHARACTERS.length);
+  for (const name of ROBOT_CHARACTERS) {
+    await expect(characters.getByRole("radio", { name, exact: true })).toBeVisible();
+  }
+  await expect(dialog.locator(".robots-logo-avatar")).toHaveCount(0);
   await expect(dialog.locator(".robots-organic-avatar")).toHaveCount(0);
-  await captureScreenshot(page, testInfo, "new-bot-robots-default");
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  const detective = characters.getByRole("radio", { name: "Detective", exact: true });
+  await detective.click();
+  await expect(detective).toHaveAttribute("aria-checked", "true");
+  await captureScreenshot(page, testInfo, "new-bot-robot-characters");
+  await dialog.getByPlaceholder("Name your Bot").fill("Sleuth");
+  await dialog.getByRole("button", { name: "Create", exact: true }).click();
   await expect(dialog).toBeHidden();
+  const bots = await rpc<{ name: string; color: string }[]>(page, "bots/list", {});
+  expect(bots.find((bot) => bot.name === "Sleuth")?.color).toBe(
+    "robot:purple.deerstalker.magnifier.cape.none",
+  );
 
   await rpc(page, "preferences/update", { botAvatarSet: "organic" });
   await page.reload();
   expect((await rpc<{ botAvatarSet?: string }>(page, "me", {})).botAvatarSet).toBe("organic");
-  await openNewBot(page);
-  await expect(dialog.locator(".robots-organic-avatar").first()).toBeVisible();
-  await expect(dialog.locator(".robots-logo-avatar")).toHaveCount(0);
-  await captureScreenshot(page, testInfo, "new-bot-original-kept");
+  const settings = await openUserSettings(page);
+  await expect(
+    settings.getByTestId("bot-style-select").getByRole("button", { name: "Original", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
 });

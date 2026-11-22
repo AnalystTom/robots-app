@@ -2,10 +2,13 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_NAME_MAX_LENGTH } from "@robots/contracts";
 import {
+  botLookState,
   newBotLook,
   newBotLookInput,
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
+  robotPresetOf,
+  robotPresetValue,
 } from "@robots/core";
 import {
   BotAvatar,
@@ -20,23 +23,20 @@ import {
 import { useRef, useState } from "react";
 import { errorText } from "../../lib/user-error";
 import { BotLookPicker } from "./avatar-studio-popover";
+import { RobotPresetPicker } from "./robot-presets";
 
 export interface CreateBotDialogInput {
   name: string;
   color: string;
-  /** Reserve the logo preview's persistent seed through creation and retries. */
   id?: string;
-  /** The organic family the preview drew; omitted when a studio shape is picked. */
   avatarFamily?: number;
 }
 
-/** Mounted only while open; the parent unmounts it from `onCancel` or after `onCreate`. */
 export function CreateBotDialog({
   avatarSet,
   onCancel,
   onCreate,
 }: {
-  /** The account's set: the server gives it to the new bot, so the preview draws it too. */
   avatarSet: BotAvatarSet;
   onCancel: () => void;
   onCreate: (input: CreateBotDialogInput) => Promise<void>;
@@ -44,7 +44,9 @@ export function CreateBotDialog({
   const { t } = useLingui();
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
-  const [look, setLook] = useState(newBotLook);
+  const [look, setLook] = useState(() => newBotLook(avatarSet));
+  const pickedRobot = botLookState(look.color).robot;
+  const preset = pickedRobot ? robotPresetOf(pickedRobot) : null;
   const identity = newBotPreviewIdentity(avatarSet, look);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,15 +111,24 @@ export function CreateBotDialog({
               {error}
             </p>
           ) : null}
-          <BotLookPicker
-            value={look.color}
-            identity={identity}
-            organicIdentities={ORGANIC_PREVIEW_IDENTITIES}
-            avatarSet={avatarSet}
-            onChange={(color, picked) => {
-              setLook((current) => ({ ...current, color, identity: picked ?? current.identity }));
-            }}
-          />
+          {avatarSet === "robots" ? (
+            <RobotPresetPicker
+              value={preset}
+              onChange={(next) => {
+                setLook((current) => ({ ...current, color: robotPresetValue(next) }));
+              }}
+            />
+          ) : (
+            <BotLookPicker
+              value={look.color}
+              identity={identity}
+              organicIdentities={ORGANIC_PREVIEW_IDENTITIES}
+              avatarSet={avatarSet}
+              onChange={(color, picked) => {
+                setLook((current) => ({ ...current, color, identity: picked ?? current.identity }));
+              }}
+            />
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" disabled={submitting} onClick={onCancel}>
               <Trans>Cancel</Trans>
