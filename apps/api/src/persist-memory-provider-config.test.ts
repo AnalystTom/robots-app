@@ -40,6 +40,7 @@ function makeDeps(
     };
     spaceOwner?: boolean;
     memberRole?: string;
+    user?: { email: string; emailVerified: boolean };
   } = {},
 ) {
   const secretCreate = vi.fn().mockResolvedValue({ id: "secret-new" });
@@ -63,6 +64,7 @@ function makeDeps(
   );
   const deleteConfig = vi.fn().mockResolvedValue({ id: "cfg-1" });
   const prisma = {
+    user: { findUnique: vi.fn().mockResolvedValue(overrides.user ?? null) },
     spaceMember: {
       findUnique: vi
         .fn()
@@ -348,6 +350,48 @@ describe("persistMemoryProviderConfig", () => {
     ).rejects.toThrow();
     expect(upsert).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+
+  it("lets a verified deployment admin save a loopback server without the instance-wide flag", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("[]", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { deps, upsert } = makeDeps({
+      user: { email: "Admin@Example.test", emailVerified: true },
+    });
+    try {
+      await persistMemoryProviderConfig(
+        { ...deps, env: { mcpAllowPrivateEndpoint: false, adminEmails: ["admin@example.test"] } },
+        actor,
+        connectionInput("local", "http://127.0.0.1:8888"),
+      );
+      expect(fetchMock.mock.calls[0]![0]).toBe("http://127.0.0.1:8888/v3/container-tags/list");
+      expect(upsert).toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([
+    ["an unverified admin email", { email: "admin@example.test", emailVerified: false }],
+    ["an account that is not an admin", { email: "member@example.test", emailVerified: true }],
+  ])("refuses a private server for %s", async (_case, user) => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const { deps, transaction } = makeDeps({ user });
+    try {
+      await expect(
+        persistMemoryProviderConfig(
+          { ...deps, env: { adminEmails: ["admin@example.test"] } },
+          actor,
+          connectionInput("local", "http://127.0.0.1:8888"),
+        ),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(deps.secrets.put).not.toHaveBeenCalled();
+      expect(transaction).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("accepts a bracketed IPv6 loopback base URL in local mode", async () => {

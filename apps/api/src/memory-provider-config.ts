@@ -11,12 +11,18 @@ import {
 } from "@robots/adapters";
 import type { Actor } from "@robots/contracts";
 import type { PrismaClient } from "@robots/db";
-import { findSpaceMemoryConfig, Prisma, requireSpaceOwner, withTransactionRetry } from "@robots/db";
+import {
+  findSpaceMemoryConfig,
+  Prisma,
+  privateEndpointAuthorizer,
+  requireSpaceOwner,
+  withTransactionRetry,
+} from "@robots/db";
 import { getLogger } from "@robots/logging";
 
 export interface MemoryProviderConfigDeps {
   prisma: PrismaClient;
-  env?: { mcpAllowPrivateEndpoint?: boolean };
+  env?: { mcpAllowPrivateEndpoint?: boolean; adminEmails?: string[] };
   secrets: Pick<SecretStore, "put" | "load" | "delete">;
   /** Test seam: override DNS/trust classification without probing. */
   classifySettings?: (
@@ -146,35 +152,31 @@ async function saveMemoryProviderConnection(
       },
 ) {
   let prepared: Awaited<ReturnType<typeof prepareMemoryProviderConnection>>;
+  const mayUsePrivateEndpoint = privateEndpointAuthorizer(deps.prisma, {
+    allowPrivateEndpoint: deps.env?.mcpAllowPrivateEndpoint === true,
+    adminEmails: deps.env?.adminEmails ?? [],
+  });
+  let privateEndpointAllowed: boolean | undefined;
+  const assertPrivateEndpointAllowed = async (
+    provider: string,
+    settings: Record<string, string>,
+  ) => {
+    if (!memoryProviderRequiresPrivateEndpoint(provider, settings)) return;
+    privateEndpointAllowed ??= await mayUsePrivateEndpoint(actor.userId);
+    if (!privateEndpointAllowed) throw new ORPCError("FORBIDDEN");
+  };
   try {
-    if (
-      memoryProviderRequiresPrivateEndpoint(input.provider, input.settings) &&
-      deps.env?.mcpAllowPrivateEndpoint !== true
-    ) {
-      throw new ORPCError("FORBIDDEN");
-    }
+    await assertPrivateEndpointAllowed(input.provider, input.settings);
     const classify = deps.classifySettings ?? classifyMemoryProviderSettings;
     const prepare = deps.prepareConnection ?? prepareMemoryProviderConnection;
-    // Classify DNS/trust before any credentialed probe so LAN endpoints stay operator-authorized.
     const classifiedSettings = await classify(input.provider, input.settings);
-    if (
-      memoryProviderRequiresPrivateEndpoint(input.provider, classifiedSettings) &&
-      deps.env?.mcpAllowPrivateEndpoint !== true
-    ) {
-      throw new ORPCError("FORBIDDEN");
-    }
+    await assertPrivateEndpointAllowed(input.provider, classifiedSettings);
     prepared = await prepare({
       ...input,
       settings: classifiedSettings,
-      allowPrivateEndpoint: deps.env?.mcpAllowPrivateEndpoint === true,
+      allowPrivateEndpoint: privateEndpointAllowed ?? deps.env?.mcpAllowPrivateEndpoint === true,
     });
-    // Defense in depth if prepare reclassified further.
-    if (
-      memoryProviderRequiresPrivateEndpoint(prepared.provider, prepared.settings) &&
-      deps.env?.mcpAllowPrivateEndpoint !== true
-    ) {
-      throw new ORPCError("FORBIDDEN");
-    }
+    await assertPrivateEndpointAllowed(prepared.provider, prepared.settings);
   } catch (error) {
     if (error instanceof ORPCError) throw error;
     if (error instanceof MemoryProviderPrivateEndpointRequiredError) {
