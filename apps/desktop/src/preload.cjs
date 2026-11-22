@@ -30,6 +30,11 @@ contextBridge.exposeInMainWorld("robotsDesktop", {
   settings: {
     onOpen: subscribe("desktop.settings.open"),
   },
+  browserSessions: {
+    profiles: () => ipcRenderer.invoke("desktop.browserSessions.profiles"),
+    read: (profileId, sites) =>
+      ipcRenderer.invoke("desktop.browserSessions.read", profileId, sites),
+  },
   device: {
     state: () => ipcRenderer.invoke("desktop.device.state"),
     setAllowed: (allowed) => ipcRenderer.invoke("desktop.device.setAllowed", allowed),

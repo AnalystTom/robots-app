@@ -75,6 +75,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-thai-tlwg \
     locales \
     dbus-x11 \
+    gnome-keyring \
+    libsecret-1-0 \
+    libsecret-tools \
     xdg-desktop-portal \
     xdg-desktop-portal-gtk \
     xdg-utils \
@@ -94,6 +97,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 \
     nftables \
   && rm -rf /var/lib/apt/lists/* \
+  && rm -f /usr/share/dbus-1/services/org.freedesktop.secrets.service \
+    /usr/share/dbus-1/services/org.gnome.keyring.service \
+    /usr/share/dbus-1/services/org.freedesktop.impl.portal.Secret.service \
+    /usr/share/xdg-desktop-portal/portals/gnome-keyring.portal \
   && pdftotext -v \
   && pdfinfo -v \
   && pandoc --version \
@@ -200,9 +207,11 @@ COPY --chmod=755 control.py /usr/local/bin/robots-computer-control
 LABEL robots.control.aimedScroll="1"
 COPY --from=capture-builder /build/librobots-xcapture.so /usr/local/lib/librobots-xcapture.so
 COPY --chmod=755 robots-browser /usr/local/bin/robots-browser
+COPY --chmod=755 robots-browser-keyring /usr/local/bin/robots-browser-keyring
 COPY --chmod=755 robots-focus-or-launch /usr/local/bin/robots-focus-or-launch
 COPY --chmod=755 robots-page-browser /usr/local/bin/robots-page-browser
 COPY --chmod=644 page_secrets.py /usr/local/lib/robots/page_secrets.py
+COPY --chmod=644 browser_sessions.py /usr/local/lib/robots/browser_sessions.py
 COPY --chmod=644 robots-browser.desktop /usr/share/applications/robots-browser.desktop
 # RoBots keeps credentials itself; the browser's save prompts would cover pages.
 # Pop-ups open: one a page opens after making a report would be blocked unseen.
@@ -220,8 +229,8 @@ COPY --chmod=644 mobile-keyboard.js /usr/share/novnc/mobile-keyboard.js
 COPY --chmod=644 robots-local-bin.sh /etc/profile.d/robots-local-bin.sh
 # Strip CR so shebangs work even if the build context came from a CRLF checkout.
 RUN ldconfig \
-  && sed -i 's/\r$//' /usr/local/bin/robots-computer /usr/local/lib/robots-user-env.sh /usr/local/bin/robots-computer-control /usr/local/bin/robots-browser /usr/local/bin/robots-focus-or-launch /usr/local/bin/robots-page-browser \
-    /usr/local/lib/robots/page_secrets.py \
+  && sed -i 's/\r$//' /usr/local/bin/robots-computer /usr/local/lib/robots-user-env.sh /usr/local/bin/robots-computer-control /usr/local/bin/robots-browser /usr/local/bin/robots-browser-keyring /usr/local/bin/robots-focus-or-launch /usr/local/bin/robots-page-browser \
+    /usr/local/lib/robots/page_secrets.py /usr/local/lib/robots/browser_sessions.py \
     /etc/robots/fluxbox/init /etc/robots/fluxbox/apps /etc/robots/fluxbox/menu \
     /etc/profile.d/robots-local-bin.sh
 # Agent-authored scripts often use the unversioned name. Keep it on the installed Python 3.

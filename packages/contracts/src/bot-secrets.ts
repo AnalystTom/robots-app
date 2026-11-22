@@ -24,7 +24,7 @@ const SecretHeaderName = z
     "Unsupported credential header",
   );
 
-export const BotSecretAuth = z.discriminatedUnion("type", [
+const requestableAuth = [
   z.object({ type: z.literal("bearer") }),
   z.object({ type: z.literal("header"), name: SecretHeaderName }),
   z.object({
@@ -35,16 +35,17 @@ export const BotSecretAuth = z.discriminatedUnion("type", [
       .max(200)
       .regex(/^[^:\r\n]+$/),
   }),
-  // A website sign-in. Its fields are all protected; the backend only types them into pages on
-  // the saved origin and never sends them as HTTP credentials.
   z.object({ type: z.literal("login") }),
-  // A value exported to this bot's shell commands as an environment variable. It has no site.
   z.object({ type: z.literal("command") }),
-  // A payment card. Typed only into a checkout the person approves each time; the bot sees only
-  // its brand, last four digits and expiry.
   z.object({ type: z.literal("card") }),
-  // A person's name, address, phone or email. Not secret: the bot reads it to fill in forms.
   z.object({ type: z.literal("contact") }),
+] as const;
+
+export const BotRequestableAuth = z.discriminatedUnion("type", requestableAuth);
+
+export const BotSecretAuth = z.discriminatedUnion("type", [
+  ...requestableAuth,
+  z.object({ type: z.literal("session") }),
 ]);
 export type BotSecretAuthType = z.infer<typeof BotSecretAuth>["type"];
 
@@ -201,7 +202,7 @@ export function botSecretDestinationSchema(options?: { allowPrivateHttpOrigin?: 
         .describe(
           "The site's address, such as https://www.example.com. Required unless auth is command, card or contact.",
         ),
-      auth: BotSecretAuth,
+      auth: BotRequestableAuth,
     })
     .superRefine((destination, ctx) => {
       if (isSitelessAuth(destination.auth.type)) {
@@ -629,9 +630,8 @@ export function botSecretSubmissionSchema(options?: { allowPrivateHttpOrigin?: b
 
 const destinationInputShape = {
   name: BotSecretName,
-  // Omitted or empty for a command variable, card or contact, which have no site.
   origin: z.string().max(2048).default(""),
-  auth: BotSecretAuth,
+  auth: BotRequestableAuth,
 };
 
 function requireSite(

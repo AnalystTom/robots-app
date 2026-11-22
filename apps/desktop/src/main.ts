@@ -3,6 +3,10 @@ import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import {
+  platformKeySource,
+  profileSessionsReader,
+} from "@robots/adapters/browser-profile-sessions";
 import type { HostScreen } from "@robots/adapters/host-screen";
 import { startUserDeviceClient } from "@robots/adapters/user-device-client";
 import type {
@@ -49,6 +53,7 @@ import type { ElectronAutoUpdater } from "./auto-update.js";
 import { DesktopUpdateController } from "./auto-update.js";
 import { createBadgeHandler } from "./badge.js";
 import { openBrowserAuth } from "./browser-auth.js";
+import { createBrowserSessionsHandlers } from "./browser-sessions.js";
 import { createClipboardHandler } from "./clipboard.js";
 import { appWindowTargets, desktop } from "./desktop-state.js";
 import { launchDockerApp, resolveDockerBinary, runDocker } from "./docker-cli.js";
@@ -879,6 +884,15 @@ app.whenReady().then(async () => {
     "desktop.badge.set",
     createBadgeHandler(permissionTarget, (count) => app.setBadgeCount(count)),
   );
+  const browserSessions = createBrowserSessionsHandlers(
+    permissionTarget,
+    profileSessionsReader(
+      { platform: process.platform, home: app.getPath("home"), env: process.env },
+      platformKeySource(process.platform),
+    ),
+  );
+  ipcMain.handle("desktop.browserSessions.profiles", browserSessions.profiles);
+  ipcMain.handle("desktop.browserSessions.read", browserSessions.read);
   if (process.platform === "darwin") {
     // Installed builds ship the helper as an extra resource; `pnpm build` compiles it for development.
     const helper = app.isPackaged

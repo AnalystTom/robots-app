@@ -58,6 +58,7 @@ export {
 } from "./bot-secrets.js";
 export * from "./browser-emulator.js";
 export * from "./browser-provider-factory.js";
+export * from "./browser-session-vault.js";
 export * from "./browser-tools.js";
 export * from "./builtin.tool-definition.js";
 export * from "./builtin-skills.js";

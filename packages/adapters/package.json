@@ -6,6 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./agent-desktop-host-screen": "./src/agent-desktop-host-screen.ts",
+    "./browser-cookie-crypto": "./src/browser-cookie-crypto.ts",
+    "./browser-profile-sessions": "./src/browser-profile-sessions.ts",
     "./cua-host-screen": "./src/cua-host-screen.ts",
     "./host-computer-server": "./src/host-computer-server.ts",
     "./host-screen": "./src/host-screen.ts",

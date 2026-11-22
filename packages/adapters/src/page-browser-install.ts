@@ -47,10 +47,20 @@ export function installAgentBrowserCommand(): string {
 export function installPageBrowserFilesCommand(): string {
   const wrapper = computerFile("robots-page-browser");
   const secrets = computerFile("page_secrets.py");
-  const version = createHash("sha256").update(wrapper).update("\0").update(secrets).digest("hex");
-  // One archive, so both files change together.
+  const sessions = computerFile("browser_sessions.py");
+  const version = createHash("sha256")
+    .update(wrapper)
+    .update("\0")
+    .update(secrets)
+    .update("\0")
+    .update(sessions)
+    .digest("hex");
   const archive = gzipSync(
-    JSON.stringify({ "robots-page-browser": wrapper, "page_secrets.py": secrets }),
+    JSON.stringify({
+      "robots-page-browser": wrapper,
+      "page_secrets.py": secrets,
+      "browser_sessions.py": sessions,
+    }),
     { level: 9 },
   ).toString("base64");
   const unpack = [
@@ -58,6 +68,7 @@ export function installPageBrowserFilesCommand(): string {
     "files = json.loads(gzip.decompress(sys.stdin.buffer.read()))",
     "os.makedirs('/usr/local/lib/robots', exist_ok=True)",
     "for name, mode, target in (('page_secrets.py', 0o644, '/usr/local/lib/robots/page_secrets.py'),",
+    "                           ('browser_sessions.py', 0o644, '/usr/local/lib/robots/browser_sessions.py'),",
     "                           ('robots-page-browser', 0o755, '/usr/local/bin/robots-page-browser')):",
     "    with open(target + '.new', 'w', encoding='utf-8') as file:",
     "        file.write(files[name])",

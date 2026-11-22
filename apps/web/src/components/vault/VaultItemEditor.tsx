@@ -35,13 +35,13 @@ import type { ComponentProps, ReactNode } from "react";
 import { useId, useRef, useState } from "react";
 import type { AgentAccess } from "../integrations/agent-access";
 import { SettingsPageHeader } from "../SettingsPageHeader";
-import type { VaultAuth } from "./kinds";
+import type { VaultAuth, VaultSavedAuth } from "./kinds";
 import { LoginFieldsInput } from "./LoginFieldsInput";
 import { VaultItemAccess } from "./VaultItemAccess";
 
 /** What the editor hands back: a destination and the value to save, in the shape vault.put takes. */
 export type VaultEditorResult = {
-  destination: { name?: string; origin: string; auth: VaultAuth };
+  destination: { name?: string; origin: string; auth: VaultSavedAuth };
   /** Encoded for its kind; undefined keeps the saved value (an edit that left it empty). */
   value?: string;
   /** A login's fields as typed, which a chat card answers with. */
@@ -367,7 +367,7 @@ function EditorForm({
       };
     }
     if (kind === "api_key") {
-      const auth: VaultAuth =
+      const auth: VaultSavedAuth =
         apiType === "header"
           ? { type: "header", name: headerName.trim() }
           : apiType === "basic"

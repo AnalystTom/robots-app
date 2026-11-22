@@ -72,6 +72,7 @@ export interface LinuxDesktopHost {
 
 /** The supervisor's limit on one page-browser call, which the helper's own waits fit inside. */
 const PAGE_BROWSER_TIMEOUT_MS = 25_000;
+const SESSIONS_TIMEOUT_MS = 60_000;
 const PAGE_BROWSER_MAX_OUTPUT = 512 * 1024;
 
 /** Point a bot's commands at its own screen, as Docker computers do, unless the caller chose a display. */
@@ -273,7 +274,7 @@ export class LinuxDesktop {
       ),
       // Origin-bound fills carry saved logins and cards.
       `${JSON.stringify(request)}\n`,
-      PAGE_BROWSER_TIMEOUT_MS,
+      request.command === "sessions" ? SESSIONS_TIMEOUT_MS : PAGE_BROWSER_TIMEOUT_MS,
       context,
     );
     if (result.code === 124) {

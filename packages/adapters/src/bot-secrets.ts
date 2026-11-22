@@ -14,6 +14,7 @@ import type {
 import {
   authenticatorKey,
   BLOCKED_ITEM_ANSWER,
+  BotRequestableAuth,
   BotSecretAuth,
   BotSecretName,
   botSecretDestinationSchema,
@@ -94,7 +95,10 @@ type VaultClient = Pick<PrismaClient, "spaceSettingOverride">;
  * Orders a vault write after any change of vault (the member's settings lock) and after every
  * other write by the member, since Spaces without their own vault share the account's.
  */
-async function lockVault(tx: Pick<Prisma.TransactionClient, "$queryRaw">, scope: BotSecretScope) {
+export async function lockVault(
+  tx: Pick<Prisma.TransactionClient, "$queryRaw">,
+  scope: BotSecretScope,
+) {
   await lockSpaceSettings(tx, scope);
   await tx.$queryRaw`SELECT id FROM "user" WHERE id = ${scope.userId} FOR UPDATE`;
 }
@@ -106,26 +110,21 @@ export const VAULT_CHANGED = "Vault changed while saving; retry";
  * A write aimed at a Space's own vault is refused once the Space stops customizing credentials,
  * since nothing would read it and it would only wait to be deleted.
  */
-async function assertVaultInUse(client: VaultClient, scope: BotSecretScope) {
+export async function assertVaultInUse(client: VaultClient, scope: BotSecretScope) {
   if (scope.vault !== "space") return;
   if ((await settingsTarget(client, scope, "credentials")) !== "space") {
     throw new Error(SPACE_VAULT_NOT_IN_USE);
   }
 }
 
-/** The vault rows a call reads and writes: the account's (no Space) or the Space's own. */
-async function vaultFields(client: VaultClient, scope: BotSecretScope) {
+export async function vaultFields(client: VaultClient, scope: BotSecretScope) {
   const target = await settingsTarget(client, scope, "credentials", scope.vault);
   return { userId: scope.userId, spaceId: target === "space" ? scope.spaceId : null };
 }
 
-// Blocked items, and ones chosen for other bots, are still redacted, through
-// loadLoginPasswordRedactions and loadCommandVariables.
 async function usableVaultFields(client: VaultClient, scope: BotSecretScope) {
   const vault = await vaultFields(client, scope);
   if (!scope.botId) return vault;
-  // Row security shows a tenant only its own limits in its own Space, so a bot's read under another
-  // Space's or member's tenant would miss them: it finds nothing instead.
   const context = currentDbContext();
   if (
     context?.kind === "tenant" &&
@@ -135,7 +134,7 @@ async function usableVaultFields(client: VaultClient, scope: BotSecretScope) {
   return {
     ...vault,
     policy: { not: "off" },
-    // Limited in this Space only to the bots chosen here; another Space's choice never applies.
+    NOT: { auth: { path: ["type"], equals: "session" } },
     OR: [
       { limits: { none: { spaceId: scope.spaceId } } },
       { bots: { some: { botId: scope.botId } } },
@@ -159,7 +158,7 @@ export const UNKNOWN_BOTS = "Choose from your bots in this Space";
  * Space's. Any bot of a Space that uses the item's vault: in a shared Space every member's runs
  * with a bot read their own vault, so a member's choice only ever limits their own items.
  */
-async function saveItemBots(
+export async function saveItemBots(
   tx: Prisma.TransactionClient,
   scope: BotSecretScope,
   credentialId: string,
@@ -814,6 +813,7 @@ export async function prepareBotSecret(input: {
   const existing = await prisma.vaultCredential.findFirst({
     where: { ...vault, name: destination.name },
   });
+  if (existing && isSessionAuth(existing.auth)) throw new Error(UNSUPPORTED_ACCESS);
   // A save the bot started, such as a login card the person answered for the site the bot
   // proposed, moves the login there without its key or other sites: only the owner sets them,
   // for the site they were set for, and the card shows neither. request_secret asks for no
@@ -1253,7 +1253,7 @@ export function defaultVaultItemTitle(
   destination: { origin: string; auth: { type: string } },
   plaintext: string,
 ): string {
-  const parsed = BotSecretAuth.safeParse(destination.auth);
+  const parsed = BotRequestableAuth.safeParse(destination.auth);
   if (!parsed.success) return "";
   const value = canonicalSecretValue(
     { name: "item", origin: destination.origin, auth: parsed.data },
@@ -1352,12 +1352,16 @@ export async function newVaultItemName(
 function policyField(auth: unknown, policy: VaultPolicy | undefined) {
   if (!policy) return {};
   const type = BotSecretAuth.safeParse(auth).data?.type;
-  if (type === "contact" || (policy === "ask" && type !== "login"))
+  if (type === "contact" || type === "session" || (policy === "ask" && type !== "login"))
     throw new Error(UNSUPPORTED_ACCESS);
   return { policy };
 }
 
 export const UNSUPPORTED_ACCESS = "This item can't be used that way";
+
+export function isSessionAuth(auth: unknown): boolean {
+  return BotSecretAuth.safeParse(auth).data?.type === "session";
+}
 
 /** A login's other sites as saved: HTTPS origins, each once, without its own site. */
 function alsoOnField(auth: unknown, origin: string, alsoOn: readonly string[] | undefined) {
@@ -1401,6 +1405,7 @@ export async function relabelVaultItem(
       select: { id: true, auth: true, origin: true },
     });
     if (!row) return false;
+    if (isSessionAuth(row.auth) && labels.bots) throw new Error(UNSUPPORTED_ACCESS);
     await tx.vaultCredential.update({
       where: { id: row.id },
       data: {
@@ -1446,7 +1451,7 @@ export async function revealBotSecret(input: {
   const row = await input.prisma.vaultCredential.findFirst({
     where: { ...(await vaultFields(input.prisma, input.scope)), name: input.name },
   });
-  if (!row) return null;
+  if (!row || isSessionAuth(row.auth)) return null;
   const plaintext = await openVaultValue(input.prisma, input.secretStore, row);
   const type = BotSecretAuth.safeParse(row.auth).data?.type;
   if (type === "login") return decodeLoginSecret(plaintext);
@@ -1895,7 +1900,7 @@ export async function loadLoginPasswordRedactions(
         const plaintext = await openForRedaction(prisma, secretStore, row);
         // A short value would mangle unrelated text in every run; the run that sends it hides it.
         if (plaintext.length < MIN_REDACTED_HIDDEN_VALUE_EVERY_RUN) continue;
-        const auth = BotSecretAuth.parse(row.auth);
+        const auth = BotRequestableAuth.parse(row.auth);
         for (const form of apiKeyRedactionForms({ ...row, auth }, plaintext)) forms.add(form);
       } catch (error) {
         if (error instanceof VaultKeyUnavailableError) throw error;

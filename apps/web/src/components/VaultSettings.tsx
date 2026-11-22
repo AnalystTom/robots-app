@@ -11,6 +11,7 @@ import {
   parseVaultCsv,
   VAULT_IMPORT_FILE_LIMIT,
   VAULT_KINDS,
+  VAULT_NEW_KINDS,
   vaultKind,
 } from "@robots/contracts";
 import { vaultBotsChoosable } from "@robots/core";
@@ -26,8 +27,9 @@ import {
   ListSearchInput,
 } from "@robots/ui-web";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, FileUp, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, FileUp, Globe, Plus } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
+import { desktopBridge } from "../lib/desktop";
 import { useSpaceQueries } from "../lib/query";
 import { useSpaceRpc } from "../lib/space-rpc";
 import { errorCode, errorText } from "../lib/user-error";
@@ -39,6 +41,7 @@ import { VaultImportPage } from "./vault/VaultImport";
 import { VaultItemDetail } from "./vault/VaultItemDetail";
 import type { VaultEditorInitial, VaultEditorResult } from "./vault/VaultItemEditor";
 import { VaultItemEditorPage } from "./vault/VaultItemEditor";
+import { VaultSessionImportPage } from "./vault/VaultSessionImport";
 
 export { REVEAL_MS } from "./vault/VaultItemDetail";
 
@@ -90,6 +93,8 @@ export function VaultSettings({
   const revealAttempt = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState<{ read: number; csv: VaultCsv } | null>(null);
+  const [importingSessions, setImportingSessions] = useState(false);
+  const browserSessions = desktopBridge()?.browserSessions;
   // Counts file picks: only the last one's read is shown, whichever finishes first.
   const reads = useRef(0);
 
@@ -301,6 +306,7 @@ export function VaultSettings({
                   contact: t`New contact`,
                   api_key: t`New API key`,
                   variable: t`New variable`,
+                  session: one.session,
                 }[editing.kind]
           }
           initial={editingInitial}
@@ -330,6 +336,17 @@ export function VaultSettings({
             reads.current += 1;
             setImporting(null);
           }}
+        />
+      </section>
+    );
+  if (importingSessions && browserSessions)
+    return (
+      <section data-testid="vault">
+        <VaultSessionImportPage
+          scope={scope}
+          browserSessions={browserSessions}
+          onBack={() => setImportingSessions(false)}
+          onImported={() => void refresh()}
         />
       </section>
     );
@@ -399,7 +416,7 @@ export function VaultSettings({
             <ChevronDown />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-44">
-            {VAULT_KINDS.map((kind) => (
+            {VAULT_NEW_KINDS.map((kind) => (
               <Fragment key={kind}>
                 {kind === "api_key" ? <DropdownMenuSeparator /> : null}
                 <DropdownMenuItem
@@ -421,6 +438,15 @@ export function VaultSettings({
               <FileUp className="text-muted-foreground" />
               <Trans>Import CSV</Trans>
             </DropdownMenuItem>
+            {browserSessions ? (
+              <DropdownMenuItem
+                data-testid="vault-import-sessions"
+                onClick={() => setImportingSessions(true)}
+              >
+                <Globe className="text-muted-foreground" />
+                <Trans>Import browser sign-ins</Trans>
+              </DropdownMenuItem>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
         <input
