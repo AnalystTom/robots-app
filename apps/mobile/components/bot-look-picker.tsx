@@ -1,7 +1,7 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
-import { BOT_COLORS } from "@robots/contracts";
+import { BOT_COLORS, robotCharacterValue } from "@robots/contracts";
 import type { RobotPresetId } from "@robots/core";
 import {
   botLookState,
@@ -61,6 +61,11 @@ export function BotLookPicker({
       <View>
         {labeled ? <Label>{t`Robot`}</Label> : null}
         <View accessibilityRole="radiogroup" style={grid}>
+          {robot && pickedPreset === null ? (
+            <Choice disabled={disabled} label={t`Current look`} selected>
+              <BotAvatar color={robotCharacterValue(robot)} size={ROBOT_SIZE} />
+            </Choice>
+          ) : null}
           {ROBOT_PRESETS.map((preset) => {
             const look = robotPresetValue(preset.id);
             return (
@@ -205,7 +210,7 @@ function Choice({
   disabled: boolean;
   label: string;
   selected: boolean;
-  onPress: () => void;
+  onPress?: () => void;
   children: ReactNode;
 }) {
   const tokens = useMobileTokens();

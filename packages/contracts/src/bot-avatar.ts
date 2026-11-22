@@ -94,7 +94,6 @@ const DATA_IMAGE = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,
 
 export type ParsedBotAvatar =
   | { kind: "image"; imageUrl: string }
-  /** A robot character; `color` is its backdrop, which names and bubbles take. */
   | { kind: "robot"; look: RobotLook; color: string }
   | { kind: "shape"; color: string; shapeIndex: number }
   | { kind: "color"; color: string }
