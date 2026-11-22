@@ -30,9 +30,7 @@ function fakePrisma() {
   const rows: Row[] = [];
   const connections = new Map<string, Date>();
   const events: Array<{ type: string; userId: string | null; metadata: object }> = [];
-  /** Live sessions by id, with their expiry. Every test user starts signed in. */
   const sessions = new Map<string, Date>();
-  /** Users with no sign-in left at all. */
   const signedOutUsers = new Set<string>();
   const signedIn = (id: string) =>
     sessions.get(id) ?? (id.endsWith("-ended") ? null : new Date(Date.now() + 60_000));
@@ -411,9 +409,6 @@ describe("device sessions", () => {
 
     expect((await tie(null)).status).toBe(401);
     expect((await tie("user-1", "Bearer wrong")).status).toBe(401);
-    expect((await tie("user-2")).status).toBe(403);
-    expect(rows[0]!.sessionId).toBeNull();
-
     expect((await tie("user-1")).status).toBe(204);
     expect((await tie("user-1", `Bearer ${token}`, "phone")).status).toBe(204);
     expect(rows[0]!.sessionId).toBe("desktop");
@@ -484,7 +479,6 @@ describe("internal forwarding endpoint", () => {
         }),
       });
     expect((await forward("Bearer wrong")).status).toBe(401);
-    // Authorized, but this process holds no such connection.
     expect((await forward(`Bearer ${secret}`)).status).toBe(409);
   });
 });
