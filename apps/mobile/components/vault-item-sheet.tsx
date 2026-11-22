@@ -98,9 +98,7 @@ export function VaultItemSheet({
     } else if (entry.auth.type === "command") {
       add(t`Variable`, `$${commandVariableName(entry.name)}`);
       list.push({ label: t`Value`, ...hidden });
-    } else if (entry.auth.type === "session") {
-      add(t`Site`, siteHost(entry.origin));
-    } else {
+    } else if (entry.auth.type !== "session") {
       add(t`Site`, entry.origin);
       add(
         t`Type`,

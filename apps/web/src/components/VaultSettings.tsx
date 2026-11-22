@@ -441,6 +441,7 @@ export function VaultSettings({
             {browserSessions ? (
               <DropdownMenuItem
                 data-testid="vault-import-sessions"
+                className="whitespace-nowrap"
                 onClick={() => setImportingSessions(true)}
               >
                 <Globe className="text-muted-foreground" />

@@ -90,11 +90,13 @@ export function VaultSessionImportPage({
     },
   });
 
-  const failure = importing.error
-    ? importing.error instanceof ReadRefused
-      ? (refusals[importing.error.code] ?? t`Nothing to import from those sites.`)
-      : errorText(importing.error, t`Could not import sign-ins`)
-    : null;
+  const failure = !importing.error
+    ? null
+    : !(importing.error instanceof ReadRefused)
+      ? errorText(importing.error, t`Could not import sign-ins`)
+      : importing.error.code === "cancelled"
+        ? null
+        : (refusals[importing.error.code] ?? t`Nothing to import from those sites.`);
 
   const delivery: Record<SessionDelivery, string> = {
     signed_in: t`Signed in`,

@@ -433,6 +433,30 @@ async function confirmComputerAccess(detail: string) {
   const result = await (win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options));
   return result.response === 1;
 }
+async function confirmSessionImport(request: {
+  server: string;
+  profile: { name: string; browser: string };
+  sites: readonly string[];
+}) {
+  const options: Electron.MessageBoxOptions = {
+    type: "question",
+    title: t("Import browser sign-ins?"),
+    message: t("Give {server} your sign-ins from {profile} in {browser}?", {
+      server: request.server,
+      profile: request.profile.name,
+      browser: request.profile.browser,
+    }),
+    detail: request.sites.join("\n"),
+    buttons: [t("Cancel"), t("Import")],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  };
+  const win =
+    desktop.mainWindow !== null && !desktop.mainWindow.isDestroyed() ? desktop.mainWindow : null;
+  const result = await (win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options));
+  return result.response === 1;
+}
 /** A bot asks while the person may be elsewhere, so bring the prompt to them. */
 function confirmRemoteComputerAccess(host: string) {
   if (desktop.mainWindow !== null && !desktop.mainWindow.isDestroyed()) {
@@ -890,6 +914,7 @@ app.whenReady().then(async () => {
       { platform: process.platform, home: app.getPath("home"), env: process.env },
       platformKeySource(process.platform),
     ),
+    confirmSessionImport,
   );
   ipcMain.handle("desktop.browserSessions.profiles", browserSessions.profiles);
   ipcMain.handle("desktop.browserSessions.read", browserSessions.read);

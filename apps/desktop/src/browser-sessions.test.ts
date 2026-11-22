@@ -55,7 +55,9 @@ afterEach(async () => {
   await rm(home, { recursive: true, force: true });
 });
 
-function handlers() {
+const asked: Array<{ server: string; profile: string; sites: readonly string[] }> = [];
+
+function handlers(answer = true) {
   return createBrowserSessionsHandlers(
     () => target,
     profileSessionsReader(
@@ -64,6 +66,10 @@ function handlers() {
         throw new Error("a v10 profile never asks the keyring");
       }),
     ),
+    async ({ server, profile, sites }) => {
+      asked.push({ server, profile: `${profile.name} ${profile.browser}`, sites });
+      return answer;
+    },
   );
 }
 
@@ -82,6 +88,19 @@ describe("desktop browser sessions bridge", () => {
     expect(read).toMatchObject({
       ok: true,
       sessions: [{ site: "x.com", cookies: [{ name: "auth_token", value: "fixture-token" }] }],
+    });
+    expect(asked.at(-1)).toEqual({
+      server: "app.example.com",
+      profile: "Work Chromium",
+      sites: ["x.com"],
+    });
+  });
+
+  it("reads nothing when the person declines the native prompt", async () => {
+    expect(await handlers(false).read(appEvent, "chromium/0/Default", ["x.com"])).toEqual({
+      ok: false,
+      code: "cancelled",
+      error: "The import was cancelled.",
     });
   });
 
