@@ -2,12 +2,14 @@ import type { PluginMarketplaceEntry } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import {
   comparePlugins,
+  curatedAppCopy,
   installedPluginParts,
   managedAppFor,
   matchesPluginQuery,
   matchesWordPrefixes,
+  namesAgentProduct,
   pluginCategory,
-  robotsAppCopy,
+  recommendedPluginCopy,
 } from "./plugin-catalog.js";
 
 function entry(
@@ -107,26 +109,42 @@ describe("installedPluginParts", () => {
   });
 });
 
-describe("robotsAppCopy", () => {
+describe("curated app copy", () => {
   it("gives RoBots copy to the managed app it names", () => {
-    expect(robotsAppCopy(["Stripe", "stripe"])).toBe(
+    expect(curatedAppCopy(["Stripe", "stripe"])).toBe(
       "Look up payments, customers and subscriptions.",
     );
-    expect(robotsAppCopy(["Google Calendar", "google-calendar"])).toBe(
+    expect(curatedAppCopy(["Google Calendar", "google-calendar"])).toBe(
       "Check your schedule and book events.",
     );
   });
 
-  it("gives no copy to an unrelated app", () => {
-    expect(robotsAppCopy(["Neon Color", "neon-color"])).toBeUndefined();
+  it("gives no copy to an unrelated managed app", () => {
+    expect(curatedAppCopy(["Neon Color", "neon-color"])).toBeUndefined();
   });
 
-  it.each(["Gmail", "Google Calendar", "Google Drive", "Slack", "Notion", "GitHub", "Stripe"])(
-    "gives %s copy that names no other agent product",
+  it.each(["Gmail", "Google Calendar", "Google Drive", "Slack", "Notion"])(
+    "gives the featured %s app copy that names no other agent product",
     (name) => {
-      const copy = robotsAppCopy([name]);
+      const copy = curatedAppCopy([name]);
       expect(copy).toBeTruthy();
-      expect(copy).not.toMatch(/Grok|Claude|Cursor|Codex|Copilot|Gemini|Windsurf|ChatGPT|OpenCode/);
+      expect(namesAgentProduct(copy!)).toBe(false);
     },
   );
+
+  it("gives a third-party plugin named like a featured app no copy", () => {
+    expect(recommendedPluginCopy({ name: "notion" })).toBeUndefined();
+    expect(recommendedPluginCopy({ name: "stripe" })).toBe(
+      "Look up payments, customers and subscriptions.",
+    );
+  });
+
+  it.each([
+    ["Official Quo MCP for Grok Build", true],
+    ["Launch and manage campaigns from Claude Code.", true],
+    ["Plan work and write notes", false],
+    ["Use Claude to write docs.", true],
+  ])("detects another agent product in %j", (description, named) => {
+    expect(namesAgentProduct(description)).toBe(named);
+  });
 });

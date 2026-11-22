@@ -1,5 +1,6 @@
 import type { PluginMarketplaceEntry, PluginPart } from "@robots/contracts";
 import { PluginPartSchema } from "@robots/contracts";
+import { FEATURED_CONNECTOR_LABELS } from "./featured-connectors.js";
 
 export const PLUGIN_CATEGORIES = [
   "productivity",
@@ -148,7 +149,7 @@ const CATEGORY_BY_NAME = new Map(
   ),
 );
 
-const RECOMMENDED: ReadonlyArray<readonly [name: string, description: string]> = [
+const RECOMMENDED_COPY: ReadonlyArray<readonly [name: string, description: string]> = [
   ["github", "Review pull requests, triage issues and search code."],
   ["stripe", "Look up payments, customers and subscriptions."],
   ["vercel", "Check deployments, logs and project settings."],
@@ -166,19 +167,39 @@ const RECOMMENDED: ReadonlyArray<readonly [name: string, description: string]> =
   ["neon", "Query Postgres databases and manage branches."],
   ["docusign", "Prepare envelopes and track signatures."],
 ];
-const RECOMMENDED_RANK = new Map(RECOMMENDED.map(([name], index) => [name, index]));
+const RECOMMENDED_RANK = new Map(RECOMMENDED_COPY.map(([name], index) => [name, index]));
 
-const FEATURED_COPY: ReadonlyArray<readonly [name: string, description: string]> = [
-  ["Gmail", "Search, read and draft email."],
-  ["Google Calendar", "Check your schedule and book events."],
-  ["Google Drive", "Find and open files in your Drive."],
-  ["Slack", "Read channels and send messages."],
-  ["Notion", "Search and update pages in your workspace."],
-];
+const CURATED_COPY = new Map(
+  (
+    [
+      ...RECOMMENDED_COPY,
+      [FEATURED_CONNECTOR_LABELS.gmail, "Search, read and draft email."],
+      [FEATURED_CONNECTOR_LABELS["google-calendar"], "Check your schedule and book events."],
+      [FEATURED_CONNECTOR_LABELS["google-drive"], "Find and open files in your Drive."],
+      [FEATURED_CONNECTOR_LABELS.slack, "Read channels and send messages."],
+      [FEATURED_CONNECTOR_LABELS.notion, "Search and update pages in your workspace."],
+    ] as ReadonlyArray<readonly [string, string]>
+  ).map(([name, description]) => [brandKey(name), description]),
+);
 
-export function robotsAppCopy(names: readonly string[]): string | undefined {
-  const keys = new Set(names.map(brandKey));
-  return [...RECOMMENDED, ...FEATURED_COPY].find(([name]) => keys.has(brandKey(name)))?.[1];
+const AGENT_PRODUCT = /\b(?:Grok|Claude|Cursor|Codex|Copilot|Gemini|Windsurf|ChatGPT|OpenCode)\b/;
+
+export function namesAgentProduct(text: string): boolean {
+  return AGENT_PRODUCT.test(text);
+}
+
+export function curatedAppCopy(names: readonly string[]): string | undefined {
+  for (const name of names) {
+    const copy = CURATED_COPY.get(brandKey(name));
+    if (copy) return copy;
+  }
+  return undefined;
+}
+
+export function recommendedPluginCopy(
+  entry: Pick<PluginMarketplaceEntry, "name">,
+): string | undefined {
+  return isRecommendedPlugin(entry) ? CURATED_COPY.get(brandKey(entry.name)) : undefined;
 }
 
 type CategorySource = Pick<PluginMarketplaceEntry, "name" | "category">;
@@ -201,8 +222,8 @@ function qualityRank(entry: PluginMarketplaceEntry): number {
 
 export function comparePlugins(a: PluginMarketplaceEntry, b: PluginMarketplaceEntry): number {
   const recommended =
-    (RECOMMENDED_RANK.get(a.name) ?? RECOMMENDED.length) -
-    (RECOMMENDED_RANK.get(b.name) ?? RECOMMENDED.length);
+    (RECOMMENDED_RANK.get(a.name) ?? RECOMMENDED_COPY.length) -
+    (RECOMMENDED_RANK.get(b.name) ?? RECOMMENDED_COPY.length);
   return (
     recommended ||
     qualityRank(a) - qualityRank(b) ||

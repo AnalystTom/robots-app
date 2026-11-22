@@ -15,13 +15,15 @@ import type { RemoteMcpApp } from "@robots/core";
 import {
   CONNECTION_CATALOG_PAGE_SIZE,
   catalogItemKey,
+  curatedAppCopy,
   isRecommendedPlugin,
   managedAppFor,
   matchesRemoteMcpApp,
+  namesAgentProduct,
   OTHER_PLUGINS,
   REMOTE_MCP_APPS,
+  recommendedPluginCopy,
   remoteMcpAppServer,
-  robotsAppCopy,
 } from "@robots/core";
 import { Button, SectionHeading, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, ChevronRight, Search } from "lucide-react";
@@ -190,6 +192,12 @@ export function PluginBrowse({
     : plugins;
   const moreApps = rendered.filter((item) => !shownItems.has(catalogItemKey(item)));
 
+  function rowDescription(curated: string | undefined, registry: string | undefined, name: string) {
+    if (curated) return curated;
+    if (registry && !namesAgentProduct(registry)) return registry;
+    return t`Connect ${name} to your bots.`;
+  }
+
   function catalogTile(
     item: ConnectionCatalogItem,
     label: string,
@@ -202,23 +210,28 @@ export function PluginBrowse({
         item={item}
         label={label}
         logo={logo}
-        description={
-          robotsAppCopy([item.name, item.slug]) ??
-          pluginForApp.get(catalogItemKey(item))?.description
-        }
+        description={rowDescription(
+          curatedAppCopy([item.name, item.slug]),
+          pluginForApp.get(catalogItemKey(item))?.description,
+          label,
+        )}
         tileTestId={opts?.tileTestId}
         context={tileContext}
       />
     );
   }
 
-  function renderPluginRow(entry: PluginMarketplaceEntry, description = entry.description) {
+  function renderPluginRow(entry: PluginMarketplaceEntry) {
     const selection = pluginSelection(entry);
     return (
       <PluginRow
         key={entry.id}
         name={entry.displayName}
-        description={description}
+        description={rowDescription(
+          recommendedPluginCopy(entry),
+          entry.description,
+          entry.displayName,
+        )}
         logo={entry.logo}
         site={selection.site}
         installed={Boolean(installedPlugin(entry.installedSource))}
@@ -257,7 +270,7 @@ export function PluginBrowse({
         <section data-testid="plugin-results" className="mt-2">
           <div className="grid grid-cols-2 gap-2">
             {brandMatches.map(({ item }) => catalogTile(item, item.name, item.logo))}
-            {pluginMatches.slice(0, pluginCount).map(renderPluginRow)}
+            {pluginMatches.slice(0, pluginCount).map((entry) => renderPluginRow(entry))}
           </div>
           {pluginCount < pluginMatches.length ? (
             <div className="mt-4 flex justify-center">
@@ -296,7 +309,7 @@ export function PluginBrowse({
               ) : null}
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {entries.slice(0, SECTION_SIZE).map(renderPluginRow)}
+              {entries.slice(0, SECTION_SIZE).map((entry) => renderPluginRow(entry))}
             </div>
           </section>
         ))}
@@ -337,7 +350,7 @@ export function PluginBrowse({
           {connectedRemote.map((app) => (
             <RemoteMcpAppRow key={app.id} app={app} servers={mcpServers} onOpen={onOpenRemoteApp} />
           ))}
-          {installedApps.map(renderPluginRow)}
+          {installedApps.map((entry) => renderPluginRow(entry))}
         </BrowseSection>
       ) : null}
 
@@ -374,9 +387,7 @@ export function PluginBrowse({
             <RemoteMcpAppRow key={app.id} app={app} servers={mcpServers} onOpen={onOpenRemoteApp} />
           ))}
           {recommended.map(({ entry, item }) =>
-            item
-              ? catalogTile(item, item.name, item.logo)
-              : renderPluginRow(entry, robotsAppCopy([entry.name]) ?? entry.description),
+            item ? catalogTile(item, item.name, item.logo) : renderPluginRow(entry),
           )}
         </BrowseSection>
       ) : null}

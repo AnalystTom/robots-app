@@ -3,7 +3,6 @@ import { comparePlugins, matchesPluginQuery, pluginCategory } from "@robots/core
 import { z } from "zod";
 import type { PluginCompleteness, PluginTextReader } from "./plugin-connectors.js";
 import { classifyPluginFiles, parsePluginSource } from "./plugin-connectors.js";
-import { pluginDisplayName } from "./plugin-description.js";
 import { fetchSafeWebText } from "./web-ssrf.js";
 
 const REGISTRIES = [
@@ -159,6 +158,14 @@ function parseManifest(text: string): z.infer<typeof manifestSchema> | undefined
   } catch {
     return undefined;
   }
+}
+
+function pluginDisplayName(name: string): string {
+  return name
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => part[0]!.toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 const publicRead: PluginTextReader = async (url, maxBytes, signal) =>
