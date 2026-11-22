@@ -10,7 +10,6 @@ import {
   listVaultItems,
   relabelVaultItem,
   revealBotSecret,
-  UNSUPPORTED_ACCESS,
 } from "./bot-secrets.js";
 import {
   importBrowserSessions,
@@ -98,8 +97,9 @@ describePostgres("imported browser sessions (PostgreSQL)", () => {
       },
     });
   };
-  const applied = async () =>
-    (await system.browserSessionSite.findMany({ where: { botId } })).map((row) => row.site);
+  const appliedFor = async (bot: string) =>
+    (await system.browserSessionSite.findMany({ where: { botId: bot } })).map((row) => row.site);
+  const applied = () => appliedFor(botId);
 
   beforeAll(async () => {
     db = createDb(url!);
@@ -378,24 +378,46 @@ describePostgres("imported browser sessions (PostgreSQL)", () => {
     expect(await sync()).toBe("signed_in");
   });
 
-  it("refuses to change which bots a sign-in reaches, so none is left signed in", async () => {
+  it("signs a bot out when its box is unchecked or the sign-in's policy is turned off", async () => {
     await asOwner(() =>
       importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
         source: "Thomas in Chrome",
-        botIds: [botId],
+        botIds: [botId, otherBotId],
         sessions: [session(TOKEN)],
       }),
     );
     expect(await sync()).toBe("signed_in");
+    expect(await syncBotBrowserSessions(deps(), otherBotId, context())).toBe("signed_in");
     const [row] = await system.vaultCredential.findMany({ where: { userId: owner } });
-    await expect(
-      asOwner(() =>
-        relabelVaultItem(db.prisma, scope, row!.name, {
-          bots: { allBots: false, botIds: [] },
-        }),
-      ),
-    ).rejects.toThrow(UNSUPPORTED_ACCESS);
+    await asOwner(() => relabelVaultItem(db.prisma, scope, row!.name, { bots: { allBots: true } }));
+    await asOwner(() =>
+      relabelVaultItem(db.prisma, scope, row!.name, { bots: { allBots: false, botIds: [botId] } }),
+    );
+    expect(await asOwner(() => signingOutSites(db.prisma, scope))).toEqual(["x.com"]);
+    browserRefuses = true;
+    try {
+      expect(await syncBotBrowserSessions(deps(), otherBotId, context())).toBe("failed");
+    } finally {
+      browserRefuses = false;
+    }
+    expect(await asOwner(() => signingOutSites(db.prisma, scope))).toEqual(["x.com"]);
+    expect(await syncBotBrowserSessions(deps(), otherBotId, context())).toBe("signed_in");
+    expect(calls.at(-1)).toMatchObject({
+      botId: otherBotId,
+      request: { command: "sessions", sites: [], clear: ["x.com"] },
+    });
+    expect(await appliedFor(otherBotId)).toEqual([]);
     expect(await applied()).toEqual(["x.com"]);
+    expect(await asOwner(() => signingOutSites(db.prisma, scope))).toEqual([]);
+    await asOwner(() => relabelVaultItem(db.prisma, scope, row!.name, { policy: "off" }));
+    expect(await asOwner(() => signingOutSites(db.prisma, scope))).toEqual(["x.com"]);
+    expect(await sync()).toBe("signed_in");
+    expect(calls.at(-1)).toMatchObject({
+      botId,
+      request: { command: "sessions", sites: [], clear: ["x.com"] },
+    });
+    expect(await applied()).toEqual([]);
+    expect(await asOwner(() => signingOutSites(db.prisma, scope))).toEqual([]);
     await asOwner(() => forgetBotSecret(db.prisma, scope, row!.name));
     expect(await sync()).toBe("signed_in");
   });
