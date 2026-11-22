@@ -109,6 +109,27 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     expect(after).toEqual(expect.arrayContaining(before));
   });
 
+  it("gives a RoBots bot created without a look the listed robot no other bot wears", async () => {
+    const repos = createRepos(prisma);
+    await asSystem(prisma).bot.updateMany({
+      where: { spaceId: owner.spaceId, userId: owner.userId },
+      data: { archivedAt: new Date() },
+    });
+    await runAsTenant(owner, async () => {
+      for (const preset of ROBOT_PRESETS.filter((candidate) => candidate.id !== "hero")) {
+        await repos.createBot(actor(), {
+          ...botInput(`Worn ${preset.id}`),
+          avatarSet: "robots",
+          color: robotPresetValue(preset.id),
+        });
+      }
+    });
+    const created = await runAsTenant(owner, () =>
+      repos.createBot(actor(), { ...botInput("Unpicked"), avatarSet: "robots" }),
+    );
+    expect(created.color).toBe("robot:red.antenna.aviators.cape.confetti");
+  });
+
   it("defaults a new account's bots to RoBots, keeps an Original account on Original, and reloads explicit sets without altering photos or shapes", async () => {
     const repos = createRepos(prisma);
     const system = asSystem(prisma);

@@ -1,11 +1,6 @@
 import { isBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
-import {
-  ROBOT_PRESETS,
-  randomRobotPreset,
-  robotPresetOf,
-  robotPresetValue,
-} from "./robot-presets.js";
+import { ROBOT_PRESETS, robotPresetOf, robotPresetValue } from "./robot-presets.js";
 
 const EXPECTED_ROBOTS = [
   ["assistant", "robot:green.antenna.happy.vest.none"],
@@ -46,10 +41,5 @@ describe("robot presets", () => {
     expect(robotPresetOf({ ...chef, colour: "blue" })).toBeNull();
     expect(robotPresetOf({ ...chef, face: "monocle" })).toBeNull();
     expect(robotPresetOf(parseRobotCharacter("robot:teal.top-hat.hearts.cape.none")!)).toBeNull();
-  });
-
-  it("are drawn at random from the whole list", () => {
-    expect(randomRobotPreset(() => 0)).toBe("assistant");
-    expect(randomRobotPreset(() => 0.99)).toBe("host");
   });
 });

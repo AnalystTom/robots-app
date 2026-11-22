@@ -8,7 +8,6 @@ import {
 } from "./avatar-shape.js";
 import { DEFAULT_BOT_AVATAR_COLOR, resolvePersonaColorDef } from "./bot-avatar-colors.js";
 import { newClientId } from "./client-id.js";
-import { randomRobotPreset, robotPresetValue } from "./robot-presets.js";
 
 export const ORGANIC_PREVIEW_IDENTITIES = ORGANIC_AVATAR_LOOKS.map(organicAvatarSampleIdentity);
 
@@ -18,8 +17,12 @@ function pick<T>(options: readonly T[]): T {
 
 export interface NewBotLook {
   id: string;
-  color: string;
+  color: string | null;
   identity: string;
+}
+
+export function newBotLookColor(look: NewBotLook): string {
+  return look.color ?? DEFAULT_BOT_AVATAR_COLOR;
 }
 
 export function newBotLook(avatarSet: BotAvatarSet): NewBotLook {
@@ -34,11 +37,12 @@ export function newBotLook(avatarSet: BotAvatarSet): NewBotLook {
 }
 
 export function newBotLookForSet(look: NewBotLook, avatarSet: BotAvatarSet): NewBotLook {
-  const { robot } = botLookState(look.color);
   if (avatarSet === "robots") {
-    return robot ? look : { ...look, color: robotPresetValue(randomRobotPreset()) };
+    return look.color !== null && botLookState(look.color).robot ? look : { ...look, color: null };
   }
-  return robot ? { ...look, color: pick(BOT_COLORS) } : look;
+  return look.color === null || botLookState(look.color).robot
+    ? { ...look, color: pick(BOT_COLORS) }
+    : look;
 }
 
 export function newBotPreviewIdentity(avatarSet: BotAvatarSet, look: NewBotLook): string {
@@ -48,8 +52,10 @@ export function newBotPreviewIdentity(avatarSet: BotAvatarSet, look: NewBotLook)
 export function newBotLookInput(
   avatarSet: BotAvatarSet,
   look: NewBotLook,
-): { color: string; id?: string; avatarFamily?: number } {
-  if (botLookState(look.color).robot) return { color: look.color, id: look.id };
+): { color?: string; id?: string; avatarFamily?: number; avatarSet?: BotAvatarSet } {
+  if (look.color === null) return { id: look.id };
+  if (botLookState(look.color).robot)
+    return { color: look.color, id: look.id, avatarSet: "robots" };
   if (avatarSet === "robots") return { color: botLookState(look.color).color, id: look.id };
   if (botLookState(look.color).shapeIndex !== null) return { color: look.color };
   return { color: look.color, avatarFamily: organicAvatarFamily(look.identity) };
