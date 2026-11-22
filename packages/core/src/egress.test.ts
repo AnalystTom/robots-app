@@ -194,6 +194,8 @@ describe("isRiskyFetchTarget", () => {
     "http://intranet/",
     "https://docs.example.test/page",
     "https://user:pass@example.com/",
+    "https://8.8.8.8/setup.exe",
+    "http://203.0.113.7/setup.exe",
     "https://example.com/setup.exe",
     "https://example.com/Setup.EXE",
     "https://example.com/setup%2Eexe",

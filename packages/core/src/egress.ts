@@ -120,13 +120,13 @@ export function isRiskyFetchTarget(input: string): boolean {
   const url = httpUrl(input);
   if (!url) return true;
   if (url.username || url.password) return true;
+  if (DOWNLOAD_EXTENSIONS.has(pathExtension(url.pathname))) return true;
   const host = normalizedHost(url.hostname);
   if (!host) return true;
   if (ipVersion(host) !== 0) return isNonPublicAddress(host);
   if (isInternalHostname(host) || isCloudMetadataHost(host)) return true;
   const parsed = parse(host, { allowPrivateDomains: true, validateHostname: false });
-  if (!parsed.domain || !(parsed.isIcann || parsed.isPrivate)) return true;
-  return DOWNLOAD_EXTENSIONS.has(pathExtension(url.pathname));
+  return !parsed.domain || !(parsed.isIcann || parsed.isPrivate);
 }
 
 function pathExtension(pathname: string): string {

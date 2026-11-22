@@ -44,17 +44,13 @@ To stop one bot from ever using a tool, open the bot's settings, expand **Advanc
 
 ## Reading web pages
 
-Bots read public web pages without asking. A link with a query string also goes without asking,
-until the run has read outside content, such as a page, a search result or an inbound message.
-After that, a link with a query string to a site the run has not visited asks. Sites a run has
-visited stay open for the rest of that run.
-
-Bots always ask before a risky address: an IP address on a private or internal network,
-`localhost` or a local name such as `printer.local`, a cloud metadata host, a link with a password
-in it, or a program or installer download. In **Ask** the card shows; in **Auto** the approval model
-judges it; in **Never ask** it runs. Downloads are recognized by the file extension in the URL only.
-Webhook runs have nobody to ask, so they refuse what would need a card. To approve every page
-yourself, add an **Ask** rule for `web_fetch`.
+Bots read public web pages without asking, including links with a query string. Bots always ask
+before a risky address: an IP address on a private or internal network, `localhost` or a local name
+such as `printer.local`, a cloud metadata host, a link with a password in it, or a program or
+installer download. In **Ask** the card shows; in **Auto** the approval model judges it; in
+**Never ask** it runs. Downloads are recognized by the file extension in the URL only. Webhook runs
+have nobody to ask, so they refuse what would need a card. To approve every page yourself, add an
+**Ask** rule for `web_fetch`.
 
 ## What always asks
 
