@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { PageBrowserCommand, PageBrowserResult } from "@robots/adapter-kit";
 import type { SiteSession } from "@robots/contracts";
+import { VAULT_ITEM_LIMIT } from "@robots/contracts";
 import { asSystem, createDb, runAsTenant } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { forgetBotSecret, listBotSecrets, listVaultItems, revealBotSecret } from "./bot-secrets.js";
 import {
   importBrowserSessions,
   SESSIONS_NEED_OWN_SPACE,
+  SESSIONS_NOT_ON_THIS_COMPUTER,
   sessionItemBots,
   syncBotBrowserSessions,
   syncComputerBrowserSessions,
@@ -19,14 +21,14 @@ const describePostgres = process.env.VERIFY_DATABASE === "1" && url ? describe :
 const TOKEN = "fake-session-token-one";
 const ROTATED = "fake-session-token-two";
 
-function session(value: string): SiteSession {
+function session(value: string, site = "x.com"): SiteSession {
   return {
-    site: "x.com",
+    site,
     cookies: [
       {
         name: "auth_token",
         value,
-        domain: "x.com",
+        domain: site,
         hostOnly: false,
         path: "/",
         secure: true,
@@ -44,6 +46,7 @@ describePostgres("imported browser sessions (PostgreSQL)", () => {
   const other = `${stamp}-other`;
   const secretStore = new EncryptedSecretStore("test-only-encryption-key");
   const calls: Array<{ request: PageBrowserCommand; botId?: string }> = [];
+  let browserRefuses = false;
   const sandbox = {
     pageBrowser: async (
       _computer: unknown,
@@ -51,7 +54,7 @@ describePostgres("imported browser sessions (PostgreSQL)", () => {
       context: { botId?: string },
     ): Promise<PageBrowserResult> => {
       calls.push({ request, botId: context.botId });
-      return { ok: true };
+      return browserRefuses ? { ok: false, error: "The browser refused." } : { ok: true };
     },
   };
   let db: ReturnType<typeof createDb>;
@@ -202,6 +205,110 @@ describePostgres("imported browser sessions (PostgreSQL)", () => {
     await asOwner(() => forgetBotSecret(db.prisma, scope, row!.name));
     expect(await sync()).toBe("signed_in");
     expect(calls.at(-1)!.request).toEqual({ command: "sessions", sites: [], clear: ["x.com"] });
+    expect(await applied()).toEqual([]);
+  });
+
+  it("refuses an import that would pass the vault limit, saving none of its sites", async () => {
+    const fillers = Array.from({ length: VAULT_ITEM_LIMIT - 1 }, (_, index) => ({
+      id: `${stamp}-filler-${index}`,
+      userId: owner,
+      name: `filler ${index}`,
+      origin: `https://filler${index}.example`,
+      auth: { type: "password" },
+      ciphertext: "filler",
+    }));
+    await system.vaultCredential.createMany({ data: fillers });
+    const before = await system.vaultCredential.count({ where: { userId: owner } });
+    expect(before).toBe(VAULT_ITEM_LIMIT - 1);
+    await expect(
+      asOwner(() =>
+        importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
+          source: "Thomas in Chrome",
+          botIds: [],
+          sessions: [
+            session(TOKEN, "a.com"),
+            session(TOKEN, "b.com"),
+          ],
+        }),
+      ),
+    ).rejects.toThrow("Credential limit reached");
+    expect(await system.vaultCredential.count({ where: { userId: owner } })).toBe(before);
+    expect(
+      await system.vaultCredential.count({ where: { userId: owner, origin: "https://a.com" } }),
+    ).toBe(0);
+    await asOwner(() =>
+      importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
+        source: "Thomas in Chrome",
+        botIds: [],
+        sessions: [session(TOKEN, "a.com")],
+      }),
+    );
+    expect(await system.vaultCredential.count({ where: { userId: owner } })).toBe(
+      VAULT_ITEM_LIMIT,
+    );
+    await system.vaultCredential.deleteMany({ where: { userId: owner } });
+  });
+
+  it("never delivers a sign-in to a bot on this computer", async () => {
+    const settings = await system.deploymentSettings.findUnique({ where: { id: "default" } });
+    const previous = settings?.computerHost ?? null;
+    await asOwner(() =>
+      importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
+        source: "Thomas in Chrome",
+        botIds: [botId],
+        sessions: [session(TOKEN)],
+      }),
+    );
+    const sentBefore = calls.length;
+    await system.deploymentSettings.upsert({
+      where: { id: "default" },
+      create: { id: "default", computerHost: "this-mac" },
+      update: { computerHost: "this-mac" },
+    });
+    try {
+      expect(await sync()).toBe("failed");
+      expect(calls).toHaveLength(sentBefore);
+      await expect(
+        asOwner(() =>
+          importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
+            source: "Thomas in Chrome",
+            botIds: [botId],
+            sessions: [session(ROTATED)],
+          }),
+        ),
+      ).rejects.toThrow(SESSIONS_NOT_ON_THIS_COMPUTER);
+    } finally {
+      await system.deploymentSettings.update({
+        where: { id: "default" },
+        data: { computerHost: previous },
+      });
+    }
+    const [row] = await system.vaultCredential.findMany({ where: { userId: owner } });
+    await asOwner(() => forgetBotSecret(db.prisma, scope, row!.name));
+    expect(await sync()).toBe("signed_in");
+    expect(await applied()).toEqual([]);
+  });
+
+  it("keeps a removed sign-in recorded while the browser refuses its sign-out", async () => {
+    await asOwner(() =>
+      importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
+        source: "Thomas in Chrome",
+        botIds: [botId],
+        sessions: [session(TOKEN)],
+      }),
+    );
+    expect(await sync()).toBe("signed_in");
+    expect(await applied()).toEqual(["x.com"]);
+    const [row] = await system.vaultCredential.findMany({ where: { userId: owner } });
+    await asOwner(() => forgetBotSecret(db.prisma, scope, row!.name));
+    browserRefuses = true;
+    try {
+      expect(await sync()).toBe("failed");
+      expect(await applied()).toEqual(["x.com"]);
+    } finally {
+      browserRefuses = false;
+    }
+    expect(await sync()).toBe("signed_in");
     expect(await applied()).toEqual([]);
   });
 

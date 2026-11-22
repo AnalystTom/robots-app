@@ -156,25 +156,3 @@ export function decryptCookie(cookie: EncryptedCookie, keys: CookieKeys): string
     "The browser's saved key did not open its sign-ins. Sign in to the browser again and retry.",
   );
 }
-
-export function encryptCookieForTest(
-  value: string,
-  cookie: { hostKey: string; dbVersion: number; version: CookieCipherVersion },
-  keys: CookieKeys,
-): Buffer {
-  const prefix = cookie.dbVersion >= HOST_HASH_DB_VERSION;
-  const plaintext = Buffer.concat([
-    prefix ? createHash("sha256").update(cookie.hostKey).digest() : Buffer.alloc(0),
-    Buffer.from(value, "utf8"),
-  ]);
-  if (keys.cipher === "aes-256-gcm") {
-    const nonce = Buffer.alloc(GCM_NONCE_BYTES, 7);
-    const cipher = createCipheriv("aes-256-gcm", keys.key, nonce);
-    const body = Buffer.concat([cipher.update(plaintext), cipher.final()]);
-    return Buffer.concat([Buffer.from(cookie.version), nonce, body, cipher.getAuthTag()]);
-  }
-  const key = keys.keys[cookie.version]?.[0];
-  if (!key) throw new Error(`no ${cookie.version} key`);
-  const cipher = createCipheriv("aes-128-cbc", key, CBC_IV);
-  return Buffer.concat([Buffer.from(cookie.version), cipher.update(plaintext), cipher.final()]);
-}

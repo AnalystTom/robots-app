@@ -17,6 +17,8 @@ function validSites(sites: unknown): string[] | undefined {
     : undefined;
 }
 
+export type ConfirmSessionListing = (server: string) => Promise<boolean>;
+
 export type ConfirmSessionImport = (request: {
   server: string;
   profile: BrowserProfileSummary;
@@ -26,11 +28,16 @@ export type ConfirmSessionImport = (request: {
 export function createBrowserSessionsHandlers(
   getTarget: () => AppTarget | null,
   reader: ProfileSessionsReader,
+  confirmListing: ConfirmSessionListing,
   confirm: ConfirmSessionImport,
 ) {
   return {
-    profiles: async (event: InvokeEvent): Promise<BrowserProfileSummary[] | null> =>
-      fromAppFrame(getTarget(), event) ? reader.profiles() : null,
+    profiles: async (event: InvokeEvent): Promise<BrowserProfileSummary[] | null> => {
+      const target = getTarget();
+      if (!target || !fromAppFrame(target, event)) return null;
+      if (!(await confirmListing(new URL(target.url).host))) return null;
+      return reader.profiles();
+    },
 
     read: async (
       event: InvokeEvent,

@@ -433,6 +433,21 @@ async function confirmComputerAccess(detail: string) {
   const result = await (win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options));
   return result.response === 1;
 }
+async function confirmSessionListing(server: string) {
+  const options: Electron.MessageBoxOptions = {
+    type: "question",
+    title: t("Look at browser sign-ins?"),
+    message: t("Let {server} see which sites have sign-ins in your browsers?", { server }),
+    buttons: [t("Cancel"), t("Continue")],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  };
+  const win =
+    desktop.mainWindow !== null && !desktop.mainWindow.isDestroyed() ? desktop.mainWindow : null;
+  const result = await (win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options));
+  return result.response === 1;
+}
 async function confirmSessionImport(request: {
   server: string;
   profile: { name: string; browser: string };
@@ -914,6 +929,7 @@ app.whenReady().then(async () => {
       { platform: process.platform, home: app.getPath("home"), env: process.env },
       platformKeySource(process.platform),
     ),
+    confirmSessionListing,
     confirmSessionImport,
   );
   ipcMain.handle("desktop.browserSessions.profiles", browserSessions.profiles);
