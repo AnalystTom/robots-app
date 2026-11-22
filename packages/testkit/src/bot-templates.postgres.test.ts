@@ -192,14 +192,15 @@ describeIntegration("bot templates", () => {
     const team = findBotTemplateTeam("team-autopilot")!;
     const salesIndex = team.templateIds.indexOf("sales");
     const salesName = findBotTemplate("sales")!.name;
-    await db.$executeRawUnsafe(`
+    const ownerDb = createDb(process.env.DATABASE_MIGRATION_URL ?? process.env.DATABASE_URL!);
+    await ownerDb.prisma.$executeRawUnsafe(`
       CREATE OR REPLACE FUNCTION fail_team_member_insert() RETURNS trigger AS $$
-      BEGIN RAISE EXCEPTION 'injected member failure'; END;
-      $$ LANGUAGE plpgsql;
-      CREATE TRIGGER fail_team_member_insert BEFORE INSERT ON bots FOR EACH ROW
-      WHEN (NEW."spaceId" = '${owner.spaceId}' AND NEW.name = '${salesName}')
-      EXECUTE FUNCTION fail_team_member_insert();
-    `);
+      BEGIN RAISE EXCEPTION 'injected member failure'; END $$ LANGUAGE plpgsql`);
+    await ownerDb.prisma.$executeRawUnsafe(
+      `CREATE TRIGGER fail_team_member_insert BEFORE INSERT ON bots FOR EACH ROW
+       WHEN (NEW."spaceId" = '${owner.spaceId}' AND NEW.name = '${salesName}')
+       EXECUTE FUNCTION fail_team_member_insert()`,
+    );
 
     let partial: { bots: Bot[]; failed: string[] };
     try {
@@ -210,7 +211,10 @@ describeIntegration("bot templates", () => {
         { teamId: team.id },
       );
     } finally {
-      await db.$executeRawUnsafe(`DROP TRIGGER fail_team_member_insert ON bots`);
+      await ownerDb.prisma.$executeRawUnsafe(
+        "DROP TRIGGER IF EXISTS fail_team_member_insert ON bots",
+      );
+      await ownerDb.prisma.$disconnect();
     }
     expect(partial.failed).toEqual(["sales"]);
     expect(partial.bots.map((bot) => bot.name)).toEqual(
