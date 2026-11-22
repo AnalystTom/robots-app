@@ -61,6 +61,11 @@ export function BotLookPicker({
       <View>
         {labeled ? <Label>{t`Robot`}</Label> : null}
         <View accessibilityRole="radiogroup" style={grid}>
+          {robot && !pickedPreset ? (
+            <Choice disabled={disabled} label={t`Current look`} selected>
+              <BotAvatar color={value} size={ROBOT_SIZE} />
+            </Choice>
+          ) : null}
           {ROBOT_PRESETS.map((preset) => {
             const look = robotPresetValue(preset.id);
             return (
@@ -205,7 +210,7 @@ function Choice({
   disabled: boolean;
   label: string;
   selected: boolean;
-  onPress: () => void;
+  onPress?: () => void;
   children: ReactNode;
 }) {
   const tokens = useMobileTokens();

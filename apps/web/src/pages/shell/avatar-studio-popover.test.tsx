@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import type { BotAvatarSet } from "@robots/contracts";
+import { robotPresetValue } from "@robots/core";
 import { DEFAULT_BOT_AVATAR_COLOR } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { act, useState } from "react";
@@ -114,5 +115,18 @@ describe("selectable bot icon sets", () => {
     expect(button("Original").getAttribute("aria-selected")).toBe("true");
     await click("RoBots");
     expect(changed).toHaveBeenLastCalledWith("#00C972", "robots");
+  });
+
+  it("shows a stored look that is not a preset as the current look until a preset is picked", async () => {
+    const customLook = "robot:pink.hood.happy.vest.none";
+    await render(customLook);
+    await click("Customize bot avatar");
+    expect(button("Current look").getAttribute("aria-checked")).toBe("true");
+    expect(button("Assistant").getAttribute("aria-checked")).toBe("false");
+    expect(changed).not.toHaveBeenCalled();
+    await click("Assistant");
+    expect(changed).toHaveBeenLastCalledWith(robotPresetValue("assistant"), undefined);
+    expect(document.querySelector('[aria-label="Current look"]')).toBeNull();
+    expect(button("Assistant").getAttribute("aria-checked")).toBe("true");
   });
 });

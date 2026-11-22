@@ -14,6 +14,16 @@ import { ensureFirstBot, FirstBotRetry } from "./onboarding/first-bot";
 import { ModelStep } from "./onboarding/model-step";
 import { useOnboardingModel } from "./onboarding/use-onboarding-model";
 
+async function startOnboardingChat(botId: string) {
+  const started = await rpc.onboarding
+    .start({ botId })
+    .then(() => true)
+    .catch(() => false);
+  if (started) {
+    await rpc.onboarding.promptFocus({ botId }).catch(() => undefined);
+  }
+}
+
 export function OnboardingPage() {
   const { t } = useLingui();
   const navigate = useNavigate();
@@ -82,18 +92,15 @@ export function OnboardingPage() {
     createStartedRef.current = true;
     setError(null);
     try {
-      if (template && isBotTemplateLink(template)) {
-        navigate(await importBotTemplate(template));
+      const linkedBotId =
+        template && isBotTemplateLink(template) ? await importBotTemplate(template) : null;
+      if (linkedBotId) {
+        await startOnboardingChat(linkedBotId);
+        navigate(`/app/${linkedBotId}`);
         return;
       }
       const bot = await ensureFirstBot();
-      const started = await rpc.onboarding
-        .start({ botId: bot.id })
-        .then(() => true)
-        .catch(() => false);
-      if (started) {
-        await rpc.onboarding.promptFocus({ botId: bot.id }).catch(() => undefined);
-      }
+      await startOnboardingChat(bot.id);
       navigate(template ? `/app/${bot.id}?templates` : `/app/${bot.id}`);
     } catch (err) {
       createStartedRef.current = false;

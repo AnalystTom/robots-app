@@ -7,18 +7,18 @@ export function isBotTemplateLink(templateId: string): boolean {
   return Boolean(findBotTemplateTeam(templateId) ?? findBotTemplate(templateId));
 }
 
-export async function importBotTemplate(templateId: string): Promise<string> {
+export async function importBotTemplate(templateId: string): Promise<string | null> {
   if (findBotTemplateTeam(templateId)) {
     const { bots } = await rpc.bots.createTeamFromTemplate({ teamId: templateId });
-    return `/app/${bots[0]!.id}`;
+    return bots[0]!.id;
   }
   const templates = await rpc.bots.templates();
   const template = templates.find((candidate) => candidate.id === templateId);
-  if (!template) return TEMPLATE_GALLERY_PATH;
-  if (template.botId) return `/app/${template.botId}`;
+  if (!template) return null;
+  if (template.botId) return template.botId;
   const { bot } = await rpc.bots.createFromTemplate({
     templateId: template.id,
     version: template.version,
   });
-  return `/app/${bot.id}`;
+  return bot.id;
 }

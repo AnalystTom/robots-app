@@ -60,6 +60,7 @@ export function BotLookPicker({
     <div className="space-y-4">
       <RobotPresetPicker
         value={robot ? robotPresetOf(robot) : null}
+        currentLook={robot && !robotPresetOf(robot) ? value : undefined}
         onChange={(id) => onChange(robotPresetValue(id))}
       />
       <Disclosure

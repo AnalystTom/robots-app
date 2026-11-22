@@ -239,12 +239,14 @@ export async function createBotTeamFromTemplate<PreparedKey>(
 ) {
   const team = findBotTemplateTeam(input.teamId);
   if (!team) throw new ORPCError("NOT_FOUND", { message: "No team has that id." });
+  let catalog: Promise<ConnectionCatalogItem[]> | undefined;
+  const sharedCatalog = () => (catalog ??= appCatalog());
   const bots = [];
   for (const templateId of team.templateIds) {
     const template = findBotTemplate(templateId)!;
     const { bot } = await createBotFromTemplate(
       services,
-      appCatalog,
+      sharedCatalog,
       actor,
       { templateId, version: template.version },
       signal,

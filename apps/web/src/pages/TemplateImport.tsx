@@ -15,7 +15,10 @@ export function TemplateImportPage() {
   const userId = useQueryUserId();
   const imported = useQuery({
     queryKey: ["template-import", userId, templateId],
-    queryFn: () => importBotTemplate(templateId),
+    queryFn: async () => {
+      const botId = await importBotTemplate(templateId);
+      return botId ? `/app/${botId}` : TEMPLATE_GALLERY_PATH;
+    },
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 0,
