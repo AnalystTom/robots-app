@@ -7,6 +7,7 @@ import type {
   WebSearchHit,
   WebSearchRequest,
 } from "@robots/adapter-kit";
+import { isRiskyFetchTarget } from "@robots/core/egress";
 import { JSDOM } from "jsdom";
 import { clampMaxChars, clampMaxResults, clampOffset, pageWindow } from "./web-limits.js";
 import type { ResolveHostname } from "./web-ssrf.js";
@@ -46,6 +47,13 @@ export const duckDuckGoHtmlSearchBackend: KeylessHtmlSearchBackend = {
   endpoint: DEFAULT_SEARCH_ENDPOINT,
   parse: parseDuckDuckGoResults,
 };
+
+function refuseRiskyRedirect(hop: string): void {
+  if (!isRiskyFetchTarget(hop)) return;
+  throw new Error(
+    `The page redirected to ${hop}, which needs approval. Ask the user, or fetch that URL directly so they can approve it.`,
+  );
+}
 
 /** No API key, no sandbox, no JS execution. */
 export class KeylessHttpWebProvider implements WebProvider {
@@ -110,6 +118,7 @@ export class KeylessHttpWebProvider implements WebProvider {
       maxBytes: this.maxBufferBytes,
       userAgent: this.userAgent,
       signal: request.signal ?? context.signal,
+      checkRedirect: refuseRiskyRedirect,
     });
     if (!body.trim()) throw new Error(`Failed to fetch content from ${url}`);
     const mediaType = contentType?.split(";", 1)[0]?.trim().toLowerCase();

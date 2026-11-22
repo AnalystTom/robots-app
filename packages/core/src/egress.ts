@@ -132,7 +132,8 @@ export function isRiskyFetchTarget(input: string): boolean {
 function pathExtension(pathname: string): string {
   const decoded = pathname
     .slice(pathname.lastIndexOf("/") + 1)
-    .replace(/%([0-9a-f]{2})/gi, (_, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)));
+    .replace(/%([0-9a-f]{2})/gi, (_, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)))
+    .replace(/[\s.]+$/, "");
   const dot = decoded.lastIndexOf(".");
   return dot < 0 ? "" : decoded.slice(dot + 1).toLowerCase();
 }

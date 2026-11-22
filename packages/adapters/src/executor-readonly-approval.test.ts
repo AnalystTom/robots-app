@@ -2995,7 +2995,6 @@ describe("outbound destinations", () => {
       site: "attacker.test",
       actions: [
         { id: "allow", label: "Allow once" },
-        { id: "always", label: "Always allow attacker.test" },
         { id: "deny", label: "Deny" },
       ],
     });

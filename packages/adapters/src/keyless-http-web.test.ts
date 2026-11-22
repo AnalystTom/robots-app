@@ -102,13 +102,51 @@ describe("keyless HTTP web provider", () => {
         resolveHostname: publicResolver,
       });
       await expect(
-        webFetchFromTool(provider, ctx, { url: "https://example.test/start" }),
+        webFetchFromTool(provider, ctx, { url: "https://example.com/start" }),
       ).resolves.toMatchObject({
-        url: "https://example.test/final",
+        url: "https://example.com/final",
         text: "Use <project-root>/src",
       });
     },
   );
+
+  it("refuses a redirect to a download without requesting it", async () => {
+    const requested: string[] = [];
+    const provider = new KeylessHttpWebProvider({
+      fetch: async (input) => {
+        requested.push(String(input));
+        return String(input).endsWith("/start")
+          ? new Response(null, {
+              status: 302,
+              headers: { location: "https://example.com/setup.exe" },
+            })
+          : new Response("MZ", { headers: { "content-type": "application/octet-stream" } });
+      },
+      resolveHostname: publicResolver,
+    });
+    await expect(
+      webFetchFromTool(provider, ctx, { url: "https://example.com/start" }),
+    ).resolves.toEqual({
+      error:
+        "The page redirected to https://example.com/setup.exe, which needs approval. Ask the user, or fetch that URL directly so they can approve it.",
+    });
+    expect(requested).toEqual(["https://example.com/start"]);
+  });
+
+  it("reads a redirect to an ordinary public page", async () => {
+    const provider = new KeylessHttpWebProvider({
+      fetch: async (input) =>
+        String(input).endsWith("/start")
+          ? new Response(null, { status: 302, headers: { location: "https://example.org/news" } })
+          : new Response("<html><title>News</title><body>Today</body></html>", {
+              headers: { "content-type": "text/html" },
+            }),
+      resolveHostname: publicResolver,
+    });
+    await expect(
+      webFetchFromTool(provider, ctx, { url: "https://example.com/start" }),
+    ).resolves.toMatchObject({ url: "https://example.org/news" });
+  });
 
   it.each(["text/plain", "application/json"])("paginates preserved %s", async (contentType) => {
     const body = JSON.stringify({ text: "<x>  ".repeat(50) });

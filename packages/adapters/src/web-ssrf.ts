@@ -34,6 +34,8 @@ export interface SafeWebFetchOptions {
   truncate?: boolean;
   /** Refuse any hop, redirects included, whose port is not listed. */
   allowedPorts?: readonly number[];
+  /** Called with each redirect target before it is followed; throw to refuse it. */
+  checkRedirect?: (url: string) => void;
   /**
    * Test seam for dispatcher teardown. Defaults to `dispatcher.close()`.
    * Always raced against the shared operation deadline.
@@ -134,6 +136,7 @@ export async function fetchSafeWebBytes(
       redirectsRemaining: options.maxRedirects ?? MAX_REDIRECTS,
       truncate: options.truncate ?? false,
       allowedPorts: options.allowedPorts,
+      checkRedirect: options.checkRedirect,
     }),
   );
 }
@@ -239,6 +242,7 @@ async function followRedirects(
     redirectsRemaining: number;
     truncate: boolean;
     allowedPorts?: readonly number[];
+    checkRedirect?: (url: string) => void;
   },
 ): Promise<SafeWebResponse<Uint8Array>> {
   if (state.signal.aborted) {
@@ -272,6 +276,7 @@ async function followRedirects(
       throw new Error("Redirect missing Location header");
     }
     const next = new URL(location, validated.href);
+    state.checkRedirect?.(next.href);
     const headers = next.origin === validated.origin ? state.headers : undefined;
     // Release this hop before following — do not leave the body open across recursion.
     await cancelResponseBody(response, state.signal);

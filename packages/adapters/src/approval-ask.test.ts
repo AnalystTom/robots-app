@@ -22,6 +22,21 @@ describe("buildApprovalAskBlock", () => {
     expect(JSON.stringify(block)).not.toContain("token-secret");
   });
 
+  it("offers only Allow once and Deny for a risky web_fetch target", () => {
+    const block = buildApprovalAskBlock(
+      "effect-1",
+      "web_fetch",
+      { url: "https://example.com/setup.exe" },
+      [],
+    );
+    expect(block).toMatchObject({
+      actions: [
+        { id: "allow", label: "Allow once" },
+        { id: "deny", label: "Deny" },
+      ],
+    });
+  });
+
   it("offers no Always allow on an approval that asks every time", () => {
     const block = buildApprovalAskBlock(
       "effect-1",

@@ -197,6 +197,8 @@ describe("isRiskyFetchTarget", () => {
     "https://8.8.8.8/setup.exe",
     "http://203.0.113.7/setup.exe",
     "https://example.com/setup.exe",
+    "https://example.com/setup.exe.",
+    "https://example.com/setup.exe%20",
     "https://example.com/Setup.EXE",
     "https://example.com/setup%2Eexe",
     "https://example.com/tool.dmg?ref=home",

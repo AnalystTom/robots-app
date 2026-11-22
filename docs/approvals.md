@@ -48,7 +48,9 @@ Bots read public web pages without asking, including links with a query string. 
 before a risky address: an IP address on a private or internal network, `localhost` or a local name
 such as `printer.local`, a cloud metadata host, a link with a password in it, or a program or
 installer download. In **Ask** the card shows; in **Auto** the approval model judges it; in
-**Never ask** it runs. Downloads are recognized by the file extension in the URL only. Webhook runs
+**Never ask** it runs, and the fetch itself still refuses private, internal and metadata addresses.
+A card for a risky address offers **Allow once** and **Deny** only. Downloads are recognized by the
+file extension in the URL only, and a redirect to a risky address stops the read. Webhook runs
 have nobody to ask, so they refuse what would need a card. To approve every page yourself, add an
 **Ask** rule for `web_fetch`.
 
