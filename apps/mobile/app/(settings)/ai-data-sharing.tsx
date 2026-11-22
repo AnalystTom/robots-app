@@ -47,14 +47,14 @@ export default function AiDataSharing() {
   const change = useSave({
     save: async (ask: { recipient: AiRecipient; allowed: boolean } | "withdraw", send) => {
       if (!status) return;
-      async function askAndAllow(recipient: AiRecipient) {
+      const askAndAllow = async (recipient: AiRecipient) => {
         const input = { scope: status.scope, version: status.version, keys: [recipient.key] };
         const requestContext = await captureApiRequestContext();
         const allowed = await promptAiConsent([recipient], status.privacyUrl, () =>
           allowPromptedAiConsent(input, requestContext),
         );
         return allowed ? send("aiConsent/allow", input) : null;
-      }
+      };
       const saved =
         ask === "withdraw"
           ? await send("aiConsent/revoke", { key: null })
