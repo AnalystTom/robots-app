@@ -8,7 +8,6 @@ tags:
     permissions:
       notifications: deny
 
-# A cold API 34 emulator can show a launcher ANR over the healthy app.
 - extendedWaitUntil:
     visible: "Sign up for RoBots|Pixel Launcher isn't responding"
     timeout: 60000
@@ -50,7 +49,6 @@ tags:
 - takeScreenshot: "04-inbox"
 
 - tapOn: "Activity"
-# The fixture's bot replies arrive unread, so Activity always has its Unread section.
 - extendedWaitUntil:
     visible: "Unread"
     timeout: 10000
@@ -83,6 +81,15 @@ tags:
 - openLink: "robots:///new-bot"
 - assertVisible: "Name your Bot"
 - takeScreenshot: "08b-new-bot"
+- tapOn: "Chef"
+- tapOn: "Color 2"
+- assertVisible:
+    text: "Chef"
+    checked: true
+- assertVisible:
+    text: "Color 2"
+    checked: true
+- takeScreenshot: "08c-new-bot-robot"
 
 - openLink: "robots:///new-space"
 - assertVisible: "Customer support"
@@ -168,17 +175,14 @@ tags:
 - eraseText: 1
 - assertNotVisible: 'Keyboard visibility check\nSecond line'
 - hideKeyboard
-# Holding a message opens the reaction row and grouped actions next to it.
 - longPressOn: "The fixture workspace is ready."
 - assertVisible: "Reply"
 - assertVisible: "👍"
 - assertVisible: "Speak message"
 - takeScreenshot: "15b-message-actions"
 - back
-# Settle the keyboard inset before measuring the next message target.
 - hideKeyboard
 - waitForAnimationToEnd
-# User messages omit Speak.
 - longPressOn: "Summarize the fixture launch checklist."
 - assertVisible: "Reply"
 - assertVisible: "👍"
@@ -187,7 +191,6 @@ tags:
 - tapOn: "Reply"
 - assertVisible: "Cancel reply"
 - tapOn: "Cancel reply"
-# Bot actions live in the bot's profile header.
 - openLink: "robots:///bot-profile?botId=${ROBOTS_SCREENSHOT_BOT_ID}&name=Researcher"
 - extendedWaitUntil:
     visible: "Bot actions"
@@ -204,7 +207,6 @@ tags:
 - assertVisible: "Advanced"
 - tapOn: "Advanced"
 - assertVisible: "Model"
-# Label includes the resolved space model, e.g. "Space default (OpenAI: …)".
 - assertVisible: "Space default.*"
 - takeScreenshot: "17-bot-settings"
 
@@ -247,7 +249,6 @@ tags:
     timeout: 10000
 - takeScreenshot: "21-routine"
 
-# Verify saved appearance changes on already-mounted screens and modal routes.
 - openLink: "robots:///general"
 - extendedWaitUntil:
     visible: "Dark"
@@ -293,8 +294,6 @@ tags:
 - assertVisible: "The fixture workspace is ready."
 - takeScreenshot: "29-thread-light-restored"
 
-# Capture the reaction after theme comparisons. Reactions are append-only, so adding
-# 👍 earlier would leak into dark/light thread frames with no remove control.
 - longPressOn: "The fixture workspace is ready."
 - tapOn: "👍"
 - extendedWaitUntil:
