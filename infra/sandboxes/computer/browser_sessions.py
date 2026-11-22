@@ -155,6 +155,15 @@ def keyed_profile(profile: str) -> bool:
         return False
 
 
+def import_sessions(port: int, request: dict[str, Any]) -> dict[str, Any]:
+    profile = profile_dir_for_port(port)
+    if not profile:
+        raise RuntimeError("The browser's profile could not be found.")
+    if not keyed_profile(profile):
+        return {"ok": False, "error": "The browser's key is not ready, so the sign-ins were not saved."}
+    return apply_sessions(port, request)
+
+
 def apply_sessions(port: int, request: dict[str, Any],
                    commit_seconds: float = COMMIT_SECONDS) -> dict[str, Any]:
     sites = request.get("sites") or []
@@ -164,8 +173,6 @@ def apply_sessions(port: int, request: dict[str, Any],
     profile = profile_dir_for_port(port)
     if not profile:
         raise RuntimeError("The browser's profile could not be found.")
-    if not keyed_profile(profile):
-        return {"ok": False, "error": "The browser's key is not ready, so the sign-ins were not saved."}
     client = page_secrets.connect(port)
     try:
         current = browser_cookies(client)
@@ -239,12 +246,20 @@ def wait_for_browser(port: int, deadline: float) -> bool:
     return False
 
 
+def mark_keyed(profile: str) -> None:
+    with open(os.path.join(profile, STORE_MARK), "w", encoding="utf-8") as mark:
+        mark.write(ENCRYPTED_STORE + "\n")
+
+
 def reseal(profile: str, port: int) -> dict[str, Any]:
-    if public_key_rows(profile) == 0:
-        return {"ok": True, "resealed": 0}
-    if not wait_for_browser(port, time.monotonic() + 60.0):
-        return {"ok": False, "error": "The browser did not start."}
-    return apply_sessions(port, {"sites": [], "clear": [], "reseal": True})
+    if public_key_rows(profile) > 0:
+        if not wait_for_browser(port, time.monotonic() + 60.0):
+            return {"ok": False, "error": "The browser did not start."}
+        result = apply_sessions(port, {"sites": [], "clear": [], "reseal": True})
+        if not result["ok"]:
+            return result
+    mark_keyed(profile)
+    return {"ok": True}
 
 
 if __name__ == "__main__":

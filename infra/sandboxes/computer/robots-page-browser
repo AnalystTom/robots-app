@@ -2562,7 +2562,7 @@ def run(argv: list[str]) -> int:
         try:
             port = cdp_port()
             wait_for_cdp(port)
-            print(json.dumps(browser_sessions.apply_sessions(port, args)))
+            print(json.dumps(browser_sessions.import_sessions(port, args)))
         except Exception as exc:  # noqa: BLE001
             print(json.dumps({"ok": False, "error": str(exc)}))
         return 0

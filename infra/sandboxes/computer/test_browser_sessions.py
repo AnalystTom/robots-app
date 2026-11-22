@@ -34,6 +34,17 @@ def launch():
     assert browser_sessions.wait_for_browser(PORT, time.monotonic() + 30), "browser did not start"
 
 
+def launch_basic_store():
+    env = dict(os.environ, DISPLAY=":1", HOME="/home/robots")
+    binary = shutil.which("chromium") or shutil.which("chromium-browser")
+    with open("/tmp/robots/test-browser.log", "ab") as log:
+        subprocess.Popen([binary, "--no-sandbox", "--password-store=basic", f"--user-data-dir={PROFILE}",
+                          f"--remote-debugging-port={PORT}", "--remote-debugging-address=127.0.0.1",
+                          "about:blank"], env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log,
+                         start_new_session=True)
+    assert browser_sessions.wait_for_browser(PORT, time.monotonic() + 30), "browser did not start"
+
+
 def browser_pid():
     found = browser_sessions.browser_process(PORT)
     return found[0] if found else None
@@ -129,9 +140,9 @@ def main():
     key = store_key()
     os.replace(KEY_FILE, HELD_KEY)
 
-    launch()
+    launch_basic_store()
     seed_basic_store_sign_in()
-    refused = browser_sessions.apply_sessions(PORT, {"sites": [{"site": "example.net", "cookies": [IMPORTED]}], "clear": []})
+    refused = browser_sessions.import_sessions(PORT, {"sites": [{"site": "example.net", "cookies": [IMPORTED]}], "clear": []})
     assert not refused["ok"], "an import was saved under the public key"
     assert "imported_sign_in" not in rows(), "a refused import reached the disk"
     kill_browser()
@@ -144,6 +155,8 @@ def main():
     launch()
     wait_until(lambda: all(v[:3] == b"v11" for _, v in rows().values()), 120,
                "existing sign-ins were not resealed with the computer's key")
+    wait_until(lambda: browser_sessions.keyed_profile(PROFILE), 120,
+               "the profile was not marked keyed after its sign-ins were migrated")
     cookie = live_cookie("legacy_sign_in")
     assert cookie and cookie["value"] == LEGACY["value"], "the migration lost an existing sign-in"
     host, value = rows()["legacy_sign_in"]
@@ -151,7 +164,7 @@ def main():
     assert opened_with(key, host, value) == LEGACY["value"], "the computer's key does not open the migrated sign-in"
     print("migrated: existing sign-in kept and resealed with the computer's key")
 
-    result = browser_sessions.apply_sessions(PORT, {"sites": [{"site": "example.org", "cookies": [IMPORTED]}], "clear": []})
+    result = browser_sessions.import_sessions(PORT, {"sites": [{"site": "example.org", "cookies": [IMPORTED]}], "clear": []})
     assert result["ok"], result
     kill_browser()
     launch()
@@ -163,7 +176,7 @@ def main():
     assert opened_with(key, host, value) == IMPORTED["value"], "the computer's key does not open the imported sign-in"
     print("imported: committed, survives SIGKILL, unreadable with the public key")
 
-    result = browser_sessions.apply_sessions(PORT, {"sites": [], "clear": ["example.org"]})
+    result = browser_sessions.import_sessions(PORT, {"sites": [], "clear": ["example.org"]})
     assert result["ok"], result
     assert live_cookie("imported_sign_in") is None, "removing the sign-in left it in the browser"
     assert "imported_sign_in" not in rows(), "removing the sign-in left it on disk"
