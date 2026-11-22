@@ -1,3 +1,5 @@
+import { retry } from "@robots/core";
+
 // Transactions that lock the thread row before writing run state share the body budget: the
 // lock is held up to 15s by snapshot reads, Prisma's 5s default counts that wait, and expiring
 // fails a user stop, clear, send, reaction or card answer, a run's steering claim or takeover
@@ -6,7 +8,7 @@
 // a connection late would fail the checkout instead of waiting.
 export const THREAD_LOCK_TRANSACTION_OPTIONS = { timeout: 20_000 };
 
-const MAX_TRANSACTION_ATTEMPTS = 3;
+const MAX_TRANSACTION_ATTEMPTS = 5;
 const RETRYABLE_DATABASE_CODES = new Set(["40001", "40P01"]);
 
 /**
@@ -31,14 +33,9 @@ function isRetryableTransactionConflict(error: unknown): boolean {
   return typeof databaseCode === "string" && RETRYABLE_DATABASE_CODES.has(databaseCode);
 }
 
-export async function withTransactionRetry<T>(operation: () => Promise<T>): Promise<T> {
-  for (let attempt = 1; ; attempt += 1) {
-    try {
-      return await operation();
-    } catch (error) {
-      if (!isRetryableTransactionConflict(error) || attempt >= MAX_TRANSACTION_ATTEMPTS) {
-        throw error;
-      }
-    }
-  }
+export function withTransactionRetry<T>(operation: () => Promise<T>): Promise<T> {
+  return retry(operation, {
+    attempts: MAX_TRANSACTION_ATTEMPTS,
+    retryable: isRetryableTransactionConflict,
+  });
 }
