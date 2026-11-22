@@ -54,6 +54,9 @@ await window.robotsDesktop.macApps.allow("automation-notes");
 - Turn one Automation switch off in System Settings > Privacy & Security >
   Automation > RoBots, ask the bot to use that app, and check that the bot says
   RoBots is not allowed to control it and how to fix it.
+- If a Mac app page shows "Update RoBots on this Mac to allow" instead of an
+  Allow button, the installed RoBots desktop app on that Mac is too old for Mac
+  app connections. Install the current RoBots desktop app, then check again.
 
 ## Offline and settings
 

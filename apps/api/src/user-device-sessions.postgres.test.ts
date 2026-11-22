@@ -2,7 +2,11 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EmailEmulator, FakeSandboxProvider } from "@robots/adapters";
-import { USER_DEVICE_PAIR_PATH, USER_DEVICE_PATH } from "@robots/contracts";
+import {
+  USER_DEVICE_PAIR_PATH,
+  USER_DEVICE_PATH,
+  USER_DEVICE_SESSION_PATH,
+} from "@robots/contracts";
 import { runAsSystem } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { sessionCookieHeader } from "../../../packages/testkit/src/index.js";
@@ -64,7 +68,6 @@ describe.skipIf(!databaseUrl)("paired computers end with the sign-in that paired
     return { address, password, signIn };
   }
 
-  /** What the desktop app does with the window's sign-in. */
   async function pair(cookie: string) {
     const response = await handles.app.request(USER_DEVICE_PAIR_PATH, {
       method: "POST",
@@ -75,8 +78,7 @@ describe.skipIf(!databaseUrl)("paired computers end with the sign-in that paired
     return (await response.json()) as { deviceId: string; token: string; userId: string };
   }
 
-  /** Revokes the device when its token still works, so call it only to show that it does not. */
-  const active = async (token: string) => {
+  const revokesWhenStillActive = async (token: string) => {
     const response = await handles.app.request(`${USER_DEVICE_PATH}/self`, {
       method: "DELETE",
       headers: { authorization: `Bearer ${token}` },
@@ -102,17 +104,54 @@ describe.skipIf(!databaseUrl)("paired computers end with the sign-in that paired
     expect(await revokedAt(device.deviceId)).toBeInstanceOf(Date);
     expect(await revokedAt(other.deviceId)).toBeNull();
 
-    // Signing back in pairs again for the same account.
     const again = await pair(await owner.signIn());
     expect(again.userId).toBe(device.userId);
     expect(await revokedAt(again.deviceId)).toBeNull();
+  });
+
+  it("a computer that signs in to another account ends the old account's pairing", async () => {
+    const previous = await newAccount();
+    const device = await pair(await previous.signIn());
+    const current = await newAccount();
+    const window = await current.signIn();
+
+    const tie = await handles.app.request(USER_DEVICE_SESSION_PATH, {
+      method: "POST",
+      headers: { authorization: `Bearer ${device.token}`, cookie: window },
+    });
+
+    expect(tie.status).toBe(403);
+    const ended = await runAsSystem("read a paired computer", () =>
+      handles.prisma.userDevice.findUniqueOrThrow({ where: { id: device.deviceId } }),
+    );
+    expect(ended).toMatchObject({ userId: device.userId, revokedBy: "session" });
+    expect(ended.revokedAt).toBeInstanceOf(Date);
+    expect(await revokesWhenStillActive(device.token)).toBe(false);
+
+    const repaired = await pair(window);
+    expect(repaired.userId).not.toBe(device.userId);
+    const listed = await handles.app.request(USER_DEVICE_PATH, { headers: { cookie: window } });
+    expect((await listed.json()).devices).toEqual([
+      expect.objectContaining({ deviceId: repaired.deviceId }),
+    ]);
+  });
+
+  it("a computer tying its own account's sign-in stays paired", async () => {
+    const owner = await newAccount();
+    const device = await pair(await owner.signIn());
+    const tie = await handles.app.request(USER_DEVICE_SESSION_PATH, {
+      method: "POST",
+      headers: { authorization: `Bearer ${device.token}`, cookie: await owner.signIn() },
+    });
+    expect(tie.status).toBe(204);
+    expect(await revokedAt(device.deviceId)).toBeNull();
   });
 
   it("signing out everywhere ends every paired computer", async () => {
     const owner = await newAccount();
     const devices = [await pair(await owner.signIn()), await pair(await owner.signIn())];
     await auth("/revoke-sessions", {}, await owner.signIn());
-    for (const device of devices) expect(await active(device.token)).toBe(false);
+    for (const device of devices) expect(await revokesWhenStillActive(device.token)).toBe(false);
   });
 
   it("a password change that signs out other sessions ends their computers, not the caller's", async () => {
@@ -160,7 +199,6 @@ describe.skipIf(!databaseUrl)("paired computers end with the sign-in that paired
         if (!link) throw new Error(`No ${path} email yet`);
         return new URL(link);
       });
-    // Only a proven address can be reset.
     const verify = await linkTo("/verify-email");
     await handles.app.request(verify.pathname + verify.search);
     await auth("/request-password-reset", {
@@ -170,15 +208,14 @@ describe.skipIf(!databaseUrl)("paired computers end with the sign-in that paired
     const resetToken = (await linkTo("/reset-password/")).pathname.split("/").at(-1);
     await auth("/reset-password", { token: resetToken, newPassword: "test-password-789" });
 
-    expect(await active(attacker.token)).toBe(false);
-    expect(await active(legacy.token)).toBe(false);
+    expect(await revokesWhenStillActive(attacker.token)).toBe(false);
+    expect(await revokesWhenStillActive(legacy.token)).toBe(false);
   });
 
   it("releases a computer whose sign-in ended while it was offline", async () => {
     const owner = await newAccount();
     const desktop = await owner.signIn();
     const device = await pair(desktop);
-    // Expired, or deleted without the sign-out hook: no revocation ran.
     await runAsSystem("expire the pairing sign-in", () =>
       handles.prisma.session.updateMany({
         where: { userId: device.userId },
