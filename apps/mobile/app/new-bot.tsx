@@ -33,6 +33,7 @@ export default function NewBot() {
   const [name, setName] = useState("");
   const [look, setLook] = useState(newBotLook);
   const [pending, setPending] = useState(false);
+  const [accountFailed, setAccountFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const creating = useRef(false);
   const gone = useRef(false);
@@ -41,7 +42,7 @@ export default function NewBot() {
   const identity = newBotPreviewIdentity(avatarSet, look);
 
   const readAccountSet = useCallback(() => {
-    setError(null);
+    setAccountFailed(false);
     return rpc("me")
       .then((me) => {
         if (gone.current) return;
@@ -54,8 +55,8 @@ export default function NewBot() {
               : { ...current, color: botLookState(current.color).color },
           );
       })
-      .catch((err: unknown) => {
-        if (!gone.current) setError(errorText(err));
+      .catch(() => {
+        if (!gone.current) setAccountFailed(true);
       });
   }, []);
 
@@ -158,12 +159,17 @@ export default function NewBot() {
           />
         </View>
         {error ? <Text style={{ color: tokens.destructive, marginTop: 16 }}>{error}</Text> : null}
-        {error && !accountSet ? (
-          <NativeActionButton
-            label={t`Try again`}
-            onPress={() => void readAccountSet()}
-            style={{ marginTop: 16, borderRadius: 28 }}
-          />
+        {accountFailed ? (
+          <>
+            <Text style={{ color: tokens.destructive, marginTop: 16 }}>
+              {t`Couldn't load your bot style.`}
+            </Text>
+            <NativeActionButton
+              label={t`Try again`}
+              onPress={() => void readAccountSet()}
+              style={{ marginTop: 16, borderRadius: 28 }}
+            />
+          </>
         ) : null}
         <NativeActionButton
           fill

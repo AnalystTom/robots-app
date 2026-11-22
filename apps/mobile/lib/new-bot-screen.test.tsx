@@ -7,7 +7,6 @@ import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import NewBot from "../app/new-bot";
-import { errorText } from "./user-error";
 
 const CHARACTER_NAMES = [
   "Assistant",
@@ -28,51 +27,55 @@ const CHARACTER_NAMES = [
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
-  createInboxBot: vi.fn(),
   router: { back: vi.fn(), dismiss: vi.fn(), push: vi.fn() },
 }));
 
-vi.mock("./api", () => ({ rpc: mocks.rpc }));
-vi.mock("./create-inbox-bot", () => ({
-  askForModelBeforeFirstBot: async () => false,
-  createInboxBot: mocks.createInboxBot,
-}));
-vi.mock("./inbox-changes", () => ({ openChatFromInbox: () => true }));
-vi.mock("./native", () => ({
-  native: { fill: "#EEEEEE" },
-  useMobileTokens: () => ({
-    background: "#FFF",
-    foreground: "#141414",
-    sidebar: "#F1F1F1",
-    border: "#CCCCCC",
-    workingDot: "#3FA266",
-    secondary: "#7676801F",
-    mutedForeground: "#666666",
-    destructive: "#D00000",
-  }),
-}));
-vi.mock("./side-insets", () => ({ useSideInsets: () => ({}) }));
-vi.mock("../components/sheet-header", () => ({ cancelHeaderOptions: () => ({}) }));
-vi.mock("../components/native-symbol", () => ({ NativeSymbol: () => null }));
-vi.mock("../components/native-action-button", () => ({
-  NativeActionButton: ({
-    label,
-    disabled,
-    onPress,
-  }: {
-    label: string;
-    disabled?: boolean;
-    onPress: () => void;
-  }) => (
-    <button type="button" disabled={disabled} onClick={onPress}>
-      {label}
-    </button>
-  ),
+vi.mock("./api", () => ({
+  rpc: mocks.rpc,
+  captureApiRequestContext: async () => ({}),
+  currentApiBase: () => "https://robots.test",
+  selectedSpaceId: () => undefined,
+  spaceSelectionSeq: () => 0,
 }));
 vi.mock("expo-router", () => ({
   Stack: { Screen: () => null },
+  router: mocks.router,
   useLocalSearchParams: () => ({}),
   useRouter: () => mocks.router,
+}));
+vi.mock("expo-haptics", () => ({
+  AndroidHaptics: {
+    Clock_Tick: 0,
+    Confirm: 1,
+    Context_Click: 2,
+    Segment_Tick: 3,
+  },
+  ImpactFeedbackStyle: { Light: 0 },
+  NotificationFeedbackType: { Success: 0 },
+  impactAsync: async () => undefined,
+  notificationAsync: async () => undefined,
+  performAndroidHapticsAsync: async () => undefined,
+  selectionAsync: async () => undefined,
+}));
+vi.mock("expo-secure-store", () => ({
+  getItemAsync: async () => null,
+  setItemAsync: async () => undefined,
+}));
+vi.mock("expo-modules-core", () => ({
+  requireNativeModule: () => ({}),
+  requireOptionalNativeModule: () => null,
+}));
+vi.mock("expo-notifications", () => ({
+  addNotificationResponseReceivedListener: () => ({ remove: () => undefined }),
+  getPermissionsAsync: async () => ({ status: "undetermined" }),
+}));
+vi.mock("expo-symbols", () => ({ SymbolView: () => null }));
+vi.mock("@react-native-vector-icons/ionicons", () => ({ default: () => null }));
+vi.mock("@react-native-vector-icons/material-design-icons", () => ({
+  MaterialDesignIcons: () => null,
+}));
+vi.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 vi.mock("react-native", () => {
   const View = ({
@@ -83,8 +86,21 @@ vi.mock("react-native", () => {
     accessibilityRole?: string;
   }) => <div role={accessibilityRole}>{children}</div>;
   return {
+    ActivityIndicator: () => null,
+    Alert: { alert: () => undefined },
     AppState: { currentState: "active", addEventListener: () => ({ remove: () => undefined }) },
+    Appearance: {
+      addChangeListener: () => ({ remove: () => undefined }),
+      getColorScheme: () => "light",
+      setColorScheme: () => undefined,
+    },
     BackHandler: { addEventListener: () => ({ remove: () => undefined }) },
+    Platform: {
+      OS: "android",
+      Version: 34,
+      select: <T,>(options: { android?: T }) => options.android,
+    },
+    PlatformColor: (name: string) => name,
     ScrollView: View,
     View,
     Text: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
@@ -114,7 +130,7 @@ vi.mock("react-native", () => {
     }: {
       children?: ReactNode;
       accessibilityRole?: string;
-      accessibilityLabel: string;
+      accessibilityLabel?: string;
       accessibilityState?: { checked?: boolean };
       disabled?: boolean;
       onPress: () => void;
@@ -187,11 +203,19 @@ vi.mock("react-native-svg", () => {
   };
 });
 
+function serveRpc(me: () => Promise<unknown>) {
+  mocks.rpc.mockImplementation((path: string) => {
+    if (path === "me") return me();
+    if (path === "bots/list") return Promise.resolve([{ id: "existing-bot" }]);
+    if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
+    return Promise.resolve(undefined);
+  });
+}
+
 let container: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  mocks.createInboxBot.mockResolvedValue("created");
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -216,11 +240,10 @@ const drawsLogo = () =>
   [...container.querySelectorAll<HTMLElement>("path")].some(
     (path) => path.dataset.d === LOGO_BODY_PATH,
   );
+const buttonLabelled = (label: string) =>
+  [...container.querySelectorAll("button")].find((button) => button.textContent === label)!;
 const createButton = () => buttonLabelled("Create");
 const tryAgainButton = () => buttonLabelled("Try again");
-function buttonLabelled(label: string) {
-  return [...container.querySelectorAll("button")].find((button) => button.textContent === label)!;
-}
 async function tap(element: HTMLElement | null) {
   expect(element).not.toBeNull();
   await act(async () => element!.click());
@@ -233,9 +256,12 @@ async function typeName(text: string) {
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
 }
+function createdBot() {
+  return mocks.rpc.mock.calls.find(([path]) => path === "bots/create")?.[1];
+}
 
 it("shows every character, draws the picked one recoloured in the preview, and creates it", async () => {
-  mocks.rpc.mockResolvedValue({ botAvatarSet: "robots" });
+  serveRpc(() => Promise.resolve({ botAvatarSet: "robots" }));
   await render();
 
   for (const name of CHARACTER_NAMES) expect(radio(name)).not.toBeNull();
@@ -263,19 +289,17 @@ it("shows every character, draws the picked one recoloured in the preview, and c
 
   await typeName("Gordon");
   await tap(createButton());
-  expect(mocks.createInboxBot).toHaveBeenCalledWith(
-    expect.objectContaining({
-      input: expect.objectContaining({ name: "Gordon", color: redChef }),
-    }),
-  );
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  expect(createdBot()).toEqual(expect.objectContaining({ name: "Gordon", color: redChef }));
 });
 
 it("keeps Create off until the account's bot style is known", async () => {
   let answer!: (me: { botAvatarSet: string }) => void;
-  mocks.rpc.mockReturnValue(
-    new Promise((resolve) => {
-      answer = resolve;
-    }),
+  serveRpc(
+    () =>
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
   );
   await render();
   await typeName("Gordon");
@@ -287,24 +311,27 @@ it("keeps Create off until the account's bot style is known", async () => {
   expect(createButton().disabled).toBe(false);
 });
 
-it("says so when the account's bot style cannot be read, and offers a retry", async () => {
-  const failure = new Error("Account unavailable");
-  mocks.rpc.mockRejectedValue(failure);
+it("says the bot style could not load, and offers a retry, when the account read fails", async () => {
+  serveRpc(() => Promise.reject(new Error("Account unavailable")));
   await render();
   await typeName("Gordon");
-  expect(container.textContent).toContain(errorText(failure));
+  expect(container.textContent).toContain("Couldn't load your bot style.");
+  expect(container.textContent).not.toContain("Account unavailable");
   expect(createButton().disabled).toBe(true);
   expect(tryAgainButton()).toBeDefined();
 });
 
 it("enables Create once a retry reads the account's bot style", async () => {
-  const failure = new Error("Account unavailable");
-  mocks.rpc.mockRejectedValueOnce(failure).mockResolvedValueOnce({ botAvatarSet: "robots" });
+  const me = vi
+    .fn()
+    .mockRejectedValueOnce(new Error("Account unavailable"))
+    .mockResolvedValue({ botAvatarSet: "robots" });
+  serveRpc(me);
   await render();
   await typeName("Gordon");
   expect(createButton().disabled).toBe(true);
 
   await tap(tryAgainButton());
-  expect(container.textContent).not.toContain(errorText(failure));
+  expect(container.textContent).not.toContain("Couldn't load your bot style.");
   expect(createButton().disabled).toBe(false);
 });
