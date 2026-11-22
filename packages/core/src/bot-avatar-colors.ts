@@ -37,7 +37,6 @@ export function resolvePersonaColorDef(
   explicitColor?: string | null,
 ): BotColorDef {
   if (explicitColor) {
-    // A robot character's colour is its backdrop.
     const robot = parseRobotCharacter(explicitColor);
     if (robot)
       return {

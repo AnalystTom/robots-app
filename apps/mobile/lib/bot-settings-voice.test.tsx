@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   description: "",
   crossSpaceCommunication: false,
   avatarSet: "organic" as "organic" | "robots",
+  color: "",
   focus: undefined as string | undefined,
   os: "ios",
   work: [] as unknown[],
@@ -94,7 +95,7 @@ vi.mock("./api", () => ({
         instructions: mocks.instructions,
         description: mocks.description,
         instructionHistory: mocks.history,
-        color: BOT_COLORS[0],
+        color: mocks.color,
         avatarSet: mocks.avatarSet,
         autoSpeak: false,
         computerMode: "team",
@@ -236,7 +237,7 @@ vi.mock("react-native", () => {
       accessibilityLabel?: string;
       accessibilityHint?: string;
       accessibilityRole?: string;
-      accessibilityState?: { expanded?: boolean };
+      accessibilityState?: { expanded?: boolean; checked?: boolean };
       style?: unknown;
       hitSlop?: number;
     }) =>
@@ -249,6 +250,7 @@ vi.mock("react-native", () => {
           "data-hint": accessibilityHint,
           role: accessibilityRole,
           "aria-expanded": accessibilityState?.expanded,
+          "data-checked": accessibilityState?.checked,
           "data-style": JSON.stringify(style),
           "data-hit-slop": hitSlop,
         },
@@ -361,6 +363,7 @@ describe("bot settings device voice menu", () => {
   beforeEach(() => {
     mocks.crossSpaceCommunication = false;
     mocks.avatarSet = "organic";
+    mocks.color = BOT_COLORS[0]!;
     vi.clearAllMocks();
     mocks.loadBot.mockReset();
     vi.mocked(Notifications.getPresentedNotificationsAsync).mockResolvedValue([]);
@@ -662,6 +665,37 @@ describe("bot settings device voice menu", () => {
       botId: "bot-fixture",
       avatarSet: "organic",
     });
+  });
+
+  it("shows a stored off-list robot as the selected Current look and saves only a picked preset", async () => {
+    mocks.color = "robot:green.top-hat.grumpy.cape.none";
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
+    );
+    const tile = (label: string) =>
+      container.querySelector<HTMLButtonElement>(`[role="radio"][aria-label="${label}"]`)!;
+    expect(tile("Current look").dataset.checked).toBe("true");
+    expect(tile("Detective").dataset.checked).toBe("false");
+    expect(mocks.rpc).not.toHaveBeenCalledWith("bots/update", expect.anything());
+
+    await act(async () => tile("Detective").click());
+    expect(container.querySelector('[role="radio"][aria-label="Current look"]')).toBeNull();
+    expect(tile("Detective").dataset.checked).toBe("true");
+    expect(mocks.rpc).not.toHaveBeenCalledWith("bots/update", expect.anything());
+
+    await act(async () =>
+      [...container.querySelectorAll<HTMLButtonElement>("button")]
+        .find((button) => button.textContent === "Save")!
+        .click(),
+    );
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "bots/update",
+      expect.objectContaining({
+        botId: "bot-fixture",
+        color: "robot:purple.deerstalker.magnifier.cape.none",
+      }),
+    );
   });
 
   it("expands Advanced for a native model deep link", async () => {
