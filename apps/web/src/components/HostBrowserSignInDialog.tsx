@@ -34,6 +34,7 @@ export function HostBrowserSignInDialog({
   const [chosenProfile, setChosenProfile] = useState<string | null>(null);
   const [sites, setSites] = useState<ReadonlySet<string>>(new Set());
   const [filter, setFilter] = useState("");
+  const [skipped, setSkipped] = useState<readonly string[]>([]);
   const profilesQuery = useQuery({
     ...queries.computer.hostBrowserProfiles.queryOptions({ input: { botId } }),
     enabled: open,
@@ -43,7 +44,11 @@ export function HostBrowserSignInDialog({
   const signIn = useSave({
     save: (input: { profile: string; sites: string[] }, rpc) =>
       rpc.computer.importHostBrowserSessions({ botId, ...input }),
-    onSaved: () => close(),
+    onSaved: (saved) => {
+      const missing = saved.sites.filter((item) => item.cookies === 0).map((item) => item.site);
+      if (missing.length === 0) close();
+      else setSkipped(missing);
+    },
   });
   const shownSites = (profile?.sites ?? []).filter(
     (site) => sites.has(site) || site.includes(filter.trim().toLowerCase()),
@@ -54,6 +59,7 @@ export function HostBrowserSignInDialog({
     onOpenChange(false);
     setSites(new Set());
     setFilter("");
+    setSkipped([]);
     signIn.reset();
   }
 
@@ -62,6 +68,7 @@ export function HostBrowserSignInDialog({
     if (checked) next.add(site);
     else next.delete(site);
     setSites(next);
+    setSkipped([]);
     signIn.reset();
   }
 
@@ -107,6 +114,7 @@ export function HostBrowserSignInDialog({
                   onChange={(event) => {
                     setChosenProfile(event.target.value);
                     setSites(new Set());
+                    setSkipped([]);
                     signIn.reset();
                   }}
                 >
@@ -140,6 +148,14 @@ export function HostBrowserSignInDialog({
               </ul>
             </>
           )}
+          {skipped.length > 0 ? (
+            <p className="text-body text-muted-foreground" role="status">
+              <Trans>
+                No current sign-in for {skipped.join(", ")} in that profile. The other sites were
+                signed in.
+              </Trans>
+            </p>
+          ) : null}
           <FieldError>{signIn.error ? errorText(signIn.error) : null}</FieldError>
           <DialogFooter>
             <Button type="submit" disabled={signIn.pending || !profile || chosenSites.length === 0}>

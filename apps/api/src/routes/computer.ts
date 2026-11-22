@@ -14,6 +14,7 @@ import {
   displayBotWorkspacePath,
   endTeachingWithLease,
   ensureComputerWorkspaceLayout,
+  HostComputerAccessDeniedError,
   isComputerScreenUnavailable,
   isSandboxGoneError,
   provisionComputer,
@@ -711,6 +712,7 @@ export function computerRoutes(ctx: RouterContext) {
             await computerScreenContext(deps.prisma, context.actor, computer.id, bot.id, "screen"),
           )
           .catch(async (error: unknown) => {
+            if (error instanceof HostComputerAccessDeniedError) return undefined;
             if (isComputerScreenUnavailable(error)) {
               throw new ORPCError("CONFLICT", { message: computerScreenUnavailableMessage(error) });
             }

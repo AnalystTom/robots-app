@@ -133,10 +133,12 @@ export function createHostDesktop(
     signal: AbortSignal,
   ): Promise<HostBrowserImportResult> {
     const found = await readHostBrowserCookies(home, profile, sites, keyring);
-    const missing = found.find(({ cookies }) => cookies.length === 0);
-    if (missing)
-      throw new HostBrowserCookieError(`No current sign-in for ${missing.site} in that profile`);
-    const cookies = found.flatMap((site) => site.cookies);
+    const usable = found.filter(({ cookies }) => cookies.length > 0);
+    if (usable.length === 0)
+      throw new HostBrowserCookieError(
+        `No current sign-in for ${found.map(({ site }) => site).join(", ")} in that profile`,
+      );
+    const cookies = usable.flatMap((site) => site.cookies);
     const userDataDir = browserProfilePathForScreen(screenId, environment(home));
     await withRegistryLock(async () => {
       const port = await debugPort(screenId);
