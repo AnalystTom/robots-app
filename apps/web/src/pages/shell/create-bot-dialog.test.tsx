@@ -133,7 +133,7 @@ describe("CreateBotDialog", () => {
     await typeName("Scout");
     await click(button("Create"));
     const input = onCreate.mock.lastCall![0];
-    expect(parseBotAvatarValue(input.color).kind).toBe("color");
+    expect(parseBotAvatarValue(input.color ?? "").kind).toBe("color");
     expect(input).toHaveProperty("avatarFamily");
   });
 
@@ -146,7 +146,7 @@ describe("CreateBotDialog", () => {
     expect(button("Researcher").getAttribute("aria-checked")).toBe("true");
     await typeName("Scout");
     await click(button("Create"));
-    expect(parseRobotCharacter(onCreate.mock.lastCall![0].color)).toEqual(
+    expect(parseRobotCharacter(onCreate.mock.lastCall![0].color ?? "")).toEqual(
       ROBOT_PRESETS.find((preset) => preset.id === "researcher")!.look,
     );
   });

@@ -31,6 +31,7 @@ function Harness({ botAvatarSet }: { botAvatarSet: BotAvatarSet | undefined }) {
         rpc={{} as never}
         spaces={[]}
         bots={[]}
+        ownBotColors={[]}
         activeId={undefined}
         activeGroupId={undefined}
         alive={{ current: true }}

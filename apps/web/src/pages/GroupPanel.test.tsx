@@ -77,6 +77,7 @@ function fakeBot(id: string, name: string): Bot {
   return {
     id,
     spaceId: "space-1",
+    userId: "user-1",
     name,
     title: "",
     description: "",

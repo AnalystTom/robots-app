@@ -32,8 +32,9 @@ describe("newBotLook", () => {
 
   it("starts an Original account on its own body", () => {
     const look = newBotLook("organic");
-    expect(isBotAvatarValue(look.color)).toBe(true);
-    expect(botLookState(look.color).defaultLook).toBe(true);
+    expect(look.color).not.toBeNull();
+    expect(isBotAvatarValue(look.color!)).toBe(true);
+    expect(botLookState(look.color!).defaultLook).toBe(true);
     expect(newBotLookInput("organic", look)).toEqual({
       color: look.color,
       avatarFamily: organicAvatarFamily(look.identity),
