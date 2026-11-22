@@ -1,5 +1,5 @@
 import type { DurableMemoryScope, SecretStore, SemanticMemoryProvider } from "@robots/adapter-kit";
-import type { PrismaClient } from "@robots/db";
+import type { PrismaClient, PrivateEndpointAuthorizer } from "@robots/db";
 import { getLogger } from "@robots/logging";
 import {
   createHindsightProvider,
@@ -249,6 +249,7 @@ export class SpaceMemoryProviderResolver implements MemoryProviderResolver {
   constructor(
     private readonly prisma: Pick<PrismaClient, "spaceMemoryConfig">,
     private readonly secrets: SecretStore,
+    private readonly mayUsePrivateEndpoint: PrivateEndpointAuthorizer,
   ) {}
 
   async resolve(spaceId: string): Promise<ConfiguredMemoryProvider | null> {
@@ -258,9 +259,11 @@ export class SpaceMemoryProviderResolver implements MemoryProviderResolver {
     });
     if (!config) return null;
     const settings = toStringRecord(config.settings);
-    if (memoryProviderRequiresPrivateEndpoint(config.provider, settings)) {
-      // Saved configurations cannot bypass an operator's current network policy.
-      if (process.env.MCP_ALLOW_PRIVATE_ENDPOINT !== "true") return null;
+    if (
+      memoryProviderRequiresPrivateEndpoint(config.provider, settings) &&
+      !(await this.mayUsePrivateEndpoint(config.userId))
+    ) {
+      return null;
     }
     const adapter = memoryProviderAdapter(config.provider);
     try {

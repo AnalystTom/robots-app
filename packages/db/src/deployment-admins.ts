@@ -1,0 +1,45 @@
+import type { PrismaClient } from "./client.js";
+
+type AdminCandidate = { email: string; emailVerified: boolean };
+
+export function deploymentAdminEmails(raw: string | undefined): string[] {
+  return (raw ?? "")
+    .split(/[\s,]+/)
+    .filter(Boolean)
+    .map((email) => email.toLowerCase());
+}
+
+function listedAndVerified(
+  user: AdminCandidate | null | undefined,
+  adminEmails: readonly string[],
+): boolean {
+  return Boolean(user?.emailVerified && adminEmails.includes(user.email.toLowerCase()));
+}
+
+export async function isDeploymentAdmin(
+  prisma: Pick<PrismaClient, "user">,
+  adminEmails: readonly string[],
+  userId: string,
+): Promise<boolean> {
+  if (adminEmails.length === 0) return false;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, emailVerified: true },
+  });
+  return listedAndVerified(user, adminEmails);
+}
+
+export interface PrivateEndpointPolicy {
+  allowPrivateEndpoint: boolean;
+  adminEmails: readonly string[];
+}
+
+export type PrivateEndpointAuthorizer = (userId: string) => Promise<boolean>;
+
+export function privateEndpointAuthorizer(
+  prisma: Pick<PrismaClient, "user">,
+  policy: PrivateEndpointPolicy,
+): PrivateEndpointAuthorizer {
+  return async (userId) =>
+    policy.allowPrivateEndpoint || isDeploymentAdmin(prisma, policy.adminEmails, userId);
+}

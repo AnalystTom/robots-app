@@ -1,4 +1,6 @@
 import { lookup } from "node:dns/promises";
+import type { PrivateEndpointAuthorizer } from "@robots/db";
+import { privateEndpointAuthorizer } from "@robots/db";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { assertLocalServiceBaseUrl } from "./local-service-endpoint.js";
 import { createMemoryProvider, SpaceMemoryProviderResolver } from "./memory-provider-factory.js";
@@ -11,10 +13,10 @@ function resolverFor(
     provider?: string;
     mode?: "cloud" | "local";
     allowPrivateEndpoint?: boolean;
+    authorize?: PrivateEndpointAuthorizer;
     baseUrl?: string;
   } = {},
 ) {
-  vi.stubEnv("MCP_ALLOW_PRIVATE_ENDPOINT", options.allowPrivateEndpoint ? "true" : "false");
   const prisma = {
     spaceMemoryConfig: {
       findUnique: vi.fn(async () => ({
@@ -33,7 +35,11 @@ function resolverFor(
   };
   const secrets = { load: vi.fn(() => plaintext) };
   return {
-    resolver: new SpaceMemoryProviderResolver(prisma as never, secrets as never),
+    resolver: new SpaceMemoryProviderResolver(
+      prisma as never,
+      secrets as never,
+      options.authorize ?? (async () => options.allowPrivateEndpoint === true),
+    ),
     secrets,
     prisma,
   };
@@ -121,6 +127,41 @@ describe("SpaceMemoryProviderResolver", () => {
     const configured = await owned.resolver.resolve("workspace-1");
     expect(configured?.provider.describe().id).toBe("honcho");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a local server saved by a deployment admin without the instance-wide flag", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const users = {
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
+        where.id === "config-author" ? { email: "Admin@Example.test", emailVerified: true } : null,
+      ),
+    };
+    const saved = {
+      provider: "hindsight",
+      mode: "local" as const,
+      baseUrl: "http://127.0.0.1:8888",
+    };
+    const admin = resolverFor(JSON.stringify({ apiKey: "fake-hindsight-key" }), {
+      ...saved,
+      authorize: privateEndpointAuthorizer({ user: users } as never, {
+        allowPrivateEndpoint: false,
+        adminEmails: ["admin@example.test"],
+      }),
+    });
+    expect((await admin.resolver.resolve("space-1"))?.provider.describe().id).toBe("hindsight");
+    expect(users.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "config-author" } }),
+    );
+
+    const noLongerAdmin = resolverFor(JSON.stringify({ apiKey: "fake-hindsight-key" }), {
+      ...saved,
+      authorize: privateEndpointAuthorizer({ user: users } as never, {
+        allowPrivateEndpoint: false,
+        adminEmails: ["someone-else@example.test"],
+      }),
+    });
+    await expect(noLongerAdmin.resolver.resolve("space-1")).resolves.toBeNull();
+    expect(noLongerAdmin.secrets.load).not.toHaveBeenCalled();
   });
 
   it.each([false, undefined])(

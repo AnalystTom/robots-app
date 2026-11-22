@@ -9,7 +9,11 @@ import type {
 import type { LabFeature } from "@robots/contracts";
 import { phoneCallSettings, resolveEncryptionKey, uploadSizeFromEnv } from "@robots/core";
 import type { PrismaClient, ThreadEvents } from "@robots/db";
-import { createSecurityEventPruner, securityEventRetentionDays } from "@robots/db";
+import {
+  createSecurityEventPruner,
+  deploymentAdminEmails,
+  securityEventRetentionDays,
+} from "@robots/db";
 import { auditLogConfig, createAuditLogReconciler } from "./audit-forwarding.js";
 import { createBackgroundJobHandlers } from "./background-job-handlers.js";
 import { cliModelRuntime } from "./cli-models/runtime.js";
@@ -67,6 +71,7 @@ export interface RunRuntimeEnv extends PipedreamEnvironmentValues {
   mcpStdioAllowedCommands: string[];
   mcpStdio: ReturnType<typeof mcpStdioOptionsFromEnv>;
   mcpAllowPrivateEndpoint: boolean;
+  adminEmails: string[];
   deploymentLabs: LabFeature[];
   phoneCallsEnabled: boolean;
   phoneCallRingSeconds: number;
@@ -98,6 +103,7 @@ export function runRuntimeEnvFromProcess(source: NodeJS.ProcessEnv): RunRuntimeE
       .filter(Boolean),
     mcpStdio: mcpStdioOptionsFromEnv(source),
     mcpAllowPrivateEndpoint: source.MCP_ALLOW_PRIVATE_ENDPOINT === "true",
+    adminEmails: deploymentAdminEmails(source.ROBOTS_ADMIN_EMAILS),
     pipedreamClientId: source.PIPEDREAM_CLIENT_ID,
     pipedreamClientSecret: source.PIPEDREAM_CLIENT_SECRET,
     pipedreamProjectId: source.PIPEDREAM_PROJECT_ID,

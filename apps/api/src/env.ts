@@ -32,6 +32,7 @@ import {
   resolveSupervisorToken,
   uploadSizeFromEnv,
 } from "@robots/core";
+import { deploymentAdminEmails } from "@robots/db";
 import { getLogger, monitoringPseudonymSecret } from "@robots/logging";
 
 export { resolveCloudAgentProvider, resolveSandboxProvider } from "@robots/adapters";
@@ -293,7 +294,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     userDevicesEnabled: source.USER_DEVICES_ENABLED !== "false",
     computerSettingsEnabled: source.COMPUTER_SETTINGS_ENABLED === "true",
     navLinks: parseNavLinks(source.ROBOTS_NAV_LINKS),
-    adminEmails: list(source.ROBOTS_ADMIN_EMAILS).map((email) => email.toLowerCase()),
+    adminEmails: deploymentAdminEmails(source.ROBOTS_ADMIN_EMAILS),
     ...phoneCallSettings(source),
     maxUploadSizeBytes: uploadSizeFromEnv(source),
     maxAttachmentsPerMessage: attachmentCountFromEnv(source),
