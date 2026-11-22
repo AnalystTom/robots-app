@@ -30,9 +30,7 @@ function fakePrisma() {
   const rows: Row[] = [];
   const connections = new Map<string, Date>();
   const events: Array<{ type: string; userId: string | null; metadata: object }> = [];
-  /** Live sessions by id, with their expiry. Every test user starts signed in. */
   const sessions = new Map<string, Date>();
-  /** Users with no sign-in left at all. */
   const signedOutUsers = new Set<string>();
   const signedIn = (id: string) =>
     sessions.get(id) ?? (id.endsWith("-ended") ? null : new Date(Date.now() + 60_000));
@@ -411,9 +409,6 @@ describe("device sessions", () => {
 
     expect((await tie(null)).status).toBe(401);
     expect((await tie("user-1", "Bearer wrong")).status).toBe(401);
-    expect((await tie("user-2")).status).toBe(403);
-    expect(rows[0]!.sessionId).toBeNull();
-
     expect((await tie("user-1")).status).toBe(204);
     expect((await tie("user-1", `Bearer ${token}`, "phone")).status).toBe(204);
     expect(rows[0]!.sessionId).toBe("desktop");
@@ -439,6 +434,34 @@ describe("device sessions", () => {
     });
     expect(response.status).toBe(401);
     expect(rows[0]).toMatchObject({ sessionId: "desktop-ended", revokedBy: "session" });
+  });
+
+  it("revokes a computer presented by another account's sign-in, then lets that account pair one", async () => {
+    const { pair, app, attach, hub, rows } = setup();
+    const { deviceId, token } = await (await pair("user-1", { session: "desktop" })).json();
+    const socket = await attach(deviceId);
+
+    const response = await app.request("/api/devices/self/session", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "x-test-user": "user-2",
+        "x-test-session": "phone",
+      },
+    });
+    expect(response.status).toBe(403);
+    expect(rows[0]).toMatchObject({ id: deviceId, sessionId: "desktop", revokedBy: "session" });
+    expect(rows[0]!.revokedAt).toBeInstanceOf(Date);
+    expect(socket.sent).toContainEqual({ type: "revoked", reason: "session-ended" });
+    expect(socket.closedWith).toBe(4001);
+    await expect(hub.authenticate(`Bearer ${token}`)).resolves.toBeNull();
+
+    const paired = await (await pair("user-2", { session: "phone" })).json();
+    expect(paired.deviceId).not.toBe(deviceId);
+    const list = await app.request("/api/devices", { headers: { "x-test-user": "user-2" } });
+    expect((await list.json()).devices).toEqual([
+      expect.objectContaining({ deviceId: paired.deviceId }),
+    ]);
   });
 
   it("never accepts a device paired by a sign-in that already ended", async () => {
@@ -484,7 +507,6 @@ describe("internal forwarding endpoint", () => {
         }),
       });
     expect((await forward("Bearer wrong")).status).toBe(401);
-    // Authorized, but this process holds no such connection.
     expect((await forward(`Bearer ${secret}`)).status).toBe(409);
   });
 });

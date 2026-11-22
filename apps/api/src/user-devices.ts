@@ -41,12 +41,16 @@ async function revokeDevice(
   deviceId: string,
   userId: string,
   by: "owner" | "device" | "session",
-  /** For a session revoke, the sign-in it was selected under; a device tied since is left alone. */
-  sessionId?: string | null,
+  pairedUnderSessionId?: string | null,
 ) {
   const { count } = await runAsSystem("revoke a user device", () =>
     prisma.userDevice.updateMany({
-      where: { id: deviceId, userId, revokedAt: null, ...(by === "session" ? { sessionId } : {}) },
+      where: {
+        id: deviceId,
+        userId,
+        revokedAt: null,
+        ...(pairedUnderSessionId === undefined ? {} : { sessionId: pairedUnderSessionId }),
+      },
       data: { revokedAt: new Date(), revokedBy: by },
     }),
   );
@@ -57,13 +61,6 @@ async function revokeDevice(
   return true;
 }
 
-/**
- * A computer stays paired only while the sign-in that paired it lasts, so signing out, a password
- * reset or signing out everywhere disconnects it. A password change that keeps the caller signed
- * in moves the caller's computers to the replacing session. A computer paired before sessions were
- * recorded is tied to none, so it ends only once the user has no sign-in left; its desktop app ties
- * it to its own sign-in when it next connects.
- */
 export async function endUserDeviceSession(
   store: DeviceStore,
   ended: { id: string; userId: string },
@@ -100,10 +97,6 @@ export async function endUserDeviceSession(
     await revokeDevice(store, device.id, userId, "session", device.sessionId);
 }
 
-/**
- * Disconnects every computer the user paired, as when their last sign-in ends. One that fails
- * does not keep the others paired; the failures are reported together at the end.
- */
 export async function revokeUserDevices(store: DeviceStore, userId: string) {
   const devices = await runAsSystem("find a user's devices", () =>
     store.prisma.userDevice.findMany({
@@ -112,7 +105,6 @@ export async function revokeUserDevices(store: DeviceStore, userId: string) {
     }),
   );
   const failures: unknown[] = [];
-  // Without a session to match: a computer moved to a new sign-in meanwhile goes too.
   for (const device of devices)
     await revokeDevice(store, device.id, userId, "session").catch((error: unknown) =>
       failures.push(error),
@@ -120,7 +112,6 @@ export async function revokeUserDevices(store: DeviceStore, userId: string) {
   if (failures.length) throw new AggregateError(failures, "Could not disconnect every computer");
 }
 
-/** The device socket itself is upgraded by the hub before Hono sees it. */
 export function mountUserDeviceRoutes(app: Hono, deps: UserDeviceRouteDeps) {
   const { prisma } = deps;
   app.use(`${USER_DEVICE_PATH}/*`, async (c, next) => {
@@ -129,8 +120,6 @@ export function mountUserDeviceRoutes(app: Hono, deps: UserDeviceRouteDeps) {
   });
 
   app.post(USER_DEVICE_PAIR_PATH, async (c) => {
-    // The desktop main process sends no Origin. A JSON content type forces a CORS preflight,
-    // so a cross-site page cannot pair with the user's cookie either way.
     const origin = c.req.header("origin");
     if (origin && !deps.trustedOrigin(origin)) return c.json({ error: "Forbidden" }, 403);
     if (!c.req.header("content-type")?.startsWith("application/json"))
@@ -146,8 +135,6 @@ export function mountUserDeviceRoutes(app: Hono, deps: UserDeviceRouteDeps) {
     const token = createUserDeviceToken();
     const device = await runAsSystem("pair a user device", () =>
       prisma.$transaction(async (tx) => {
-        // Hold the account's pairing lock across the count and the insert, so pairings
-        // that race cannot each see the limit as still open.
         await lockOwner(tx, userId, "user-devices");
         const active = await tx.userDevice.count({ where: { userId, revokedAt: null } });
         if (active >= USER_DEVICE_LIMIT) return null;
@@ -187,7 +174,11 @@ export function mountUserDeviceRoutes(app: Hono, deps: UserDeviceRouteDeps) {
     const device = await deps.hub.authenticate(c.req.header("authorization"));
     const session = await deps.session(c.req.raw);
     if (!device || !session) return c.json({ error: "Unauthorized" }, 401);
-    if (device.userId !== session.userId) return c.json({ error: "Forbidden" }, 403);
+    const computerSignedInToAnotherAccount = device.userId !== session.userId;
+    if (computerSignedInToAnotherAccount) {
+      await revokeDevice(deps, device.id, device.userId, "session");
+      return c.json({ error: "Forbidden" }, 403);
+    }
     const { count } = await runAsSystem("tie a user device to its sign-in", () =>
       prisma.userDevice.updateMany({
         where: { id: device.id, userId: device.userId, revokedAt: null, sessionId: null },
@@ -195,7 +186,6 @@ export function mountUserDeviceRoutes(app: Hono, deps: UserDeviceRouteDeps) {
       }),
     );
     if (!count) return c.body(null, 204);
-    // A sign-out that ran while this was tying would have missed it.
     const live = await runAsSystem("check a tied sign-in", () =>
       prisma.session.findFirst({
         where: { id: session.sessionId, expiresAt: { gt: new Date() } },
@@ -214,7 +204,6 @@ export function mountUserDeviceRoutes(app: Hono, deps: UserDeviceRouteDeps) {
     return c.body(null, 204);
   });
 
-  // Registered before `:deviceId` so "self" is never read as an id.
   app.delete(`${USER_DEVICE_PATH}/self`, async (c) => {
     const device = await deps.hub.authenticate(c.req.header("authorization"));
     if (!device) return c.json({ error: "Unauthorized" }, 401);

@@ -9,7 +9,12 @@ const MAC_GRANTS_KEY = ["desktop", "mac-grants"] as const;
 
 export function useMacGrants() {
   const { t } = useLingui();
-  const bridge = desktopBridge()?.macApps;
+  const desktop = desktopBridge();
+  const bridge = desktop?.macApps;
+  const missingBridgeDetail =
+    desktop?.platform === "darwin"
+      ? t`Update RoBots on this Mac to allow`
+      : t`Open RoBots on your Mac to allow`;
   const queryClient = useQueryClient();
   const states = useQuery({
     queryKey: MAC_GRANTS_KEY,
@@ -34,11 +39,7 @@ export function useMacGrants() {
       return {
         id: grant,
         label: MAC_GRANTS[grant].label,
-        detail: bridge
-          ? status
-            ? statusText[status]
-            : t`Checking…`
-          : t`Open RoBots on your Mac to allow`,
+        detail: bridge ? (status ? statusText[status] : t`Checking…`) : missingBridgeDetail,
         pending: allow.isPending && allow.variables === grant,
         onAllow: actionable ? () => allow.mutate(grant) : undefined,
       };
