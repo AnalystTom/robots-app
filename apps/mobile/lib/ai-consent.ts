@@ -1,7 +1,6 @@
 import { t } from "@lingui/core/macro";
 import type { AiDataUse, AiRecipient } from "@robots/contracts";
 import { AI_PRIVACY_URL } from "@robots/contracts";
-import { bestEffort } from "@robots/logging";
 import { useSyncExternalStore } from "react";
 import { BackHandler, Platform } from "react-native";
 import { registerSessionDiskCache } from "./session";
@@ -35,6 +34,7 @@ type BlockedRequest = Omit<QueuedRequest, "decide">;
 let queue: QueuedRequest[] = [];
 let blocked: BlockedRequest | null = null;
 let snapshot: AiConsentRequest | null = null;
+let session = 0;
 const listeners = new Set<() => void>();
 
 function publish(next: QueuedRequest[], nextBlocked: BlockedRequest | null = blocked) {
@@ -96,6 +96,7 @@ export function denyAiConsent() {
 }
 
 function clearAiConsentRequests() {
+  session += 1;
   const waiting = queue;
   publish([], null);
   for (const request of waiting) request.decide(false);
@@ -105,15 +106,19 @@ registerSessionDiskCache(clearAiConsentRequests);
 
 export function reviewAiConsentAgain() {
   if (!blocked) return;
-  const { recipients, privacyUrl, grant } = blocked;
+  const review = blocked;
+  const started = session;
   publish(
     [
       {
-        recipients,
-        privacyUrl,
-        grant,
+        recipients: review.recipients,
+        privacyUrl: review.privacyUrl,
+        grant: review.grant,
         decide: (allowed) => {
-          if (allowed) void bestEffort("grant AI data sharing after review", grant());
+          if (!allowed) return;
+          review.grant().catch(() => {
+            if (started === session) publish([], review);
+          });
         },
       },
     ],

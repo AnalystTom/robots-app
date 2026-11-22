@@ -167,4 +167,20 @@ describe("AI data sharing consent screen", () => {
     await vi.waitFor(() => expect(grant).toHaveBeenCalledOnce());
     expect(container.querySelector("[data-testid='ai-consent-screen']")).toBeNull();
   });
+
+  it("shows the denied screen again when the grant after Review again fails", async () => {
+    Platform.OS = "ios";
+    const grant = vi.fn(async () => {
+      throw new Error("offline");
+    });
+    const consent = await ask([openai], grant);
+    await click("Deny");
+    await consent.pending;
+
+    await click("Review again");
+    await click("Approve");
+    await vi.waitFor(() => expect(grant).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(text()).toContain("RoBots needs this to work"));
+    expect(text()).not.toContain("Approve");
+  });
 });
