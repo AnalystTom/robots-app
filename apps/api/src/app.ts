@@ -110,6 +110,7 @@ import {
   installSecurityEventStore,
   observeThreadChanges,
   parsePositiveInteger,
+  privateEndpointAuthorizer,
   pushSessionExpiresAt,
   requireMembership,
   rowSecurityWarning,
@@ -403,7 +404,14 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       secrets,
       unreferencedMachines: machineCleanupRecords(jobs),
     }));
-  const memoryProviders = new SpaceMemoryProviderResolver(prisma, secrets);
+  const memoryProviders = new SpaceMemoryProviderResolver(
+    prisma,
+    secrets,
+    privateEndpointAuthorizer(prisma, {
+      allowPrivateEndpoint: env.mcpAllowPrivateEndpoint,
+      adminEmails: env.adminEmails,
+    }),
+  );
   const oauthLogins = new PiOAuthLogins<ModelCredential>(undefined, { prisma, secrets });
   const home = createAgentHomeStore(env.dataDir, prisma);
   void home.removeStaleStaging().catch((error) => getLogger().error("home staging cleanup", error));

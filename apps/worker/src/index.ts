@@ -74,6 +74,7 @@ import {
   installSecurityEventStore,
   observeThreadChanges,
   parsePositiveInteger,
+  privateEndpointAuthorizer,
   pushSessionExpiresAt,
   rowSecurityWarning,
   runAsSystem,
@@ -153,7 +154,14 @@ async function main() {
   })
     ? new ChatSdkMessagingSurface(messagingPlatforms)
     : undefined;
-  const memoryProviders = new SpaceMemoryProviderResolver(prisma, secrets);
+  const memoryProviders = new SpaceMemoryProviderResolver(
+    prisma,
+    secrets,
+    privateEndpointAuthorizer(prisma, {
+      allowPrivateEndpoint: env.mcpAllowPrivateEndpoint,
+      adminEmails: env.adminEmails,
+    }),
+  );
   const home = createAgentHomeStore(env.dataDir, prisma);
   void home.removeStaleStaging().catch((error) => logger.error("home staging cleanup", error));
   const artifacts = createArtifactStore(env.dataDir, prisma);

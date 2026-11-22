@@ -51,3 +51,18 @@ export async function spaceOwnedByDeploymentAdmins(
     );
   });
 }
+
+export interface PrivateEndpointPolicy {
+  allowPrivateEndpoint: boolean;
+  adminEmails: readonly string[];
+}
+
+export type PrivateEndpointAuthorizer = (userId: string) => Promise<boolean>;
+
+export function privateEndpointAuthorizer(
+  prisma: Pick<PrismaClient, "user">,
+  policy: PrivateEndpointPolicy,
+): PrivateEndpointAuthorizer {
+  return async (userId) =>
+    policy.allowPrivateEndpoint || isDeploymentAdmin(prisma, policy.adminEmails, userId);
+}
