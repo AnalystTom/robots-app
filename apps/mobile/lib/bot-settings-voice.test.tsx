@@ -698,6 +698,61 @@ describe("bot settings device voice menu", () => {
     );
   });
 
+  it("keeps a stored robot look through Icon set switches and saves only the set change", async () => {
+    mocks.avatarSet = "robots";
+    mocks.color = "robot:purple.deerstalker.magnifier.cape.none";
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
+    );
+    const setOption = (label: string) =>
+      [...container.querySelectorAll<HTMLButtonElement>('[data-menu="Icon set"] button')].find(
+        (button) => button.textContent === label,
+      )!;
+    const save = () =>
+      [...container.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent === "Save",
+      )!;
+    await act(async () => setOption("Original").click());
+    await act(async () => setOption("RoBots").click());
+    expect(mocks.rpc).not.toHaveBeenCalledWith("bots/update", expect.anything());
+    expect(
+      container.querySelector<HTMLButtonElement>('[role="radio"][aria-label="Detective"]')!.dataset
+        .checked,
+    ).toBe("true");
+
+    await act(async () => setOption("Original").click());
+    mocks.rpc.mockResolvedValueOnce({ avatarSet: "organic" });
+    await act(async () => save().click());
+    expect(mocks.rpc).toHaveBeenLastCalledWith("bots/update", {
+      botId: "bot-fixture",
+      avatarSet: "organic",
+    });
+  });
+
+  it("saves the robots set when a robot look is picked while the Original set is open", async () => {
+    mocks.avatarSet = "organic";
+    mocks.color = BOT_COLORS[0]!;
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
+    );
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[role="radio"][aria-label="Hero"]')!.click(),
+    );
+    mocks.rpc.mockResolvedValueOnce({ avatarSet: "robots" });
+    await act(async () =>
+      [...container.querySelectorAll<HTMLButtonElement>("button")]
+        .find((button) => button.textContent === "Save")!
+        .click(),
+    );
+    expect(mocks.rpc).toHaveBeenLastCalledWith("bots/update", {
+      botId: "bot-fixture",
+      color: "robot:red.antenna.aviators.cape.confetti",
+      avatarSet: "robots",
+    });
+  });
+
   it("expands Advanced for a native model deep link", async () => {
     mocks.focus = "model";
     await act(async () => root.render(<BotSettingsScreen />));

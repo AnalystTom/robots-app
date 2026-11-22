@@ -877,10 +877,7 @@ export default function BotSettingsScreen() {
                 { key: "robots", label: t`RoBots` },
               ]}
               value={avatarSet}
-              onChange={(next) => {
-                setAvatarSet(resolveBotAvatarSet(next));
-                setColor((current) => botLookState(current).color);
-              }}
+              onChange={(next) => setAvatarSet(resolveBotAvatarSet(next))}
               plain
             />
             {bot ? (
@@ -888,7 +885,10 @@ export default function BotSettingsScreen() {
                 value={color}
                 identity={bot.id}
                 avatarSet={avatarSet}
-                onChange={(next) => setColor(next)}
+                onChange={(next) => {
+                  setColor(next);
+                  if (botLookState(next).robot) setAvatarSet("robots");
+                }}
               />
             ) : null}
           </ScrollView>
