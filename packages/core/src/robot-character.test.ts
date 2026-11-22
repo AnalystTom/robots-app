@@ -1,15 +1,14 @@
 import type { RobotLook } from "@robots/contracts";
-import { isBotAvatarValue, ROBOT_PARTS, robotCharacterValue } from "@robots/contracts";
+import { ROBOT_PARTS } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import { notificationAvatarSource } from "./notification-avatar.js";
-import {
-  READY_MADE_ROBOTS,
-  randomRobotCharacterValue,
-  randomRobotLook,
-  readyMadeRobotValue,
-  robotCharacterDataUri,
-  robotCharacterSvg,
-} from "./robot-character.js";
+import { robotCharacterDataUri, robotCharacterSvg } from "./robot-character.js";
+import type { RobotPresetId } from "./robot-presets.js";
+import { ROBOT_PRESETS, robotPresetValue } from "./robot-presets.js";
+
+function listed(id: RobotPresetId): RobotLook {
+  return ROBOT_PRESETS.find((preset) => preset.id === id)!.look;
+}
 
 function* everyLook(): Generator<RobotLook> {
   for (const colour of ROBOT_PARTS.colour)
@@ -21,7 +20,7 @@ function* everyLook(): Generator<RobotLook> {
 
 describe("robotCharacterSvg", () => {
   it("draws a standalone 256x256 document with the colour's backdrop first", () => {
-    const svg = robotCharacterSvg(READY_MADE_ROBOTS.host);
+    const svg = robotCharacterSvg(listed("host"));
     expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"')).toBe(
       true,
     );
@@ -35,7 +34,6 @@ describe("robotCharacterSvg", () => {
       const svg = robotCharacterSvg(look);
       count++;
       expect(svg).not.toMatch(/undefined|GLOW|<script|on\w+=|href=/i);
-      // Every opened element is closed or self-closing.
       const opened = svg.match(/<[a-zA-Z]/g)?.length ?? 0;
       const selfClosed = svg.match(/\/>/g)?.length ?? 0;
       const closed = svg.match(/<\/[a-zA-Z]+>/g)?.length ?? 0;
@@ -45,68 +43,39 @@ describe("robotCharacterSvg", () => {
   });
 
   it("drops the ears under the hood and lights the antenna in the colour's glow", () => {
-    expect(robotCharacterSvg(READY_MADE_ROBOTS.hoodie)).not.toContain('x="44" y="108"');
-    expect(robotCharacterSvg(READY_MADE_ROBOTS.keynote)).toContain('x="44" y="108"');
-    expect(robotCharacterSvg(READY_MADE_ROBOTS.hustler)).toContain('fill="#fde68a"');
+    expect(robotCharacterSvg(listed("hoodie"))).not.toContain('x="44" y="108"');
+    expect(robotCharacterSvg(listed("keynote"))).toContain('x="44" y="108"');
+    expect(robotCharacterSvg(listed("hustler"))).toContain('fill="#fde68a"');
   });
 
   it("layers the parts back to front", () => {
-    const svg = robotCharacterSvg(READY_MADE_ROBOTS.chef);
-    const order = [
-      'fill="#D9483B"', // backdrop
-      'fill="#f8fafc"', // chef's jacket
-      'fill="#a9b8c6"', // neck
-      'fill="#1f2a44"', // collar
-      'fill="#c3cfda"', // ears
-      'stroke="#fff"', // steam
-      'fill="#f1f5f8"', // head
-      'stroke="#ff7a66"', // grumpy face
-      'fill="#fff"><circle', // chef's hat
-    ].map((marker) => svg.indexOf(marker));
+    const svg = robotCharacterSvg(listed("critic"));
+    const backToFront = {
+      backdrop: 'fill="#D9483B"',
+      chefsJacket: 'fill="#f8fafc"',
+      neck: 'fill="#a9b8c6"',
+      collar: 'fill="#1f2a44"',
+      ears: 'fill="#c3cfda"',
+      steam: 'stroke="#fff"',
+      head: 'fill="#f1f5f8"',
+      grumpyFace: 'stroke="#ff7a66"',
+      chefsHat: 'fill="#fff"><circle',
+    };
+    const order = Object.values(backToFront).map((marker) => svg.indexOf(marker));
     expect(order.every((index) => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
   it("encodes a data URI once per look", () => {
-    const uri = robotCharacterDataUri(READY_MADE_ROBOTS.professor);
+    const uri = robotCharacterDataUri(listed("professor"));
     expect(uri.startsWith("data:image/svg+xml,%3Csvg")).toBe(true);
-    expect(robotCharacterDataUri({ ...READY_MADE_ROBOTS.professor })).toBe(uri);
+    expect(robotCharacterDataUri({ ...listed("professor") })).toBe(uri);
   });
 
   it("is the notification portrait for a robot bot", () => {
-    const value = readyMadeRobotValue("detective");
+    const value = robotPresetValue("detective");
     expect(notificationAvatarSource({ id: "b1", color: value, avatarSet: "robots" })).toBe(
-      robotCharacterDataUri(READY_MADE_ROBOTS.detective),
+      robotCharacterDataUri(listed("detective")),
     );
-  });
-});
-
-describe("random robots", () => {
-  it("are valid values with no extra, and vary", () => {
-    const values = new Set<string>();
-    for (let index = 0; index < 40; index++) {
-      const value = randomRobotCharacterValue();
-      expect(isBotAvatarValue(value)).toBe(true);
-      expect(value.endsWith(".none")).toBe(true);
-      values.add(value);
-    }
-    expect(values.size).toBeGreaterThan(1);
-  });
-
-  it("keep a requested colour", () => {
-    expect(randomRobotLook(() => 0.99, "red")).toEqual({
-      colour: "red",
-      headwear: "top-hat",
-      face: "happy",
-      outfit: "tuxedo",
-      extra: "none",
-    });
-  });
-
-  it("ready-made keys are valid values", () => {
-    for (const key of Object.keys(READY_MADE_ROBOTS) as (keyof typeof READY_MADE_ROBOTS)[]) {
-      expect(isBotAvatarValue(readyMadeRobotValue(key))).toBe(true);
-      expect(readyMadeRobotValue(key)).toBe(robotCharacterValue(READY_MADE_ROBOTS[key]));
-    }
   });
 });

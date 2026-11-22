@@ -508,8 +508,6 @@ export function createRepos(
             ? resolveBotAvatarSet(owner.botAvatarSet)
             : DEFAULT_NEW_BOT_AVATAR_SET;
           const avatarSet = input.avatarSet ?? defaultSet;
-          // Original balances existing looks and a new robot balances colours; a logo with a
-          // given look needs no roster read.
           const roster =
             avatarSet === "organic" || input.color === undefined
               ? await tx.bot.findMany({
@@ -517,10 +515,9 @@ export function createRepos(
                   select: { id: true, color: true },
                 })
               : [];
-          // A bot created without a look gets a robot character.
           const avatar = chooseBotAvatar(
             avatarSet === "organic" ? roster : [],
-            input.color ?? chooseRobotCharacter(roster),
+            input.color ?? (avatarSet === "robots" ? chooseRobotCharacter(roster) : undefined),
             { family: input.avatarFamily, avatarSet, id: input.id },
           );
           const computer = await ensureComputerRecord(

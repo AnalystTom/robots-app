@@ -6,6 +6,8 @@ import {
   botLookState,
   botLookWithColor,
   botLookWithShape,
+  robotPresetOf,
+  robotPresetValue,
   SHIPPED_BOT_AVATAR_SHAPE_KEYS,
 } from "@robots/core";
 import {
@@ -29,7 +31,7 @@ import { Button } from "@robots/ui-web/components/ui/button";
 import { Check, Pencil, Upload, X } from "lucide-react";
 import type { ClipboardEvent, DragEvent } from "react";
 import { useRef, useState } from "react";
-import { RobotBuilder } from "./robot-builder";
+import { RobotPresetPicker } from "./robot-presets";
 
 export function BotLookPicker({
   value,
@@ -56,7 +58,10 @@ export function BotLookPicker({
 
   return (
     <div className="space-y-4">
-      <RobotBuilder look={robot} onChange={(next) => onChange(next)} />
+      <RobotPresetPicker
+        value={robot ? robotPresetOf(robot) : null}
+        onChange={(id) => onChange(robotPresetValue(id))}
+      />
       <Disclosure
         summary={<Trans>More styles</Trans>}
         summaryClassName="text-body-sm text-muted-foreground"
@@ -280,7 +285,7 @@ export function AvatarStudioPopover({
               <Trans>Avatar Studio</Trans>
             </DialogTitle>
             <DialogDescription className="sr-only">
-              <Trans>Build a robot, choose another style, or upload an image</Trans>
+              <Trans>Choose a robot, another style, or upload an image</Trans>
             </DialogDescription>
             <Button
               variant="ghost"
