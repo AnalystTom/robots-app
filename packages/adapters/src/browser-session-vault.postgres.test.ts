@@ -539,6 +539,52 @@ describePostgres("imported browser sessions (PostgreSQL)", () => {
     expect(await applied()).toEqual([]);
   });
 
+  it("keeps the other bots on a computer delivered when one bot's sync throws", async () => {
+    await asOwner(() =>
+      importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {
+        source: "Thomas in Chrome",
+        botIds: [botId, otherBotId],
+        sessions: [session(TOKEN)],
+      }),
+    );
+    const signals: Array<[string, string]> = [];
+    const throwingForBot = {
+      pageBrowser: async (
+        computer: unknown,
+        request: PageBrowserCommand,
+        context: { botId?: string },
+      ): Promise<PageBrowserResult> => {
+        if (context.botId === botId) throw new Error("The browser is gone.");
+        return sandbox.pageBrowser(computer, request, context);
+      },
+    };
+    await syncComputerBrowserSessions(
+      {
+        prisma: db.prisma,
+        secretStore,
+        sandbox: throwingForBot,
+        events: {
+          publishSpaceChange: async (spaceId: string, kind: string) => {
+            signals.push([spaceId, kind]);
+          },
+        },
+      },
+      owner,
+      context(),
+    );
+    expect(await appliedFor(otherBotId)).toEqual(["x.com"]);
+    expect(await applied()).toEqual([]);
+    expect(signals).toEqual([
+      [owner, "vault"],
+      [owner, "vault"],
+    ]);
+    const [row] = await system.vaultCredential.findMany({ where: { userId: owner } });
+    await asOwner(() => forgetBotSecret(db.prisma, scope, row!.name));
+    expect(await sync()).toBe("signed_in");
+    expect(await syncBotBrowserSessions(deps(), otherBotId, context())).toBe("signed_in");
+    expect(await appliedFor(otherBotId)).toEqual([]);
+  });
+
   it("refuses a shared Space and signs its browsers out", async () => {
     await asOwner(() =>
       importBrowserSessions({ prisma: db.prisma, secretStore }, scope, {

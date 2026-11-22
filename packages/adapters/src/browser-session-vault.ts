@@ -15,7 +15,7 @@ import {
 } from "@robots/contracts";
 import type { PrismaClient, ThreadEvents } from "@robots/db";
 import { runAsSystem, runAsTenant, spaceIsShared, withTransactionRetry } from "@robots/db";
-import { getLogger } from "@robots/logging";
+import { bestEffort, getLogger } from "@robots/logging";
 import type { BotSecretScope } from "./bot-secrets.js";
 import {
   assertVaultInUse,
@@ -340,76 +340,84 @@ async function syncBotBrowserSessionsOnce(
   );
   if (!bot) return "failed";
   return runAsTenant({ spaceId: bot.spaceId, userId: bot.userId }, async () => {
-    const [desired, applied] = await Promise.all([
-      desiredSites(deps, bot),
-      deps.prisma.browserSessionSite.findMany({ where: { botId: bot.id } }),
-    ]);
-    const appliedVersion = new Map(applied.map((row) => [row.site, row.itemVersion]));
-    const toSet = desired.filter((entry) => appliedVersion.get(entry.site) !== entry.version);
-    const keep = new Set(desired.map((entry) => entry.site));
-    const toClear = applied.map((row) => row.site).filter((site) => !keep.has(site));
-    if (!toSet.length && !toClear.length) return "signed_in";
-    const computer = bot.computer;
-    if (await onThisComputer(deps.prisma, computer)) return failedSync(deps, bot.spaceId);
-    if (computer?.state !== "running" || !computer.providerRef) {
-      await deps.events?.publishSpaceChange?.(bot.spaceId, "vault");
-      return "next_start";
-    }
-    if (!deps.sandbox.pageBrowser) return failedSync(deps, bot.spaceId);
-    const sites = await Promise.all(
-      toSet.map(async (entry) => ({ site: entry.site, cookies: await entry.open() })),
-    );
-    const adapterContext: AdapterContext = {
-      ...context,
-      userId: bot.userId,
-      spaceId: bot.spaceId,
-      botId: bot.id,
-    };
-    const ref = toComputerRef(computer);
-    const groups = batches(sites.filter((entry) => entry.cookies.length > 0));
-    for (const [index, group] of groups.entries()) {
-      const result = await deps.sandbox.pageBrowser(
-        ref,
-        {
-          command: "sessions",
-          sites: group,
-          clear: index === groups.length - 1 ? toClear : [],
-        },
-        adapterContext,
-      );
-      if (!result.ok) {
-        getLogger().warn("browser_sessions.sync_failed", {
-          "bot.id": bot.id,
-          sites: group.length,
-          cleared: toClear.length,
-          error: typeof result.error === "string" ? result.error : undefined,
-        });
-        return failedSync(deps, bot.spaceId);
+    try {
+      const [desired, applied] = await Promise.all([
+        desiredSites(deps, bot),
+        deps.prisma.browserSessionSite.findMany({ where: { botId: bot.id } }),
+      ]);
+      const appliedVersion = new Map(applied.map((row) => [row.site, row.itemVersion]));
+      const toSet = desired.filter((entry) => appliedVersion.get(entry.site) !== entry.version);
+      const keep = new Set(desired.map((entry) => entry.site));
+      const toClear = applied.map((row) => row.site).filter((site) => !keep.has(site));
+      if (!toSet.length && !toClear.length) return "signed_in";
+      const computer = bot.computer;
+      if (await onThisComputer(deps.prisma, computer)) return failedSync(deps, bot.spaceId);
+      if (computer?.state !== "running" || !computer.providerRef) {
+        await deps.events?.publishSpaceChange?.(bot.spaceId, "vault");
+        return "next_start";
       }
+      if (!deps.sandbox.pageBrowser) return failedSync(deps, bot.spaceId);
+      const sites = await Promise.all(
+        toSet.map(async (entry) => ({ site: entry.site, cookies: await entry.open() })),
+      );
+      const adapterContext: AdapterContext = {
+        ...context,
+        userId: bot.userId,
+        spaceId: bot.spaceId,
+        botId: bot.id,
+      };
+      const ref = toComputerRef(computer);
+      const groups = batches(sites.filter((entry) => entry.cookies.length > 0));
+      for (const [index, group] of groups.entries()) {
+        const result = await deps.sandbox.pageBrowser(
+          ref,
+          {
+            command: "sessions",
+            sites: group,
+            clear: index === groups.length - 1 ? toClear : [],
+          },
+          adapterContext,
+        );
+        if (!result.ok) {
+          getLogger().warn("browser_sessions.sync_failed", {
+            "bot.id": bot.id,
+            sites: group.length,
+            cleared: toClear.length,
+            error: typeof result.error === "string" ? result.error : undefined,
+          });
+          return failedSync(deps, bot.spaceId);
+        }
+      }
+      await deps.prisma.$transaction(async (tx) => {
+        await tx.browserSessionSite.deleteMany({
+          where: { botId: bot.id, site: { in: [...toClear, ...toSet.map((entry) => entry.site)] } },
+        });
+        await tx.browserSessionSite.createMany({
+          data: toSet.map((entry) => ({
+            botId: bot.id,
+            userId: bot.userId,
+            spaceId: bot.spaceId,
+            site: entry.site,
+            itemVersion: entry.version,
+          })),
+          skipDuplicates: true,
+        });
+      });
+      if (toSet.length || toClear.length)
+        await deps.events?.publishSpaceChange?.(bot.spaceId, "vault");
+      getLogger().info("browser_sessions.synced", {
+        "bot.id": bot.id,
+        set: toSet.length,
+        cleared: toClear.length,
+      });
+      return "signed_in";
+    } catch (error) {
+      getLogger().warn("browser_sessions.sync_error", {
+        "bot.id": bot.id,
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      return failedSync(deps, bot.spaceId);
     }
-    await deps.prisma.$transaction(async (tx) => {
-      await tx.browserSessionSite.deleteMany({
-        where: { botId: bot.id, site: { in: [...toClear, ...toSet.map((entry) => entry.site)] } },
-      });
-      await tx.browserSessionSite.createMany({
-        data: toSet.map((entry) => ({
-          botId: bot.id,
-          userId: bot.userId,
-          spaceId: bot.spaceId,
-          site: entry.site,
-          itemVersion: entry.version,
-        })),
-        skipDuplicates: true,
-      });
-    });
-    if (toSet.length || toClear.length)
-      await deps.events?.publishSpaceChange?.(bot.spaceId, "vault");
-    getLogger().info("browser_sessions.synced", {
-      "bot.id": bot.id,
-      set: toSet.length,
-      cleared: toClear.length,
-    });
-    return "signed_in";
   });
 }
 
@@ -430,5 +438,10 @@ export async function syncComputerBrowserSessions(
       select: { id: true },
     }),
   );
-  for (const bot of bots) await syncBotBrowserSessions(deps, bot.id, context);
+  for (const bot of bots) {
+    await bestEffort(
+      "sync a computer's sign-ins to one bot",
+      syncBotBrowserSessions(deps, bot.id, context),
+    );
+  }
 }
