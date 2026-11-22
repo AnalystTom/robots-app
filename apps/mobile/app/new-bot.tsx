@@ -2,14 +2,14 @@ import { useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_NAME_MAX_LENGTH, resolveBotAvatarSet } from "@robots/contracts";
 import {
-  botLookState,
   newBotLook,
+  newBotLookForSet,
   newBotLookInput,
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
 } from "@robots/core";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler, ScrollView, Text, TextInput, View } from "react-native";
 import { BotAvatar } from "../components/bot-avatar";
 import { BotLookPicker } from "../components/bot-look-picker";
@@ -22,45 +22,42 @@ import { native, useMobileTokens } from "../lib/native";
 import { useSideInsets } from "../lib/side-insets";
 import { errorText } from "../lib/user-error";
 
-/** Names a new bot and picks its look before creating it, as web's New bot dialog does. */
 export default function NewBot() {
   const sideInsets = useSideInsets();
   const { t } = useLingui();
   const tokens = useMobileTokens();
   const router = useRouter();
   const params = useLocalSearchParams<{ spaceId?: string; avatarSet?: BotAvatarSet }>();
-  // The account's set: the server gives it to the new bot, so the preview draws it too. Home's
-  // copy can predate a change in Account settings, so the current one replaces it.
-  const [avatarSet, setAvatarSet] = useState(() => resolveBotAvatarSet(params.avatarSet));
+  const [accountSet, setAccountSet] = useState<BotAvatarSet | null>(null);
+  const avatarSet = accountSet ?? resolveBotAvatarSet(params.avatarSet);
   const [name, setName] = useState("");
-  const [look, setLook] = useState(newBotLook);
+  const [look, setLook] = useState(() => newBotLook(resolveBotAvatarSet(params.avatarSet)));
   const [pending, setPending] = useState(false);
+  const [accountFailed, setAccountFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const creating = useRef(false);
-  // Once the screen is gone, a creation still in flight must not open the chat.
   const gone = useRef(false);
-  // Create waits for the check made as the screen opened, so the model prompt shows once.
   const modelCheck = useRef<Promise<boolean>>(Promise.resolve(false));
   const trimmed = name.trim();
   const identity = newBotPreviewIdentity(avatarSet, look);
 
-  useEffect(() => {
-    gone.current = false;
-    void rpc("me")
+  const readAccountSet = useCallback(() => {
+    setAccountFailed(false);
+    return rpc("me")
       .then((me) => {
         if (gone.current) return;
         const set = resolveBotAvatarSet(me.botAvatarSet);
-        setAvatarSet(set);
-        // The logo has no studio shapes; drop one picked while the Original set was shown.
-        if (set === "robots")
-          setLook((current) =>
-            botLookState(current.color).shapeIndex === null
-              ? current
-              : { ...current, color: botLookState(current.color).color },
-          );
+        setAccountSet(set);
+        setLook((current) => newBotLookForSet(current, set));
       })
-      .catch(() => undefined);
-    // A first bot needs a model; ask before the form is filled in rather than after.
+      .catch(() => {
+        if (!gone.current) setAccountFailed(true);
+      });
+  }, []);
+
+  useEffect(() => {
+    gone.current = false;
+    void readAccountSet();
     modelCheck.current = askForModelBeforeFirstBot(params.spaceId, () => !gone.current);
     void modelCheck.current.then((asked) => {
       if (asked && !gone.current) router.back();
@@ -68,9 +65,8 @@ export default function NewBot() {
     return () => {
       gone.current = true;
     };
-  }, [params.spaceId, router]);
+  }, [params.spaceId, readAccountSet, router]);
 
-  // Android's Back would close the screen mid-create, like the Cancel it replaces.
   useEffect(() => {
     if (!pending) return;
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => true);
@@ -78,15 +74,14 @@ export default function NewBot() {
   }, [pending]);
 
   async function create() {
-    if (!trimmed || creating.current) return;
+    if (!trimmed || !accountSet || creating.current) return;
     creating.current = true;
     setPending(true);
     setError(null);
     try {
-      // That check is asking for a model and closing the screen.
       if (await modelCheck.current) return;
       const outcome = await createInboxBot({
-        input: { name: trimmed, ...newBotLookInput(avatarSet, look) },
+        input: { name: trimmed, ...newBotLookInput(accountSet, look) },
         openChat: (href) => {
           if (gone.current) return;
           router.dismiss();
@@ -94,7 +89,6 @@ export default function NewBot() {
         },
         spaceId: params.spaceId,
       });
-      // A model is needed first, or the account or space changed: nothing is left to do here.
       if (outcome !== "created" && !gone.current) router.back();
     } catch (err) {
       setError(errorText(err, t`Could not create bot`));
@@ -160,10 +154,22 @@ export default function NewBot() {
           />
         </View>
         {error ? <Text style={{ color: tokens.destructive, marginTop: 16 }}>{error}</Text> : null}
+        {accountFailed ? (
+          <>
+            <Text style={{ color: tokens.destructive, marginTop: 16 }}>
+              {t`Couldn't load your bot style.`}
+            </Text>
+            <NativeActionButton
+              label={t`Try again`}
+              onPress={() => void readAccountSet()}
+              style={{ marginTop: 16, borderRadius: 28 }}
+            />
+          </>
+        ) : null}
         <NativeActionButton
           fill
           label={pending ? t`Creating…` : t`Create`}
-          disabled={!trimmed || pending}
+          disabled={!trimmed || !accountSet || pending}
           onPress={() => void create()}
           style={{ marginTop: 28, borderRadius: 28 }}
         />

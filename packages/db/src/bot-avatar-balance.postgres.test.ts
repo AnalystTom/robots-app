@@ -1,9 +1,11 @@
-import { parseRobotCharacter, ROBOT_PARTS } from "@robots/contracts";
+import { parseRobotCharacter } from "@robots/contracts";
 import {
   newClientId,
   ORGANIC_AVATAR_HEART_FAMILY,
   organicAvatarFamily,
   organicAvatarLook,
+  ROBOT_PRESETS,
+  robotPresetValue,
 } from "@robots/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "./client.js";
@@ -62,7 +64,7 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     await close?.();
   });
 
-  it("gives each new bot a shape and colour the user's other bots use least", async () => {
+  it("gives each new bot the ready-made robot the user's other bots wear least", async () => {
     const repos = createRepos(prisma);
     const system = asSystem(prisma);
     const before = await system.bot.findMany({
@@ -88,18 +90,16 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     });
 
     const all = [...before, ...created];
-    const lookOf = (id: string) => organicAvatarLook(organicAvatarFamily(id));
-    const firstEight = all.slice(0, 8);
-    expect(new Set(firstEight.map((bot) => lookOf(bot.id))).size).toBe(firstEight.length);
     expect(
       created.every((bot) => organicAvatarFamily(bot.id) !== ORGANIC_AVATAR_HEART_FAMILY),
     ).toBe(true);
-    // Each gets a robot character, and no robot colour repeats until every colour is worn.
-    expect(created.every((bot) => parseRobotCharacter(bot.color) !== null)).toBe(true);
-    const firstColours = all
-      .flatMap((bot) => parseRobotCharacter(bot.color)?.colour ?? [])
-      .slice(0, ROBOT_PARTS.colour.length);
-    expect(new Set(firstColours).size).toBe(firstColours.length);
+    const offered = ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id));
+    expect(created.every((bot) => offered.includes(bot.color))).toBe(true);
+    const firstRobots = all
+      .filter((bot) => offered.includes(bot.color))
+      .slice(0, ROBOT_PRESETS.length)
+      .map((bot) => bot.color);
+    expect(new Set(firstRobots).size).toBe(firstRobots.length);
     expect(created.every((bot) => /^c[a-z0-9]{24}$/.test(bot.id))).toBe(true);
 
     const after = await system.bot.findMany({
@@ -226,7 +226,7 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     }
   });
 
-  it("serializes concurrent creation before reading the existing avatar looks", async () => {
+  it("serializes concurrent creation before reading the existing robots", async () => {
     const repos = createRepos(prisma);
     await asSystem(prisma).bot.updateMany({
       where: { spaceId: owner.spaceId, userId: owner.userId },
@@ -239,9 +239,7 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
         ),
       ),
     );
-    expect(new Set(created.map((bot) => organicAvatarLook(organicAvatarFamily(bot.id)))).size).toBe(
-      8,
-    );
+    expect(new Set(created.map((bot) => bot.color)).size).toBe(8);
     expect(
       created.every((bot) => organicAvatarFamily(bot.id) !== ORGANIC_AVATAR_HEART_FAMILY),
     ).toBe(true);

@@ -1,15 +1,11 @@
-import {
-  BOT_COLOR_LIST,
-  BOT_COLORS,
-  isBotAvatarValue,
-  parseRobotCharacter,
-  ROBOT_PARTS,
-} from "@robots/contracts";
+import { BOT_COLOR_LIST, BOT_COLORS } from "@robots/contracts";
 import {
   ORGANIC_AVATAR_FAMILY_COUNT,
   ORGANIC_AVATAR_HEART_FAMILY,
   organicAvatarFamily,
   organicAvatarLook,
+  ROBOT_PRESETS,
+  robotPresetValue,
   seededLogoAvatarColor,
 } from "@robots/core";
 import { describe, expect, it } from "vitest";
@@ -324,22 +320,26 @@ describe("chooseBotAvatar", () => {
 });
 
 describe("chooseRobotCharacter", () => {
-  it("gives a valid robot in a colour the user's robots wear least, with no extra", () => {
-    const existing = ROBOT_PARTS.colour
-      .filter((colour) => colour !== "teal")
-      .map((colour) => ({ color: `robot:${colour}.antenna.happy.vest.none` }));
-    existing.push({ color: "#2A92FE" }, { color: "data:image/png;base64,AAAA" });
+  it("gives the ready-made robot the user's bots wear least", () => {
+    const existing = ROBOT_PRESETS.filter((preset) => preset.id !== "detective").map((preset) => ({
+      color: robotPresetValue(preset.id),
+    }));
+    existing.push(
+      { color: "robot:teal.top-hat.hearts.vest.none" },
+      { color: "#2A92FE" },
+      { color: "data:image/png;base64,AAAA" },
+    );
     for (let seed = 0; seed < 20; seed++) {
-      const value = chooseRobotCharacter(existing, seeded(seed));
-      expect(isBotAvatarValue(value)).toBe(true);
-      expect(parseRobotCharacter(value)).toMatchObject({ colour: "teal", extra: "none" });
+      expect(chooseRobotCharacter(existing, seeded(seed))).toBe(robotPresetValue("detective"));
     }
   });
 
-  it("varies the parts", () => {
+  it("only ever gives a ready-made robot", () => {
+    const offered = new Set(ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id)));
     const values = new Set(
-      Array.from({ length: 30 }, (_, seed) => chooseRobotCharacter([], seeded(seed))),
+      Array.from({ length: 60 }, (_, index) => chooseRobotCharacter([], () => index / 60)),
     );
-    expect(values.size).toBeGreaterThan(10);
+    for (const value of values) expect(offered.has(value)).toBe(true);
+    expect(values.size).toBeGreaterThan(5);
   });
 });
