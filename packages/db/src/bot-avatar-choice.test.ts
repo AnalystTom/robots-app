@@ -4,17 +4,13 @@ import {
   ORGANIC_AVATAR_HEART_FAMILY,
   organicAvatarFamily,
   organicAvatarLook,
+  pickLeastUsed,
   ROBOT_PRESETS,
   robotPresetValue,
   seededLogoAvatarColor,
 } from "@robots/core";
 import { describe, expect, it } from "vitest";
-import {
-  BOT_ID_ATTEMPTS,
-  chooseBotAvatar,
-  chooseRobotCharacter,
-  pickLeastUsed,
-} from "./bot-avatar-choice.js";
+import { BOT_ID_ATTEMPTS, chooseBotAvatar, chooseRobotCharacter } from "./bot-avatar-choice.js";
 
 /** A repeatable stand-in for Math.random. */
 function seeded(seed: number) {

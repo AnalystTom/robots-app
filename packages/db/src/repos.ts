@@ -513,13 +513,16 @@ export function createRepos(
           const roster =
             avatarSet === "organic" || input.color === undefined
               ? await tx.bot.findMany({
-                  where: { spaceId: actor.spaceId, userId: actor.userId, archivedAt: null },
-                  select: { id: true, color: true },
+                  where: { spaceId: actor.spaceId, archivedAt: null },
+                  select: { id: true, color: true, userId: true },
                 })
               : [];
           const avatar = chooseBotAvatar(
             avatarSet === "organic" ? roster : [],
-            input.color ?? (avatarSet === "robots" ? chooseRobotCharacter(roster) : undefined),
+            input.color ??
+              (avatarSet === "robots"
+                ? chooseRobotCharacter(roster.filter((bot) => bot.userId === actor.userId))
+                : undefined),
             { family: input.avatarFamily, avatarSet, id: input.id },
           );
           const computer = await ensureComputerRecord(

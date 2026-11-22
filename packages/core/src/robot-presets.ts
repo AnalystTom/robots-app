@@ -143,16 +143,14 @@ export function robotPresetValue(id: RobotPresetId): string {
   return robotCharacterValue(preset.look);
 }
 
-export function leastWornRobotValue(wornColors: readonly string[], random = Math.random): string {
-  const worn = wornColors.flatMap((color) => {
+export const ROBOT_PRESET_IDS: readonly RobotPresetId[] = ROBOT_PRESETS.map((preset) => preset.id);
+
+export function wornRobotPresetIds(wornColors: readonly string[]): RobotPresetId[] {
+  return wornColors.flatMap((color) => {
     const avatar = parseBotAvatarValue(color);
-    const preset = avatar.kind === "robot" ? robotPresetOf(avatar.look) : null;
-    return preset ? [preset] : [];
+    const id = avatar.kind === "robot" ? robotPresetOf(avatar.look) : null;
+    return id ? [id] : [];
   });
-  const counts = ROBOT_PRESETS.map((preset) => worn.filter((id) => id === preset.id).length);
-  const fewest = Math.min(...counts);
-  const least = ROBOT_PRESETS.filter((_, index) => counts[index] === fewest);
-  return robotPresetValue(least[Math.floor(random() * least.length)]!.id);
 }
 
 export function robotPresetOf(look: RobotLook): RobotPresetId | null {

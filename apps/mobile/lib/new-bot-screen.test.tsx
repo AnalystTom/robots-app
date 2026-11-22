@@ -521,3 +521,24 @@ it("enables Create once a retry reads the account's bot style", async () => {
   expect(container.textContent).not.toContain("Couldn't load your bot style.");
   expect(createButton().disabled).toBe(false);
 });
+
+it("keeps Create on and sends the previewed robot when the bot list cannot load", async () => {
+  mocks.rpc.mockImplementation((path: string) => {
+    if (path === "me") return Promise.resolve({ botAvatarSet: "robots", userId: "user-me" });
+    if (path === "bots/list") return Promise.reject(new Error("Bots unavailable"));
+    if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
+    return Promise.resolve(undefined);
+  });
+  await render();
+  const previewed = CHARACTER_NAMES.filter(checked);
+  expect(previewed).toHaveLength(1);
+  await typeName("Gordon");
+  expect(container.textContent).not.toContain("Couldn't load your bot style.");
+  expect(createButton().disabled).toBe(false);
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  const character = CHARACTERS.find((candidate) => candidate.name === previewed[0])!;
+  expect(createdBot()).toEqual(
+    expect.objectContaining({ color: robotCharacterValue(character.look) }),
+  );
+});

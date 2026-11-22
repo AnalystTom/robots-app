@@ -8,7 +8,8 @@ import {
 } from "./avatar-shape.js";
 import { DEFAULT_BOT_AVATAR_COLOR, resolvePersonaColorDef } from "./bot-avatar-colors.js";
 import { newClientId } from "./client-id.js";
-import { leastWornRobotValue } from "./robot-presets.js";
+import { pickLeastUsed } from "./least-used.js";
+import { ROBOT_PRESET_IDS, robotPresetValue, wornRobotPresetIds } from "./robot-presets.js";
 
 export const ORGANIC_PREVIEW_IDENTITIES = ORGANIC_AVATAR_LOOKS.map(organicAvatarSampleIdentity);
 
@@ -46,7 +47,12 @@ export function newBotLookForSet(
   if (avatarSet === "robots") {
     return look.color !== null && botLookState(look.color).robot
       ? look
-      : { ...look, color: leastWornRobotValue(wornColors) };
+      : {
+          ...look,
+          color: robotPresetValue(
+            pickLeastUsed(ROBOT_PRESET_IDS, wornRobotPresetIds(wornColors), Math.random),
+          ),
+        };
   }
   return look.color === null || botLookState(look.color).robot
     ? { ...look, color: pick(BOT_COLORS) }

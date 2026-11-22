@@ -2,7 +2,9 @@ import { randomUUID } from "node:crypto";
 import { parseRobotCharacter } from "@robots/contracts";
 import {
   newClientId,
+  ORGANIC_AVATAR_FAMILY_COUNT,
   ORGANIC_AVATAR_HEART_FAMILY,
+  ORGANIC_AVATAR_LOOKS,
   organicAvatarFamily,
   organicAvatarLook,
   ROBOT_PRESETS,
@@ -131,8 +133,7 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     expect(created.color).toBe("robot:red.antenna.aviators.cape.confetti");
   });
 
-  it("counts only the creating member's bots toward the least-worn default", async () => {
-    const repos = createRepos(prisma);
+  async function addSpaceMember() {
     const system = asSystem(prisma);
     const memberAddress = `+1555${Math.floor(Math.random() * 9_000_000 + 1_000_000)}`;
     const member = await runAsSystem("test fixture", () =>
@@ -162,8 +163,23 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       email: "member@example.com",
       isDeploymentOwner: false,
     };
+    const remove = async () => {
+      await system.spaceMember.deleteMany({
+        where: { spaceId: owner.spaceId, userId: member.userId },
+      });
+      await system.messagingIdentity.deleteMany({
+        where: { provider, address: memberAddress },
+      });
+      await system.user.deleteMany({ where: { id: member.userId } });
+    };
+    return { member, memberActor, remove };
+  }
+
+  it("counts only the creating member's bots toward the least-worn default", async () => {
+    const repos = createRepos(prisma);
+    const { member, memberActor, remove } = await addSpaceMember();
     try {
-      await system.bot.updateMany({
+      await asSystem(prisma).bot.updateMany({
         where: { spaceId: owner.spaceId, userId: owner.userId },
         data: { archivedAt: new Date() },
       });
@@ -190,13 +206,38 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       );
       expect(created.color).toBe("robot:red.antenna.aviators.cape.confetti");
     } finally {
-      await system.spaceMember.deleteMany({
-        where: { spaceId: owner.spaceId, userId: member.userId },
+      await remove();
+    }
+  });
+
+  it("balances an Original bot's look against the other members' bots in the Space", async () => {
+    const repos = createRepos(prisma);
+    const { member, memberActor, remove } = await addSpaceMember();
+    try {
+      await asSystem(prisma).bot.updateMany({
+        where: { spaceId: owner.spaceId, archivedAt: null },
+        data: { archivedAt: new Date() },
       });
-      await system.messagingIdentity.deleteMany({
-        where: { provider, address: memberAddress },
+      const [free, ...taken] = ORGANIC_AVATAR_LOOKS;
+      const familyOfLook = (look: number) =>
+        Array.from({ length: ORGANIC_AVATAR_FAMILY_COUNT }, (_, family) => family).find(
+          (family) => family !== ORGANIC_AVATAR_HEART_FAMILY && organicAvatarLook(family) === look,
+        )!;
+      await runAsTenant({ ...owner, userId: member.userId }, async () => {
+        for (const look of taken) {
+          await repos.createBot(memberActor, {
+            ...botInput(`Member look ${look}`),
+            avatarSet: "organic",
+            avatarFamily: familyOfLook(look),
+          });
+        }
       });
-      await system.user.deleteMany({ where: { id: member.userId } });
+      const created = await runAsTenant(owner, () =>
+        repos.createBot(actor(), { ...botInput("Balanced"), avatarSet: "organic" }),
+      );
+      expect(organicAvatarLook(organicAvatarFamily(created.id))).toBe(free);
+    } finally {
+      await remove();
     }
   });
 
