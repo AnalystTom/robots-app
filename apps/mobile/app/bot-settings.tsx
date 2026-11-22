@@ -879,7 +879,11 @@ export default function BotSettingsScreen() {
                 { key: "robots", label: t`RoBots` },
               ]}
               value={avatarSet}
-              onChange={(next) => setAvatarSet(resolveBotAvatarSet(next))}
+              onChange={(next) => {
+                const set = resolveBotAvatarSet(next);
+                if (set === "organic" && bot && botLookState(color).robot) setColor(bot.color);
+                setAvatarSet(set);
+              }}
               plain
             />
             {bot ? (
