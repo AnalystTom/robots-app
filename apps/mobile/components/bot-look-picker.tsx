@@ -58,6 +58,12 @@ export function BotLookPicker({
     creator: t`Creator`,
     chef: t`Chef`,
     hero: t`Hero`,
+    professor: t`Professor`,
+    detective: t`Detective`,
+    keynote: t`Keynote`,
+    hustler: t`Hustler`,
+    host: t`Host`,
+    critic: t`Critic`,
   };
 
   return (

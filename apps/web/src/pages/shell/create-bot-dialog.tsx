@@ -1,12 +1,12 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_NAME_MAX_LENGTH } from "@robots/contracts";
-import type { RobotPresetId } from "@robots/core";
 import {
+  botLookState,
   newBotLook,
   newBotLookInput,
   newBotPreviewIdentity,
-  randomRobotPreset,
+  robotPresetOf,
   robotPresetValue,
 } from "@robots/core";
 import {
@@ -42,8 +42,9 @@ export function CreateBotDialog({
   const { t } = useLingui();
   const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
-  const [preset, setPreset] = useState<RobotPresetId>(randomRobotPreset);
-  const [look, setLook] = useState(() => ({ ...newBotLook(), color: robotPresetValue(preset) }));
+  const [look, setLook] = useState(newBotLook);
+  const pickedRobot = botLookState(look.color).robot;
+  const preset = pickedRobot ? robotPresetOf(pickedRobot) : null;
   const identity = newBotPreviewIdentity(avatarSet, look);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +112,6 @@ export function CreateBotDialog({
           <RobotPresetPicker
             value={preset}
             onChange={(next) => {
-              setPreset(next);
               setLook((current) => ({ ...current, color: robotPresetValue(next) }));
             }}
           />

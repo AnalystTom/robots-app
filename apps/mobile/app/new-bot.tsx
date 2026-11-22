@@ -9,7 +9,7 @@ import {
   ORGANIC_PREVIEW_IDENTITIES,
 } from "@robots/core";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler, ScrollView, Text, TextInput, View } from "react-native";
 import { BotAvatar } from "../components/bot-avatar";
 import { BotLookPicker } from "../components/bot-look-picker";
@@ -40,9 +40,9 @@ export default function NewBot() {
   const trimmed = name.trim();
   const identity = newBotPreviewIdentity(avatarSet, look);
 
-  useEffect(() => {
-    gone.current = false;
-    void rpc("me")
+  const readAccountSet = useCallback(() => {
+    setError(null);
+    return rpc("me")
       .then((me) => {
         if (gone.current) return;
         const set = resolveBotAvatarSet(me.botAvatarSet);
@@ -57,6 +57,11 @@ export default function NewBot() {
       .catch((err: unknown) => {
         if (!gone.current) setError(errorText(err));
       });
+  }, []);
+
+  useEffect(() => {
+    gone.current = false;
+    void readAccountSet();
     modelCheck.current = askForModelBeforeFirstBot(params.spaceId, () => !gone.current);
     void modelCheck.current.then((asked) => {
       if (asked && !gone.current) router.back();
@@ -64,7 +69,7 @@ export default function NewBot() {
     return () => {
       gone.current = true;
     };
-  }, [params.spaceId, router]);
+  }, [params.spaceId, readAccountSet, router]);
 
   useEffect(() => {
     if (!pending) return;
@@ -153,6 +158,13 @@ export default function NewBot() {
           />
         </View>
         {error ? <Text style={{ color: tokens.destructive, marginTop: 16 }}>{error}</Text> : null}
+        {error && !accountSet ? (
+          <NativeActionButton
+            label={t`Try again`}
+            onPress={() => void readAccountSet()}
+            style={{ marginTop: 16, borderRadius: 28 }}
+          />
+        ) : null}
         <NativeActionButton
           fill
           label={pending ? t`Creating…` : t`Create`}

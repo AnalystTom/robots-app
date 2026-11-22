@@ -125,6 +125,12 @@ export const ROBOT_PRESETS = [
       extra: "confetti",
     },
   },
+  { id: "professor", look: READY_MADE_ROBOTS.professor },
+  { id: "detective", look: READY_MADE_ROBOTS.detective },
+  { id: "keynote", look: READY_MADE_ROBOTS.keynote },
+  { id: "hustler", look: READY_MADE_ROBOTS.hustler },
+  { id: "host", look: READY_MADE_ROBOTS.host },
+  { id: "critic", look: READY_MADE_ROBOTS.chef },
 ] as const satisfies ReadonlyArray<{ id: string; look: RobotLook }>;
 
 export type RobotPresetId = (typeof ROBOT_PRESETS)[number]["id"];

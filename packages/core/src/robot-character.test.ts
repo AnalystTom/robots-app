@@ -125,6 +125,37 @@ describe("robot presets", () => {
     }
   });
 
+  it("are the fourteen characters the pickers show, in order", () => {
+    expect(ROBOT_PRESETS.map((preset) => preset.id)).toEqual([
+      "assistant",
+      "researcher",
+      "coder",
+      "writer",
+      "analyst",
+      "creator",
+      "chef",
+      "hero",
+      "professor",
+      "detective",
+      "keynote",
+      "hustler",
+      "host",
+      "critic",
+    ]);
+  });
+
+  it("share no parts once colour is ignored", () => {
+    const partsKeys = ROBOT_PRESETS.map(({ look }) =>
+      [look.headwear, look.face, look.outfit, look.extra].join("|"),
+    );
+    expect(new Set(partsKeys).size).toBe(ROBOT_PRESETS.length);
+  });
+
+  it("reach every named ready-made robot, up to colour", () => {
+    for (const key of Object.keys(READY_MADE_ROBOTS) as (keyof typeof READY_MADE_ROBOTS)[])
+      expect(robotPresetOf(READY_MADE_ROBOTS[key])).not.toBeNull();
+  });
+
   it("keep their name in any colour", () => {
     for (const preset of ROBOT_PRESETS)
       for (const colour of ROBOT_PARTS.colour)
@@ -133,8 +164,8 @@ describe("robot presets", () => {
 
   it("do not claim a robot with other parts", () => {
     const chef = ROBOT_PRESETS.find((preset) => preset.id === "chef")!.look;
-    expect(robotPresetOf(withRobotPart(chef, "face", "grumpy"))).toBeNull();
-    expect(robotPresetOf(READY_MADE_ROBOTS.chef)).toBeNull();
+    expect(robotPresetOf(withRobotPart(chef, "face", "monocle"))).toBeNull();
+    expect(robotPresetOf(READY_MADE_ROBOTS.chef)).toBe("critic");
   });
 
   it("are drawn at random from the whole set", () => {

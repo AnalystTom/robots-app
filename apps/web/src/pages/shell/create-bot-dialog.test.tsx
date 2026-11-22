@@ -18,6 +18,23 @@ vi.mock("@lingui/react/macro", () => {
 
 import { CreateBotDialog } from "./create-bot-dialog";
 
+const CHARACTER_NAMES = [
+  "Assistant",
+  "Researcher",
+  "Coder",
+  "Writer",
+  "Analyst",
+  "Creator",
+  "Chef",
+  "Hero",
+  "Professor",
+  "Detective",
+  "Keynote",
+  "Hustler",
+  "Host",
+  "Critic",
+];
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -108,7 +125,8 @@ describe("CreateBotDialog", () => {
   it("offers preset robots and sends the one picked", async () => {
     const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
     await render(onCreate);
-    expect(document.querySelectorAll('[role="radio"]')).toHaveLength(ROBOT_PRESETS.length);
+    for (const name of CHARACTER_NAMES) expect(button(name)).toBeDefined();
+    expect(document.querySelectorAll('[role="radio"]')).toHaveLength(CHARACTER_NAMES.length);
     expect(document.querySelector('[data-testid="robot-builder"]')).toBeNull();
     await click(button("Researcher"));
     expect(button("Researcher").getAttribute("aria-checked")).toBe("true");
