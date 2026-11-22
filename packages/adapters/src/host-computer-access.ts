@@ -54,6 +54,12 @@ export function hostComputerGate(
     async forUser(userId: string): Promise<Date | null> {
       const selected = await selection();
       if (!selected) return null;
+      if (access.singleAccount) {
+        const owner = await runAsSystem("find the owner of the desktop app's stack", () =>
+          prisma.user.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } }),
+        );
+        return owner?.id === userId ? selected.since : null;
+      }
       const admin = await runAsSystem("check whether a deployment admin is asking", () =>
         isDeploymentAdmin(prisma, access.adminEmails, userId),
       );

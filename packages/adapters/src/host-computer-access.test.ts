@@ -54,6 +54,7 @@ function database(computerHost: string | null = "this-mac") {
       ),
     },
     user: {
+      findFirst: vi.fn(async () => ({ id: "admin" })),
       findUnique: vi.fn(async ({ where }: { where: { id: string } }) => users[where.id] ?? null),
       findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
         where.id.in.flatMap((id) => (users[id] ? [users[id]] : [])),
@@ -109,9 +110,9 @@ describe("host computer access", () => {
     expect(await hostComputerGate(database() as never, admins).forHome(undefined)).toBe(false);
   });
 
-  it("keeps the screen and sign-ins to deployment admins even for the desktop app's single account", async () => {
+  it("lets a desktop app's single stack owner, and only that account, reach this computer", async () => {
     const gate = hostComputerGate(database() as never, {
-      adminEmails: ["owner@example.test"],
+      adminEmails: [],
       singleAccount: true,
     });
     expect(await gate.forUser("admin")).toBeInstanceOf(Date);
@@ -215,13 +216,14 @@ describe("routing computers between this computer and isolated ones", () => {
     for (const spy of spies) expect(spy).not.toHaveBeenCalled();
   });
 
-  it("still runs commands on this computer for an admin-owned space", async () => {
+  it("runs commands on this computer for an admin", async () => {
     const host = new FakeSandboxProvider();
     const gate = hostComputerGate(database() as never, admins);
     const routed = new HostAwareSandbox(new FakeSandboxProvider(), host, gate);
     const computer = await host.provision({ botId: "home-admin-space", homePath: "/home" }, ctx);
     const execute = vi.spyOn(host, "execute");
-    await drain(routed.execute({ ...computer, kind: "desktop" }, { argv: ["true"] }, ctx));
+    const admin = { ...ctx, userId: "admin" };
+    await drain(routed.execute({ ...computer, kind: "desktop" }, { argv: ["true"] }, admin));
     expect(execute).toHaveBeenCalledOnce();
   });
 });

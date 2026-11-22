@@ -179,7 +179,7 @@ describe("host browser cookies", () => {
     expect(x).toEqual({ site: "x.com", cookies: [] });
   });
 
-  it("refuses an import whose chosen site has no current sign-in, naming the site", async () => {
+  it("refuses an import when no chosen site has a current sign-in, naming them", async () => {
     await profile([
       { host: ".x.com", name: "auth_token", value: "old", expires: PAST_CHROME_TIME },
     ]);

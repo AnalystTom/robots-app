@@ -147,6 +147,25 @@ describe("host-aware sandbox", () => {
     await host.destroy(computer, ctx);
   });
 
+  it("refuses host commands and files to a member of an admin's space", async () => {
+    const host: SandboxProvider = new FakeSandboxProvider();
+    const provisioned = await host.provision({ botId: "files-bot", homePath: "" }, ctx);
+    const computer: ComputerRef = { ...provisioned, kind: "desktop" };
+    const readFile = vi.spyOn(host, "readFile");
+    const member = new HostAwareSandbox(new FakeSandboxProvider(), host, {
+      forHome: async () => true,
+      forUser: async () => null,
+    });
+    await expect(member.readFile(computer, "notes.txt", ctx)).rejects.toBeInstanceOf(
+      HostComputerAccessDeniedError,
+    );
+    await expect(member.listFiles(computer, ".", ctx)).rejects.toBeInstanceOf(
+      HostComputerAccessDeniedError,
+    );
+    expect(readFile).not.toHaveBeenCalled();
+    await host.destroy(computer, ctx);
+  });
+
   it("reports this computer's screen only to deployment admins", async () => {
     const host: SandboxProvider = new FakeSandboxProvider();
     host.environment = async () => ({

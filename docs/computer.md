@@ -72,9 +72,9 @@ start with your own bots, never from routines or other people's messages.
 
 A self-hosted Linux server that lets its admins' bots use the server itself can also give each of
 those bots its own screen and browser there. Admins' bots use the page and screen tools, and admins
-can **Take control** from web, desktop and mobile as on any other computer. Other members' bots in
-that space can still run commands on the server, but they cannot use its screen, browser or
-sign-ins.
+can **Take control** from web, desktop and mobile as on any other computer. Only admins can use this
+computer. Other members' bots in that space cannot run commands, read files, or use its screen,
+browser or sign-ins. On the desktop app, the owner of the app's account is the admin.
 
 The host computer service needs Xvfb, x11vnc, fluxbox, xdotool, wmctrl, scrot, xterm, xdpyinfo,
 websockify and Chromium on its `PATH`. The screen is off unless `ROBOTS_HOST_TOOLS_DIR` is set, and it
@@ -96,6 +96,7 @@ Any other account or process on the server can reach it, so run this only on a s
 human login account.
 
 **Sign in from this computer**, on that screen, copies the sessions of the sites you pick from a
-Chrome or Chromium profile on the server into the bot's browser. Only admins can use it. If a site
-has no current sign-in in that profile, the import is refused and names the site. Cookie values
+Chrome or Chromium profile on the server into the bot's browser. Only admins can use it. A site with
+no current sign-in in that profile is skipped, and the dialog names it. The import fails only when
+none of the chosen sites has one. Cookie values
 never leave the server.
