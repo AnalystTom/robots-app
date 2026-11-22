@@ -4,7 +4,7 @@ import { act, useEffect } from "react";
 import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import BotTemplateScreen from "../app/(settings)/bot-template";
+import BotTemplatesScreen from "../app/(settings)/bot-templates";
 import { queryClient } from "./query";
 
 const mocks = vi.hoisted(() => ({
@@ -18,12 +18,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("./side-insets", () => ({ useSideInsets: () => ({}) }));
 vi.mock("./native", () => ({
   native: {},
-  useMobileTokens: () => ({}),
-  useResolvedAppearance: () => "light",
   useThemedStyles: (create: () => unknown) => create(),
 }));
-vi.mock("./i18n", () => ({ useUiLocale: () => "en" }));
-vi.mock("./cron", () => ({ cronLabels: () => ({}) }));
 vi.mock("./api-server", () => ({}));
 vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
@@ -46,20 +42,17 @@ vi.mock("./settings-sheet", () => ({ openFromSettingsSheet: mocks.openFromSettin
 vi.mock("expo-router", () => ({
   useFocusEffect: (effect: () => undefined | (() => void)) =>
     useEffect(() => (mocks.focused ? effect() : undefined), [effect, mocks.focused]),
-  useLocalSearchParams: () => ({ id: "standup" }),
   useNavigation: () => ({ isFocused: () => mocks.focused }),
   useRouter: () => mocks.router,
 }));
-vi.mock("@robots/chat-ui/native", () => ({
-  ChatMarkdown: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+vi.mock("react-native-safe-area-context", () => ({
+  SafeAreaView: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
 }));
-vi.mock("../components/bot-template-icon", () => ({ BotTemplateIcon: () => null }));
-vi.mock("../components/connector-icon", () => ({ ConnectorIcon: () => null }));
-vi.mock("../components/native-symbol", () => ({ NativeSymbol: () => null }));
-vi.mock("../components/skill-symbol", () => ({ SkillSymbol: () => null }));
-vi.mock("../components/settings-group", () => ({
-  SettingsGroup: ({ children }: { children?: ReactNode }) => <section>{children}</section>,
-  SettingsRow: ({ title }: { title: string }) => <div>{title}</div>,
+vi.mock("../components/bot-avatar", () => ({
+  BotAvatar: ({ color }: { color: string }) => <img alt="" data-avatar={color} />,
+}));
+vi.mock("../components/connector-icon", () => ({
+  ConnectorIcon: ({ name }: { name: string }) => <span data-app={name} />,
 }));
 vi.mock("../components/native-action-button", () => ({
   NativeActionButton: ({
@@ -93,7 +86,7 @@ const template = {
   version: 3,
   name: "Standup",
   summary: "Collects updates",
-  sample: "Yesterday, today, blockers",
+  avatar: "robot:green.antenna.happy.vest.none",
   instructions: "Ask each person.",
   skills: [],
   routines: [],
@@ -125,22 +118,23 @@ async function settle() {
   await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
 }
 async function render() {
-  await act(async () => root.render(<BotTemplateScreen />));
+  await act(async () => root.render(<BotTemplatesScreen />));
   await settle();
 }
 const action = () => container.querySelector("button") as HTMLButtonElement;
 const reads = () => mocks.rpc.mock.calls.filter(([proc]) => proc === "bots/templates").length;
-/** Answers the template list, and holds the named call open so a test decides how it ends. */
 function hold(call: string) {
   let finish!: (outcome: unknown) => void;
   mocks.rpc.mockImplementation((proc: string) =>
     proc === "bots/templates"
       ? Promise.resolve([{ ...template }])
-      : proc === call
-        ? new Promise((resolve, reject) => {
-            finish = (outcome) => (outcome instanceof Error ? reject(outcome) : resolve(outcome));
-          })
-        : Promise.reject(new Error(`Unexpected ${proc}`)),
+      : proc === "connections/catalog"
+        ? Promise.resolve([])
+        : proc === call
+          ? new Promise((resolve, reject) => {
+              finish = (outcome) => (outcome instanceof Error ? reject(outcome) : resolve(outcome));
+            })
+          : Promise.reject(new Error(`Unexpected ${proc}`)),
   );
   return {
     finish: async (outcome: unknown) => {
@@ -161,10 +155,12 @@ function expectNothingOpened() {
   expect(mocks.openFromSettingsSheet).not.toHaveBeenCalled();
 }
 
-it("creates the template's bot as previewed, busy meanwhile, then opens its chat", async () => {
+it("shows each template's robot and creates its bot in one tap, busy meanwhile, then opens its chat", async () => {
   const create = hold("bots/createFromTemplate");
   await render();
-  expect(action().textContent).toBe("Create bot");
+  expect(container.querySelector("img")?.getAttribute("data-avatar")).toBe(template.avatar);
+  expect(container.textContent).toContain("Collects updates");
+  expect(action().textContent).toBe("Create");
   await act(async () => action().click());
   expect(action().getAttribute("aria-busy")).toBe("true");
   expect(create.calls()[0]?.slice(0, 2)).toEqual([
@@ -218,11 +214,11 @@ it("says in an alert why a bot was not created or loaded, and offers the action 
 it("asks to check a template that changed since it was shown, and reads it again", async () => {
   const create = hold("bots/createFromTemplate");
   await render();
-  expect(reads()).toBe(1);
+  const before = reads();
   await act(async () => action().click());
   await create.finish(changed);
-  expect(mocks.alert.mock.calls).toEqual([["This template was just updated. Check it again."]]);
-  expect(reads()).toBe(2);
+  expect(mocks.alert.mock.calls).toEqual([["This template was just updated. Try again."]]);
+  expect(reads()).toBe(before + 1);
 });
 
 it.each([

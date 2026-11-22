@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { BOT_TEMPLATES } from "@robots/core";
 import { describe, expect, it } from "vitest";
+import { BOT_TEMPLATE_COPY } from "../components/bot-templates/bot-template-copy";
 import { UI_LOCALES } from "./ui-locale";
 
 const TEMPLATE_DIR = "apps/web/src/components/bot-templates/";
@@ -22,8 +23,6 @@ const catalog = (locale: string) =>
       return {
         id: strings("msgid"),
         text: strings("msgstr"),
-        // `#: apps/web/src/a.tsx apps/mobile/lib/b.ts:12` lines: the web files, with any line
-        // numbers removed. Mobile shares the catalog, so a string can also be used there.
         references: (block.match(/^#: .*$/gm) ?? [])
           .flatMap((line) => line.slice(3).split(" "))
           .map((reference) => reference.replace(/:\d+$/, ""))
@@ -50,11 +49,13 @@ describe("bot template translations", () => {
     }
   });
 
-  it("translates the server's English for every template", () => {
-    const ids = new Set(catalog("en").map((entry) => entry.id));
-    const missing = BOT_TEMPLATES.flatMap((template) =>
-      [template.name, template.summary, template.sample].filter((text) => !ids.has(text)),
-    );
-    expect(missing).toEqual([]);
+  it("has web copy whose English matches the server for every template", () => {
+    for (const template of BOT_TEMPLATES) {
+      const copy = BOT_TEMPLATE_COPY[template.id];
+      expect([copy?.name.message, copy?.summary.message], template.id).toEqual([
+        template.name,
+        template.summary,
+      ]);
+    }
   });
 });

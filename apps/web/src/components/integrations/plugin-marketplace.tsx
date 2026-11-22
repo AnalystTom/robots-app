@@ -58,22 +58,28 @@ function pluginSite(entry: Pick<PluginMarketplaceEntry, "homepage" | "domains">)
   }
 }
 
+const PLUGIN_LOGO_BOXES = {
+  small: "h-6 w-6 rounded-md p-0.5 text-caption",
+  medium: "h-10 w-10 rounded-xl p-1.5 text-body",
+  large: "h-14 w-14 rounded-2xl p-1.5 text-heading2",
+};
+
 export function PluginLogo({
   name,
   logo,
   site,
-  large = false,
+  size = "medium",
 }: {
   name: string;
   logo?: string | null;
   site?: string | null;
-  large?: boolean;
+  size?: keyof typeof PLUGIN_LOGO_BOXES;
 }) {
   const [logoFailed, setLogoFailed] = useState(false);
   const useLogo = Boolean(logo) && !logoFailed;
   const favicon = useLinkFavicon(useLogo ? "" : (site ?? ""));
   const src = useLogo ? logo : favicon.icon;
-  const box = large ? "h-14 w-14 rounded-2xl text-heading2" : "h-10 w-10 rounded-xl text-body";
+  const box = PLUGIN_LOGO_BOXES[size];
   return src ? (
     <img
       src={src}
@@ -81,7 +87,7 @@ export function PluginLogo({
       loading="lazy"
       decoding="async"
       onError={() => (useLogo ? setLogoFailed(true) : favicon.unusable())}
-      className={`${box} shrink-0 border border-border/60 bg-favicon-plate object-contain p-1.5`}
+      className={`${box} shrink-0 border border-border/60 bg-favicon-plate object-contain`}
     />
   ) : (
     <div
@@ -423,7 +429,7 @@ export function PluginDetail({
           name={selection.name}
           logo={managed?.logo ?? selection.logo}
           site={selection.site}
-          large
+          size="large"
         />
         <div className="min-w-0 flex-1 pt-1">
           <h2 className="truncate text-heading2 font-semibold text-foreground">

@@ -70,10 +70,11 @@ describeIntegration("bot templates", () => {
       version: briefing.version,
     });
     expect(created).toBe(true);
-    expect([bot.name, bot.description, bot.instructions]).toEqual([
+    expect([bot.name, bot.description, bot.instructions, bot.color]).toEqual([
       briefing.name,
       briefing.description,
       briefing.instructions,
+      briefing.avatar,
     ]);
 
     const skills = await db.agentSkill.findMany({ where: owner });
