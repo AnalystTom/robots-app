@@ -98,7 +98,11 @@ describe("foreground AI consent", () => {
       prompt,
       allow,
     });
-    expect(prompt).toHaveBeenCalledExactlyOnceWith(status.recipients, undefined);
+    expect(prompt).toHaveBeenCalledExactlyOnceWith(
+      status.recipients,
+      undefined,
+      expect.any(Function),
+    );
     expect(allow).toHaveBeenCalledExactlyOnceWith({
       scope: status.scope,
       version: status.version,

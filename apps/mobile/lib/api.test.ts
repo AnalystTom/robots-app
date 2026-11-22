@@ -548,7 +548,7 @@ describe("mobile API requests", () => {
         routineIds: ["routine-active", "routine-paused"],
       }),
     ).rejects.toThrow("AI data sharing");
-    expect(promptAiConsent).toHaveBeenCalledWith([recipient], undefined);
+    expect(promptAiConsent).toHaveBeenCalledWith([recipient], undefined, expect.any(Function));
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/rpc/aiConsent/status",
       "/rpc/aiConsent/status",
@@ -626,7 +626,11 @@ describe("mobile API requests", () => {
       "told",
       "/rpc/threads/send",
     ]);
-    expect(promptAiConsent).toHaveBeenLastCalledWith([recipient], "https://example.com/privacy");
+    expect(promptAiConsent).toHaveBeenLastCalledWith(
+      [recipient],
+      "https://example.com/privacy",
+      expect.any(Function),
+    );
   });
 
   it("coalesces concurrent mobile consent checks before sending each request once", async () => {

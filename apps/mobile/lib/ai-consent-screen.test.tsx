@@ -66,13 +66,15 @@ async function click(label: string) {
   await act(async () => found.click());
 }
 
-async function ask(recipients: AiRecipient[]) {
+async function ask(recipients: AiRecipient[], grant = vi.fn(async () => undefined)) {
   let decided: boolean | undefined;
-  const pending = promptAiConsent(recipients, "https://robots.example/privacy").then((value) => {
-    decided = value;
-  });
+  const pending = promptAiConsent(recipients, "https://robots.example/privacy", grant).then(
+    (value) => {
+      decided = value;
+    },
+  );
   await act(async () => undefined);
-  return { pending, decided: () => decided };
+  return { pending, decided: () => decided, grant };
 }
 
 describe("AI data sharing consent screen", () => {
@@ -123,9 +125,10 @@ describe("AI data sharing consent screen", () => {
     expect(consent.decided()).toBe(true);
   });
 
-  it("settles a denied iOS prompt as declined and blocks until the person reviews it again", async () => {
+  it("settles a denied iOS prompt as declined, and grants on Approve after Review again", async () => {
     Platform.OS = "ios";
-    const consent = await ask([openai]);
+    const grant = vi.fn(async () => undefined);
+    const consent = await ask([openai], grant);
     await click("Deny");
     await consent.pending;
     expect(consent.decided()).toBe(false);
@@ -134,12 +137,10 @@ describe("AI data sharing consent screen", () => {
     expect(text()).not.toContain("Approve");
 
     await click("Review again");
-    expect(container.querySelector("[data-testid='ai-consent-screen']")).toBeNull();
-
-    const next = await ask([openai]);
     expect(text()).toContain("Share data with OpenAI?");
+    expect(grant).not.toHaveBeenCalled();
     await click("Approve");
-    await next.pending;
-    expect(next.decided()).toBe(true);
+    await vi.waitFor(() => expect(grant).toHaveBeenCalledOnce());
+    expect(container.querySelector("[data-testid='ai-consent-screen']")).toBeNull();
   });
 });

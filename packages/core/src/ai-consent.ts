@@ -43,7 +43,11 @@ export function aiDataUsesForProcedure(procedure: string, input?: unknown): AiDa
 export async function ensureAiDataConsent(options: {
   uses: AiDataUse[];
   status(): Promise<AiConsentStatus>;
-  prompt(recipients: AiRecipient[], privacyUrl?: string): Promise<boolean>;
+  prompt(
+    recipients: AiRecipient[],
+    privacyUrl: string | undefined,
+    grant: () => Promise<unknown>,
+  ): Promise<boolean>;
   allow(input: { scope: string; version: string; keys: string[] }): Promise<unknown>;
   coalesceKey?: string;
 }) {
@@ -66,10 +70,11 @@ export async function ensureAiDataConsent(options: {
         continue;
       }
       const keys = needed.map((recipient) => recipient.key);
+      const grant = () => options.allow({ scope: status.scope, version: status.version, keys });
       const done = (async () => {
-        if (!(await options.prompt(needed, status.privacyUrl)))
+        if (!(await options.prompt(needed, status.privacyUrl, grant)))
           throw new Error(AI_CONSENT_REQUIRED);
-        await options.allow({ scope: status.scope, version: status.version, keys });
+        await grant();
       })().finally(() => {
         if (pendingAiConsent.get(key)?.done === done) pendingAiConsent.delete(key);
       });
