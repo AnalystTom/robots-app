@@ -1,8 +1,3 @@
-/**
- * Robot characters: a bot's look built from parts, stored on `bots.color` as
- * `robot:<colour>.<headwear>.<face>.<outfit>.<extra>`. Only the ids below are valid, so a stored
- * value never carries anything but these words; `@robots/core` draws them.
- */
 export const ROBOT_PARTS = {
   colour: ["green", "red", "teal", "purple", "slate", "pink", "orange", "blue"],
   headwear: ["antenna", "hood", "chef-hat", "mortarboard", "deerstalker", "top-hat"],
@@ -15,12 +10,10 @@ export type RobotSlot = keyof typeof ROBOT_PARTS;
 export type RobotLook = { [Slot in RobotSlot]: (typeof ROBOT_PARTS)[Slot][number] };
 export type RobotColour = RobotLook["colour"];
 
-/** Slot order in a stored value. */
 export const ROBOT_SLOTS: readonly RobotSlot[] = ["colour", "headwear", "face", "outfit", "extra"];
 
 export const ROBOT_CHARACTER_PREFIX = "robot:";
 
-/** The backdrop each colour paints; name, ring and bubble take it as the bot's colour. */
 export const ROBOT_COLOUR_FILLS: Readonly<Record<RobotColour, string>> = {
   green: "#2F8A5B",
   red: "#D9483B",
@@ -32,7 +25,6 @@ export const ROBOT_COLOUR_FILLS: Readonly<Record<RobotColour, string>> = {
   blue: "#3457C9",
 };
 
-/** A stored robot value, or null when it is not one or names a part that does not exist. */
 export function parseRobotCharacter(raw: string): RobotLook | null {
   if (!raw.startsWith(ROBOT_CHARACTER_PREFIX)) return null;
   const ids = raw.slice(ROBOT_CHARACTER_PREFIX.length).split(".");

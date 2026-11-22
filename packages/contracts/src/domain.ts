@@ -75,6 +75,7 @@ export const InstructionVersionSchema = z.object({
 export const BotSchema = z.object({
   id: Id,
   spaceId: Id,
+  userId: Id,
   name: z.string(),
   title: z.string(),
   description: z.string(),

@@ -5,6 +5,7 @@ import {
   BOT_DESCRIPTION_MAX_LENGTH,
   BOT_INSTRUCTIONS_MAX_LENGTH,
   BOT_NAME_MAX_LENGTH,
+  DEFAULT_NEW_BOT_AVATAR_SET,
   resolveBotAvatarSet,
 } from "@robots/contracts";
 import {
@@ -79,7 +80,8 @@ export default function BotSettingsScreen() {
   const [instructions, setInstructions] = useState("");
   const [color, setColor] = useState<string>(DEFAULT_BOT_AVATAR_COLOR);
   const [computerMode, setComputerMode] = useState<ComputerMode>("team");
-  const [avatarSet, setAvatarSet] = useState<BotAvatarSet>("organic");
+  const [avatarSet, setAvatarSet] = useState<BotAvatarSet>(DEFAULT_NEW_BOT_AVATAR_SET);
+  const [styleSet, setStyleSet] = useState<BotAvatarSet>(DEFAULT_NEW_BOT_AVATAR_SET);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(focus === "model" || pickedModel !== undefined);
   const [modelKey, setModelKey] = useState("");
@@ -557,7 +559,10 @@ export default function BotSettingsScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t`Edit avatar`}
-              onPress={() => setAvatarOpen(true)}
+              onPress={() => {
+                setStyleSet(avatarSet);
+                setAvatarOpen(true);
+              }}
               style={{ padding: 4 }}
             >
               <BotAvatar
@@ -894,10 +899,12 @@ export default function BotSettingsScreen() {
                 { key: "organic", label: t`Original` },
                 { key: "robots", label: t`RoBots` },
               ]}
-              value={avatarSet}
+              value={styleSet}
               onChange={(next) => {
-                setAvatarSet(resolveBotAvatarSet(next));
-                setColor((current) => botLookState(current).color);
+                if (!bot) return;
+                setStyleSet(resolveBotAvatarSet(next));
+                setColor(bot.color);
+                setAvatarSet(resolveBotAvatarSet(bot.avatarSet));
               }}
               plain
             />
@@ -905,8 +912,13 @@ export default function BotSettingsScreen() {
               <BotLookPicker
                 value={color}
                 identity={bot.id}
-                avatarSet={avatarSet}
-                onChange={(next) => setColor(next)}
+                avatarSet={styleSet}
+                onChange={(next) => {
+                  const set = botLookState(next).robot ? "robots" : styleSet;
+                  setColor(next);
+                  setStyleSet(set);
+                  setAvatarSet(set);
+                }}
               />
             ) : null}
           </ScrollView>

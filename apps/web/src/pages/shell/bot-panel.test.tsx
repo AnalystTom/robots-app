@@ -776,11 +776,11 @@ it("saves a color change back to the initial value after a successful automatic 
 });
 
 describe("BotSettings avatar set persistence", () => {
-  it("reads a missing set as the RoBots default without saving a replacement", async () => {
+  it("reads a missing set as Original without saving a replacement", async () => {
     await render();
     expect(
       container.querySelector('[aria-label="Avatar set"]')?.getAttribute("data-avatar-set"),
-    ).toBe("robots");
+    ).toBe("organic");
     expect(onSave).not.toHaveBeenCalled();
   });
 

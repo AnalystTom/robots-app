@@ -78,7 +78,7 @@ export async function createInboxBot({
   openChat,
   spaceId,
 }: {
-  input: Pick<CreateBotInput, "name" | "color" | "id" | "avatarFamily">;
+  input: Pick<CreateBotInput, "name" | "color" | "id" | "avatarFamily" | "avatarSet">;
   openChat: (href: Href) => void;
   spaceId?: string;
 }): Promise<InboxBotOutcome> {

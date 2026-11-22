@@ -56,10 +56,10 @@ describe("bot avatar values", () => {
 });
 
 describe("per-bot avatar sets", () => {
-  it("resolves missing or unknown sets to the RoBots default and keeps a stored set", () => {
-    expect(resolveBotAvatarSet()).toBe("robots");
-    expect(resolveBotAvatarSet(null)).toBe("robots");
-    expect(resolveBotAvatarSet("future-set")).toBe("robots");
+  it("resolves missing or unknown sets to Original and keeps a stored set", () => {
+    expect(resolveBotAvatarSet()).toBe("organic");
+    expect(resolveBotAvatarSet(null)).toBe("organic");
+    expect(resolveBotAvatarSet("future-set")).toBe("organic");
     expect(resolveBotAvatarSet("organic")).toBe("organic");
     expect(resolveBotAvatarSet("robots")).toBe("robots");
     expect(DEFAULT_NEW_BOT_AVATAR_SET).toBe("robots");

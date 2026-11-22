@@ -102,6 +102,7 @@ export function ShellDialogs({
   closeMobileSidebar,
   createBot,
   botAvatarSet,
+  ownBotColors,
   clearOpenThread,
   discardChatAttachments,
   deleteRoutineDialogProps,
@@ -122,7 +123,8 @@ export function ShellDialogs({
   closeMobileSidebar: () => void;
   createBot: (input: CreateBotDialogInput) => Promise<void>;
   /** The account's set, which a new bot takes. */
-  botAvatarSet: BotAvatarSet;
+  botAvatarSet: BotAvatarSet | undefined;
+  ownBotColors: readonly string[];
   clearOpenThread: () => void;
   /** Drops a deleted chat's pending attachments with their previews. */
   discardChatAttachments: (threadKey: string) => void;
@@ -335,9 +337,10 @@ export function ShellDialogs({
         }))}
       />
 
-      {createBotOpen ? (
+      {createBotOpen && botAvatarSet ? (
         <CreateBotDialog
           avatarSet={botAvatarSet}
+          ownBotColors={ownBotColors}
           onCancel={() => setCreateBotOpen(false)}
           onCreate={createBot}
         />

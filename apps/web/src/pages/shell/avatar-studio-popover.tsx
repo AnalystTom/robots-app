@@ -29,7 +29,7 @@ import { Button } from "@robots/ui-web/components/ui/button";
 import { Check, Pencil, Upload, X } from "lucide-react";
 import type { ClipboardEvent, DragEvent } from "react";
 import { useRef, useState } from "react";
-import { RobotBuilder } from "./robot-builder";
+import { RobotPresetPicker } from "./robot-presets";
 
 export function BotLookPicker({
   value,
@@ -43,7 +43,7 @@ export function BotLookPicker({
   identity?: string;
   organicIdentities?: readonly string[];
   avatarSet: BotAvatarSet;
-  onAvatarSetChange?: (set: BotAvatarSet, value: string) => void;
+  onAvatarSetChange?: (set: BotAvatarSet) => void;
   onChange: (value: string, identity?: string) => void;
 }) {
   const {
@@ -56,7 +56,7 @@ export function BotLookPicker({
 
   return (
     <div className="space-y-4">
-      <RobotBuilder look={robot} onChange={(next) => onChange(next)} />
+      <RobotPresetPicker robot={robot} onChange={onChange} />
       <Disclosure
         summary={<Trans>More styles</Trans>}
         summaryClassName="text-body-sm text-muted-foreground"
@@ -66,9 +66,7 @@ export function BotLookPicker({
         {onAvatarSetChange ? (
           <Tabs
             value={avatarSet}
-            onValueChange={(next) =>
-              onAvatarSetChange(resolveBotAvatarSet(next), defaultBotAvatarValue(value))
-            }
+            onValueChange={(next) => onAvatarSetChange(resolveBotAvatarSet(next))}
           >
             <TabsList className="w-full" aria-label={t`Icon set`}>
               <TabsTrigger value="organic" className="flex-1">
@@ -185,6 +183,7 @@ export function AvatarStudioPopover({
   disabled = false,
 }: AvatarStudioPopoverProps) {
   const [open, setOpen] = useState(false);
+  const [pickedSet, setPickedSet] = useState<BotAvatarSet>(avatarSet);
   const [activeTab, setActiveTab] = useState<"bot" | "upload">("bot");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -252,7 +251,10 @@ export function AvatarStudioPopover({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setPickedSet(avatarSet);
+          setOpen(true);
+        }}
         className="group relative cursor-pointer rounded-2xl outline-none transition-transform hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-ring"
         aria-label={t`Customize bot avatar`}
         data-testid="avatar-studio-trigger"
@@ -280,7 +282,7 @@ export function AvatarStudioPopover({
               <Trans>Avatar Studio</Trans>
             </DialogTitle>
             <DialogDescription className="sr-only">
-              <Trans>Build a robot, choose another style, or upload an image</Trans>
+              <Trans>Choose a robot, another style, or upload an image</Trans>
             </DialogDescription>
             <Button
               variant="ghost"
@@ -300,7 +302,7 @@ export function AvatarStudioPopover({
               identity={identity}
               size={78}
               status={status}
-              avatarSet={avatarSet}
+              avatarSet={pickedSet}
             />
           </div>
 
@@ -336,9 +338,13 @@ export function AvatarStudioPopover({
               <BotLookPicker
                 value={value}
                 identity={identity}
-                avatarSet={avatarSet}
-                onChange={(next) => onChange(next)}
-                onAvatarSetChange={(set, next) => onChange(next, set)}
+                avatarSet={pickedSet}
+                onChange={(next) => {
+                  const set = botLookState(next).robot ? "robots" : pickedSet;
+                  setPickedSet(set);
+                  onChange(next, set);
+                }}
+                onAvatarSetChange={setPickedSet}
               />
             </TabsContent>
             <TabsContent value="upload">

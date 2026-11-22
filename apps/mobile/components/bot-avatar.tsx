@@ -281,7 +281,6 @@ function LegacyBotAvatar({
     parsed.kind === "shape" || parsed.kind === "color" || parsed.kind === "robot"
       ? parsed.color
       : color;
-  // A photo or a robot character is a still picture: no eyes to animate.
   const picturePainted = parsed.kind === "image" || parsed.kind === "robot";
   const eyeColor = botEyeInk(fillColor, tokens);
   const onScreen = useAvatarOnScreen();
@@ -410,7 +409,6 @@ function useBarEyes(eyes: AvatarEyes, viewBox: string, life: AvatarLife) {
   return [useAnimatedProps(eyeProps(eyes.leftCx)), useAnimatedProps(eyeProps(eyes.rightCx))];
 }
 
-/** A robot character, drawn once per look from fixed artwork and clipped to a circle. */
 const RobotCharacter = memo(function RobotCharacter({
   look,
   size,

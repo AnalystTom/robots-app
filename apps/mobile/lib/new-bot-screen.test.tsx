@@ -137,6 +137,10 @@ const CHARACTERS = [
       extra: "steam",
     },
   },
+  {
+    name: "Hoodie",
+    look: { colour: "green", headwear: "hood", face: "terminal", outfit: "hoodie", extra: "none" },
+  },
 ] as const;
 const CHARACTER_NAMES = CHARACTERS.map((character) => character.name);
 
@@ -321,7 +325,8 @@ vi.mock("react-native-svg", () => {
 function serveRpc(me: () => Promise<unknown>) {
   mocks.rpc.mockImplementation((path: string) => {
     if (path === "me") return me();
-    if (path === "bots/list") return Promise.resolve([{ id: "existing-bot" }]);
+    if (path === "bots/list")
+      return Promise.resolve([{ id: "existing-bot", userId: "user-other" }]);
     if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
     return Promise.resolve(undefined);
   });
@@ -375,7 +380,7 @@ function createdBot() {
   return mocks.rpc.mock.calls.find(([path]) => path === "bots/create")?.[1];
 }
 
-it("shows every character, draws the picked one recoloured in the preview, and creates it", async () => {
+it("shows every character and only those, draws the picked one in the preview, and creates it", async () => {
   serveRpc(() => Promise.resolve({ botAvatarSet: "robots" }));
   await render();
 
@@ -383,6 +388,7 @@ it("shows every character, draws the picked one recoloured in the preview, and c
   const startedOn = CHARACTER_NAMES.findIndex(checked);
   expect(CHARACTER_NAMES.filter(checked)).toHaveLength(1);
   expect(previewXml()).toBe(robotCharacterSvg(CHARACTERS[startedOn]!.look));
+  expect(drawsLogo()).toBe(false);
 
   for (const character of CHARACTERS) {
     await tap(radio(character.name));
@@ -392,19 +398,84 @@ it("shows every character, draws the picked one recoloured in the preview, and c
   }
 
   const chef = CHARACTERS.find((character) => character.name === "Chef")!.look;
-  const redChef = { ...chef, colour: "red" } as const;
   await tap(radio("Chef"));
-  await tap(radio("Color 2"));
-  expect(previewXml()).toBe(robotCharacterSvg(redChef));
-  expect(drawsLogo()).toBe(false);
-  expect(checked("Chef")).toBe(true);
-  expect(checked("Color 2")).toBe(true);
+  expect(previewXml()).toBe(robotCharacterSvg(chef));
+  expect(radio("Shuffle")).toBeNull();
+  expect(radio("Color 2")).toBeNull();
 
   await typeName("Gordon");
   await tap(createButton());
   await vi.waitFor(() => expect(createdBot()).toBeDefined());
   expect(createdBot()).toEqual(
-    expect.objectContaining({ name: "Gordon", color: robotCharacterValue(redChef) }),
+    expect.objectContaining({
+      name: "Gordon",
+      color: robotCharacterValue(chef),
+      avatarSet: "robots",
+    }),
+  );
+});
+
+it("creates the robot the preview preselected, so the stored bot is the one shown", async () => {
+  serveRpc(() => Promise.resolve({ botAvatarSet: "robots" }));
+  await render();
+  const startedOn = CHARACTER_NAMES.findIndex(checked);
+  await typeName("Gordon");
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  expect(createdBot()).toEqual(
+    expect.objectContaining({
+      name: "Gordon",
+      color: robotCharacterValue(CHARACTERS[startedOn]!.look),
+    }),
+  );
+});
+
+it("preselects the robot the user's own bots wear least, not one another member wears", async () => {
+  const hero = CHARACTERS.find((character) => character.name === "Hero")!;
+  const own = CHARACTERS.filter((character) => character.name !== "Hero").map((character) =>
+    robotCharacterValue(character.look),
+  );
+  const bots = [
+    ...own.map((color, index) => ({ id: `own-${index}`, userId: "user-me", color })),
+    { id: "other-1", userId: "user-other", color: robotCharacterValue(hero.look) },
+    { id: "other-2", userId: "user-other", color: robotCharacterValue(hero.look) },
+  ];
+  mocks.rpc.mockImplementation((path: string) => {
+    if (path === "me") return Promise.resolve({ botAvatarSet: "robots", userId: "user-me" });
+    if (path === "bots/list") return Promise.resolve(bots);
+    return Promise.resolve(undefined);
+  });
+  const random = vi.spyOn(Math, "random").mockReturnValue(0);
+  try {
+    await render();
+    expect(CHARACTER_NAMES.filter(checked)).toEqual(["Hero"]);
+    await typeName("Gordon");
+    await tap(createButton());
+    await vi.waitFor(() => expect(createdBot()).toBeDefined());
+    expect(createdBot()).toEqual(
+      expect.objectContaining({
+        name: "Gordon",
+        color: "robot:red.antenna.aviators.cape.confetti",
+      }),
+    );
+  } finally {
+    random.mockRestore();
+  }
+});
+
+it("sends a robot picked on an Original account with the RoBots set", async () => {
+  serveRpc(() => Promise.resolve({ botAvatarSet: "organic" }));
+  await render();
+  await tap(radio("Hero"));
+  await typeName("Gordon");
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  expect(createdBot()).toEqual(
+    expect.objectContaining({
+      name: "Gordon",
+      color: "robot:red.antenna.aviators.cape.confetti",
+      avatarSet: "robots",
+    }),
   );
 });
 
@@ -418,11 +489,11 @@ it("keeps Create off until the account's bot style is known", async () => {
   );
   await render();
   await typeName("Gordon");
-  expect(radio("Shape 1")).toBeNull();
+  expect(radio("Shape 1")).not.toBeNull();
   expect(createButton().disabled).toBe(true);
 
-  await act(async () => answer({ botAvatarSet: "organic" }));
-  expect(radio("Shape 1")).not.toBeNull();
+  await act(async () => answer({ botAvatarSet: "robots" }));
+  expect(radio("Shape 1")).toBeNull();
   expect(createButton().disabled).toBe(false);
 });
 
@@ -449,4 +520,100 @@ it("enables Create once a retry reads the account's bot style", async () => {
   await tap(tryAgainButton());
   expect(container.textContent).not.toContain("Couldn't load your bot style.");
   expect(createButton().disabled).toBe(false);
+});
+
+it("keeps Create on and sends the previewed robot when the bot list cannot load", async () => {
+  mocks.rpc.mockImplementation((path: string) => {
+    if (path === "me") return Promise.resolve({ botAvatarSet: "robots", userId: "user-me" });
+    if (path === "bots/list") return Promise.reject(new Error("Bots unavailable"));
+    if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
+    return Promise.resolve(undefined);
+  });
+  await render();
+  const previewed = CHARACTER_NAMES.filter(checked);
+  expect(previewed).toHaveLength(1);
+  await typeName("Gordon");
+  expect(container.textContent).not.toContain("Couldn't load your bot style.");
+  expect(createButton().disabled).toBe(false);
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  const character = CHARACTERS.find((candidate) => candidate.name === previewed[0])!;
+  expect(createdBot()).toEqual(
+    expect.objectContaining({ color: robotCharacterValue(character.look) }),
+  );
+});
+
+function serveWithHeldBotList() {
+  let releaseBotList!: (bots: unknown) => void;
+  const botList = new Promise((resolve) => {
+    releaseBotList = resolve;
+  });
+  mocks.rpc.mockImplementation((path: string) => {
+    if (path === "me") return Promise.resolve({ botAvatarSet: "robots", userId: "user-me" });
+    if (path === "bots/list") return botList;
+    if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
+    return Promise.resolve(undefined);
+  });
+  return (bots: unknown) => act(async () => releaseBotList(bots));
+}
+
+function ownBotsWearingEveryRobotBut(name: string) {
+  return CHARACTERS.filter((character) => character.name !== name).map((character, index) => ({
+    id: `own-${index}`,
+    userId: "user-me",
+    color: robotCharacterValue(character.look),
+  }));
+}
+
+it("enables Create while the bot list is still loading, and sends the robot the preview showed", async () => {
+  const answerBotList = serveWithHeldBotList();
+  await render();
+  const previewed = CHARACTER_NAMES.filter(checked);
+  expect(previewed).toHaveLength(1);
+  await typeName("Gordon");
+  expect(createButton().disabled).toBe(false);
+  await tap(createButton());
+  await answerBotList(ownBotsWearingEveryRobotBut("Hero"));
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  const character = CHARACTERS.find((candidate) => candidate.name === previewed[0])!;
+  expect(createdBot()).toEqual(
+    expect.objectContaining({ color: robotCharacterValue(character.look) }),
+  );
+  expect(CHARACTER_NAMES.filter(checked)).toEqual(previewed);
+});
+
+it("moves the preview to the robot the user's bots wear least when the list arrives before any pick", async () => {
+  const answerBotList = serveWithHeldBotList();
+  await render();
+  await typeName("Gordon");
+  await answerBotList(ownBotsWearingEveryRobotBut("Hero"));
+  expect(CHARACTER_NAMES.filter(checked)).toEqual(["Hero"]);
+});
+
+it("keeps the robot the user picked when a late bot list arrives", async () => {
+  const answerBotList = serveWithHeldBotList();
+  await render();
+  await typeName("Gordon");
+  await tap(radio("Chef"));
+  await answerBotList(ownBotsWearingEveryRobotBut("Hero"));
+  expect(CHARACTER_NAMES.filter(checked)).toEqual(["Chef"]);
+});
+
+it("keeps the look the user picked when the account read resolves after the pick", async () => {
+  let answer!: (me: unknown) => void;
+  serveRpc(
+    () =>
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+  );
+  await render();
+  const chef = CHARACTERS.find((character) => character.name === "Chef")!.look;
+  await tap(radio("Chef"));
+  await act(async () => answer({ botAvatarSet: "organic", userId: "user-me" }));
+  expect(CHARACTER_NAMES.filter(checked)).toEqual(["Chef"]);
+  await typeName("Gordon");
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  expect(createdBot()).toEqual(expect.objectContaining({ color: robotCharacterValue(chef) }));
 });

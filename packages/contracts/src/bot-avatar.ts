@@ -8,7 +8,7 @@ export const DEFAULT_NEW_BOT_AVATAR_SET: BotAvatarSet = "robots";
 
 export function resolveBotAvatarSet(value?: string | null): BotAvatarSet {
   const parsed = BotAvatarSetSchema.safeParse(value);
-  return parsed.success ? parsed.data : DEFAULT_NEW_BOT_AVATAR_SET;
+  return parsed.success ? parsed.data : "organic";
 }
 
 export interface BotColorDef {
@@ -94,7 +94,6 @@ const DATA_IMAGE = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,
 
 export type ParsedBotAvatar =
   | { kind: "image"; imageUrl: string }
-  /** A robot character; `color` is its backdrop, which names and bubbles take. */
   | { kind: "robot"; look: RobotLook; color: string }
   | { kind: "shape"; color: string; shapeIndex: number }
   | { kind: "color"; color: string }

@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   description: "",
   crossSpaceCommunication: false,
   avatarSet: "organic" as "organic" | "robots",
+  color: "",
   focus: undefined as string | undefined,
   os: "ios",
   work: [] as unknown[],
@@ -94,7 +95,7 @@ vi.mock("./api", () => ({
         instructions: mocks.instructions,
         description: mocks.description,
         instructionHistory: mocks.history,
-        color: BOT_COLORS[0],
+        color: mocks.color,
         avatarSet: mocks.avatarSet,
         autoSpeak: false,
         computerMode: "team",
@@ -236,7 +237,7 @@ vi.mock("react-native", () => {
       accessibilityLabel?: string;
       accessibilityHint?: string;
       accessibilityRole?: string;
-      accessibilityState?: { expanded?: boolean };
+      accessibilityState?: { expanded?: boolean; checked?: boolean };
       style?: unknown;
       hitSlop?: number;
     }) =>
@@ -249,6 +250,7 @@ vi.mock("react-native", () => {
           "data-hint": accessibilityHint,
           role: accessibilityRole,
           "aria-expanded": accessibilityState?.expanded,
+          "data-checked": accessibilityState?.checked,
           "data-style": JSON.stringify(style),
           "data-hit-slop": hitSlop,
         },
@@ -361,6 +363,7 @@ describe("bot settings device voice menu", () => {
   beforeEach(() => {
     mocks.crossSpaceCommunication = false;
     mocks.avatarSet = "organic";
+    mocks.color = BOT_COLORS[0]!;
     vi.clearAllMocks();
     mocks.loadBot.mockReset();
     vi.mocked(Notifications.getPresentedNotificationsAsync).mockResolvedValue([]);
@@ -620,7 +623,7 @@ describe("bot settings device voice menu", () => {
     expect(container.textContent).not.toContain("Shape");
   });
 
-  it("keeps an Original bot's set until explicitly switched, saves the choice, and reloads it", async () => {
+  it("keeps an Original bot's set until a look is picked, saves the pick with its set, and reloads it", async () => {
     await render();
     await act(async () =>
       container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
@@ -633,7 +636,11 @@ describe("bot settings device voice menu", () => {
     expect(option("Original").dataset.state).toBe("on");
     expect(mocks.rpc).not.toHaveBeenCalled();
     await act(async () => option("RoBots").click());
+    expect(mocks.rpc).not.toHaveBeenCalled();
     mocks.rpc.mockResolvedValueOnce({ avatarSet: "robots" });
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[role="radio"][aria-label="Detective"]')!.click(),
+    );
     await act(async () =>
       [...container.querySelectorAll<HTMLButtonElement>("button")]
         .find((button) => button.textContent === "Save")!
@@ -641,6 +648,7 @@ describe("bot settings device voice menu", () => {
     );
     expect(mocks.rpc).toHaveBeenCalledWith("bots/update", {
       botId: "bot-fixture",
+      color: "robot:purple.deerstalker.magnifier.cape.none",
       avatarSet: "robots",
     });
     act(() => root.unmount());
@@ -654,13 +662,118 @@ describe("bot settings device voice menu", () => {
     await act(async () => option("Original").click());
     mocks.rpc.mockResolvedValueOnce({ avatarSet: "organic" });
     await act(async () =>
+      container.querySelector<HTMLButtonElement>('[role="radio"][aria-label="Color 2"]')!.click(),
+    );
+    await act(async () =>
       [...container.querySelectorAll<HTMLButtonElement>("button")]
         .find((button) => button.textContent === "Save")!
         .click(),
     );
     expect(mocks.rpc).toHaveBeenLastCalledWith("bots/update", {
       botId: "bot-fixture",
+      color: BOT_COLORS[1],
       avatarSet: "organic",
+    });
+  });
+
+  it("discards a pending robot pick when the Icon set is switched, so Save never stores RoBots", async () => {
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
+    );
+    const setOption = (label: string) =>
+      [...container.querySelectorAll<HTMLButtonElement>('[data-menu="Icon set"] button')].find(
+        (button) => button.textContent === label,
+      )!;
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[role="radio"][aria-label="Hero"]')!.click(),
+    );
+    await act(async () => setOption("Original").click());
+    expect(setOption("Original").dataset.state).toBe("on");
+    expect(
+      [...container.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent === "Save",
+      ),
+    ).toBeUndefined();
+    expect(mocks.rpc).not.toHaveBeenCalledWith("bots/update", expect.anything());
+  });
+
+  it("shows a stored off-list robot as the selected Current look and saves only a picked preset", async () => {
+    mocks.color = "robot:green.top-hat.grumpy.cape.none";
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
+    );
+    const tile = (label: string) =>
+      container.querySelector<HTMLButtonElement>(`[role="radio"][aria-label="${label}"]`)!;
+    expect(tile("Current look").dataset.checked).toBe("true");
+    expect(tile("Detective").dataset.checked).toBe("false");
+    expect(mocks.rpc).not.toHaveBeenCalledWith("bots/update", expect.anything());
+
+    await act(async () => tile("Detective").click());
+    expect(container.querySelector('[role="radio"][aria-label="Current look"]')).toBeNull();
+    expect(tile("Detective").dataset.checked).toBe("true");
+    expect(mocks.rpc).not.toHaveBeenCalledWith("bots/update", expect.anything());
+
+    await act(async () =>
+      [...container.querySelectorAll<HTMLButtonElement>("button")]
+        .find((button) => button.textContent === "Save")!
+        .click(),
+    );
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "bots/update",
+      expect.objectContaining({
+        botId: "bot-fixture",
+        color: "robot:purple.deerstalker.magnifier.cape.none",
+      }),
+    );
+  });
+
+  it("keeps a stored robot look through Icon set switches and saves nothing until a look is picked", async () => {
+    mocks.avatarSet = "robots";
+    mocks.color = "robot:purple.deerstalker.magnifier.cape.none";
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
+    );
+    const setOption = (label: string) =>
+      [...container.querySelectorAll<HTMLButtonElement>('[data-menu="Icon set"] button')].find(
+        (button) => button.textContent === label,
+      )!;
+    await act(async () => setOption("Original").click());
+    await act(async () => setOption("RoBots").click());
+    expect(mocks.rpc).not.toHaveBeenCalledWith("bots/update", expect.anything());
+    expect(
+      container.querySelector<HTMLButtonElement>('[role="radio"][aria-label="Detective"]')!.dataset
+        .checked,
+    ).toBe("true");
+    expect(
+      [...container.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent === "Save",
+      ),
+    ).toBeUndefined();
+  });
+
+  it("saves the robots set when a robot look is picked while the Original set is open", async () => {
+    mocks.avatarSet = "organic";
+    mocks.color = BOT_COLORS[0]!;
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
+    );
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[role="radio"][aria-label="Hero"]')!.click(),
+    );
+    mocks.rpc.mockResolvedValueOnce({ avatarSet: "robots" });
+    await act(async () =>
+      [...container.querySelectorAll<HTMLButtonElement>("button")]
+        .find((button) => button.textContent === "Save")!
+        .click(),
+    );
+    expect(mocks.rpc).toHaveBeenLastCalledWith("bots/update", {
+      botId: "bot-fixture",
+      color: "robot:red.antenna.aviators.cape.confetti",
+      avatarSet: "robots",
     });
   });
 

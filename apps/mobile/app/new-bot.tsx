@@ -2,12 +2,14 @@ import { useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_NAME_MAX_LENGTH, resolveBotAvatarSet } from "@robots/contracts";
 import {
-  botLookState,
   newBotLook,
+  newBotLookColor,
+  newBotLookForSet,
   newBotLookInput,
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
 } from "@robots/core";
+import { bestEffort } from "@robots/logging";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler, ScrollView, Text, TextInput, View } from "react-native";
@@ -31,29 +33,34 @@ export default function NewBot() {
   const [accountSet, setAccountSet] = useState<BotAvatarSet | null>(null);
   const avatarSet = accountSet ?? resolveBotAvatarSet(params.avatarSet);
   const [name, setName] = useState("");
-  const [look, setLook] = useState(newBotLook);
+  const [look, setLook] = useState(() => newBotLook(resolveBotAvatarSet(params.avatarSet)));
   const [pending, setPending] = useState(false);
   const [accountFailed, setAccountFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const creating = useRef(false);
   const gone = useRef(false);
+  const lookChosen = useRef(false);
   const modelCheck = useRef<Promise<boolean>>(Promise.resolve(false));
   const trimmed = name.trim();
   const identity = newBotPreviewIdentity(avatarSet, look);
 
   const readAccountSet = useCallback(() => {
     setAccountFailed(false);
+    const botsRead = bestEffort("read bots for the new bot's look", rpc("bots/list"));
     return rpc("me")
-      .then((me) => {
+      .then(async (me) => {
         if (gone.current) return;
         const set = resolveBotAvatarSet(me.botAvatarSet);
         setAccountSet(set);
-        if (set === "robots")
-          setLook((current) =>
-            botLookState(current.color).shapeIndex === null
-              ? current
-              : { ...current, color: botLookState(current.color).color },
-          );
+        setLook((current) => (lookChosen.current ? current : newBotLookForSet(current, set, [])));
+        const bots = await botsRead;
+        if (gone.current || !bots || set !== "robots") return;
+        const ownColors = bots.filter((bot) => bot.userId === me.userId).map((bot) => bot.color);
+        setLook((current) =>
+          lookChosen.current
+            ? current
+            : newBotLookForSet({ ...current, color: null }, set, ownColors),
+        );
       })
       .catch(() => {
         if (!gone.current) setAccountFailed(true);
@@ -80,6 +87,7 @@ export default function NewBot() {
 
   async function create() {
     if (!trimmed || !accountSet || creating.current) return;
+    lookChosen.current = true;
     creating.current = true;
     setPending(true);
     setError(null);
@@ -120,7 +128,12 @@ export default function NewBot() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ alignItems: "center", marginTop: 8, marginBottom: 24 }}>
-          <BotAvatar color={look.color} identity={identity} avatarSet={avatarSet} size={96} />
+          <BotAvatar
+            color={newBotLookColor(look)}
+            identity={identity}
+            avatarSet={avatarSet}
+            size={96}
+          />
         </View>
         <TextInput
           autoFocus
@@ -148,12 +161,13 @@ export default function NewBot() {
         />
         <View style={{ marginTop: 24 }}>
           <BotLookPicker
-            value={look.color}
+            value={newBotLookColor(look)}
             identity={identity}
             organicIdentities={ORGANIC_PREVIEW_IDENTITIES}
             avatarSet={avatarSet}
             disabled={pending}
             onChange={(color, picked) => {
+              lookChosen.current = true;
               setLook((current) => ({ ...current, color, identity: picked ?? current.identity }));
             }}
           />

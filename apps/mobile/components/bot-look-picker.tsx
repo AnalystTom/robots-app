@@ -1,29 +1,21 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
-import {
-  BOT_COLORS,
-  ROBOT_COLOUR_FILLS,
-  ROBOT_PARTS,
-  robotCharacterValue,
-} from "@robots/contracts";
+import { BOT_COLORS, robotCharacterValue } from "@robots/contracts";
 import type { RobotPresetId } from "@robots/core";
 import {
   botLookState,
   botLookWithColor,
   botLookWithShape,
   ROBOT_PRESETS,
-  randomRobotCharacterValue,
   robotPresetOf,
   robotPresetValue,
   SHIPPED_BOT_AVATAR_SHAPE_KEYS,
-  withRobotPart,
 } from "@robots/core";
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useMobileTokens } from "../lib/native";
 import { BotAvatar } from "./bot-avatar";
-import { NativeSymbol } from "./native-symbol";
 
 const ROBOT_SIZE = 48;
 
@@ -43,12 +35,9 @@ export function BotLookPicker({
   onChange: (value: string, identity?: string) => void;
 }) {
   const { t } = useLingui();
-  const tokens = useMobileTokens();
   const { photo, shapeIndex: shape, color, robot, defaultLook } = botLookState(value);
   const labeled = !organicIdentities;
-  const robotValue = robot ? robotCharacterValue(robot) : null;
   const pickedPreset = robot ? robotPresetOf(robot) : null;
-  const ownRobot = pickedPreset ? null : robotValue;
   const presetLabels: Record<RobotPresetId, string> = {
     assistant: t`Assistant`,
     researcher: t`Researcher`,
@@ -58,12 +47,13 @@ export function BotLookPicker({
     creator: t`Creator`,
     chef: t`Chef`,
     hero: t`Hero`,
+    hoodie: t`Hoodie`,
+    critic: t`Critic`,
     professor: t`Professor`,
     detective: t`Detective`,
     keynote: t`Keynote`,
     hustler: t`Hustler`,
     host: t`Host`,
-    critic: t`Critic`,
   };
 
   return (
@@ -71,48 +61,25 @@ export function BotLookPicker({
       <View>
         {labeled ? <Label>{t`Robot`}</Label> : null}
         <View accessibilityRole="radiogroup" style={grid}>
-          {ownRobot ? (
-            <Choice
-              disabled={disabled}
-              label={t`Robot`}
-              selected
-              onPress={() => onChange(ownRobot)}
-            >
-              <BotAvatar color={ownRobot} size={ROBOT_SIZE} />
+          {robot && pickedPreset === null ? (
+            <Choice disabled={disabled} label={t`Current look`} selected>
+              <BotAvatar color={robotCharacterValue(robot)} size={ROBOT_SIZE} />
             </Choice>
           ) : null}
           {ROBOT_PRESETS.map((preset) => {
-            const picked = preset.id === pickedPreset;
-            const look = picked && robotValue ? robotValue : robotPresetValue(preset.id);
+            const look = robotPresetValue(preset.id);
             return (
               <Choice
                 disabled={disabled}
                 key={preset.id}
                 label={presetLabels[preset.id]}
-                selected={picked}
+                selected={preset.id === pickedPreset}
                 onPress={() => onChange(look)}
               >
                 <BotAvatar color={look} size={ROBOT_SIZE} />
               </Choice>
             );
           })}
-          <Choice
-            disabled={disabled}
-            label={t`Shuffle`}
-            selected={false}
-            onPress={() => onChange(randomRobotCharacterValue())}
-          >
-            <View
-              style={{
-                width: ROBOT_SIZE,
-                height: ROBOT_SIZE,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <NativeSymbol ios="shuffle" android="shuffle" size={22} color={tokens.foreground} />
-            </View>
-          </Choice>
         </View>
       </View>
       {avatarSet === "organic" ? (
@@ -155,34 +122,23 @@ export function BotLookPicker({
           </View>
         </View>
       ) : null}
-      <View>
-        {labeled ? <Label>{t`Color`}</Label> : null}
-        <View accessibilityRole="radiogroup" style={grid}>
-          {robot
-            ? ROBOT_PARTS.colour.map((colour, index) => (
-                <Swatch
-                  key={colour}
-                  fill={ROBOT_COLOUR_FILLS[colour]}
-                  label={t`Color ${ph({ number: index + 1 })}`}
-                  selected={robot.colour === colour}
-                  disabled={disabled}
-                  onPress={() =>
-                    onChange(robotCharacterValue(withRobotPart(robot, "colour", colour)))
-                  }
-                />
-              ))
-            : BOT_COLORS.map((option, index) => (
-                <Swatch
-                  key={option}
-                  fill={option}
-                  label={t`Color ${ph({ number: index + 1 })}`}
-                  selected={!photo && color.toLowerCase() === option.toLowerCase()}
-                  disabled={disabled}
-                  onPress={() => onChange(botLookWithColor(value, option))}
-                />
-              ))}
+      {robot ? null : (
+        <View>
+          {labeled ? <Label>{t`Color`}</Label> : null}
+          <View accessibilityRole="radiogroup" style={grid}>
+            {BOT_COLORS.map((option, index) => (
+              <Swatch
+                key={option}
+                fill={option}
+                label={t`Color ${ph({ number: index + 1 })}`}
+                selected={!photo && color.toLowerCase() === option.toLowerCase()}
+                disabled={disabled}
+                onPress={() => onChange(botLookWithColor(value, option))}
+              />
+            ))}
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -254,7 +210,7 @@ function Choice({
   disabled: boolean;
   label: string;
   selected: boolean;
-  onPress: () => void;
+  onPress?: () => void;
   children: ReactNode;
 }) {
   const tokens = useMobileTokens();
