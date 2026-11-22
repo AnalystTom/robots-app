@@ -322,6 +322,13 @@ export function syncBotBrowserSessions(
   return state.run;
 }
 
+function logSyncError(botId: string, error: unknown): void {
+  getLogger().warn("browser_sessions.sync_error", {
+    "bot.id": botId,
+    error: error instanceof Error ? error.name : "unknown",
+  });
+}
+
 async function failedSync(deps: SessionSyncDeps, spaceId: string): Promise<"failed"> {
   await deps.events?.publishSpaceChange?.(spaceId, "vault");
   return "failed";
@@ -337,7 +344,10 @@ async function syncBotBrowserSessionsOnce(
       where: { id: botId },
       select: { id: true, userId: true, spaceId: true, computer: true },
     }),
-  );
+  ).catch((error: unknown) => {
+    logSyncError(botId, error);
+    return null;
+  });
   if (!bot) return "failed";
   return runAsTenant({ spaceId: bot.spaceId, userId: bot.userId }, async () => {
     try {
@@ -412,10 +422,7 @@ async function syncBotBrowserSessionsOnce(
       });
       return "signed_in";
     } catch (error) {
-      getLogger().warn("browser_sessions.sync_error", {
-        "bot.id": bot.id,
-        error: error instanceof Error ? error.name : "unknown",
-      });
+      logSyncError(bot.id, error);
       return failedSync(deps, bot.spaceId);
     }
   });

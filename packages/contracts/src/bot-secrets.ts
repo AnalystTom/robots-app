@@ -880,13 +880,6 @@ export const VaultPreview = z.object({
 });
 export type VaultPreview = z.infer<typeof VaultPreview>;
 
-/**
- * What the owner can see about a saved credential. It never carries the protected value.
- * `name` is read loosely and `auth` is nullable so one stored row that no longer passes the
- * current schema cannot fail the whole list call and lock the owner out of removing it.
- * A null `auth` means the stored settings can't be read. `title` is never empty: one the owner
- * left empty is filled from the item itself.
- */
 export const BotSignInState = z.enum(["signing_in", "signed_in", "next_start"]);
 export type BotSignInState = z.infer<typeof BotSignInState>;
 
