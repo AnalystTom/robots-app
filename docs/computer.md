@@ -73,20 +73,17 @@ start with your own bots, never from routines or other people's messages.
 A self-hosted Linux server that lets its admins' bots use the server itself can also give each of
 those bots its own screen and browser there. Admins' bots use the page and screen tools, and admins
 can **Take control** from web, desktop and mobile as on any other computer. Only admins can use this
-computer. Other members' bots in that space cannot run commands, read files, or use its screen,
-browser or sign-ins. On the desktop app, the owner of the app's account is the admin.
+computer. Other members' bots in that space cannot run commands, read files, view or control the
+screen, or use the sign-in browser. They can still stop runs, cancel their commands, release the
+screen and revoke control, since those only end activity and expose nothing. On the desktop app, the
+owner of the app's account is the admin.
 
 The host computer service needs Xvfb, x11vnc, fluxbox, xdotool, wmctrl, scrot, xterm, xdpyinfo,
-websockify and Chromium on its `PATH`. The screen is off unless `ROBOTS_HOST_TOOLS_DIR` is set, and it
-is only available on Linux. Without it the service runs commands only. It takes its settings from
-these environment variables:
-
-- `ROBOTS_HOST_TOOLS_DIR`: the tools folder. Setting it turns the screen on. Its `share/novnc` holds noVNC with this repository's `embed.html`, `clipboard-bridge.js` and
-  `mobile-keyboard.js`, and its `bin` holds `robots-page-browser`, `page_secrets.py` and
-  `agent-browser`.
-- `ROBOTS_HOST_DISPLAY_START`: the first X display number for bot screens, default `100`. Pick
-  numbers no other X server on the machine uses.
-- `ROBOTS_HOST_SCREEN_PORT_START`: the first port of the screen gateway, default `6180`.
+websockify and Chromium on its `PATH`. The screen is on when `ROBOTS_HOST_TOOLS_DIR` names a tools
+folder, and it is only available on Linux. Without it the service runs commands only. The folder's
+`share/novnc` holds noVNC with this repository's `embed.html`, `clipboard-bridge.js` and
+`mobile-keyboard.js`, and its `bin` holds `robots-page-browser`, `page_secrets.py` and
+`agent-browser`. Bot screens use X display 100 upward and the screen gateway ports from 6180 upward.
 
 Each bot's browser keeps its own profile beside the bots' folders and stores its sign-ins with the
 desktop keyring, not the public key the isolated computers use.

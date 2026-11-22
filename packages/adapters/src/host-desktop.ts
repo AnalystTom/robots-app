@@ -9,6 +9,7 @@ import type { DesktopEnvironment } from "@robots/core/node/desktop-runtime";
 import {
   browserProfilePathForScreen,
   desktopRegistryLockPath,
+  MAX_DESKTOP_DISPLAY,
   screenSlotPath,
 } from "@robots/core/node/desktop-runtime";
 import type { HostBrowserCookie, HostKeyring } from "./host-browser-cookies.js";
@@ -124,6 +125,8 @@ export function createHostDesktop(
     const index = Number(slot.split("\n")[0]);
     if (!slot || !Number.isSafeInteger(index) || index < 0)
       throw new HostBrowserCookieError("Open the bot's screen first");
+    if (index > MAX_DESKTOP_DISPLAY - options.displayStart)
+      throw new HostBrowserCookieError("This computer has no free browser port for that screen");
     return 9221 + options.displayStart + index;
   }
 
