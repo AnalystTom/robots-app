@@ -28,6 +28,11 @@ until you turn it on. Nothing is connected for you: the new chat asks for the ap
 with, and it still works without them where it can. Creating the same template again opens the bot
 you already made.
 
+A website can link straight to a template with `/sign-in?template=<id>`. The ids are `chief-of-staff`,
+`developer`, `researcher`, `sales`, `gtm`, `refund-bot`, and `team-autopilot` for the whole team. After
+sign-in, that bot (or the team, led by Chief of Staff) is created and opened. A new account gets it as
+its first bot after onboarding. An unknown id opens the template gallery.
+
 ## Talk to it
 
 Type in the composer and press Enter. You can keep chatting while a bot works, and **Stop** ends
