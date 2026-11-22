@@ -60,6 +60,8 @@ interface SignInRow {
   name: string;
   value: string;
   expires?: bigint;
+  hostHash?: string;
+  prefix?: "v10" | "v11";
 }
 
 async function chromeProfile(rows: SignInRow[]) {
@@ -77,11 +79,18 @@ async function chromeProfile(rows: SignInRow[]) {
   );
   for (const row of rows) {
     const plain = Buffer.concat([
-      createHash("sha256").update(row.host).digest(),
+      createHash("sha256")
+        .update(row.hostHash ?? row.host)
+        .digest(),
       Buffer.from(row.value),
     ]);
-    const cipher = createCipheriv("aes-128-cbc", cookieKey("peanuts"), Buffer.alloc(16, " "));
-    const encrypted = Buffer.concat([Buffer.from("v10"), cipher.update(plain), cipher.final()]);
+    const prefix = row.prefix ?? "v10";
+    const cipher = createCipheriv(
+      "aes-128-cbc",
+      cookieKey(prefix === "v10" ? "peanuts" : "keyring-secret"),
+      Buffer.alloc(16, " "),
+    );
+    const encrypted = Buffer.concat([Buffer.from(prefix), cipher.update(plain), cipher.final()]);
     db.prepare("INSERT INTO cookies VALUES (?, '', ?, '', ?, '/', ?, 1, 1, 1, 0, 1, 2)").run(
       row.host,
       row.name,
@@ -250,6 +259,78 @@ describe.skipIf(process.platform !== "linux")("sign-in import into a screen's br
     });
     expect(sent.map((cookie) => cookie.name)).toEqual(["auth_token"]);
   }, 30_000);
+
+  it("imports the readable sites when another chosen site cannot be decrypted", async () => {
+    await chromeProfile([
+      { host: ".x.com", name: "auth_token", value: "token-x" },
+      { host: ".y.test", name: "sid", value: "moved", hostHash: ".elsewhere.test" },
+    ]);
+    const screenId = `unreadable-${randomBytes(4).toString("hex")}`;
+    const port = await registerSlot(screenId, await freePort());
+    const { desktop, userDataDir } = desktopFor(screenId);
+    const sent: Array<{ domain?: string; url?: string; name: string }> = [];
+    await fakeBrowser(port, userDataDir, (cookies) => {
+      sent.push(...cookies);
+      saveCookiesInto(userDataDir, cookies);
+    });
+
+    const result = await desktop(port).importSessions(
+      screenId,
+      "chrome:Default",
+      ["x.com", "y.test"],
+      AbortSignal.timeout(20_000),
+    );
+    expect(result).toEqual({
+      sites: [
+        { site: "x.com", cookies: 1 },
+        {
+          site: "y.test",
+          cookies: 0,
+          reason: "A sign-in could not be decrypted with this computer's key",
+        },
+      ],
+    });
+    expect(sent.map((cookie) => cookie.name)).toEqual(["auth_token"]);
+  }, 30_000);
+
+  it("imports the sites whose keyring is available and gives the locked keyring as the reason for the rest", async () => {
+    await chromeProfile([
+      { host: ".x.com", name: "auth_token", value: "token-x" },
+      { host: ".y.test", name: "sid", value: "locked", prefix: "v11" },
+    ]);
+    const screenId = `locked-keyring-${randomBytes(4).toString("hex")}`;
+    const port = await registerSlot(screenId, await freePort());
+    const { userDataDir } = desktopFor(screenId);
+    const sent: Array<{ domain?: string; url?: string; name: string }> = [];
+    await fakeBrowser(port, userDataDir, (cookies) => {
+      sent.push(...cookies);
+      saveCookiesInto(userDataDir, cookies);
+    });
+
+    const result = await desktopFor(screenId)
+      .desktop(port)
+      .importSessions(screenId, "chrome:Default", ["x.com", "y.test"], AbortSignal.timeout(20_000));
+    expect(result).toEqual({
+      sites: [
+        { site: "x.com", cookies: 1 },
+        { site: "y.test", cookies: 0, reason: "Unlock this computer's keyring" },
+      ],
+    });
+    expect(sent.map((cookie) => cookie.name)).toEqual(["auth_token"]);
+  }, 30_000);
+
+  it("fails with the decrypt reason when no chosen site can be read", async () => {
+    await chromeProfile([
+      { host: ".y.test", name: "sid", value: "moved", hostHash: ".elsewhere.test" },
+    ]);
+    const screenId = `unreadable-only-${randomBytes(4).toString("hex")}`;
+    const port = await registerSlot(screenId, await freePort());
+    await expect(
+      desktopFor(screenId)
+        .desktop(port)
+        .importSessions(screenId, "chrome:Default", ["y.test"], AbortSignal.timeout(5_000)),
+    ).rejects.toThrow("could not be decrypted");
+  });
 
   it("imports into a browser whose process title is its space-joined command line", async () => {
     await chromeProfile([{ host: ".x.com", name: "auth_token", value: "token-x" }]);

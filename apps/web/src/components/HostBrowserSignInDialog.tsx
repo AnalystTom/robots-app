@@ -34,7 +34,7 @@ export function HostBrowserSignInDialog({
   const [chosenProfile, setChosenProfile] = useState<string | null>(null);
   const [sites, setSites] = useState<ReadonlySet<string>>(new Set());
   const [filter, setFilter] = useState("");
-  const [skipped, setSkipped] = useState<readonly string[]>([]);
+  const [skipped, setSkipped] = useState<ReadonlyArray<{ site: string; reason?: string }>>([]);
   const profilesQuery = useQuery({
     ...queries.computer.hostBrowserProfiles.queryOptions({ input: { botId } }),
     enabled: open,
@@ -45,7 +45,7 @@ export function HostBrowserSignInDialog({
     save: (input: { profile: string; sites: string[] }, rpc) =>
       rpc.computer.importHostBrowserSessions({ botId, ...input }),
     onSaved: (saved) => {
-      const missing = saved.sites.filter((item) => item.cookies === 0).map((item) => item.site);
+      const missing = saved.sites.filter((item) => item.cookies === 0);
       if (missing.length === 0) close();
       else setSkipped(missing);
     },
@@ -149,12 +149,22 @@ export function HostBrowserSignInDialog({
             </>
           )}
           {skipped.length > 0 ? (
-            <p className="text-body text-muted-foreground" role="status">
-              <Trans>
-                No current sign-in for {skipped.join(", ")} in that profile. The other sites were
-                signed in.
-              </Trans>
-            </p>
+            <div className="text-body text-muted-foreground" role="status">
+              {skipped.map((item) => (
+                <p key={item.site}>
+                  {item.reason ? (
+                    <Trans>
+                      Could not read {item.site} - {item.reason}
+                    </Trans>
+                  ) : (
+                    <Trans>No current sign-in for {item.site} in that profile.</Trans>
+                  )}
+                </p>
+              ))}
+              <p>
+                <Trans>The other sites were signed in.</Trans>
+              </p>
+            </div>
           ) : null}
           <FieldError>{signIn.error ? errorText(signIn.error) : null}</FieldError>
           <DialogFooter>

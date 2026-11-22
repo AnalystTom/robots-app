@@ -57,7 +57,8 @@ app is installed on. Turn on **Let bots use this computer** in **Settings → Ge
 **Computers**. This works with RoBots Cloud, an HTTPS server you connect to, and a
 loopback server.
 Using apps on screen works on Mac and Windows; on a Mac, allow RoBots under **Accessibility** and
-**Screen Recording** in System Settings.
+**Screen Recording** in System Settings. On Linux it needs the screen tools in
+[A screen on a Linux server](#a-screen-on-a-linux-server).
 
 In every [approval mode](./approvals.md), a bot asks before it first uses each app in a space, and
 on a connected server before its first command there too, unless a Block rule refuses it. **Allow
