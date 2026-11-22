@@ -78,6 +78,19 @@ mode. **Preview** shows what would happen for a given tool before you change any
 To stop one bot from ever using a tool, open the bot's settings, expand **Advanced**, and use
 **Disable a tool** under **Tools**.
 
+## Reading web pages
+
+Bots read public web pages without asking, including links with a query string. A risky address is
+an IP address on a private or internal network, `localhost` or a local name such as
+`printer.local`, a cloud metadata host, a link with a password in it, or a program or installer
+download. Before one of those, **Ask** shows a card and **Auto** has the approval model judge it.
+In **Never ask** it runs, and the fetch itself still refuses private, internal and metadata
+addresses.
+A card for a risky address offers **Allow once** and **Deny** only. Downloads are recognized by the
+file extension in the URL only, and a redirect to a risky address stops the read. Webhook runs
+have nobody to ask, so they refuse what would need a card. To approve every page yourself, add an
+**Ask** rule for `web_fetch`.
+
 ## What always asks
 
 In **Auto** and **Ask**, these always show a card, and **Always allow** doesn't skip it:

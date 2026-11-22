@@ -37,8 +37,6 @@ const ROBOTS_DOCS: ReadonlyArray<readonly [topics: string, url: string]> = [
   ["Self-hosted server configuration", "https://tryrobots.app/docs/self-host-configuration.md"],
 ];
 
-export const ROBOTS_DOCS_URLS = ROBOTS_DOCS.map(([, url]) => url);
-
 const SKILLS: Array<{ name: string; description: string; body: string }> = [
   {
     name: "Interrogate",

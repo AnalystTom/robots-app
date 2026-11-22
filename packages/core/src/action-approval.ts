@@ -284,9 +284,11 @@ export async function memoryWriteNeedsApproval(
 
 export function outboundSiteGate(input: {
   site: string;
+  risky: boolean;
   trusted: boolean;
   rules: ActionApprovalRule[];
 }): "allow" | "new" {
+  if (input.risky) return "new";
   return input.trusted || siteAlwaysAllowed(input.rules, input.site) ? "allow" : "new";
 }
 

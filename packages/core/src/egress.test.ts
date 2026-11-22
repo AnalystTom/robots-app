@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { hostSite, normalizedHttpUrl, registrableDomain, sitesInText, urlSite } from "./egress.js";
+import {
+  hostSite,
+  isRiskyFetchTarget,
+  normalizedHttpUrl,
+  registrableDomain,
+  sitesInText,
+  urlSite,
+} from "./egress.js";
 
 describe("urlSite", () => {
   it.each([
@@ -141,5 +148,79 @@ describe("sitesInText", () => {
         "Read https://ada.li@example.org/path and https://example.com/?email=ada.li@example.net",
       ),
     ]).toEqual(["example.org", "example.com"]);
+  });
+});
+
+describe("isRiskyFetchTarget", () => {
+  it.each([
+    "https://launchpost.app/",
+    "https://example.com/page?q=1",
+    "http://news.bbc.co.uk/article",
+    "https://alice.github.io/notes",
+    "https://xn--80ak6aa92e.com/",
+    "https://example.com:8443/report",
+    "https://tryrobots.app/docs/models.md",
+    "https://example.com/files/report.pdf",
+    "https://example.com/report;v=2.pdf",
+    "https://web.archive.org/web/2024/https://launchpost.app",
+    "https://example.com/download/",
+    "https://EXAMPLE.COM./Page",
+    "http://8.8.8.8/",
+    "https://example.com/release.tar.gz",
+    "https://example.com/files.zip",
+  ])("reads %s without asking", (url) => {
+    expect(isRiskyFetchTarget(url)).toBe(false);
+  });
+
+  it.each([
+    "http://localhost:3000/",
+    "http://app.localhost/",
+    "http://127.0.0.1/",
+    "http://2130706433/",
+    "http://0x7f.1/",
+    "http://[::1]/",
+    "http://[::ffff:127.0.0.1]/",
+    "http://10.0.0.5/admin",
+    "http://192.168.1.1/",
+    "http://172.16.4.2/",
+    "http://100.64.0.1/",
+    "http://169.254.169.254/latest/meta-data/",
+    "http://[fd00:ec2::254]/",
+    "http://[fc00::1]/",
+    "http://metadata.google.internal/computeMetadata/v1/",
+    "http://metadata.goog/",
+    "http://printer.local/",
+    "http://build.corp/",
+    "http://router.lan/",
+    "http://intranet/",
+    "https://docs.example.test/page",
+    "https://user:pass@example.com/",
+    "https://8.8.8.8/setup.exe",
+    "http://203.0.113.7/setup.exe",
+    "https://example.com/setup.exe",
+    "https://example.com/setup.exe.",
+    "https://example.com/setup.exe;x.html",
+    "https://example.com/setup.exe%00.html",
+    "https://example.com/setup.exe%20",
+    "https://example.com/setup;.exe",
+    "https://example.com/setup%3B.exe",
+    "https://example.com/setup%00.exe",
+    "https://example.com/Setup.EXE",
+    "https://example.com/setup%2Eexe",
+    "https://example.com/tool.dmg?ref=home",
+    "https://example.com/install.sh",
+    "https://example.com/app.apk#top",
+    "https://example.com/installer.run",
+    "https://example.com/setup.com",
+    "https://example.com/launch.jnlp",
+    "https://example.com/update.reg",
+    "https://example.com/app.appx",
+    "ftp://example.com/",
+    "file:///etc/passwd",
+    "javascript:alert(1)",
+    "data:text/html,hi",
+    "not a url",
+  ])("asks before %s", (url) => {
+    expect(isRiskyFetchTarget(url)).toBe(true);
   });
 });

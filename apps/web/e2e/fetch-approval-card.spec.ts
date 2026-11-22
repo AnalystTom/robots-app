@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { captureScreenshot, completeOnboarding, signup } from "./helpers";
 
-test("asks before fetching a site the message did not name", async ({ page }, testInfo) => {
+test("asks before fetching a site outside the public suffix list", async ({ page }, testInfo) => {
   const stamp = Date.now();
   await signup(page, `fetch-approval-${stamp}@robots.test`, "password12", "Fetch Approval");
   await completeOnboarding(page);
@@ -10,12 +10,12 @@ test("asks before fetching a site the message did not name", async ({ page }, te
   await composer.fill("show a fetch approval card");
   await page.keyboard.press("Enter");
 
-  const always = page.getByRole("button", { name: "Always allow example.test", exact: true });
-  await expect(always).toBeVisible({ timeout: 60_000 });
+  const allowOnce = page.getByRole("button", { name: "Allow once", exact: true });
+  await expect(allowOnce).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText("url: https://docs.example.test/page?q=fixture")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Allow once", exact: true })).toBeVisible();
-  const row = page.locator("[data-message-id]").filter({ has: always });
-  const card = always.locator("xpath=../..");
+  await expect(page.getByRole("button", { name: /^Always allow/ })).toHaveCount(0);
+  const row = page.locator("[data-message-id]").filter({ has: allowOnce });
+  const card = allowOnce.locator("xpath=../..");
   const rail = row.getByTestId("message-hover-rail");
   await row.hover();
   await rail.getByRole("button", { name: "React", exact: true }).focus();

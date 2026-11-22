@@ -448,6 +448,19 @@ export function inferScript(
       },
     ];
   }
+  const fixturePage = lower.includes("read the public fixture page")
+    ? "https://example.com/"
+    : lower.includes("read the metadata fixture page")
+      ? "http://169.254.169.254/latest/meta-data/"
+      : undefined;
+  if (fixturePage) {
+    return [
+      {
+        assistant: "i will read that page.",
+        toolCalls: [{ name: "web_fetch", args: { url: fixturePage } }],
+      },
+    ];
+  }
   if (lower.includes("fetch approval card")) {
     return [
       {

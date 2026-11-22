@@ -912,13 +912,18 @@ describe("outboundSiteGate", () => {
   };
 
   it("lets a run reach sites it was given", () => {
-    expect(outboundSiteGate({ site: "example.com", trusted: true, rules: [] })).toBe("allow");
+    expect(outboundSiteGate({ risky: false, site: "example.com", trusted: true, rules: [] })).toBe(
+      "allow",
+    );
   });
 
   it("marks any other site new, even with a rule for the whole tool", () => {
-    expect(outboundSiteGate({ site: "attacker.test", trusted: false, rules: [] })).toBe("new");
+    expect(
+      outboundSiteGate({ risky: false, site: "attacker.test", trusted: false, rules: [] }),
+    ).toBe("new");
     expect(
       outboundSiteGate({
+        risky: false,
         site: "attacker.test",
         trusted: false,
         rules: [{ effect: "always_allow", matchKind: "tool", matchValue: "web_fetch" }],
@@ -926,13 +931,22 @@ describe("outboundSiteGate", () => {
     ).toBe("new");
   });
 
+  it("sends a risky target to a new site even when its site is trusted or always allowed", () => {
+    expect(
+      outboundSiteGate({ site: "example.com", risky: true, trusted: true, rules: [siteRule] }),
+    ).toBe("new");
+  });
+
   it("allows a site the owner always allowed, and only that site", () => {
-    expect(outboundSiteGate({ site: "example.com", trusted: false, rules: [siteRule] })).toBe(
-      "allow",
-    );
-    expect(outboundSiteGate({ site: "other.com", trusted: false, rules: [siteRule] })).toBe("new");
+    expect(
+      outboundSiteGate({ risky: false, site: "example.com", trusted: false, rules: [siteRule] }),
+    ).toBe("allow");
+    expect(
+      outboundSiteGate({ risky: false, site: "other.com", trusted: false, rules: [siteRule] }),
+    ).toBe("new");
     expect(
       outboundSiteGate({
+        risky: false,
         site: "example.com",
         trusted: false,
         rules: [{ ...siteRule, effect: "require_approval" }],
@@ -940,6 +954,7 @@ describe("outboundSiteGate", () => {
     ).toBe("new");
     expect(
       outboundSiteGate({
+        risky: false,
         site: "example.com",
         trusted: false,
         rules: [{ ...siteRule, matchValue: "Example.COM" }],
