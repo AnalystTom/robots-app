@@ -2,7 +2,7 @@
 
 import type { BotAvatarSet } from "@robots/contracts";
 import { parseBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
-import { ROBOT_PRESETS, robotCharacterDataUri, robotPresetValue } from "@robots/core";
+import { ROBOT_PRESETS } from "@robots/core";
 import type { ReactNode } from "react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -101,20 +101,13 @@ describe("CreateBotDialog", () => {
     expect(button("Create").disabled).toBe(false);
   });
 
-  it("starts RoBots accounts on a listed robot and sends it as previewed", async () => {
+  it("sends no robot on a RoBots account until one is picked, so the server chooses", async () => {
     const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
     await render(onCreate, "robots");
-    const preview = document.querySelector<HTMLImageElement>(
-      '[data-testid="create-bot-dialog"] img',
-    )!;
     await typeName("Scout");
     await click(button("Create"));
     const input = onCreate.mock.lastCall![0];
-    const listed: string[] = ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id));
-    expect(listed).toContain(input.color);
-    expect(preview.getAttribute("src")).toBe(
-      robotCharacterDataUri(parseRobotCharacter(input.color)!),
-    );
+    expect(input).not.toHaveProperty("color");
     expect(input.id).toMatch(/^c[a-z0-9]{24}$/);
     expect(input).not.toHaveProperty("avatarFamily");
     expect(input).not.toHaveProperty("avatarSet");
@@ -176,5 +169,5 @@ it("retains the preview identity and look through rerenders and a retry", async 
   expect(first.id).toMatch(/^c[a-z0-9]{24}$/);
   expect(second.id).toBe(first.id);
   expect(second.color).toBe(first.color);
-  expect(robotCharacterDataUri(parseRobotCharacter(second.color)!)).toBe(look);
+  expect(preview()).toBe(look);
 });

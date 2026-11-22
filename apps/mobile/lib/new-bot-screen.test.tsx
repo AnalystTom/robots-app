@@ -384,9 +384,8 @@ it("shows every character and only those, draws the picked one in the preview, a
   await render();
 
   for (const name of CHARACTER_NAMES) expect(radio(name)).not.toBeNull();
-  const startedOn = CHARACTER_NAMES.findIndex(checked);
-  expect(CHARACTER_NAMES.filter(checked)).toHaveLength(1);
-  expect(previewXml()).toBe(robotCharacterSvg(CHARACTERS[startedOn]!.look));
+  expect(CHARACTER_NAMES.filter(checked)).toHaveLength(0);
+  expect(drawsLogo()).toBe(true);
 
   for (const character of CHARACTERS) {
     await tap(radio(character.name));
@@ -405,7 +404,37 @@ it("shows every character and only those, draws the picked one in the preview, a
   await tap(createButton());
   await vi.waitFor(() => expect(createdBot()).toBeDefined());
   expect(createdBot()).toEqual(
-    expect.objectContaining({ name: "Gordon", color: robotCharacterValue(chef) }),
+    expect.objectContaining({
+      name: "Gordon",
+      color: robotCharacterValue(chef),
+      avatarSet: "robots",
+    }),
+  );
+});
+
+it("creates a RoBots bot with no colour when no look is picked, so the server chooses one", async () => {
+  serveRpc(() => Promise.resolve({ botAvatarSet: "robots" }));
+  await render();
+  await typeName("Gordon");
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  expect(createdBot()).toEqual(expect.objectContaining({ name: "Gordon" }));
+  expect(createdBot()).not.toHaveProperty("color");
+});
+
+it("sends a robot picked on an Original account with the RoBots set", async () => {
+  serveRpc(() => Promise.resolve({ botAvatarSet: "organic" }));
+  await render();
+  await tap(radio("Hero"));
+  await typeName("Gordon");
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  expect(createdBot()).toEqual(
+    expect.objectContaining({
+      name: "Gordon",
+      color: "robot:red.antenna.aviators.cape.confetti",
+      avatarSet: "robots",
+    }),
   );
 });
 

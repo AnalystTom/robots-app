@@ -7,11 +7,11 @@ import {
   botLookWithColor,
   botLookWithShape,
   newBotLook,
+  newBotLookColor,
   newBotLookForSet,
   newBotLookInput,
   newBotPreviewIdentity,
 } from "./bot-look.js";
-import { robotPresetOf, robotPresetValue } from "./robot-presets.js";
 
 describe("newBotLook", () => {
   it("reserves a valid id that never draws the heart body", () => {
@@ -22,12 +22,11 @@ describe("newBotLook", () => {
     }
   });
 
-  it("starts a RoBots account on a ready-made robot that creation sends", () => {
+  it("starts a RoBots account with no picked look, so creation sends no colour", () => {
     const look = newBotLook("robots");
-    const robot = botLookState(look.color).robot;
-    expect(robot).not.toBeNull();
-    expect(look.color).toBe(robotPresetValue(robotPresetOf(robot!)!));
-    expect(newBotLookInput("robots", look)).toEqual({ color: look.color, id: look.id });
+    expect(look.color).toBeNull();
+    expect(newBotLookColor(look)).toBe(DEFAULT_BOT_AVATAR_COLOR);
+    expect(newBotLookInput("robots", look)).toEqual({ id: look.id });
   });
 
   it("starts an Original account on its own body", () => {
@@ -43,11 +42,27 @@ describe("newBotLook", () => {
   it("moves a look to the account's set once it is known", () => {
     const robotLook = newBotLook("robots");
     const organic = newBotLookForSet(robotLook, "organic");
-    expect(botLookState(organic.color).defaultLook).toBe(true);
-    expect(newBotLookForSet(robotLook, "robots")).toBe(robotLook);
+    expect(botLookState(organic.color!).defaultLook).toBe(true);
+    expect(newBotLookForSet(robotLook, "robots")).toEqual(robotLook);
     const shaped = { ...organic, color: "#2A92FE::shape_2" };
     expect(newBotLookForSet(shaped, "organic")).toBe(shaped);
-    expect(botLookState(newBotLookForSet(shaped, "robots").color).robot).not.toBeNull();
+    expect(newBotLookForSet(shaped, "robots").color).toBeNull();
+    const robotic = { ...organic, color: "robot:red.antenna.aviators.cape.confetti" };
+    expect(newBotLookForSet(robotic, "robots")).toBe(robotic);
+    expect(botLookState(newBotLookForSet(robotic, "organic").color!).robot).toBeNull();
+  });
+
+  it("sends a picked robot with the RoBots set", () => {
+    const look = {
+      id: "c".padEnd(25, "a"),
+      color: "robot:red.antenna.aviators.cape.confetti",
+      identity: "look-3-0",
+    };
+    expect(newBotLookInput("organic", look)).toEqual({
+      color: "robot:red.antenna.aviators.cape.confetti",
+      id: look.id,
+      avatarSet: "robots",
+    });
   });
 
   it("keeps the preview's look through creation", () => {

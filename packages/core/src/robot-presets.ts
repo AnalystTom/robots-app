@@ -143,10 +143,6 @@ export function robotPresetValue(id: RobotPresetId): string {
   return robotCharacterValue(preset.look);
 }
 
-export function randomRobotPreset(random: () => number = Math.random): RobotPresetId {
-  return (ROBOT_PRESETS[Math.floor(random() * ROBOT_PRESETS.length)] ?? ROBOT_PRESETS[0]).id;
-}
-
 export function robotPresetOf(look: RobotLook): RobotPresetId | null {
   const value = robotCharacterValue(look);
   return ROBOT_PRESETS.find((preset) => robotCharacterValue(preset.look) === value)?.id ?? null;

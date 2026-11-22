@@ -3,6 +3,7 @@ import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_NAME_MAX_LENGTH, resolveBotAvatarSet } from "@robots/contracts";
 import {
   newBotLook,
+  newBotLookColor,
   newBotLookForSet,
   newBotLookInput,
   newBotPreviewIdentity,
@@ -115,7 +116,12 @@ export default function NewBot() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ alignItems: "center", marginTop: 8, marginBottom: 24 }}>
-          <BotAvatar color={look.color} identity={identity} avatarSet={avatarSet} size={96} />
+          <BotAvatar
+            color={newBotLookColor(look)}
+            identity={identity}
+            avatarSet={avatarSet}
+            size={96}
+          />
         </View>
         <TextInput
           autoFocus
@@ -143,7 +149,7 @@ export default function NewBot() {
         />
         <View style={{ marginTop: 24 }}>
           <BotLookPicker
-            value={look.color}
+            value={newBotLookColor(look)}
             identity={identity}
             organicIdentities={ORGANIC_PREVIEW_IDENTITIES}
             avatarSet={avatarSet}
