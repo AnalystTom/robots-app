@@ -34,7 +34,6 @@ export interface SafeWebFetchOptions {
   truncate?: boolean;
   /** Refuse any hop, redirects included, whose port is not listed. */
   allowedPorts?: readonly number[];
-  /** Called with each redirect target before it is followed; throw to refuse it. */
   checkRedirect?: (url: string) => void;
   /**
    * Test seam for dispatcher teardown. Defaults to `dispatcher.close()`.
