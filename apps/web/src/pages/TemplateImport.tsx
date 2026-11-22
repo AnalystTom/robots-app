@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { PageLoading } from "../components/PageLoading";
 import { importBotTemplate, TEMPLATE_GALLERY_PATH } from "../lib/import-bot-template";
-import { useQueryUserId } from "../lib/query";
+import { useQueryUserId, useSpaceQueries } from "../lib/query";
 import { errorText } from "../lib/user-error";
 import { AuthFrame, submitClass } from "./Auth";
 
@@ -13,10 +13,11 @@ export function TemplateImportPage() {
   const navigate = useNavigate();
   const { templateId = "" } = useParams();
   const userId = useQueryUserId();
+  const queries = useSpaceQueries();
   const imported = useQuery({
     queryKey: ["template-import", userId, templateId],
     queryFn: async () => {
-      const botId = await importBotTemplate(templateId);
+      const botId = await importBotTemplate(templateId, queries);
       return botId ? `/app/${botId}` : TEMPLATE_GALLERY_PATH;
     },
     retry: false,

@@ -7,6 +7,7 @@ import { SignupSurvey } from "../components/SignupSurvey";
 import { importBotTemplate, isBotTemplateLink } from "../lib/import-bot-template";
 import type { ModelCatalogEntry } from "../lib/model-auth";
 import { reportClientError } from "../lib/monitoring";
+import { useSpaceQueries } from "../lib/query";
 import { rpc } from "../lib/rpc";
 import { onboardingTemplate } from "../lib/sign-in-next";
 import { useSignOut } from "../lib/sign-out";
@@ -34,6 +35,7 @@ export function OnboardingPage() {
   const { step: routeStep } = useParams();
   const [searchParams] = useSearchParams();
   const [template] = useState(() => onboardingTemplate(searchParams));
+  const queries = useSpaceQueries();
   const linkedStep = routeStep === "survey" || routeStep === "model" ? routeStep : undefined;
   const [creatingBot, setCreatingBot] = useState(false);
   const [surveyDone, setSurveyDone] = useState(false);
@@ -96,7 +98,7 @@ export function OnboardingPage() {
     setError(null);
     try {
       const linkedBotId =
-        template && isBotTemplateLink(template) ? await importBotTemplate(template) : null;
+        template && isBotTemplateLink(template) ? await importBotTemplate(template, queries) : null;
       if (linkedBotId) {
         await startOnboardingChat(linkedBotId);
         navigate(`/app/${linkedBotId}`);
