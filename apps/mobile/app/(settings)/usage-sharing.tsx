@@ -27,7 +27,7 @@ export default function UsageSharingStep() {
   const stacked = useStackedSettings();
   const { survey } = useLocalSearchParams<{ survey?: string }>();
   const [shared, setShared] = useState(false);
-  const { save } = useUsageSharing({
+  const { needed, loaded, save } = useUsageSharing({
     onSaved: continueOnboarding,
     onFailed: (error) =>
       Alert.alert(t`Enable data sharing`, errorText(error, t`Could not save your choice`)),
@@ -60,8 +60,8 @@ export default function UsageSharingStep() {
       </SettingsGroup>
       <NativeActionButton
         label={t`Continue`}
-        busy={save.pending}
-        onPress={() => save.run(shared)}
+        busy={save.pending || !loaded}
+        onPress={() => (needed ? save.run(shared) : continueOnboarding())}
       />
       <SettingsGroup>
         <SettingsRow

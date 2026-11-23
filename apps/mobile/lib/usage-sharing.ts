@@ -16,6 +16,8 @@ export function useUsageSharing(
   });
   return {
     available: Boolean(sharing?.available),
+    needed: Boolean(sharing?.needed),
+    loaded: me !== undefined,
     enabled: save.pending ? Boolean(save.input) : (sharing?.enabled ?? false),
     save,
   };

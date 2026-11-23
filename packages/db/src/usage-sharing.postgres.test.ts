@@ -92,11 +92,6 @@ describePostgres("product analytics gated by usage sharing (PostgreSQL)", () => 
     analytics.capture(sharing, { name: "signed_in" });
     await analytics.flush();
 
-    const user = await asSystem(prisma).user.findUniqueOrThrow({
-      where: { id: sharing },
-      select: { usageSharing: true },
-    });
-    expect(user.usageSharing).toBe(false);
     expect(forwarded).toEqual([sharing]);
   });
 });

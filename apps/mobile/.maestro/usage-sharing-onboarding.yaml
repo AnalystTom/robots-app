@@ -40,3 +40,6 @@ name: RoBots data sharing onboarding
 - extendedWaitUntil:
     visible: "Share usage data"
     timeout: 10000
+- assertVisible:
+    text: "Share usage data"
+    checked: true
