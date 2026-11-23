@@ -237,7 +237,9 @@ describe("tokens.css", () => {
     expect(darkBlock).toContain("--brand: #3aa6b7;");
     expect(darkBlock).toContain("--shadow-card: none;");
     expect(lightBlock).toContain("--brand: #15788a;");
-    expect(lightBlock).toContain("--shadow-card: 0 1px 2px #2a20100d, 0 12px 32px -12px #2a201029;");
+    expect(lightBlock).toContain(
+      "--shadow-card: 0 1px 2px #2a20100d, 0 12px 32px -12px #2a201029;",
+    );
   });
 
   it("scopes light and dark under data-theme", () => {
