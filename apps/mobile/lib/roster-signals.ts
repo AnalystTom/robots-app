@@ -1,5 +1,10 @@
 import type { SpaceChangeKind } from "@robots/contracts";
-import { abortableDelay, isRetryableError, reconnectDelayMs, retryDelayMs } from "@robots/core";
+import {
+  abortableDelay,
+  isRetryableError,
+  reconnectDelayMs,
+  streamRetryDelayMs,
+} from "@robots/core";
 import { useEffect, useRef } from "react";
 import { subscribeSpaceSelection } from "./api";
 import { subscribeRosterSignals } from "./api-live";
@@ -7,13 +12,11 @@ import { useAppForeground } from "./app-foreground";
 import { computerUpdates } from "./computer-updates";
 import { subscribeSessionGeneration } from "./session";
 
-// One stream for the whole app, open while any screen holds it.
 const rosterListeners = new Set<() => void>();
 const spaceChangeListeners = new Set<(kind: SpaceChangeKind) => void>();
 let holders = 0;
 let close: (() => void) | undefined;
 
-/** The stream speaks for one session and Space, so either changing reopens it. */
 function followIdentity(listener: () => void): () => void {
   const unfollowSpace = subscribeSpaceSelection(listener);
   const unfollowSession = subscribeSessionGeneration(listener);
@@ -37,7 +40,7 @@ function nextIdentity(signal: AbortSignal): Promise<void> {
 }
 
 async function follow(signal: AbortSignal) {
-  let retry = 1_000;
+  let retry = 0;
   while (!signal.aborted) {
     let failure: unknown;
     let opened = false;
@@ -50,7 +53,6 @@ async function follow(signal: AbortSignal) {
         () => {
           if (connection.signal.aborted) return;
           opened = true;
-          // Each connection opens with a signal, so a reconnect catches up on what it missed.
           for (const listener of rosterListeners) listener();
         },
         connection.signal,
@@ -68,15 +70,15 @@ async function follow(signal: AbortSignal) {
     if (signal.aborted) return;
     if (connection.signal.aborted) continue;
     if (failure !== undefined && !isRetryableError(failure)) {
-      // Asking again cannot change a refusal, but another session or Space may answer; signing
-      // out releases the stream anyway.
       await nextIdentity(signal);
-      retry = 1_000;
+      retry = 0;
       continue;
     }
-    if (opened) retry = 1_000;
-    await abortableDelay(opened ? reconnectDelayMs(failure) : retryDelayMs(failure, retry), signal);
-    retry = Math.min(retry * 2, 30_000);
+    if (opened) retry = 0;
+    await abortableDelay(
+      opened ? reconnectDelayMs(failure) : streamRetryDelayMs(failure, retry++),
+      signal,
+    );
   }
 }
 
@@ -96,17 +98,11 @@ function hold(): () => void {
   };
 }
 
-/** Keeps the server's live stream open while enabled and in the foreground. */
 export function useLiveStream(enabled: boolean): void {
   const foreground = useAppForeground();
   useEffect(() => (enabled && foreground ? hold() : undefined), [enabled, foreground]);
 }
 
-/**
- * Runs `read` while enabled: once when enabled or back in the foreground, then on each roster
- * signal, including the one each (re)connection opens with: a change made before the stream
- * subscribed reaches the app only through that opening signal.
- */
 export function useRosterSignals(read: () => unknown, enabled: boolean): void {
   useLiveStream(enabled);
   const foreground = useAppForeground();
@@ -123,10 +119,6 @@ export function useRosterSignals(read: () => unknown, enabled: boolean): void {
   }, [enabled, foreground]);
 }
 
-/**
- * Runs `onChange` while enabled whenever what `kind` covers may have changed: on each signal,
- * including the one every (re)connect sends, and when the app returns to the foreground.
- */
 export function useSpaceChanges(
   kind: Exclude<SpaceChangeKind, "computerUpdates">,
   onChange: () => unknown,
@@ -148,7 +140,6 @@ export function useSpaceChanges(
   }, [kind, enabled]);
   const wasForeground = useRef(foreground);
   useEffect(() => {
-    // A server that sends no signals for this kind still gets read when the app comes back.
     if (enabled && foreground && !wasForeground.current) void onChangeRef.current();
     wasForeground.current = foreground;
   }, [enabled, foreground]);

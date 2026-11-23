@@ -7,6 +7,8 @@ import {
   RECONNECT_SPREAD_MS,
   reconnectDelayMs,
   retryDelayMs,
+  STREAM_RETRY_MAX_MS,
+  streamRetryDelayMs,
 } from "./retry-policy.js";
 
 const withStatus = (status: number) => Object.assign(new Error("failed"), { status });
@@ -70,5 +72,23 @@ describe("retry policy", () => {
     expect(reconnectDelayMs(new Error("closed"), () => 0.5)).toBe(RECONNECT_SPREAD_MS / 2);
     expect(reconnectDelayMs(undefined, () => 1)).toBe(RECONNECT_SPREAD_MS);
     expect(reconnectDelayMs({ status: 503, retryAfterMs: 30_000 }, () => 1)).toBe(30_000);
+  });
+
+  it("doubles a live stream's retry ceiling from a second up to the cap", () => {
+    const ceilings = Array.from({ length: 8 }, (_, retry) =>
+      streamRetryDelayMs(new Error("offline"), retry, () => 1),
+    );
+    expect(ceilings).toEqual([1_000, 2_000, 4_000, 8_000, 16_000, 30_000, 30_000, 30_000]);
+    expect(streamRetryDelayMs(new Error("offline"), 50, () => 1)).toBe(STREAM_RETRY_MAX_MS);
+  });
+
+  it("picks a live stream's retry anywhere below the ceiling", () => {
+    expect(streamRetryDelayMs(new Error("offline"), 3, () => 0)).toBe(0);
+    expect(streamRetryDelayMs(new Error("offline"), 3, () => 0.25)).toBe(2_000);
+  });
+
+  it("keeps a live stream's retry as long as the server asked", () => {
+    expect(streamRetryDelayMs({ status: 503, retryAfterMs: 60_000 }, 0, () => 1)).toBe(60_000);
+    expect(streamRetryDelayMs({ status: 503, retryAfterMs: 500 }, 2, () => 1)).toBe(4_000);
   });
 });

@@ -2,13 +2,12 @@ import { t } from "@lingui/core/macro";
 import type { IncomingBotCall, SpaceBot, SpaceNavigation } from "@robots/contracts";
 import type { ringingCall } from "@robots/core";
 import {
-  abortableDelay,
   callIsRinging,
   isRetryableError,
   nextIncomingCall,
   reconnectDelayMs,
   respondToIncomingCall,
-  retryDelayMs,
+  streamRetryDelayMs,
 } from "@robots/core";
 import { requireOptionalNativeModule } from "expo-modules-core";
 import * as Notifications from "expo-notifications";
@@ -47,32 +46,23 @@ const listeners = new Set<() => void>();
 let calls: IncomingBotCall[] = [];
 let roster = new Map<string, SpaceBot>();
 let feed: AbortController | undefined;
+let wakeFollow: (() => void) | undefined;
 let handled = new Set<string>();
 let expiry: ReturnType<typeof setTimeout> | undefined;
 let snapshot: IncomingBotCall | null = null;
 let running = false;
 let responding = false;
 let activeNativeCall: string | undefined;
-/** Native calls that ended while their answer was still joining. */
 let nativeEnded = new Set<string>();
-/** The calls the latest snapshot lists as ringing, with the time each stops ringing. */
 let streamCalls = new Map<string, number>();
-/**
- * Calls the stream listed and then dropped: they ended on the server. A snapshot that never
- * listed a call proves nothing, since it may predate it. Each is kept only until its ring would
- * have expired, after which no native state can ring it anyway.
- */
 let endedInStream = new Map<string, number>();
 function pruneEndedCalls() {
   const now = Date.now();
   for (const [id, expiresAt] of endedInStream) if (!(expiresAt > now)) endedInStream.delete(id);
 }
-/** Resolves when the account stream has delivered its first snapshot, which covers every organization. */
 let streamSnapshot: Promise<void> | undefined;
 let snapshotArrived: (() => void) | undefined;
-/** Cold-start waits for that snapshot, cancelled by stopIncomingCalls so none outlives its feed. */
 const snapshotWaiters = new Set<() => void>();
-/** How long a native or notification answer waits for that snapshot on a cold start. */
 const SNAPSHOT_WAIT_MS = 5_000;
 
 export function subscribeIncomingCalls(listener: () => void) {
@@ -81,7 +71,6 @@ export function subscribeIncomingCalls(listener: () => void) {
     listeners.delete(listener);
   };
 }
-/** How many ended calls the stream still remembers; for tests of its bound. */
 export function endedStreamCallCount() {
   return endedInStream.size;
 }
@@ -115,8 +104,6 @@ function update(
     calls.push({ ...bot, incomingCall: call });
     if (Platform.OS === "ios" || AppState.currentState !== "active")
       reportNativeCall({ ...bot, incomingCall: call });
-    // Android's in-app screen takes over a ring it starts showing in the foreground, like the
-    // rings it already showed when the app became active; otherwise both would ring.
     else if (previous?.incomingCall.callId !== call.callId)
       void native?.endIncomingCall(call.callId);
   }
@@ -132,18 +119,17 @@ function reportNativeCall(call: IncomingBotCall) {
   });
 }
 
-/** Follows the account call stream; every frame is a full snapshot, so reconnects need no replay. */
 async function follow(controller: AbortController) {
   const generation = currentSessionGeneration();
-  let retry = 250;
+  let retry = 0;
   let failure: unknown;
   while (!controller.signal.aborted && generation === currentSessionGeneration()) {
     let opened = false;
     try {
       await subscribeIncomingCallEvents((incoming) => {
-        // Ignore events from an aborted feed so a late callback cannot resolve a newer wait.
         if (controller.signal.aborted || feed !== controller) return;
         opened = true;
+        retry = 0;
         const listed = new Map(
           incoming.map((call) => [
             call.incomingCall.callId,
@@ -162,17 +148,24 @@ async function follow(controller: AbortController) {
         }
         for (const call of incoming) update(call, call.incomingCall);
       }, controller.signal);
-      retry = 250;
       failure = undefined;
     } catch (error) {
       if (controller.signal.aborted || !isRetryableError(error)) return;
       failure = error;
     }
-    await abortableDelay(
-      opened ? reconnectDelayMs(failure) : retryDelayMs(failure, retry),
-      controller.signal,
-    ).catch(() => undefined);
-    retry = Math.min(retry * 2, 5000);
+    const delay = opened ? reconnectDelayMs(failure) : streamRetryDelayMs(failure, retry++);
+    await new Promise<void>((resolve) => {
+      const finish = () => {
+        clearTimeout(timer);
+        controller.signal.removeEventListener("abort", finish);
+        if (wakeFollow === finish) wakeFollow = undefined;
+        resolve();
+      };
+      const timer = setTimeout(finish, delay);
+      wakeFollow = finish;
+      controller.signal.addEventListener("abort", finish);
+      if (controller.signal.aborted) finish();
+    });
   }
 }
 
@@ -187,7 +180,6 @@ async function fetchRoster() {
   const navigation = await rpc("spaces/list");
   if (running && generation === currentSessionGeneration()) setIncomingCallRoster(navigation);
 }
-/** The roster request in flight; callers that arrive meanwhile share it instead of starting another. */
 let rosterLoad: Promise<void> | undefined;
 function loadRoster(): Promise<void> {
   if (rosterLoad) return rosterLoad;
@@ -198,14 +190,6 @@ function loadRoster(): Promise<void> {
   return load;
 }
 
-/**
- * Resolves the caller for a native or notification answer. The account stream knows callers
- * across every organization; the roster covers only the active one. A cached roster entry
- * answers at once. Otherwise the roster load races the stream's first snapshot, which a cold
- * start may not have yet, for a few seconds, and the first source to name the caller answers.
- * Returns undefined when the lookup's feed or session is gone: the answer belongs to neither,
- * so its caller abandons it without answering or completing the native action.
- */
 async function callerFor(
   botId: string,
   callId: string,
@@ -217,7 +201,6 @@ async function callerFor(
     calls.find((entry) => entry.id === botId && entry.incomingCall.callId === callId) ?? null;
   const known = fromStream() ?? roster.get(botId);
   if (known) return known;
-  // Whichever source names the caller first answers; a failed load surfaces only if neither does.
   const rostered = loadRoster();
   rostered.catch(() => undefined);
   if (streamSnapshot) {
@@ -251,7 +234,6 @@ async function callerFor(
     const late = fromStream() ?? roster.get(botId);
     if (late) return late;
   }
-  // The stream may name the caller after an empty snapshot, so a failed load throws only after it.
   const failure = await rostered.then(
     () => null,
     (error: unknown) => ({ error }),
@@ -285,15 +267,12 @@ export async function respondToMobileCall(call: IncomingBotCall, action: "answer
         rpc("threads/answerCall", target, { requestContext: context }),
       );
       answered = true;
-      // The session changed mid-answer: rpc drops the hang-up below locally, because its
-      // context belongs to the old generation, so the server keeps the call answered.
       if (generation !== currentSessionGeneration())
         throw new Error(t`Something went wrong. Try again.`);
       const voice = await rpc("voice/status", {}, { requestContext: context });
       if (generation !== currentSessionGeneration())
         throw new Error(t`Something went wrong. Try again.`);
       if (nativeEnded.has(target.callId)) throw new Error(t`This call is no longer ringing.`);
-      // Answering during a call replaces it, like a phone's end-and-accept.
       if (getSnapshot()) endCall();
       activeNativeCall = target.callId;
       startCall({
@@ -312,7 +291,6 @@ export async function respondToMobileCall(call: IncomingBotCall, action: "answer
     handled.add(target.callId);
     if (action === "decline") await native?.endIncomingCall(target.callId);
   } catch (error) {
-    // Answered elsewhere or rung out: there is nothing left to decline.
     if (action === "decline" && (error as { code?: string } | null)?.code === "CONFLICT") {
       handled.add(call.incomingCall.callId);
       await native?.endIncomingCall(call.incomingCall.callId);
@@ -336,10 +314,8 @@ export async function respondToMobileCall(call: IncomingBotCall, action: "answer
 async function drainNative() {
   const generation = currentSessionGeneration();
   const state = await native?.incomingState();
-  // A sign-out during the read belongs to the old session; the new one drains for itself.
   if (!state || !running || generation !== currentSessionGeneration()) return;
   try {
-    // Answers first: an answer expires with its ring, while showing other rings can wait for the roster.
     for (const action of state.actions) {
       if (action.action === "end") {
         nativeEnded.add(action.callId);
@@ -351,7 +327,6 @@ async function drainNative() {
         continue;
       }
       const bot = await callerFor(action.botId, action.callId).catch(() => null);
-      // A stale lookup answers nothing and completes no native action: a newer feed owns it.
       if (bot === undefined) continue;
       if (!bot) {
         await native?.finishAnswer(action.callId, false);
@@ -363,16 +338,12 @@ async function drainNative() {
       ).catch(() => undefined);
     }
   } finally {
-    // Start storage and network bookkeeping only after pending answers finish.
     if (state.token && running && generation === currentSessionGeneration())
       void registerCallPushToken({ voipToken: state.token }).catch(() => undefined);
   }
   for (const ring of state.ringing ?? []) {
     if (!callIsRinging(ring)) continue;
-    // A failed roster load only leaves this ring unshown.
     if (!roster.has(ring.botId)) await loadRoster().catch(() => undefined);
-    // A ring the stream listed and then dropped has ended, for example answered on another
-    // phone while the answers above were joining; the older native state must not bring it back.
     pruneEndedCalls();
     if (endedInStream.has(ring.callId)) continue;
     const bot = roster.get(ring.botId);
@@ -398,7 +369,6 @@ async function notificationResponse(response: Notifications.NotificationResponse
   notificationActions.add(key);
   try {
     const bot = await callerFor(data.botId, data.callId);
-    // A stale lookup answers nothing and completes no native action: a newer feed owns it.
     if (bot === undefined) return;
     if (!bot) throw new Error("Unknown caller");
     await respondToMobileCall(
@@ -422,11 +392,9 @@ export function stopIncomingCalls() {
   snapshotArrived = undefined;
   streamCalls = new Map();
   endedInStream = new Map();
-  // Cancel cold-start waits now; a continuation from this feed must not resume later.
   for (const stopWaiting of snapshotWaiters) stopWaiting();
   snapshotWaiters.clear();
   roster.clear();
-  // A load in flight belongs to the stopped feed; the next one starts its own.
   rosterLoad = undefined;
   notificationActions.clear();
   calls = [];
@@ -463,7 +431,6 @@ export function startIncomingCalls() {
     const generation = currentSessionGeneration();
     void captureApiRequestContext(null)
       .then(async (context) => {
-        // SecureStore may still be locked after a cold PushKit launch. Retry on foreground.
         if (
           !context.headers.authorization ||
           !running ||
@@ -484,7 +451,6 @@ export function startIncomingCalls() {
               started = false;
             });
         }
-        // A pending answer must not wait for the roster: callerFor races it with the stream.
         void loadRoster().catch(() => undefined);
         await drainNative();
       })
@@ -499,9 +465,9 @@ export function startIncomingCalls() {
   });
   const app = AppState.addEventListener("change", (state) => {
     if (state === "active") {
-      // Android's in-app screen takes over the ring from the native notification.
       if (Platform.OS === "android")
         for (const call of calls) void native?.endIncomingCall(call.incomingCall.callId);
+      wakeFollow?.();
       refresh();
     } else for (const call of calls) reportNativeCall(call);
   });

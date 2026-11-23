@@ -1,17 +1,29 @@
-import { isRetryableError, reconnectDelayMs, retryDelayMs } from "@robots/core";
+import { isRetryableError, reconnectDelayMs, retryDelayMs, streamRetryDelayMs } from "@robots/core";
 
-/**
- * Follows a server stream until stopped: reconnects after it drops, backs off while it cannot
- * open, and gives up on a refusal, calling `onRefused`. Returns the stop function.
- */
+const RECONNECT_NOW_EVENTS = ["online", "focus"] as const;
+
 export function followStream<T>(
   open: (signal: AbortSignal) => Promise<AsyncIterable<T>>,
-  onFrame: (frame: T) => void,
+  onFrame: (frame: T) => void | Promise<void>,
   onRefused?: () => void,
+  onFailure?: (cause: unknown) => void,
 ): () => void {
   let active = true;
   let controller: AbortController | undefined;
   let cancelRetry: (() => void) | undefined;
+  let retry = 0;
+  let serverAskedToWait = false;
+  const reconnectNow = () => {
+    if (serverAskedToWait) return;
+    cancelRetry?.();
+  };
+  for (const event of RECONNECT_NOW_EVENTS) window.addEventListener(event, reconnectNow);
+  const stop = () => {
+    active = false;
+    for (const event of RECONNECT_NOW_EVENTS) window.removeEventListener(event, reconnectNow);
+    controller?.abort();
+    cancelRetry?.();
+  };
   void (async () => {
     while (active) {
       controller = new AbortController();
@@ -19,10 +31,11 @@ export function followStream<T>(
       let opened = false;
       try {
         const stream = await open(controller.signal);
-        opened = true;
         for await (const frame of stream) {
           if (!active) return;
-          onFrame(frame);
+          opened = true;
+          retry = 0;
+          await onFrame(frame);
         }
       } catch (cause) {
         failure = cause;
@@ -30,15 +43,18 @@ export function followStream<T>(
         controller.abort();
       }
       if (!active) return;
-      if (failure !== undefined && !isRetryableError(failure)) {
-        onRefused?.();
-        return;
+      if (failure !== undefined) {
+        onFailure?.(failure);
+        if (!isRetryableError(failure)) {
+          onRefused?.();
+          stop();
+          return;
+        }
       }
+      serverAskedToWait = retryDelayMs(failure, 0) > 0;
+      const delay = opened ? reconnectDelayMs(failure) : streamRetryDelayMs(failure, retry++);
       await new Promise<void>((resolve) => {
-        const timer = setTimeout(
-          resolve,
-          opened ? reconnectDelayMs(failure) : retryDelayMs(failure, 1_000),
-        );
+        const timer = setTimeout(resolve, delay);
         cancelRetry = () => {
           clearTimeout(timer);
           resolve();
@@ -47,9 +63,5 @@ export function followStream<T>(
       cancelRetry = undefined;
     }
   })();
-  return () => {
-    active = false;
-    controller?.abort();
-    cancelRetry?.();
-  };
+  return stop;
 }

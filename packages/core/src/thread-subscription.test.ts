@@ -74,6 +74,7 @@ describe("thread subscription recovery", () => {
   it("falls back to head with backoff and replays projection after a snapshot commits", async () => {
     vi.useFakeTimers();
     const { abort, channel, state, callbacks } = setup(null);
+    callbacks.random = () => 1;
     const replay = stream();
     callbacks.loadInitial.mockResolvedValue(null);
     callbacks.loadHead.mockResolvedValueOnce(null);
@@ -82,7 +83,7 @@ describe("thread subscription recovery", () => {
       state.committed = { ...head, cursor: 11 };
     });
     const running = runThreadSubscription(callbacks);
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(1_000);
     expect(callbacks.loadHead).toHaveBeenCalledTimes(2);
     expect(callbacks.subscribe).toHaveBeenCalledWith(10, expect.any(AbortSignal));
     channel.send(event(11));
@@ -92,7 +93,7 @@ describe("thread subscription recovery", () => {
     expect(callbacks.applyEvent).not.toHaveBeenCalled();
     expect(callbacks.beforeEvent).toHaveBeenCalledTimes(2);
     expect(callbacks.onEvent).toHaveBeenCalledTimes(2);
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(6_000);
     expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 11]);
     expect(callbacks.applyEvent).not.toHaveBeenCalled();
     replay.send(event(12));
@@ -115,7 +116,7 @@ describe("thread subscription recovery", () => {
     expect(callbacks.refresh).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
     expect(callbacks.refresh).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(500);
     expect(callbacks.subscribe).toHaveBeenCalledTimes(2);
     abort.abort();
     await running;
@@ -190,6 +191,7 @@ describe("thread subscription recovery", () => {
   it("delivers missing effects without reprojecting a snapshot ahead of the stream", async () => {
     vi.useFakeTimers();
     const { abort, channel, state, callbacks } = setup(null);
+    callbacks.random = () => 1;
     const replay = stream();
     callbacks.subscribe.mockResolvedValueOnce(channel.events).mockResolvedValueOnce(replay.events);
     callbacks.refresh.mockImplementation(async () => {
@@ -211,7 +213,7 @@ describe("thread subscription recovery", () => {
       channel.send(event(seq));
       await vi.advanceTimersByTimeAsync(0);
     }
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(6_000);
     expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 12]);
     for (const seq of [13, 14, 15, 16]) {
       replay.send(event(seq));
@@ -298,15 +300,18 @@ describe("thread subscription recovery", () => {
     callbacks.refresh.mockImplementationOnce(async () => {
       state.committed = { ...head, cursor: 15 };
     });
+    callbacks.random = () => 1;
     const running = runThreadSubscription(callbacks);
     await vi.advanceTimersByTimeAsync(0);
     channel.send(event(11));
     await vi.advanceTimersByTimeAsync(0);
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(1_000);
     replay.send(event(12));
     await vi.advanceTimersByTimeAsync(0);
     replay.end();
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(RECONNECT_SPREAD_MS + 999);
+    expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 11]);
+    await vi.advanceTimersByTimeAsync(1);
     expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 11, 12]);
     for (const seq of [13, 14, 15, 16]) {
       resumed.send(event(seq));
@@ -339,17 +344,20 @@ describe("thread subscription recovery", () => {
       .mockImplementationOnce(async () => {
         state.committed = { ...head, cursor: 17 };
       });
+    callbacks.random = () => 1;
     const running = runThreadSubscription(callbacks);
     await vi.advanceTimersByTimeAsync(0);
     for (const seq of [11, 12, 13, 14]) {
       channel.send(event(seq));
       await vi.advanceTimersByTimeAsync(0);
     }
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(1_000);
     replay.send(event(11));
     await vi.advanceTimersByTimeAsync(0);
     replay.end();
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(RECONNECT_SPREAD_MS + 999);
+    expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 10]);
+    await vi.advanceTimersByTimeAsync(1);
     expect(callbacks.subscribe.mock.calls.map(([cursor]) => cursor)).toEqual([10, 10, 11]);
     for (const seq of [12, 13, 14, 15, 16, 17, 18]) {
       resumed.send(event(seq));
@@ -615,6 +623,7 @@ describe("thread subscription recovery", () => {
     async (stage) => {
       vi.useFakeTimers();
       const { abort, channel, state, callbacks } = setup(null);
+      callbacks.random = () => 1;
       const subscribed = deferred<AsyncIterable<ProductEvent>>();
       const refreshed = deferred<void>();
       callbacks.refresh.mockRejectedValue(
@@ -626,11 +635,12 @@ describe("thread subscription recovery", () => {
       await vi.advanceTimersByTimeAsync(0);
       const transportSignal = callbacks.subscribe.mock.calls[0]?.[1];
       if (stage === "refresh") {
+        await vi.advanceTimersByTimeAsync(1_000);
         channel.end();
         await vi.advanceTimersByTimeAsync(0);
         expect(callbacks.refresh).toHaveBeenCalledTimes(1);
       }
-      await vi.advanceTimersByTimeAsync(250);
+      await vi.advanceTimersByTimeAsync(6_000);
       await expect(running).resolves.toBeUndefined();
       expect(transportSignal?.aborted).toBe(true);
       expect(abort.signal.aborted).toBe(false);
@@ -659,6 +669,7 @@ describe("thread subscription recovery", () => {
   it("keeps reconnecting through server errors and waits as long as a 429 asks", async () => {
     vi.useFakeTimers();
     const { abort, callbacks } = setup();
+    callbacks.random = () => 1;
     callbacks.subscribe
       .mockRejectedValueOnce(Object.assign(new Error("Unavailable"), { status: 503 }))
       .mockRejectedValueOnce(
@@ -666,7 +677,9 @@ describe("thread subscription recovery", () => {
       )
       .mockRejectedValue(new TypeError("Failed to fetch"));
     const running = runThreadSubscription(callbacks);
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(callbacks.subscribe).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
     expect(callbacks.subscribe).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(9_999);
     expect(callbacks.subscribe).toHaveBeenCalledTimes(2);
@@ -679,6 +692,7 @@ describe("thread subscription recovery", () => {
   it("cancels a reconnect delay without rejecting or starting another request", async () => {
     vi.useFakeTimers();
     const { abort, channel, callbacks } = setup();
+    callbacks.random = () => 1;
     const running = runThreadSubscription(callbacks);
     await vi.advanceTimersByTimeAsync(0);
     channel.end();
@@ -687,6 +701,24 @@ describe("thread subscription recovery", () => {
     await expect(running).resolves.toBeUndefined();
     await vi.advanceTimersByTimeAsync(5_000);
     expect(callbacks.subscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps growing the reconnect wait when a stream opens and closes without delivering", async () => {
+    vi.useFakeTimers();
+    const { abort, callbacks } = setup();
+    callbacks.random = () => 1;
+    callbacks.subscribe.mockImplementation(async () => (async function* () {})());
+    const running = runThreadSubscription(callbacks);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(callbacks.subscribe).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(6_000);
+    expect(callbacks.subscribe).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(6_999);
+    expect(callbacks.subscribe).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(callbacks.subscribe).toHaveBeenCalledTimes(3);
+    abort.abort();
+    await running;
   });
 
   it("keeps receipt handling before applying events and effects afterward", async () => {
@@ -717,6 +749,7 @@ describe("thread subscription recovery", () => {
   it("does not refresh or replay after cancellation during snapshot delay", async () => {
     vi.useFakeTimers();
     const { abort, channel, callbacks } = setup(null);
+    callbacks.random = () => 1;
     const running = runThreadSubscription(callbacks);
     await vi.advanceTimersByTimeAsync(0);
     channel.send(event(11));
@@ -760,6 +793,7 @@ describe("thread subscription recovery", () => {
   it("cancels head backoff without issuing another request", async () => {
     vi.useFakeTimers();
     const { abort, callbacks } = setup();
+    callbacks.random = () => 1;
     callbacks.loadInitial.mockResolvedValue(null);
     callbacks.loadHead.mockResolvedValue(null);
     const running = runThreadSubscription(callbacks);

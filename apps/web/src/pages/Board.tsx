@@ -8,7 +8,6 @@ import {
   TICKET_STATUSES,
   TICKET_TITLE_MAX_LENGTH,
 } from "@robots/contracts";
-import { isRetryableError, reconnectDelayMs, retryDelayMs } from "@robots/core";
 import { fetchFresh, writeSaved } from "@robots/core/query";
 import {
   Button,
@@ -26,6 +25,7 @@ import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
+import { followStream } from "../lib/follow-stream";
 import { useSpaceQueries } from "../lib/query";
 import { formatRelativeTime } from "../lib/relative-time";
 import { rpc } from "../lib/rpc";
@@ -48,66 +48,30 @@ export function BoardPage() {
   const [streamError, setError] = useState("");
   const loadFailed = ticketsQuery.error ?? botsQuery.error;
   const error = streamError || (loadFailed ? errorText(loadFailed) : "");
-  /** A read sent after a change, so an older one in flight cannot bring back the old board. */
   const reload = () => fetchFresh(queryClient, ticketsOptions).then(() => undefined);
 
   useEffect(() => {
-    let currentController: AbortController | undefined;
-    let active = true;
-    // Live events refresh the board and any open ticket's comments.
     const refreshComments = (ticketId?: string) =>
       void queryClient.invalidateQueries({
         queryKey: ticketId
           ? queries.tickets.comments.queryKey({ input: { ticketId } })
           : queries.tickets.comments.key(),
       });
-    let cancelRetry: (() => void) | undefined;
-    void (async () => {
-      while (active) {
-        const controller = new AbortController();
-        currentController = controller;
-        let failure: unknown;
-        let opened = false;
-        try {
-          const stream = await rpc.boards.subscribe(undefined, {
-            signal: controller.signal,
-          });
-          if (!active) return;
-          await fetchFresh(queryClient, ticketsOptions);
-          if (!active) return;
-          refreshComments();
-          setError("");
-          opened = true;
-          for await (const event of stream) {
-            if (!active) return;
-            refreshComments(event.ticketId);
-            await fetchFresh(queryClient, ticketsOptions);
-          }
-        } catch (cause) {
-          failure = cause;
-          if (active) setError(errorText(cause));
-        } finally {
-          controller.abort();
-        }
-        if (!active || !isRetryableError(failure)) return;
-        await new Promise<void>((resolve) => {
-          const timer = setTimeout(
-            resolve,
-            opened ? reconnectDelayMs(failure) : retryDelayMs(failure, 1_000),
-          );
-          cancelRetry = () => {
-            clearTimeout(timer);
-            resolve();
-          };
-        });
-        cancelRetry = undefined;
-      }
-    })();
-    return () => {
-      active = false;
-      currentController?.abort();
-      cancelRetry?.();
-    };
+    return followStream(
+      async (signal) => {
+        const stream = await rpc.boards.subscribe(undefined, { signal });
+        await fetchFresh(queryClient, ticketsOptions);
+        refreshComments();
+        setError("");
+        return stream;
+      },
+      async (event) => {
+        refreshComments(event.ticketId);
+        await fetchFresh(queryClient, ticketsOptions);
+      },
+      undefined,
+      (cause) => setError(errorText(cause)),
+    );
   }, [queries]);
 
   return (
@@ -246,14 +210,12 @@ function TicketDialog({
     try {
       const row = await rpc.tickets.comment({ ticketId: ticket.id, body });
       const options = queries.tickets.comments.queryOptions({ input: { ticketId: ticket.id } });
-      // A list already on screen shows the comment at once, unless a read already brought it.
       if (queryClient.getQueryData(options.queryKey)) {
         await writeSaved(queryClient, options.queryKey, (previous = []) =>
           previous.some((item) => item.id === row.id) ? previous : [...previous, row],
         );
       }
       setBody("");
-      // Saving cancelled any read in flight, so the whole list is read again after the post.
       void fetchFresh(queryClient, options).catch(() => undefined);
     } catch (cause) {
       setError(errorText(cause));

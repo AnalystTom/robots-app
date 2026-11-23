@@ -459,6 +459,8 @@ describe("thread foreground subscription", () => {
         10,
         expect.anything(),
         expect.anything(),
+        undefined,
+        expect.any(Function),
       );
       deliver({
         type: "thread.message.created",
@@ -571,10 +573,14 @@ describe("thread foreground subscription", () => {
           10,
           expect.any(Function),
           expect.any(AbortSignal),
+          undefined,
+          expect.any(Function),
         );
         deliver(complete(11, "failed-window"));
         expect(snapRef.current?.cursor).toBe(11);
         expect(hapticSuccess).not.toHaveBeenCalled();
+        // The first retry waits the top of its full-jitter ladder: 1 s.
+        vi.mocked(Math.random).mockReturnValue(1);
         await act(async () => failFirst(Object.assign(new Error("Unavailable"), { status })));
         if (status === 403) {
           await act(async () => vi.advanceTimersByTimeAsync(10_000));
@@ -583,7 +589,7 @@ describe("thread foreground subscription", () => {
           expect(hapticSuccess).not.toHaveBeenCalled();
           return;
         }
-        await act(async () => vi.advanceTimersByTimeAsync(249));
+        await act(async () => vi.advanceTimersByTimeAsync(999));
         expect(rpc).toHaveBeenCalledTimes(1);
         await act(async () => vi.advanceTimersByTimeAsync(1));
         expect(rpc).toHaveBeenCalledTimes(2);
