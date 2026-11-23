@@ -201,6 +201,9 @@ export function accountRoutes(ctx: RouterContext) {
             ...(input.locale === undefined ? {} : { locale: input.locale }),
             ...(botAvatarSet === undefined ? {} : { botAvatarSet }),
             ...(labs === undefined ? {} : { labs }),
+            ...(input.pushNotifications === undefined
+              ? {}
+              : { pushNotifications: input.pushNotifications }),
           });
         } else {
           await deps.prisma.user.update({
@@ -210,6 +213,9 @@ export function accountRoutes(ctx: RouterContext) {
               ...(input.locale === undefined ? {} : { locale: input.locale }),
               ...(botAvatarSet === undefined ? {} : { botAvatarSet }),
               ...(labs === undefined ? {} : { labs }),
+              ...(input.pushNotifications === undefined
+                ? {}
+                : { pushNotifications: input.pushNotifications }),
             },
           });
         }

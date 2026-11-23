@@ -159,6 +159,14 @@ export async function notifyMemberMessage(
   });
 }
 
+async function usersPushing(prisma: PrismaClient, userIds: string[]): Promise<Set<string>> {
+  const rows = await prisma.user.findMany({
+    where: { id: { in: userIds }, pushNotifications: true },
+    select: { id: true },
+  });
+  return new Set(rows.map((row) => row.id));
+}
+
 /** Everyone in the Space. Leaving it ends their notifications from it. */
 async function spaceMemberIds(prisma: PrismaClient, spaceId: string): Promise<string[]> {
   const members = await prisma.spaceMember.findMany({
@@ -198,8 +206,10 @@ async function deliverChatNotice(
   }
   const notifications = deps.notifications;
   if (!notifications || !recipients.length) return;
+  const pushing = await usersPushing(deps.prisma, recipients);
   const sender = bot && (await notificationIdentity(bot));
   const deliver = async (userId: string) => {
+    if (!pushing.has(userId)) return;
     // The icon shows what the inbox shows: unread chats across the user's Spaces. Without a
     // count the push leaves the badge as it is.
     const badge = await countUnreadInboxChats(deps.prisma, { spaceId, userId }).catch((error) => {

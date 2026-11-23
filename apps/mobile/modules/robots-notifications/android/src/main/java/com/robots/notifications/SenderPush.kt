@@ -107,6 +107,8 @@ internal object SenderPush {
         if (foreground && Build.VERSION.SDK_INT >= 31) {
           setGroup(SILENT_GROUP)
           setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY)
+        } else {
+          setGroup(ChatGroup.KEY)
         }
       }
       .addExtras(Bundle().apply {
@@ -118,6 +120,7 @@ internal object SenderPush {
     runCatching { addSender(context, builder, data, title, body) }
       .onFailure { Log.w("RobotsSenderPush", "Posting without the sender", it) }
     context.getSystemService(NotificationManager::class.java).notify(notificationId(threadId), builder.build())
+    if (!(foreground && Build.VERSION.SDK_INT >= 31)) ChatGroup.postSummary(context, channel)
   }
 
   private fun addSender(context: Context, builder: Notification.Builder, data: JSONObject, title: String, body: String) {

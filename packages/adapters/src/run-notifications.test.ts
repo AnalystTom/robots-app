@@ -6,6 +6,7 @@ import { notifyMemberMessage, notifyRun } from "./run-notifications.js";
 vi.mock("./notification-identity.js", () => ({ notificationIdentity: async () => undefined }));
 // Each person's own unread count: Ada has 2 unread chats, Bea 5.
 const snoozing = vi.hoisted(() => new Set<string>());
+const pushOff = vi.hoisted(() => new Set<string>());
 vi.mock("@robots/db", () => ({
   countUnreadInboxChats: async (_: unknown, { userId }: { userId: string }) =>
     userId === "user-1" ? 2 : 5,
@@ -50,7 +51,11 @@ function deps({
           groupId,
         }),
       },
-      user: { findUnique: async () => ({ name: "Ada" }) },
+      user: {
+        findUnique: async () => ({ name: "Ada" }),
+        findMany: async ({ where }: { where: { id: { in: string[] } } }) =>
+          where.id.in.filter((id) => !pushOff.has(id)).map((id) => ({ id })),
+      },
       routine: { findUnique: async () => null },
       run: {
         findFirst: async () => ({
@@ -64,6 +69,32 @@ function deps({
   } as unknown as ExecutorDeps;
   return { value, publish, send };
 }
+
+describe("account push setting", () => {
+  it("keeps the in-app alert but sends no push when the account turned pushes off", async () => {
+    pushOff.add("user-1");
+    try {
+      const { value, publish, send } = deps();
+      await notifyRun(value, run, message);
+      expect(publish).toHaveBeenCalledOnce();
+      expect(send).not.toHaveBeenCalled();
+    } finally {
+      pushOff.clear();
+    }
+  });
+
+  it("pushes only to the members who left pushes on", async () => {
+    pushOff.add("user-2");
+    try {
+      const { value, send } = deps({ members: ["user-1", "user-2"] });
+      await notifyRun(value, run, message);
+      expect(send).toHaveBeenCalledOnce();
+      expect(send.mock.calls[0]?.[1]).toMatchObject({ userId: "user-1" });
+    } finally {
+      pushOff.clear();
+    }
+  });
+});
 
 describe("notifyRun chat alerts", () => {
   it("publishes the alert for open apps alongside the push", async () => {

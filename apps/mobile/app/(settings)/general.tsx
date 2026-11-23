@@ -35,6 +35,7 @@ import {
 import type { MobileMe } from "../../lib/mobile-types";
 import { useThemedStyles } from "../../lib/native";
 import { registerPushToken } from "../../lib/push";
+import { useSave } from "../../lib/query";
 import { createQueuedSave } from "../../lib/queued-save";
 import {
   getCachedRemoteImagesEnabled,
@@ -48,6 +49,7 @@ import {
 } from "../../lib/response-streaming";
 import { loadSessionToken } from "../../lib/session";
 import { createSettingsPageStyles } from "../../lib/settings-page-styles";
+import { ACCOUNT_SETTINGS } from "../../lib/settings-target";
 import { useSideInsets } from "../../lib/side-insets";
 import { errorText } from "../../lib/user-error";
 
@@ -87,6 +89,16 @@ export default function General() {
   > | null>(null);
   const [notificationPermission, setNotificationPermission] = useState<string | null>(null);
   const [notificationError, setNotificationError] = useState<string | null>(null);
+
+  const pushSetting = useSave({
+    target: ACCOUNT_SETTINGS,
+    save: (pushNotifications: boolean, send) => send("preferences/update", { pushNotifications }),
+    onSaved: (next) =>
+      setMe((current) =>
+        current ? { ...current, pushNotifications: next.pushNotifications } : next,
+      ),
+    onFailed: () => Alert.alert(t`Push notifications`, t`Could not save`),
+  });
 
   function updateHaptics(value: boolean) {
     const version = ++hapticsSaveVersion;
@@ -253,6 +265,14 @@ export default function General() {
             value={APP_LOCALE_LABELS[locale]}
           />
           <SettingsSwitch label={t`Haptics`} value={hapticsEnabled} onChange={updateHaptics} />
+          {me ? (
+            <SettingsSwitch
+              label={t`Push notifications`}
+              value={pushSetting.pending ? Boolean(pushSetting.input) : me.pushNotifications}
+              disabled={pushSetting.pending}
+              onChange={(checked) => pushSetting.run(checked)}
+            />
+          ) : null}
         </SettingsGroup>
 
         {Platform.OS === "android" ? (
