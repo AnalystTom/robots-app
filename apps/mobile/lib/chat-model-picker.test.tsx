@@ -633,7 +633,7 @@ describe("chat settings model row", () => {
     await render();
     expect(container.querySelector('[data-menu="Model"]')).toBeNull();
     const row = container.querySelector<HTMLButtonElement>('button[aria-label="Model"]');
-    expect(row?.getAttribute("aria-valuetext")).toBe("Space default · Model 1");
+    expect(row?.getAttribute("aria-valuetext")).toBe("Space default (Model 1)");
     act(() => row!.click());
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({
       pathname: "/bot-model",

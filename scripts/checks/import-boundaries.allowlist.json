@@ -7,7 +7,10 @@
     "apps/api/src/desktop-host-choice.postgres.test.ts -> ../../../packages/testkit/src/index.js",
     "apps/api/src/health.test.ts -> ../../../packages/adapters/src/secret-store-fake.js",
     "apps/api/src/home-retention.postgres.test.ts -> ../../../packages/adapters/src/object-storage.test-support.js",
+    "apps/api/src/open-signup.postgres.test.ts -> ../../../packages/testkit/src/discard-bot-intro.js",
+    "apps/api/src/open-signup.postgres.test.ts -> ../../../packages/testkit/src/index.js",
     "apps/api/src/organizations.postgres.test.ts -> ../../../packages/adapters/src/object-storage.test-support.js",
+    "apps/api/src/primary-bot-intro.test.ts -> ../../../packages/adapters/src/testing/model-roles.js",
     "apps/api/src/request-auth-queries.postgres.test.ts -> ../../../packages/testkit/src/index.js",
     "apps/api/src/router.test.ts -> ../../../packages/adapters/src/testing/model-roles.js",
     "apps/api/src/secret-migration.test.ts -> ../../../packages/adapters/src/secret-store-fake.js",
@@ -70,7 +73,8 @@
     "packages/testkit/src/railway-environment.test.ts -> ../../../infra/railway/sandbox-environment.mjs",
     "packages/testkit/src/usage-accounting.postgres.test.ts -> ../../adapters/src/auto-review.js",
     "packages/testkit/src/usage-accounting.postgres.test.ts -> ../../adapters/src/history-compaction.js",
-    "scripts/build-server.mjs -> ../packages/core/src/node/prompt-source-version.ts"
+    "scripts/build-server.mjs -> ../packages/core/src/node/prompt-source-version.ts",
+    "scripts/publish-mobile-update.ts -> ../apps/api/src/mobile-updates.ts"
   ],
   "server": [
     "apps/web/src/preview-middleware.ts -> @robots/adapters/wuying-screen-policy",

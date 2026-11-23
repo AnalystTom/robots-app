@@ -1,6 +1,13 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { Bot, BotAvatarSet, ComputerMode, ReplyMode, ThinkingLevel } from "@robots/contracts";
+import type {
+  Bot,
+  BotAvatarSet,
+  ComputerMode,
+  ReplyMode,
+  RpcInput,
+  ThinkingLevel,
+} from "@robots/contracts";
 import {
   BOT_DESCRIPTION_MAX_LENGTH,
   BOT_INSTRUCTIONS_MAX_LENGTH,
@@ -59,6 +66,10 @@ import { thinkingLevelLabel } from "../lib/thinking-level";
 import { errorText } from "../lib/user-error";
 import { stopVoicePlayback } from "../lib/voice";
 
+function updateBot(botId: string, patch: Omit<RpcInput<"bots/update">, "botId">) {
+  return rpc("bots/update", { botId, ...patch });
+}
+
 export default function BotSettingsScreen() {
   const rootAvoidsKeyboard = useContext(CallKeyboardContext);
   const sideInsets = useSideInsets();
@@ -109,7 +120,7 @@ export default function BotSettingsScreen() {
     () =>
       createQueuedSave<boolean>(false, {
         save: async (value) => {
-          await rpc("bots/update", { botId, crossSpaceCommunication: value });
+          await updateBot(botId, { crossSpaceCommunication: value });
         },
         onChange: setCrossSpaceCommunication,
         onError: (err) => setError(errorText(err, t`Could not save bot`)),
@@ -120,7 +131,7 @@ export default function BotSettingsScreen() {
     () =>
       createQueuedSave<boolean>(true, {
         save: async (value) => {
-          await rpc("bots/update", { botId, dailyCheckIns: value });
+          await updateBot(botId, { dailyCheckIns: value });
         },
         onChange: setDailyCheckIns,
         onError: (err) => setError(errorText(err, t`Could not save bot`)),
@@ -132,7 +143,7 @@ export default function BotSettingsScreen() {
     () =>
       createQueuedSave<boolean>(false, {
         save: async (value) => {
-          await rpc("bots/update", { botId, fleetManagement: value });
+          await updateBot(botId, { fleetManagement: value });
         },
         onChange: setFleetManagement,
         onError: (err) => setError(errorText(err, t`Could not save bot`)),
@@ -144,7 +155,7 @@ export default function BotSettingsScreen() {
     () =>
       createQueuedSave<ReplyMode>("chat", {
         save: async (value) => {
-          await rpc("bots/update", { botId, replyMode: value });
+          await updateBot(botId, { replyMode: value });
         },
         onChange: setReplyMode,
         onError: (err) => setError(errorText(err, t`Could not save bot`)),
@@ -156,7 +167,7 @@ export default function BotSettingsScreen() {
     () =>
       createQueuedSave<boolean>(true, {
         save: async (notifyOnFinish) => {
-          const next = await rpc("bots/update", { botId, notifyOnFinish });
+          const next = await updateBot(botId, { notifyOnFinish });
           threadId.current = next.threadId;
         },
         onChange: setNotifyOnFinish,
@@ -183,8 +194,7 @@ export default function BotSettingsScreen() {
         {
           save: async ({ key, thinking }) => {
             const parsed = key ? parseModelOptionKey(key) : null;
-            const updated = await rpc("bots/update", {
-              botId,
+            const updated = await updateBot(botId, {
               modelProvider: parsed?.provider ?? null,
               modelId: parsed?.modelId ?? null,
               thinkingLevel: (thinking || null) as ThinkingLevel | null,
@@ -205,7 +215,7 @@ export default function BotSettingsScreen() {
     () =>
       createQueuedSave<string>("", {
         save: async (name) => {
-          await rpc("bots/update", { botId, name });
+          await updateBot(botId, { name });
         },
         onChange: setName,
         onSaved: async (name) => {
