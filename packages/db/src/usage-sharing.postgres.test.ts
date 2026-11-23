@@ -4,7 +4,7 @@ import type { PrismaClient } from "./client.js";
 import { createDb } from "./client.js";
 import { provisionMessagingIdentity } from "./messaging.js";
 import { asSystem, runAsSystem } from "./row-security.js";
-import { onlyWhereUsageSharingIsOn } from "./usage-sharing.js";
+import { onlyWhereUsageSharingIsOn, rememberUsageSharing } from "./usage-sharing.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const describePostgres = process.env.VERIFY_DATABASE && databaseUrl ? describe : describe.skip;
@@ -76,23 +76,26 @@ describePostgres("product analytics gated by usage sharing (PostgreSQL)", () => 
     expect(user).toEqual({ usageSharing: false, usageSharingAnsweredAt: null });
   });
 
-  it("applies an opt-out within the cache window and to a fresh gate at once", async () => {
+  it("applies a choice saved in this process at once, in both directions", async () => {
     const forwarded: string[] = [];
-    const sink = { capture: (userId: string) => void forwarded.push(userId), flush: async () => {} };
-    const cached = onlyWhereUsageSharingIsOn(sink, prisma)!;
-    await asSystem(prisma).user.update({ where: { id: sharing }, data: { usageSharing: true } });
-    cached.capture(sharing, { name: "signed_in" });
-    await cached.flush();
-    expect(forwarded).toEqual([sharing]);
+    const gate = onlyWhereUsageSharingIsOn(
+      { capture: (userId) => void forwarded.push(userId), flush: async () => {} },
+      prisma,
+    )!;
 
-    await asSystem(prisma).user.update({ where: { id: sharing }, data: { usageSharing: false } });
-    cached.capture(sharing, { name: "signed_in" });
-    await cached.flush();
-    expect(forwarded).toEqual([sharing, sharing]);
+    gate.capture(silent, { name: "signed_in" });
+    await gate.flush();
+    expect(forwarded).toEqual([]);
+    await asSystem(prisma).user.update({ where: { id: silent }, data: { usageSharing: true } });
+    rememberUsageSharing(silent, true);
+    gate.capture(silent, { name: "signed_in" });
+    await gate.flush();
+    expect(forwarded).toEqual([silent]);
 
-    const fresh = onlyWhereUsageSharingIsOn(sink, prisma)!;
-    fresh.capture(sharing, { name: "signed_in" });
-    await fresh.flush();
-    expect(forwarded).toEqual([sharing, sharing]);
+    await asSystem(prisma).user.update({ where: { id: silent }, data: { usageSharing: false } });
+    rememberUsageSharing(silent, false);
+    gate.capture(silent, { name: "signed_in" });
+    await gate.flush();
+    expect(forwarded).toEqual([silent]);
   });
 });

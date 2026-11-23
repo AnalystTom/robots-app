@@ -18,10 +18,13 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const fieldId = useId();
   const { step: routeStep } = useParams();
+  const [sharingNeeded, setSharingNeeded] = useState(false);
   const linkedStep =
-    routeStep === "sharing" || routeStep === "survey" || routeStep === "model"
+    routeStep === "survey" || routeStep === "model"
       ? routeStep
-      : undefined;
+      : routeStep === "sharing" && sharingNeeded
+        ? "sharing"
+        : undefined;
   const [creatingBot, setCreatingBot] = useState(false);
   const [finished, setFinished] = useState<"sharing" | "survey" | null>(null);
   const step = creatingBot ? "bot" : finished ? "loading" : (linkedStep ?? "loading");
@@ -51,8 +54,10 @@ export function OnboardingPage() {
         const next = me.needsModel ? "model" : "bot";
         const survey = Boolean(me.needsSignupSurvey);
         setAfter({ survey, next });
-        if (!linkedStep) {
-          goTo(me.usageSharing?.needed ? "sharing" : survey ? "survey" : next);
+        const sharing = Boolean(me.usageSharing?.needed);
+        setSharingNeeded(sharing);
+        if (!linkedStep || (routeStep === "sharing" && !sharing)) {
+          goTo(sharing ? "sharing" : survey ? "survey" : next);
         }
       })
       .catch(() => {

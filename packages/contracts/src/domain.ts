@@ -1522,7 +1522,6 @@ export const MeSchema = z.object({
     .object({
       available: z.boolean(),
       enabled: z.boolean(),
-      answered: z.boolean(),
       needed: z.boolean(),
     })
     .optional(),

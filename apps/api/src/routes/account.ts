@@ -37,6 +37,7 @@ import {
   lockSpaceSettings,
   newestVoiceCredentialOrder,
   Prisma,
+  rememberUsageSharing,
   removeApprovalRule,
   runAsSystem,
   runAsTenant,
@@ -225,6 +226,7 @@ export function accountRoutes(ctx: RouterContext) {
             },
           });
         }
+        if (input.usageSharing !== undefined) rememberUsageSharing(userId, input.usageSharing);
         if (botAvatarSet !== undefined) {
           // Every bot of this user not pinned to another set follows the new default, in every
           // space they own bots in, announced like any edit so other devices redraw it.

@@ -116,7 +116,7 @@ async function usageSharingState(
     available &&
     !answered &&
     (await deps.prisma.bot.count({ where: { userId: actor.userId } })) === 0;
-  return { available, enabled: user.usageSharing, answered, needed };
+  return { available, enabled: user.usageSharing, needed };
 }
 
 function computerHostFor(
