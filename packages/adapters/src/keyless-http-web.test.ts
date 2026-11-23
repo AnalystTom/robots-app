@@ -324,20 +324,30 @@ describe("keyless HTTP web provider", () => {
     });
   });
 
+  const fastestMs = (run: () => void) =>
+    Math.min(
+      ...[0, 1, 2].map(() => {
+        const started = performance.now();
+        run();
+        return performance.now() - started;
+      }),
+    );
+
   it.each([
-    ["unclosed tags", "<a".repeat(60_000)],
-    ["unclosed scripts", "<script>".repeat(40_000)],
-    ["unclosed titles", "<title>".repeat(40_000)],
-    ["unclosed styles", "<style>".repeat(40_000)],
-    ["whitespace runs", `<p>a${" ".repeat(60_000)}b</p>`],
+    ["unclosed tags", (n: number) => "<a".repeat(n), 60_000],
+    ["unclosed scripts", (n: number) => "<script>".repeat(n), 40_000],
+    ["unclosed titles", (n: number) => "<title>".repeat(n), 40_000],
+    ["unclosed styles", (n: number) => "<style>".repeat(n), 40_000],
+    ["whitespace runs", (n: number) => `<p>a${" ".repeat(n)}b</p>`, 60_000],
     [
       "nested elements",
-      '<div><div><span><i></i></span><a href="/">x</a></div></div>'.repeat(5_000),
+      (n: number) => '<div><div><span><i></i></span><a href="/">x</a></div></div>'.repeat(n),
+      5_000,
     ],
-  ])("extracts a page full of %s in linear time", (_name, html) => {
-    const started = performance.now();
-    extractReadableText(html, "https://example.test/");
-    expect(performance.now() - started).toBeLessThan(1_500);
+  ])("extracts a page full of %s in linear time", (_name, page, size) => {
+    const full = fastestMs(() => extractReadableText(page(size), "https://example.test/"));
+    const half = fastestMs(() => extractReadableText(page(size / 2), "https://example.test/"));
+    expect(full / half).toBeLessThan(3);
   });
 
   it("keeps the text of a page too large for article extraction", () => {
