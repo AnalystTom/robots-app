@@ -107,6 +107,7 @@ export function useThreadHeader({
         onGroupSettings: () =>
           router.push({ pathname: "/group-settings", params: { groupId: groupId ?? "" } }),
         onInvite: canInvite && botId ? openInvite : undefined,
+        onNewChat: botId ? () => router.push("/new-bot") : undefined,
       }),
       ...(readOnly
         ? trailingHeaderOptions(t`Restore`, () => void restoreConversation(), restoring)

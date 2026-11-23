@@ -45,6 +45,7 @@ export function chatRouteHeader(
       onGroupSettings: () =>
         router.push({ pathname: "/group-settings", params: { groupId: groupId ?? "" } }),
       onInvite: canInvite && botId ? openInvite : undefined,
+      onNewChat: botId ? () => router.push("/new-bot") : undefined,
     }),
     ...threadHeaderLeft({ split, inboxHidden, foldActive, color }),
     // An archived chat offers Restore; the open chat gives it its action.
