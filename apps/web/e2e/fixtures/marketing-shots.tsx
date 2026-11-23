@@ -67,7 +67,6 @@ function inboxBot(): Bot {
   return {
     id: "bot-inbox",
     spaceId: "space-demo",
-    userId: "user-demo",
     name: "Inbox",
     title: "Sorts the demo inbox",
     description: "Files routine mail for ada@example.test and leaves the rest for review.",

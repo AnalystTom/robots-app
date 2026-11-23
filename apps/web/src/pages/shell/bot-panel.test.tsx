@@ -144,7 +144,6 @@ function bot(description = "Billing", overrides: Partial<Bot> = {}): Bot {
   return {
     id: "bot-1",
     spaceId: "space-1",
-    userId: "user-1",
     name: "Ada",
     title: "Helper",
     description,

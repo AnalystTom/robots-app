@@ -6,7 +6,6 @@ import type { MobileBot } from "./mobile-types";
 function bot(id = "bot-1"): Bot {
   return {
     id,
-    userId: "user-1",
     name: "Helper",
     preview: "",
     title: "",
