@@ -94,7 +94,12 @@ async function failRun(scenario: Scenario) {
   });
   const prisma = {
     spaceMember: { findUnique: vi.fn(async () => ({ id: "member-1" })) },
-    user: { findUnique: vi.fn(async () => null) },
+    user: {
+      findUnique: vi.fn(async () => null),
+      findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
+        where.id.in.map((id) => ({ id })),
+      ),
+    },
     run: {
       findUnique: vi.fn(async () => run),
       findUniqueOrThrow: vi.fn(async () => ({ ...run })),
@@ -152,6 +157,7 @@ async function failRun(scenario: Scenario) {
     },
     attempt: {
       create: vi.fn(async () => ({ id: "attempt-1" })),
+      findMany: vi.fn(async () => []),
       update: vi.fn(),
       updateMany: vi.fn(async () => ({ count: 1 })),
     },
@@ -646,7 +652,12 @@ function retryHarness(scenario: RetryScenario = {}) {
   };
   const prisma = {
     spaceMember: { findUnique: vi.fn(async () => ({ id: "member-1" })) },
-    user: { findUnique: vi.fn(async () => null) },
+    user: {
+      findUnique: vi.fn(async () => null),
+      findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
+        where.id.in.map((id) => ({ id })),
+      ),
+    },
     run: {
       findUnique: vi.fn(async () => failed),
       findFirst: vi.fn(async ({ select }: { select: { id?: boolean } }) =>

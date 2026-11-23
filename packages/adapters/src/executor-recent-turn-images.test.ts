@@ -175,7 +175,10 @@ async function runWithModel(
       findUnique: vi.fn(async () => ({ id: "member-1" })),
       findMany: vi.fn(async () => [{ userId: "user-1" }]),
     },
-    user: { findUnique: vi.fn(async () => null) },
+    user: {
+      findUnique: vi.fn(async () => null),
+      findMany: vi.fn(async () => []),
+    },
     run: {
       findUnique: vi.fn(async () => run),
       findUniqueOrThrow: vi.fn(async () => run),
@@ -221,6 +224,7 @@ async function runWithModel(
     },
     attempt: {
       create: vi.fn(async () => ({ id: "attempt-1" })),
+      findMany: vi.fn(async () => []),
       update: vi.fn(),
       updateMany: vi.fn(async () => ({ count: 1 })),
     },
