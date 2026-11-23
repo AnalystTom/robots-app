@@ -42,7 +42,6 @@ export default function UsageSharingStep() {
     >
       <Text style={styles.subtitle}>{t`Help make RoBots better for everyone`}</Text>
       <SettingsGroup
-        label={t`Share data`}
         footer={t`Share how you use RoBots, like which screens you open and whether a task finishes. Your messages, files and memory are never included. Crash reports are sent either way. You can change this anytime in Settings.`}
       >
         <SettingsSwitch
