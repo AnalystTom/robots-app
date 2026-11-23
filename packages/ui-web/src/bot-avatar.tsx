@@ -18,6 +18,7 @@ import {
   organicAvatarPath,
   resolvePersonaColorDef,
   robotCharacterDataUri,
+  robotLookForIdentity,
   SHIPPED_BOT_AVATAR_EYES,
   SHIPPED_BOT_AVATAR_SHAPE_KEYS,
   SHIPPED_BOT_AVATAR_SHAPES,
@@ -102,7 +103,7 @@ export interface BotAvatarProps {
 }
 
 export const BotAvatar = memo(function BotAvatar({
-  color,
+  color: storedColor,
   avatarSet,
   activity,
   size = 36,
@@ -112,6 +113,7 @@ export const BotAvatar = memo(function BotAvatar({
 }: BotAvatarProps) {
   const id = useId().replace(/[^a-zA-Z0-9-_]/g, "");
   const isWorking = ACTIVE_RUN_STATUSES.some((s) => s === status);
+  const color = useMemo(() => robotLookForIdentity(storedColor, identity), [storedColor, identity]);
 
   const parsed = useMemo(() => parseBotAvatar(color, identity), [color, identity]);
   const effectiveId = identity || parsed.color || "agent";

@@ -1,6 +1,11 @@
 import { isBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
-import { ROBOT_PRESETS, robotPresetOf, robotPresetValue } from "./robot-presets.js";
+import {
+  ROBOT_PRESETS,
+  robotLookForIdentity,
+  robotPresetOf,
+  robotPresetValue,
+} from "./robot-presets.js";
 
 const EXPECTED_ROBOTS = [
   ["assistant", "robot:green.antenna.happy.vest.none"],
@@ -41,5 +46,30 @@ describe("robot presets", () => {
     expect(robotPresetOf({ ...chef, colour: "blue" })).toBeNull();
     expect(robotPresetOf({ ...chef, face: "monocle" })).toBeNull();
     expect(robotPresetOf(parseRobotCharacter("robot:teal.top-hat.hearts.cape.none")!)).toBeNull();
+  });
+});
+
+describe("robotLookForIdentity", () => {
+  it("keeps photos and robots as saved", () => {
+    const photo = "data:image/png;base64,AAAA";
+    expect(robotLookForIdentity(photo, "bot-1")).toBe(photo);
+    expect(robotLookForIdentity(robotPresetValue("chef"), "bot-1")).toBe(robotPresetValue("chef"));
+  });
+
+  it.each([
+    ["a plain colour", "#F97316"],
+    ["an organic shape", "#8B5CF6::shape_3"],
+  ])("gives %s the same preset robot every time", (_name, saved) => {
+    const first = robotLookForIdentity(saved, "bot-1");
+    expect(first).toBe(robotLookForIdentity(saved, "bot-1"));
+    expect(parseRobotCharacter(first)).not.toBeNull();
+    expect(ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id))).toContain(first);
+  });
+
+  it("spreads different bots across the presets", () => {
+    const looks = new Set(
+      Array.from({ length: 60 }, (_, index) => robotLookForIdentity("#F97316", `bot-${index}`)),
+    );
+    expect(looks.size).toBeGreaterThan(8);
   });
 });

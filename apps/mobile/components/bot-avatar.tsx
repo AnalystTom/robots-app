@@ -23,6 +23,7 @@ import {
   organicAvatarEyeTilt,
   organicAvatarPath,
   robotCharacterSvg,
+  robotLookForIdentity,
   SHIPPED_BOT_AVATAR_EYES,
   SHIPPED_BOT_AVATAR_VIEWBOX,
   usesLogoAvatar,
@@ -128,7 +129,8 @@ export interface BotAvatarProps {
   pokeable?: boolean;
 }
 
-export const BotAvatar = memo(function BotAvatar(props: BotAvatarProps) {
+export const BotAvatar = memo(function BotAvatar(stored: BotAvatarProps) {
+  const props = { ...stored, color: robotLookForIdentity(stored.color, stored.identity ?? "") };
   if (usesLogoAvatar(props)) {
     return <RobotsBotAvatar {...props} />;
   }

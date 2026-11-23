@@ -78,4 +78,14 @@ describe("robotCharacterSvg", () => {
       robotCharacterDataUri(listed("detective")),
     );
   });
+
+  it.each([
+    ["a ghost-style hex colour", "#F97316", "robots"],
+    ["an organic shape", "#8B5CF6::shape_3", "organic"],
+  ])("draws %s as a preset robot in the notification", (_name, color, avatarSet) => {
+    const source = notificationAvatarSource({ id: "b1", color, avatarSet });
+    const robotUris = ROBOT_PRESETS.map((preset) => robotCharacterDataUri(preset.look));
+    expect(robotUris).toContain(source);
+    expect(notificationAvatarSource({ id: "b1", color, avatarSet })).toBe(source);
+  });
 });
