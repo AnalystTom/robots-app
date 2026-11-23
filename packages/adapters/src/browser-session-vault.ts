@@ -27,7 +27,7 @@ import {
   vaultFields,
 } from "./bot-secrets.js";
 import { toComputerRef } from "./computer-support.js";
-import { sandboxKindForBot } from "./host-aware-sandbox.js";
+import { sandboxKindForBot } from "./sandbox-kind-for-bot.js";
 import { persistPreparedSecret } from "./secret-persistence.js";
 import { openVaultValue, sealVaultValue } from "./vault-values.js";
 

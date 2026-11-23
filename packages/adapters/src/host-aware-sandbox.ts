@@ -31,11 +31,6 @@ import { HostComputerSandbox } from "./host-computer-sandbox.js";
 import type { SandboxProviderOptions } from "./sandbox-factory.js";
 import { createSandboxProvider } from "./sandbox-factory.js";
 
-export function sandboxKindForBot(envKind: string, computerHost: string | null | undefined) {
-  if (envKind === "docker" && computerHost === "this-mac") return "desktop";
-  return envKind;
-}
-
 export async function createRunSandbox(
   kind: string,
   opts: SandboxProviderOptions & {
