@@ -72,14 +72,10 @@ export type ColorTokens = {
   pageTile: string;
   pageTileEdge: string;
   pageTileLine: string;
-  /** Paper & Ink's one accent: focus ring, selected-row dot. Text on it is `brandForeground`. */
   brand: string;
   brandForeground: string;
-  /** Selected-row fill and info chip. */
   brandSoft: string;
-  /** Brand-coloured text that must read as body text on paper. */
   brandInk: string;
-  /** Chip backgrounds for Allow, Ask and Deny. */
   successSoft: string;
   warningSoft: string;
   destructiveSoft: string;

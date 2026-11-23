@@ -219,12 +219,13 @@ describe("tokens.css", () => {
     expect(onDisk).toBe(renderTokensCss());
   });
 
-  it("renders the Paper & Ink slots and radius ladder", () => {
+  it("renders the Paper & Ink brand and radius ladder", () => {
     const css = renderTokensCss();
-    expect(css).toContain(`--brand: ${webLightTokens.brand.toLowerCase()};`);
-    expect(css).toContain(`--brand: ${webDarkTokens.brand.toLowerCase()};`);
-    expect(css).toContain(`--shadow-card: ${webLightTokens.shadowCard};`);
+    expect(css).toContain("--brand: #15788a;");
+    expect(css).toContain("--brand: #3aa6b7;");
     expect(css).toContain("--radius-ctl: 10px;");
+    expect(css).toContain("--radius-card: 16px;");
+    expect(css).toContain("--radius-sheet: 20px;");
     expect(css).toContain("--radius-pill: 999px;");
   });
 
