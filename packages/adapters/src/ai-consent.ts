@@ -8,7 +8,6 @@ const PRIVACY_URLS: Record<string, string> = {
   cursor: "https://cursor.com/privacy",
   openrouter: "https://openrouter.ai/privacy",
   openai: "https://openai.com/policies/privacy-policy/",
-  "openai-codex": "https://openai.com/policies/privacy-policy/",
   anthropic: "https://www.anthropic.com/legal/privacy",
   google: "https://policies.google.com/privacy",
   "vercel-ai-gateway": "https://vercel.com/legal/privacy-policy",
@@ -21,32 +20,62 @@ const PRIVACY_URLS: Record<string, string> = {
   hindsight: "https://vectorize.io/privacy",
 };
 
-/** Never expose endpoint paths, query parameters, user info, or credentials in a disclosure. */
+const RECIPIENT_COMPANY: Record<string, string> = {
+  "openai-codex": "openai",
+};
+
+const GATEWAYS = new Set(["openrouter", "vercel-ai-gateway"]);
+
+export type AiRecipientGrant = Omit<AiRecipient, "allowed"> & { grantKeys: string[] };
+
 export function aiRecipient(input: {
   provider: string;
   use: AiDataUse;
   modelId?: string;
   baseUrl?: string;
-}): Omit<AiRecipient, "allowed"> | null {
+}): AiRecipientGrant | null {
   if (input.provider === "scripted") return null;
   const endpoint = input.baseUrl ?? (input.provider === "local" ? localBaseUrl() : undefined);
   const origin = endpoint ? new URL(endpoint).origin : undefined;
-  const name = recipientName(input.provider, input.use);
-  // Bind custom connections to the full endpoint without exposing private URL components.
-  const key = createHash("sha256")
-    .update(JSON.stringify([input.use, input.provider, endpoint ?? "", input.modelId ?? ""]))
-    .digest("hex");
+  const company = RECIPIENT_COMPANY[input.provider] ?? input.provider;
+  const name = recipientName(company, input.use);
+  const key = grantKey(input.use, company, endpoint, "");
   return {
     key,
     name: origin ? `${name} (${origin})` : name,
     use: input.use,
-    detail: ["openrouter", "vercel-ai-gateway"].includes(input.provider)
-      ? input.modelId
-        ? `${input.modelId}, forwarded to its provider`
-        : "Forwards to model providers"
-      : (input.modelId ?? ""),
-    privacyUrl: PRIVACY_URLS[input.provider],
+    detail: GATEWAYS.has(company) ? "Forwards to model providers" : "",
+    privacyUrl: PRIVACY_URLS[company],
+    grantKeys: [
+      key,
+      ...new Set(
+        companyProviders(company).flatMap((provider) =>
+          [input.modelId, ...catalogModelIds(provider)].flatMap((modelId) =>
+            modelId ? [grantKey(input.use, provider, endpoint, modelId)] : [],
+          ),
+        ),
+      ),
+    ],
   };
+}
+
+function grantKey(use: AiDataUse, provider: string, endpoint: string | undefined, modelId: string) {
+  return createHash("sha256")
+    .update(JSON.stringify([use, provider, endpoint ?? "", modelId]))
+    .digest("hex");
+}
+
+function companyProviders(company: string) {
+  return [
+    company,
+    ...Object.entries(RECIPIENT_COMPANY).flatMap(([provider, owner]) =>
+      owner === company ? [provider] : [],
+    ),
+  ];
+}
+
+function catalogModelIds(provider: string) {
+  return listPiCatalog().flatMap((entry) => (entry.provider === provider ? [entry.id] : []));
 }
 
 function recipientName(provider: string, use: AiDataUse) {

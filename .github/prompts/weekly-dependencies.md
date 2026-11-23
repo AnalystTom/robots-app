@@ -4,7 +4,7 @@ Use npm-check-updates to inspect the workspaces, review relevant release notes,
 and apply worthwhile patch releases. You own the investigation, edits, lockfile,
 compatibility fixes, and validation; no dependency list is prescribed.
 
-Preserve intentional compatibility constraints: TypeScript 6 in Expo/Astro,
+Preserve intentional compatibility constraints: TypeScript 6 in Expo,
 Expo's supported React/native versions, and patched Electron Builder. Leave the
 pi model-catalog packages to the existing model-catalog-bump workflow. Defer
 major/minor migrations and anything that needs a newer supported Node baseline.

@@ -298,7 +298,7 @@ describe("createBackgroundJobHandlers", () => {
       userModelPreference: { findFirst: vi.fn(async () => null) },
       spaceSettingOverride: { findUnique: vi.fn(async () => null) },
       userModelRoleChoice: { findMany: vi.fn(async () => []) },
-      userModelCredential: { findFirst: vi.fn(async () => null) },
+      userModelCredential: { findMany: async () => [], findFirst: vi.fn(async () => null) },
       deploymentSettings: { findUnique: vi.fn(async () => null) },
     } as unknown as PrismaClient;
     const executor = createRunExecutor({
@@ -324,7 +324,7 @@ describe("createBackgroundJobHandlers", () => {
       userModelPreference: { findFirst: vi.fn(async () => null) },
       spaceSettingOverride: { findUnique: vi.fn(async () => null) },
       userModelRoleChoice: { findMany: vi.fn(async () => []) },
-      userModelCredential: { findFirst: vi.fn(async () => null) },
+      userModelCredential: { findMany: async () => [], findFirst: vi.fn(async () => null) },
       deploymentSettings: {
         findUnique: vi.fn(async () => ({
           defaultModelProvider: "local",

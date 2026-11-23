@@ -34,6 +34,7 @@ describe("host-aware sandbox", () => {
       prisma: {
         deploymentSettings: { findUnique: vi.fn(async () => ({ computerHost: "this-mac" })) },
       } as unknown as PrismaClient,
+      hostComputerAccess: { adminEmails: [], singleAccount: true },
     });
     await expect(sandbox.provision({ botId: "host", homePath: "/unused" }, ctx)).rejects.toThrow(
       "requires the desktop app",

@@ -239,4 +239,7 @@ export const PL_MESSAGES: Record<string, string> = {
   "Waiting for Docker…": "Czekam na Dockera…",
   "Docker is installed but not running. Start the Docker service to continue.":
     "Docker jest zainstalowany, ale nie działa. Uruchom usługę Docker, aby kontynuować.",
+  "Let other devices open RoBots?": "Pozwolić innym urządzeniom otwierać RoBots?",
+  "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.":
+    "Urządzenia w Twojej sieci będą mogły połączyć się z RoBots na tym komputerze pod adresem {address}. Każde z nich nadal musi się zalogować lub sparować.",
 };

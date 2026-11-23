@@ -246,6 +246,23 @@ it.each(["in", "up"])("offers a provider before the email form in %s mode", asyn
   expect(input("Email")).toBeNull();
 });
 
+it("signs up only through providers when email signup is off, and keeps email sign-in", async () => {
+  route.mode = "up";
+  vi.mocked(passwordResetCapabilities).mockResolvedValue({
+    ...capabilities,
+    sso: exampleSso,
+    emailSignup: false,
+  });
+  await render();
+  expect(button("Continue with Example")).toBeDefined();
+  expect(button("Continue with email")).toBeUndefined();
+  expect(input("Email")).toBeNull();
+  expect(host.textContent).toContain("Create your account");
+  await press("Sign in");
+  await press("Continue with email");
+  expect(input("Email")).not.toBeNull();
+});
+
 it.each(["in", "up"])(
   "shows one primary SSO action without credentials in SSO-only %s mode",
   async (mode) => {

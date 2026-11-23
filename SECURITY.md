@@ -2,7 +2,7 @@
 
 ## Reporting vulnerabilities
 
-Email **security@tryrobots.app** only. Do not open public GitHub issues for security bugs.
+Email **hello@tryrobots.app** only. Do not open public GitHub issues for security bugs.
 
 Please include:
 
@@ -14,7 +14,8 @@ We will acknowledge your report and work on a fix. Please do not file a public i
 
 ## Other contact
 
-- Bugs and support questions: [GitHub issues](https://github.com/AnalystTom/robots-app/issues)
+- General support: **hello@tryrobots.app**
+- Maintainer: **hello@tryrobots.app**
 
 ## Scope
 

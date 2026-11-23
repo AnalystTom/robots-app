@@ -25,7 +25,8 @@ vi.mock("@lingui/react/macro", () => ({
   useLingui: () => ({ t: (parts: TemplateStringsArray) => parts.join("") }),
 }));
 vi.mock("./lib/bootstrap", () => ({
-  getLabs: () => (capability.enabled ? ["board"] : []),
+  // Labs not yet loaded until enabled, as on a first load before bootstrap answers.
+  getLoadedLabs: () => (capability.enabled ? ["board"] : null),
   subscribeLabs: () => () => {},
 }));
 vi.mock("./lib/auth", () => ({
@@ -115,7 +116,8 @@ it("loads the board chunk only after bootstrap enables the route", async () => {
   );
   try {
     await act(async () => root.render(render()));
-    expect(container.textContent).toBe("Shell");
+    // Waits for Labs instead of opening /app/board as a chat.
+    expect(container.textContent).not.toBe("Shell");
     expect(capability.screen).toHaveBeenCalledExactlyOnceWith({ screen: "board", surface: "web" });
     expect(capability.boardLoaded).not.toHaveBeenCalled();
     capability.enabled = true;
@@ -226,7 +228,7 @@ function Location() {
 }
 
 it.each([
-  ["/app/today?thread=t-1", "/sign-in?next=%2Fapp%2Ftoday%3Fthread%3Dt-1", "Auth in"],
+  ["/app/bot-1?thread=t-1", "/sign-in?next=%2Fapp%2Fbot-1%3Fthread%3Dt-1", "Auth in"],
   ["/invite/token-1", "/sign-up?next=%2Finvite%2Ftoken-1", "Auth up"],
 ])("sends a signed-out visit to %s through auth with its destination", async (path, auth, page) => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -259,14 +261,33 @@ it("returns a signed-in visit to sign-in to the app page it came from", async ()
   try {
     await act(async () =>
       root.render(
-        <MemoryRouter initialEntries={["/sign-in?next=%2Fapp%2Ftoday%3Fthread%3Dt-1"]}>
+        <MemoryRouter initialEntries={["/sign-in?next=%2Fapp%2Fbot-1%3Fthread%3Dt-1"]}>
           <App />
           <Location />
         </MemoryRouter>,
       ),
     );
-    expect(container.querySelector("output")?.textContent).toBe("/app/today?thread=t-1");
-    expect(container.textContent).toBe("Shell/app/today?thread=t-1");
+    expect(container.querySelector("output")?.textContent).toBe("/app/bot-1?thread=t-1");
+    expect(container.textContent).toBe("Shell/app/bot-1?thread=t-1");
+  } finally {
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
+  }
+});
+
+it("sends an old Today link to the home view", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  try {
+    await act(async () =>
+      root.render(
+        <MemoryRouter initialEntries={["/app/today"]}>
+          <App />
+        </MemoryRouter>,
+      ),
+    );
+    expect(container.textContent).toBe("Shell");
   } finally {
     await act(async () => root.unmount());
     vi.unstubAllGlobals();

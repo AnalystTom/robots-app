@@ -59,6 +59,8 @@ function AddressField({
       );
       // The Vault lists every bot's address.
       void queryClient.invalidateQueries({ queryKey: queries.bots.emailAddresses.queryKey() });
+      // The Email page lists the bots that have one.
+      void queryClient.invalidateQueries({ queryKey: queries.email.mailboxes.queryKey() });
     } catch (error) {
       setClaimError(errorText(error, t`That address isn't available`));
     } finally {

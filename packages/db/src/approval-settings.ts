@@ -1,10 +1,9 @@
-import type { SettingsScope } from "@robots/contracts";
+import type { ActionRule, SettingsScope } from "@robots/contracts";
 import type { PrismaClient } from "./client.js";
 import { Prisma } from "./client.js";
 import { lockSpaceSettings, settingsTarget } from "./space-settings.js";
 
 type Scope = { userId: string; spaceId: string };
-/** A write runs in a transaction: it locks the member's settings before picking a copy. */
 type ConfirmationsTx = ConfirmationsClient & Pick<Prisma.TransactionClient, "$queryRaw">;
 type ConfirmationsClient = Pick<
   PrismaClient,
@@ -15,7 +14,6 @@ type ConfirmationsClient = Pick<
   | "userActionAutoReviewPreference"
 >;
 
-/** A stored effect's batch actions, or undefined when the effect is not a batch. */
 export function storedBatchActions(
   value: Prisma.JsonValue | null | undefined,
 ): string[] | undefined {
@@ -26,10 +24,6 @@ export function storedBatchActions(
 export type ApprovalRuleInput = { effect: string; matchKind: string; matchValue: string };
 export type AutoReviewPreference = { enabled: boolean; skipApprovals: boolean };
 
-/**
- * Approval rules and auto review are confirmations: the account's copy, or the Space's
- * override. Every call reads or writes the copy that applies unless it names one.
- */
 function confirmationsTarget(prisma: ConfirmationsClient, scope: Scope, requested?: SettingsScope) {
   return settingsTarget(prisma, scope, "confirmations", requested);
 }
@@ -48,11 +42,6 @@ export async function listApprovalRules(
       });
 }
 
-/**
- * Saves a rule once and drops any other effect on the same match in the same copy, so a match
- * has one rule. Matching ignores case, so the replacement does too; the lock keeps concurrent
- * saves of different effects from both landing. Runs inside the caller's transaction.
- */
 export async function saveApprovalRule(
   tx: ConfirmationsTx,
   scope: Scope,
@@ -66,8 +55,6 @@ export async function saveApprovalRule(
   await tx.$queryRaw(Prisma.sql`
     SELECT pg_advisory_xact_lock(hashtextextended(${`approval-rule:${owner}:${rule.matchKind}:${value}`}, 0))::text AS "lock"
   `);
-  // One rule per match, whatever its effect or spelling. Compared here, not with Prisma's
-  // insensitive mode: that is ILIKE, where "_" is a wildcard.
   const replaced = (rows: Array<{ id: string; effect: string; matchValue: string }>) =>
     rows
       .filter((row) => row.matchValue.toLowerCase() === value)
@@ -133,7 +120,6 @@ export async function findAutoReviewPreference(
       });
 }
 
-/** Updates the given fields; a first save fills the rest from `defaults`. */
 export async function saveAutoReviewPreference(
   prisma: ConfirmationsTx,
   scope: Scope,
@@ -157,6 +143,51 @@ export async function saveAutoReviewPreference(
       where: { spaceId_userId: { spaceId: scope.spaceId, userId: scope.userId } },
       create: { spaceId: scope.spaceId, userId: scope.userId, ...create },
       update,
+    });
+  }
+}
+
+export async function listActionRules(
+  prisma: ConfirmationsClient,
+  scope: Scope,
+  requested?: SettingsScope,
+): Promise<unknown[]> {
+  const select = { actionRules: true } as const;
+  const row =
+    (await confirmationsTarget(prisma, scope, requested)) === "account"
+      ? await prisma.userActionAutoReviewPreference.findUnique({
+          where: { userId: scope.userId },
+          select,
+        })
+      : await prisma.actionAutoReviewPreference.findUnique({
+          where: { spaceId_userId: { spaceId: scope.spaceId, userId: scope.userId } },
+          select,
+        });
+  const stored = row?.actionRules;
+  if (stored == null) return [];
+  return Array.isArray(stored) ? stored : [stored];
+}
+
+export async function saveActionRules(
+  prisma: ConfirmationsTx,
+  scope: Scope,
+  rules: readonly ActionRule[],
+  requested?: SettingsScope,
+): Promise<void> {
+  const actionRules = rules as unknown as Prisma.InputJsonValue;
+  const create = { enabled: true, skipApprovals: false, actionRules };
+  await lockSpaceSettings(prisma, scope);
+  if ((await confirmationsTarget(prisma, scope, requested)) === "account") {
+    await prisma.userActionAutoReviewPreference.upsert({
+      where: { userId: scope.userId },
+      create: { userId: scope.userId, ...create },
+      update: { actionRules },
+    });
+  } else {
+    await prisma.actionAutoReviewPreference.upsert({
+      where: { spaceId_userId: { spaceId: scope.spaceId, userId: scope.userId } },
+      create: { spaceId: scope.spaceId, userId: scope.userId, ...create },
+      update: { actionRules },
     });
   }
 }

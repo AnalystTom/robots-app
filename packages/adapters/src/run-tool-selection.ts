@@ -2,6 +2,7 @@ import {
   disabledBuiltinToolSet,
   FLEET_TOOL_NAMES,
   FLEET_WRITE_TOOL_NAMES,
+  isMacAppTool,
 } from "@robots/contracts";
 import { BACKGROUND_HELPER_TRIGGER, isBackgroundRunTrigger, isOwnerStartedRun } from "@robots/core";
 import { builtinAgentTools } from "./builtin.tool-definition.js";
@@ -131,6 +132,7 @@ export function selectBuiltinToolsForRun(options: {
   userComputer?: boolean;
   /** Their connected desktop can look at and drive its apps. */
   userComputerScreen?: boolean;
+  macApps?: boolean;
   /** The bot has an email address and this run is its owner's own, outside any group or channel. */
   emailInbox?: boolean;
   /** This server receives email and the bot has no address yet. */
@@ -196,6 +198,7 @@ export function selectBuiltinToolsForRun(options: {
       (emailClaimOffered || tool.name !== "claim_email_address") &&
       (options.userComputer || tool.name !== "user_computer_shell") &&
       (options.userComputerScreen || !USER_COMPUTER_SCREEN_TOOLS.has(tool.name)) &&
+      (options.macApps || !isMacAppTool(tool.name)) &&
       // Already on a call, or reached through a messaging channel that cannot ring.
       ((options.phoneCallsEnabled &&
         !options.groupId &&

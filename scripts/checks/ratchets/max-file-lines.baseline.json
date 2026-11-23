@@ -28,8 +28,6 @@
   "apps/web/src/pages/ModelSettingsOverlay.test.tsx": 1,
   "apps/web/src/pages/Shell.tsx": 1,
   "apps/web/src/pages/shell/composer.test.tsx": 1,
-  "apps/www/src/components/ProductDemo.tsx": 1,
-  "apps/www/src/styles/global.css": 1,
   "infra/sandboxes/computer/test_focus_or_launch.py": 1,
   "infra/sandboxes/computer/test_page_browser.py": 1,
   "infra/sandboxes/supervisor/src/computer-loopback.test.ts": 1,

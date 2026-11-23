@@ -4,12 +4,18 @@ import type {
   CapabilityInstall,
   Connection,
   ConnectionCatalogItem,
+  MacAppConnection,
   McpServer,
   McpServerConnection,
   McpSourcePreset,
   PluginMarketplaceEntry,
 } from "@robots/contracts";
-import { mcpServerConnection, mcpServerNeedsSignIn, SUBMIT_PLUGIN_URL } from "@robots/contracts";
+import {
+  MAC_APP_CONNECTIONS,
+  mcpServerConnection,
+  mcpServerNeedsSignIn,
+  SUBMIT_PLUGIN_URL,
+} from "@robots/contracts";
 import type { PluginCategory } from "@robots/core";
 import {
   buildFeaturedConnectorTiles,
@@ -24,6 +30,7 @@ import {
   matchesWordPrefixes,
   OTHER_PLUGINS,
 } from "@robots/core";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import type { NativeStackNavigationOptions } from "expo-router";
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -51,6 +58,7 @@ import type { ConnectionTool } from "../../components/integration-detail";
 import { IntegrationDetail } from "../../components/integration-detail";
 import { PLUGIN_PAGE_SIZE, PluginSection } from "../../components/integration-plugins";
 import { createIntegrationsStyles, LOGO_SIZE } from "../../components/integrations-styles";
+import { MacAppDetail } from "../../components/mac-app-detail";
 import { MenuPicker } from "../../components/menu-picker";
 import { NativeActionButton } from "../../components/native-action-button";
 import { NativeSymbol } from "../../components/native-symbol";
@@ -79,13 +87,13 @@ import {
   pluginCategories,
   pluginParams,
 } from "../../lib/plugin-marketplace";
+import { queryClient, resetRpcQueries, rpcQuery } from "../../lib/query";
 import { useSideInsets } from "../../lib/side-insets";
 import { errorText } from "../../lib/user-error";
 
 export default function Integrations() {
   const sideInsets = useSideInsets();
   const router = useRouter();
-  // A merged brand's plugin page sends people back here to manage the app's accounts.
   const { app: appToOpen } = useLocalSearchParams<{ app?: string }>();
   const navigation = useNavigation();
   const styles = useThemedStyles(createIntegrationsStyles);
@@ -135,10 +143,22 @@ export default function Integrations() {
   const [catalogReady, setCatalogReady] = useState(false);
   const [labelDrafts, setLabelDrafts] = useState<Record<string, string>>({});
   const [detailKey, setDetailKey] = useState<{ connectorId: string; slug: string } | null>(null);
-  const [tools, setTools] = useState<ConnectionTool[]>([]);
-  const [toolsLoading, setToolsLoading] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(true);
-  const [toolsTick, setToolsTick] = useState(0);
+  const [macApp, setMacApp] = useState<MacAppConnection | null>(null);
+  const toolsQuery = useQuery(
+    detailKey
+      ? rpcQuery("connections/tools", {
+          connectorId: detailKey.connectorId,
+          provider: detailKey.slug,
+        })
+      : { queryKey: ["connections/tools", "closed"], queryFn: skipToken },
+    queryClient,
+  );
+  const tools: ConnectionTool[] = (detailKey && toolsQuery.data) || [];
+  const toolsLoading = detailKey !== null && toolsQuery.isPending && toolsQuery.isFetching;
+  const lastBotQuery = useQuery({ queryKey: ["last-bot"], queryFn: loadLastBotId }, queryClient);
+  const botsQuery = useQuery(rpcQuery("bots/list"), queryClient);
+  const activeBotId = lastBotId || lastBotQuery.data || "";
+  const botName = botsQuery.data?.find((bot) => bot.id === activeBotId)?.name ?? t`Your bot`;
   const connectionAttempt = useRef<AbortController | null>(null);
   const oauthBrowserOpen = useRef(false);
 
@@ -166,7 +186,6 @@ export default function Integrations() {
   function saveSnapshot(next: IntegrationsSnapshot) {
     const scope = cacheScope.current;
     if (!mounted.current || !scope || !isIntegrationsScopeCurrent(scope)) return;
-    // A mutation invalidates any earlier background refresh.
     refreshGeneration.current += 1;
     applySnapshot(next);
     writeIntegrationsCache(scope, next);
@@ -226,7 +245,6 @@ export default function Integrations() {
     () => browsablePlugins(pluginEntries, catalog),
     [pluginEntries, catalog],
   );
-  // Managed apps standing in for a plugin keep that plugin's category, so a category lists them too.
   const mergedBrands = catalog.flatMap((item) => {
     const entry = pluginForApp.get(catalogItemKey(item));
     return entry ? [{ item, entry }] : [];
@@ -357,7 +375,6 @@ export default function Integrations() {
         }
       })
       .catch(() => undefined);
-    // A server without presets (or a failed request) offers none, never another server's.
     const applyPresets = (presets: McpSourcePreset[]) => {
       if (
         mounted.current &&
@@ -387,7 +404,6 @@ export default function Integrations() {
     setCatalogError(null);
     let next: IntegrationsSnapshot;
     try {
-      // The catalog call reconciles connection rows, so list them after it.
       const catalog = await rpc("connections/catalog");
       const connections = await rpc("connections/list");
       next = { catalog, connections };
@@ -452,7 +468,6 @@ export default function Integrations() {
   );
 
   useEffect(() => {
-    // The OAuth callback lands in the browser, so refresh once the user comes back.
     const subscription = AppState.addEventListener("change", (state) => {
       if (state !== "active" || !oauthBrowserOpen.current || !mounted.current) return;
       oauthBrowserOpen.current = false;
@@ -460,32 +475,6 @@ export default function Integrations() {
     });
     return () => subscription.remove();
   }, []);
-
-  useEffect(() => {
-    if (!detailKey) {
-      setTools([]);
-      setToolsLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setToolsLoading(true);
-    void rpc("connections/tools", {
-      connectorId: detailKey.connectorId,
-      provider: detailKey.slug,
-    })
-      .then((list) => {
-        if (!cancelled) setTools(list);
-      })
-      .catch(() => {
-        if (!cancelled) setTools([]);
-      })
-      .finally(() => {
-        if (!cancelled) setToolsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [detailKey, toolsTick]);
 
   useEffect(() => {
     if (!appToOpen || !catalogReady) return;
@@ -554,7 +543,6 @@ export default function Integrations() {
     );
   }
 
-  /** What this account already has: apps it can reach, then skills it follows. */
   function renderSavedServer(server: McpServer) {
     const state = mcpServerConnection(server);
     const tokens = mobileTokens();
@@ -678,13 +666,11 @@ export default function Integrations() {
 
   function openDetail(item: ConnectionCatalogItem) {
     setCatalogError(null);
-    setToolsOpen(true);
     setDetailKey({ connectorId: item.connectorId, slug: item.slug });
   }
 
   function closeDetail() {
     setDetailKey(null);
-    setTools([]);
   }
 
   function accountsFor(item: Pick<ConnectionCatalogItem, "connectorId" | "slug">) {
@@ -728,7 +714,7 @@ export default function Integrations() {
         if (result.row) updateAccount(result.row);
         void notifyAppConnected(item, isCurrent);
         await retryRefresh(isCurrent);
-        if (isCurrent()) setToolsTick((tick) => tick + 1);
+        if (isCurrent()) void resetRpcQueries("connections/tools");
         return;
       }
       Alert.alert(
@@ -756,7 +742,7 @@ export default function Integrations() {
       if (!isCurrent()) return;
       updateAccount({ ...row, status: "revoked" });
       await retryRefresh(isCurrent);
-      if (isCurrent()) setToolsTick((tick) => tick + 1);
+      if (isCurrent()) void resetRpcQueries("connections/tools");
     } catch (reason) {
       if (!isCurrent()) return;
       setCatalogError(errorText(reason, t`Could not revoke connection`));
@@ -834,7 +820,6 @@ export default function Integrations() {
     setPending(`oauth:${serverId}`);
     setMcpError(null);
     try {
-      // The API picks the registered web callback; native clients cannot supply one.
       const result = await rpc("mcp/oauth/begin", { serverId });
       if (!isCurrent()) return;
       if (result.status === "authorization_required") {
@@ -939,7 +924,6 @@ export default function Integrations() {
   }
 
   function renderCatalogTile(item: ConnectionCatalogItem, label: string) {
-    const connected = itemConnected(item);
     const brandPlugin = pluginForApp.get(catalogItemKey(item));
     const body = (
       <>
@@ -953,24 +937,17 @@ export default function Integrations() {
       </>
     );
     const tileStyle = [styles.row, catalogColumns === 2 ? styles.catalogCell : null];
-    if (connected || brandPlugin) {
-      return (
-        <Pressable
-          key={catalogItemKey(item)}
-          accessibilityRole="button"
-          onPress={() =>
-            brandPlugin ? openPlugin(managedPluginParams(brandPlugin, item)) : openDetail(item)
-          }
-          style={tileStyle}
-        >
-          {body}
-        </Pressable>
-      );
-    }
     return (
-      <View key={catalogItemKey(item)} style={tileStyle}>
+      <Pressable
+        key={catalogItemKey(item)}
+        accessibilityRole="button"
+        onPress={() =>
+          brandPlugin ? openPlugin(managedPluginParams(brandPlugin, item)) : openDetail(item)
+        }
+        style={tileStyle}
+      >
         {body}
-      </View>
+      </Pressable>
     );
   }
 
@@ -1098,9 +1075,26 @@ export default function Integrations() {
                 style={({ pressed }) => [styles.row, pressed && styles.pressed]}
               >
                 <BotTemplateIcon size={LOGO_SIZE} />
-                <Text style={[styles.title, styles.grow]}>{t`Templates`}</Text>
+                <Text style={[styles.title, styles.grow]}>{t`RoBot templates`}</Text>
                 <Chevron />
               </Pressable>
+            ) : null}
+            {!detailItem && !macApp && !query.trim() ? (
+              <View testID="mac-apps" style={styles.catalogStack}>
+                <Text style={styles.section}>{t`On your Mac`}</Text>
+                {MAC_APP_CONNECTIONS.map((app) => (
+                  <Pressable
+                    key={app.id}
+                    accessibilityRole="button"
+                    onPress={() => setMacApp(app)}
+                    style={styles.row}
+                  >
+                    <ConnectorIcon name={app.name} size={LOGO_SIZE} />
+                    <Text style={[styles.title, styles.grow]}>{app.name}</Text>
+                    <Chevron />
+                  </Pressable>
+                ))}
+              </View>
             ) : null}
             {!detailItem && savedServerMatches.length ? (
               <View testID="connected-apps" style={styles.catalogStack}>
@@ -1120,7 +1114,9 @@ export default function Integrations() {
               </View>
             ) : null}
 
-            {detailItem ? (
+            {macApp ? (
+              <MacAppDetail app={macApp} botName={botName} onBack={() => setMacApp(null)} />
+            ) : detailItem ? (
               <IntegrationDetail
                 item={detailItem}
                 accounts={accountsFor(detailItem)}
@@ -1129,8 +1125,7 @@ export default function Integrations() {
                 setLabelDrafts={setLabelDrafts}
                 tools={tools}
                 toolsLoading={toolsLoading}
-                toolsOpen={toolsOpen}
-                setToolsOpen={setToolsOpen}
+                botName={botName}
                 onBack={closeDetail}
                 onUninstall={() => void uninstall(detailItem)}
                 onRename={(row) => void renameAccount(row)}

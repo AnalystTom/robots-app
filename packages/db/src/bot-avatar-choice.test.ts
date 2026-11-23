@@ -1,4 +1,10 @@
-import { BOT_COLOR_LIST, BOT_COLORS } from "@robots/contracts";
+import {
+  BOT_COLOR_LIST,
+  BOT_COLORS,
+  isBotAvatarValue,
+  parseRobotCharacter,
+  ROBOT_PARTS,
+} from "@robots/contracts";
 import {
   ORGANIC_AVATAR_FAMILY_COUNT,
   ORGANIC_AVATAR_HEART_FAMILY,
@@ -7,7 +13,12 @@ import {
   seededLogoAvatarColor,
 } from "@robots/core";
 import { describe, expect, it } from "vitest";
-import { BOT_ID_ATTEMPTS, chooseBotAvatar, pickLeastUsed } from "./bot-avatar-choice.js";
+import {
+  BOT_ID_ATTEMPTS,
+  chooseBotAvatar,
+  chooseRobotCharacter,
+  pickLeastUsed,
+} from "./bot-avatar-choice.js";
 
 /** A repeatable stand-in for Math.random. */
 function seeded(seed: number) {
@@ -279,5 +290,26 @@ describe("chooseBotAvatar", () => {
     expect(organicAvatarFamily(capped.id)).toBe(family);
     // One family pick, sixteen digits per try, one colour pick.
     expect(calls).toBe(1 + 16 * BOT_ID_ATTEMPTS + 1);
+  });
+});
+
+describe("chooseRobotCharacter", () => {
+  it("gives a valid robot in a colour the user's robots wear least, with no extra", () => {
+    const existing = ROBOT_PARTS.colour
+      .filter((colour) => colour !== "teal")
+      .map((colour) => ({ color: `robot:${colour}.antenna.happy.vest.none` }));
+    existing.push({ color: "#2A92FE" }, { color: "data:image/png;base64,AAAA" });
+    for (let seed = 0; seed < 20; seed++) {
+      const value = chooseRobotCharacter(existing, seeded(seed));
+      expect(isBotAvatarValue(value)).toBe(true);
+      expect(parseRobotCharacter(value)).toMatchObject({ colour: "teal", extra: "none" });
+    }
+  });
+
+  it("varies the parts", () => {
+    const values = new Set(
+      Array.from({ length: 30 }, (_, seed) => chooseRobotCharacter([], seeded(seed))),
+    );
+    expect(values.size).toBeGreaterThan(10);
   });
 });

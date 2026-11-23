@@ -221,4 +221,7 @@ export const TR_MESSAGES: Record<string, string> = {
   "Waiting for Docker…": "Docker bekleniyor…",
   "Docker is installed but not running. Start the Docker service to continue.":
     "Docker yüklü ama çalışmıyor. Devam etmek için Docker hizmetini başlatın.",
+  "Let other devices open RoBots?": "Diğer cihazların RoBots'u açmasına izin verilsin mi?",
+  "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.":
+    "Ağınızdaki cihazlar bu bilgisayardaki RoBots'a {address} adresinden ulaşabilecek. Her cihazın yine de oturum açması veya eşleşmesi gerekir.",
 };

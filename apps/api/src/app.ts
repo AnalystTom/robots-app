@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { join } from "node:path";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import type {
@@ -150,6 +151,7 @@ import { configuredEmailProvider } from "./email.js";
 import { mountEmailInboundRoute } from "./email-inbound.js";
 import type { AppEnv } from "./env.js";
 import { loadEnv } from "./env.js";
+import { mountEnvironmentRoute } from "./environment-id.js";
 import { createExperiments } from "./experiments.js";
 import { healthRoutes } from "./health.js";
 import { homeRetentionSweep } from "./home-retention.js";
@@ -159,6 +161,7 @@ import { mountLocalComputerHost } from "./local-settings.js";
 import { marketingEmailRoutes, sendWelcomeEmail } from "./marketing-email.js";
 import { moveMcpArgsIntoSecrets } from "./mcp-args-migration.js";
 import { startMessagingRuntime } from "./messaging-runtime.js";
+import { mobileUpdateRoutes } from "./mobile-updates.js";
 import { monitoringRoutes } from "./monitoring.js";
 import { pluginSubmissionRoutes } from "./plugin-submissions.js";
 import { sendReferralEmails } from "./referral-email.js";
@@ -533,6 +536,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     directoryProvisioning: Boolean(directory),
     analytics,
     passwordAuth: env.passwordAuth,
+    emailSignup: env.emailSignup,
     breachedPasswordCheck: env.breachedPasswordCheck,
     oidc: env.oidc,
     social: env.social,
@@ -601,6 +605,9 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       await endUserDeviceSession(deviceSessions, session).catch((error) =>
         getLogger().error("user device revocation failed", error),
       );
+    },
+    afterDevicePaired: async (userId) => {
+      await events.publishRosterChange?.({ userIds: [userId] });
     },
     afterReplaceSession: async (previous, session) => {
       await pushTokens
@@ -673,6 +680,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
           sandboxKind: env.sandboxProvider,
           url: hostComputer.hostComputerUrl,
           token: hostComputer.hostComputerToken,
+          access: hostComputer.hostComputerAccess,
         }),
       paymentWallet,
       shutdownSignal: shutdown.signal,
@@ -876,6 +884,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       resetUrl:
         env.passwordAuth !== false && email ? new URL("/reset-password", env.webOrigin).href : null,
       emailCode: auth.emailCodeSignIn,
+      emailSignup: auth.emailSignup,
       billing: Boolean(billing),
       passkeyRpId: auth.passkeyRpId,
       nativePasskeys: nativePasskeys(env, auth.passkeyRpId),
@@ -883,6 +892,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     } satisfies AuthCapabilities);
   });
   mountAppAssociation(app, env);
+  mountEnvironmentRoute(app, env.authSecret);
   if (localEmailEmulator && env.nodeEnv === "development") {
     app.get(
       "/api/dev/emails",
@@ -901,6 +911,10 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     ),
   );
   app.route("/", cspReportRoutes(requestClientIp));
+  app.route(
+    "/",
+    mobileUpdateRoutes(join(env.dataDir, "mobile-updates"), () => env.webOrigin),
+  );
   app.route(
     "/",
     pluginSubmissionRoutes({

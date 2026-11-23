@@ -62,6 +62,7 @@ vi.mock("./lib/auth", () => ({
 }));
 vi.mock("./lib/bootstrap", () => ({
   getLabs: () => [],
+  getLoadedLabs: () => [],
   subscribeLabs: () => () => {},
 }));
 vi.mock("./lib/rpc", () => {

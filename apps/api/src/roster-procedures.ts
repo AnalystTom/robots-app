@@ -47,6 +47,9 @@ export const ROSTER_PROCEDURES: Record<string, RosterScope> = {
   "externalConversations.updatePolicy": actorSpace,
   "organizations.create": actorOnly,
   "organizations.remove": actorOnly,
+  // Not the roster itself: the same signal tells the account's open screens to re-read devices.
+  "devicePairing.revoke": actorOnly,
+  "devicePairing.revokeOthers": actorOnly,
   "threads.markRead": actorOnly,
   "threads.markUnread": actorOnly,
   "threads.snooze": actorOnly,

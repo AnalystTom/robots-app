@@ -1,3 +1,4 @@
+import { hostComputerAccessFromEnv } from "./host-computer-access.js";
 import type { SandboxProviderOptions } from "./sandbox-factory.js";
 
 /** Empty or remote provider without a key becomes none so services can boot for signup. */
@@ -56,6 +57,7 @@ export function sandboxProviderOptionsFromEnv(
   SandboxProviderOptions,
   | "hostComputerUrl"
   | "hostComputerToken"
+  | "hostComputerAccess"
   | "e2bApiKey"
   | "novitaApiKey"
   | "sandboxTemplate"
@@ -110,6 +112,7 @@ export function sandboxProviderOptionsFromEnv(
   return {
     hostComputerUrl: source.SANDBOX_HOST_URL,
     hostComputerToken: source.SANDBOX_HOST_TOKEN,
+    hostComputerAccess: hostComputerAccessFromEnv(source),
     e2bApiKey: source.E2B_API_KEY,
     novitaApiKey: optional(source.NOVITA_API_KEY),
     sandboxTemplate: optional(source.SANDBOX_TEMPLATE),

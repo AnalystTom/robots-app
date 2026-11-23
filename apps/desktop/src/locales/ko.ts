@@ -222,4 +222,7 @@ export const KO_MESSAGES: Record<string, string> = {
   "Waiting for Docker…": "Docker 기다리는 중…",
   "Docker is installed but not running. Start the Docker service to continue.":
     "Docker가 설치되어 있지만 실행 중이 아닙니다. 계속하려면 Docker 서비스를 시작하세요.",
+  "Let other devices open RoBots?": "다른 기기에서 RoBots를 열 수 있게 할까요?",
+  "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.":
+    "네트워크의 기기가 {address}에서 이 컴퓨터의 RoBots에 접속할 수 있습니다. 각 기기는 여전히 로그인하거나 페어링해야 합니다.",
 };

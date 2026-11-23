@@ -206,6 +206,7 @@ async function failRun(scenario: Scenario) {
       ),
     },
     userModelCredential: {
+      findMany: async () => [],
       findFirst: vi.fn(async () =>
         scenario.personalKey
           ? {

@@ -16,7 +16,7 @@ describe("bots sidebar collapse preference", () => {
     expect(botsSidebarCollapsedStorageKey("user-1")).toBe("robots:bots-sidebar-collapsed:user-1");
   });
 
-  it("reads and writes collapsed state", () => {
+  it("starts on the rail and remembers an expanded sidebar", () => {
     const store = new Map<string, string>();
     vi.stubGlobal("localStorage", {
       getItem: (key: string) => store.get(key) ?? null,
@@ -27,7 +27,8 @@ describe("bots sidebar collapse preference", () => {
         store.delete(key);
       },
     });
-    expect(readBotsSidebarCollapsed("user-1")).toBe(false);
+    expect(readBotsSidebarCollapsed("user-1")).toBe(true);
+    expect(readBotsSidebarCollapsed(null)).toBe(true);
     writeBotsSidebarCollapsed("user-1", true);
     expect(readBotsSidebarCollapsed("user-1")).toBe(true);
     writeBotsSidebarCollapsed("user-1", false);

@@ -25,6 +25,30 @@ then **Preview** and **Add**.
 > [!NOTE]
 > Skills added from GitHub or a plugin are instructions only. Any scripts they include are not run.
 
+## Safety check
+
+Every skill is checked for risky content when you write or edit it, add it from a plugin, or bring
+it in with [Import an agent](./import-an-agent.md), including a RoBots package. A bot saving a skill
+is checked the same way.
+
+| Finding                                                            | Risk |
+| ------------------------------------------------------------------ | ---- |
+| A download piped into a shell, such as `curl … \| sh`              | High |
+| Hidden or encoded content that is decoded and run                  | High |
+| Credential files (SSH keys, `.env`, keychains) sent somewhere      | High |
+| Deleting a whole disk or home folder                               | High |
+| Telling the bot to ignore its instructions or keep things from you | High |
+| Invisible characters that reorder or hide text                     | High |
+| Reading credential files                                           | Low  |
+| Instructions in a hidden HTML comment                              | Low  |
+| A long encoded blob                                                | Low  |
+| Zero-width characters                                              | Low  |
+
+Each finding shows the line it is on. Low-risk findings are listed as a warning and the skill saves
+as usual. A high-risk finding stops the skill until you review it and choose **Install anyway**.
+A bot cannot install anyway: it is told what was found and asked to leave it to you. The check
+reads the `SKILL.md` text only, not files a plugin adds beside it.
+
 ## Bots save skills too
 
 After a multi-step task, ask the bot to "save that as a skill". It writes the skill so it, and your

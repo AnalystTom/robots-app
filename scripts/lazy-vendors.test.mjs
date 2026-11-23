@@ -1,7 +1,3 @@
-// Optional vendor SDKs must load through dynamic import() only when configured (AGENTS.md).
-// Bundles each server entry point the way production does and fails if a listed SDK is
-// statically imported by the emitted bundle: bundling inlines workspace code, so a dynamic
-// import() of a local module does not make that module's own static imports lazy.
 import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "node:test";
@@ -16,13 +12,8 @@ const ENTRIES = [
   "infra/sandboxes/supervisor/src/index.ts",
   "infra/updater/src/index.ts",
 ];
-// @chat-adapter/state-memory is left out: it is the Chat SDK's own in-memory state, which
-// every messaging platform needs, not a vendor.
 const OPTIONAL_VENDORS =
-  /^(@aws-sdk\/.+|@daytona\/sdk|@e2b\/desktop|novita-sandbox|@composio\/core|@stripe\/link-sdk|@chat-adapter\/(slack|teams|telegram|whatsapp)|@boatdev\/sdk|@boxd-sh\/sdk|@insforge\/instabox-sdk|chat-adapter-sendblue|@axiomhq\/js|@sentry\/node|@alicloud\/.+|@darabonba\/typescript|@kubernetes\/client-node|@larksuiteoapi\/node-sdk|@photon-ai\/chat-adapter-imessage|mppx|railway|@opentelemetry\/(api|sdk-trace|resources|exporter-.+))$/;
-// Packages the bundles load through import() that are not vendor SDKs: an image library, the
-// auth library's own SCIM plugin, the email parser and DKIM check for inbound mail, and the
-// database client, which is also imported statically.
+  /^(@aws-sdk\/.+|@daytona\/sdk|@e2b\/desktop|novita-sandbox|@composio\/core|@stripe\/link-sdk|@chat-adapter\/(discord|slack|teams|telegram|whatsapp)|@boatdev\/sdk|@boxd-sh\/sdk|@insforge\/instabox-sdk|chat-adapter-sendblue|@axiomhq\/js|@sentry\/node|@alicloud\/.+|@darabonba\/typescript|@kubernetes\/client-node|@larksuiteoapi\/node-sdk|@photon-ai\/chat-adapter-imessage|mppx|railway|@opentelemetry\/(api|sdk-trace|resources|exporter-.+))$/;
 const LAZY_NON_VENDORS = [
   "sharp",
   "@better-auth/scim",
@@ -30,18 +21,9 @@ const LAZY_NON_VENDORS = [
   "mailauth",
   "@prisma/client",
 ];
-// Known static imports still to make lazy. Remove an entry once its SDK loads on demand.
-const PENDING = [
-  "@chat-adapter/telegram",
-  "@chat-adapter/whatsapp",
-  // The wallet factory imports its module dynamically, but the bundle inlines that module,
-  // so the SDK is a static import of every emitted server bundle.
-  "@stripe/link-sdk",
-];
+const PENDING = ["@chat-adapter/telegram", "@chat-adapter/whatsapp", "@stripe/link-sdk"];
 
-// Vendor SDKs statically imported by each emitted bundle: Map<entry, Set<vendor>>.
 const staticVendors = new Map();
-// Every package a bundle loads through import(), across all entries.
 const dynamicPackages = new Set();
 for (const entry of ENTRIES) {
   const options = serverBuildOptions(path.join(root, entry), path.join(root, "dist/check.js"));
@@ -60,7 +42,6 @@ for (const entry of ENTRIES) {
       if (edge.kind === "dynamic-import" && edge.path.includes("node_modules/")) {
         dynamicPackages.add(name);
       }
-      // A require() call loads its package at startup just like a static import.
       if (edge.kind !== "import-statement" && edge.kind !== "require-call") continue;
       if (OPTIONAL_VENDORS.test(name)) found.add(name);
     }
@@ -78,8 +59,6 @@ for (const [entry, found] of staticVendors) {
 }
 
 test("every pending vendor SDK is still statically imported somewhere", () => {
-  // Narrower entry points (the supervisor and updater never load the messaging SDKs), so
-  // debt is tracked across all entries, not per entry.
   const anywhere = new Set();
   for (const found of staticVendors.values()) {
     for (const name of found) anywhere.add(name);
@@ -92,8 +71,6 @@ test("every pending vendor SDK is still statically imported somewhere", () => {
 });
 
 test("every package loaded on demand is a listed vendor SDK or a known non-vendor", () => {
-  // A vendor SDK missing from OPTIONAL_VENDORS could become a static import unnoticed, also when
-  // another bundle already imports it statically.
   assert.deepEqual(
     [...dynamicPackages]
       .filter((name) => !OPTIONAL_VENDORS.test(name) && !LAZY_NON_VENDORS.includes(name))
@@ -108,10 +85,6 @@ test("every package loaded on demand is a listed vendor SDK or a known non-vendo
   );
 });
 
-/**
- * The build rewrites bare specifiers to paths inside node_modules; recover the package name.
- * Anything else (node builtins, a bare specifier the rewrite missed) is returned as is.
- */
 function packageName(external) {
   if (!external.includes("node_modules/")) return external;
   const [scope, name] = external.split("node_modules/").at(-1).split("/");

@@ -1,3 +1,4 @@
+import { isBotAvatarValue } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import { ORGANIC_AVATAR_HEART_FAMILY, organicAvatarFamily } from "./avatar-shape.js";
 import { DEFAULT_BOT_AVATAR_COLOR } from "./bot-avatar-colors.js";
@@ -9,6 +10,7 @@ import {
   newBotLookInput,
   newBotPreviewIdentity,
 } from "./bot-look.js";
+import { robotPresetOf, robotPresetValue } from "./robot-character.js";
 
 describe("newBotLook", () => {
   it("reserves a valid id that never draws the heart body", () => {
@@ -16,6 +18,17 @@ describe("newBotLook", () => {
       const look = newBotLook();
       expect(look.id).toMatch(/^c[a-z0-9]{24}$/);
       expect(organicAvatarFamily(look.id)).not.toBe(ORGANIC_AVATAR_HEART_FAMILY);
+    }
+  });
+
+  it("starts as a preset robot that creation sends in either set", () => {
+    const look = newBotLook();
+    expect(isBotAvatarValue(look.color)).toBe(true);
+    const robot = botLookState(look.color).robot;
+    expect(robot).not.toBeNull();
+    expect(look.color).toBe(robotPresetValue(robotPresetOf(robot!)!));
+    for (const set of ["organic", "robots"] as const) {
+      expect(newBotLookInput(set, look)).toEqual({ color: look.color, id: look.id });
     }
   });
 
@@ -42,6 +55,23 @@ describe("botLookState", () => {
       photo: false,
       shapeIndex: 5,
       color: "#FF781C",
+      robot: null,
+      defaultLook: false,
+    });
+  });
+
+  it("reads a robot character's parts and backdrop", () => {
+    expect(botLookState("robot:teal.mortarboard.monocle.tweed.none")).toEqual({
+      photo: false,
+      shapeIndex: null,
+      color: "#2C7672",
+      robot: {
+        colour: "teal",
+        headwear: "mortarboard",
+        face: "monocle",
+        outfit: "tweed",
+        extra: "none",
+      },
       defaultLook: false,
     });
   });
@@ -56,6 +86,7 @@ describe("botLookState", () => {
       photo: true,
       shapeIndex: null,
       color: DEFAULT_BOT_AVATAR_COLOR,
+      robot: null,
       defaultLook: false,
     });
     expect(botLookWithColor(photo, "#2A92FE")).toBe("#2A92FE");

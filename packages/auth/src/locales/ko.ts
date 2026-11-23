@@ -24,8 +24,6 @@ export const KO_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "본인임을 확인하려면 RoBots에서 이 코드를 입력하세요:",
   "Welcome to RoBots": "RoBots에 오신 것을 환영합니다",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "RoBots에 오신 것을 환영합니다. RoBots를 가장 잘 활용하는 사람들은 세 가지를 합니다.",
   "Get the apps": "앱 받기",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots는 {platforms}에서 실행되므로 봇이 어디서든 연락할 수 있습니다.",

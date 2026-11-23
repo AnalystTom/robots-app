@@ -34,13 +34,13 @@ import { useSpaceQueries } from "../lib/query";
 import { useSpaceRpc } from "../lib/space-rpc";
 import { useListSearch } from "../lib/use-list-search";
 import { errorText } from "../lib/user-error";
+import { ActionRulesSettings } from "./ActionRulesSettings";
 import { SettingsGroup, SettingsRow } from "./SettingsRows";
 import { SpendingLimitSettings } from "./SpendingLimitSettings";
 
 const segmented = "rounded-lg bg-muted p-1";
 const segment = "h-7 px-3 text-body-sm aria-pressed:bg-background aria-pressed:shadow-sm";
 
-/** Approvals for the account, or for the bound Space when it customizes them. */
 export function ApprovalRulesSettings({ scope }: { scope: SettingsScope }) {
   const rpc = useSpaceRpc();
   const { t } = useLingui();
@@ -59,7 +59,6 @@ export function ApprovalRulesSettings({ scope }: { scope: SettingsScope }) {
     actionError ?? (loadFailed ? errorText(loadFailed, t`Could not load approval rules`) : null);
   const modes: Array<{ mode: ApprovalMode; label: string }> = [
     { mode: "never", label: t`Never ask` },
-    // Auto needs an approval model; it stays listed while chosen so the choice is visible.
     ...(autoReview?.checkerAvailable || autoReview?.mode === "auto"
       ? [{ mode: "auto" as const, label: t`Auto` }]
       : []),
@@ -103,7 +102,6 @@ export function ApprovalRulesSettings({ scope }: { scope: SettingsScope }) {
       matchKind: rule.matchKind,
       matchValue: rule.matchValue,
     });
-    // Saving replaces any other effect on the same match.
     await setRules((current) => [
       ...current.filter(
         (other) =>
@@ -117,7 +115,6 @@ export function ApprovalRulesSettings({ scope }: { scope: SettingsScope }) {
   const setEffect = (rule: ActionApprovalRule, effect: ActionApprovalRule["effect"]) =>
     save(() => putRule({ ...rule, effect }), t`Could not save rule`);
 
-  // An app or tool that already has a rule is not offered, so a pick always adds one.
   const addRule = (choice: ApprovalRuleChoice) =>
     save(
       () =>
@@ -182,7 +179,7 @@ export function ApprovalRulesSettings({ scope }: { scope: SettingsScope }) {
           ) : null}
         </SettingsRow>
       </SettingsGroup>
-      {/* Spending is the person's own across every Space, so it is set with the account's approvals. */}
+      <ActionRulesSettings scope={scope} />
       {scope === "account" ? <SpendingLimitSettings /> : null}
       <AddRulePicker
         choices={approvalRuleChoices(rules)}
@@ -192,7 +189,6 @@ export function ApprovalRulesSettings({ scope }: { scope: SettingsScope }) {
       {groups.map(({ effect, title }) => {
         const matching = rules.filter((rule) => rule.effect === effect);
         if (matching.length === 0) return null;
-        // Never ask runs everything a block does not stop, so these rules wait for another mode.
         const unused = !approvalRuleApplies(autoReview?.mode, effect);
         return (
           <div
@@ -224,7 +220,6 @@ export function ApprovalRulesSettings({ scope }: { scope: SettingsScope }) {
   );
 }
 
-/** A searchable list of the tools a rule can name, so nobody types a tool's name. */
 function AddRulePicker({
   choices,
   disabled,
@@ -291,7 +286,6 @@ function AddRulePicker({
   );
 }
 
-/** The effects a rule can take, side by side, then remove. */
 function RuleControls({
   rule,
   disabled,

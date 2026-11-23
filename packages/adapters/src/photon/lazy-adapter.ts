@@ -10,17 +10,15 @@ import type {
   WebhookOptions,
 } from "chat";
 import { stringifyMarkdown } from "chat";
+import { StreamInboundRetries } from "../stream-inbound-retries.js";
 
 export interface PhotonAdapterConfig {
   projectId: string;
   projectSecret: string;
-  /** Per-webhook signing secret. When set, inbound arrives by webhook instead of the stream. */
   webhookSecret?: string | undefined;
-  /** Consume Spectrum's inbound stream after initialize (the API process only). */
   pollInboundMessages: boolean;
 }
 
-/** The adapter's native thread ids: "imessage:<chatGuid>" plus "~<line>" when pinned. */
 export interface PhotonThreadId {
   chatGuid: string;
   phone?: string;
@@ -29,22 +27,8 @@ export interface PhotonThreadId {
 const THREAD_PREFIX = "imessage:";
 const LINE_SEP = "~";
 
-/**
- * How often the stream listener is re-armed. The adapter's pump stops for good
- * when Spectrum's stream ends or errors; each re-arm restarts it if so and is a
- * no-op while it runs.
- */
 export const PHOTON_LISTEN_WINDOW_MS = 60_000;
 
-/**
- * Spectrum's stream has no acknowledgement to withhold, so a message whose
- * processing fails is never redelivered. Retry it here instead, like the
- * Telegram adapter's polling checkpoint; downstream client nonces make a
- * repeat that partly succeeded harmless.
- */
-export const PHOTON_STREAM_RETRY_DELAYS_MS = [5_000, 30_000, 120_000];
-
-// The adapter logs every stream re-arm at info; keep only its warnings and errors.
 const photonLogger: Logger = {
   child: () => photonLogger,
   debug: () => undefined,
@@ -72,20 +56,13 @@ export function decodePhotonThreadId(threadId: string): PhotonThreadId {
   return sep === -1 ? { chatGuid } : { chatGuid, phone: rest.slice(sep + 1) };
 }
 
-/**
- * Photon (Spectrum Cloud) iMessage through Photon's own Chat SDK adapter.
- * The adapter and spectrum-ts load only once used, so unconfigured processes
- * never pay for them. Inbound arrives over Spectrum's outbound gRPC stream,
- * so a server with no public HTTPS endpoint still receives messages; with a
- * webhook secret it uses Spectrum's signed webhook instead.
- */
 export class LazyPhotonAdapter implements Adapter {
   readonly name = "imessage";
   private loaded: Promise<iMessageAdapter> | undefined;
   private implementation: iMessageAdapter | undefined;
   private listening: ReturnType<typeof setInterval> | undefined;
   private window: AbortController | undefined;
-  private readonly retries = new Set<ReturnType<typeof setTimeout>>();
+  private readonly retries = new StreamInboundRetries("photon");
   constructor(readonly config: PhotonAdapterConfig) {}
 
   get userName() {
@@ -93,7 +70,6 @@ export class LazyPhotonAdapter implements Adapter {
   }
   private load() {
     this.loaded ??= (async () => {
-      // The constructor, unlike createiMessageAdapter, never falls back to IMESSAGE_* env vars.
       const { iMessageAdapter } = await import("@photon-ai/chat-adapter-imessage");
       this.implementation = new iMessageAdapter({
         logger: photonLogger,
@@ -111,65 +87,26 @@ export class LazyPhotonAdapter implements Adapter {
   async initialize(chat: ChatInstance) {
     const adapter = await this.load();
     const streaming = this.config.pollInboundMessages && !this.config.webhookSecret;
-    await adapter.initialize(streaming ? this.retryingChat(chat) : chat);
+    await adapter.initialize(streaming ? this.retries.wrap(chat) : chat);
     if (streaming) this.startListening(adapter);
   }
 
-  /** The Chat instance the adapter sees while streaming: each delivery retries on failure. */
-  private retryingChat(chat: ChatInstance): ChatInstance {
-    const process = (
-      ...[adapter, threadId, message, options, attempt = 0]: [
-        ...Parameters<ChatInstance["processMessage"]>,
-        number?,
-      ]
-    ) => {
-      const task = chat.processMessage(adapter, threadId, message, options);
-      task.catch((error: unknown) => {
-        const delay = PHOTON_STREAM_RETRY_DELAYS_MS[attempt];
-        getLogger().warn("photon inbound processing failed", {
-          error: String(error),
-          retrying: delay !== undefined,
-        });
-        if (delay === undefined || !this.listening) return;
-        const timer = setTimeout(() => {
-          this.retries.delete(timer);
-          // The first attempt already marked the message seen.
-          process(adapter, threadId, message, { ...options, deduplicate: false }, attempt + 1);
-        }, delay);
-        timer.unref?.();
-        this.retries.add(timer);
-      });
-      return task;
-    };
-    return new Proxy(chat, {
-      get: (target, key) => {
-        if (key === "processMessage") return process;
-        const value = Reflect.get(target, key, target);
-        return typeof value === "function" ? value.bind(target) : value;
-      },
-    });
-  }
-
-  /** Stop consuming the inbound stream; the surface calls this on shutdown. */
   async stopPolling() {
     clearInterval(this.listening);
     this.listening = undefined;
     this.window?.abort();
     this.window = undefined;
-    for (const timer of this.retries) clearTimeout(timer);
-    this.retries.clear();
+    this.retries.stop();
   }
 
   private startListening(adapter: iMessageAdapter) {
     if (this.listening) return;
     const options: WebhookOptions = {
-      // Failures are retried by retryingChat; nothing needs to wait here.
       waitUntil: (task) => {
         task.catch(() => undefined);
       },
     };
     const listen = () => {
-      // A fresh window each time keeps abort listeners from piling up on one signal.
       this.window = new AbortController();
       adapter
         .startGatewayListener(options, PHOTON_LISTEN_WINDOW_MS, this.window.signal)

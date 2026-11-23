@@ -54,7 +54,12 @@ function fixture({
   stalledDelivery?: boolean;
 } & Pick<
   AuthEnv,
-  "singleAccount" | "afterDeleteSession" | "afterReplaceSession" | "beforeDeleteUser" | "analytics"
+  | "singleAccount"
+  | "afterDeleteSession"
+  | "afterReplaceSession"
+  | "beforeDeleteUser"
+  | "analytics"
+  | "afterDevicePaired"
 > = {}) {
   const data: Record<string, Record<string, unknown>[]> = {
     user: [],
@@ -378,6 +383,45 @@ describe("client address and security events", () => {
     expect(serialized).not.toContain("offline-password12");
     expect(serialized).not.toContain(token);
     expect(serialized).not.toContain("approved@example.test");
+  });
+});
+
+describe("device pairing", () => {
+  it("signs a device in with a code, records it, and tells the account", async () => {
+    const afterDevicePaired = vi.fn(async () => undefined);
+    const f = fixture({ delivery: false, afterDevicePaired });
+    const { user } = (await (await f.signup()).json()) as { user: { id: string } };
+    const { code } = await f.auth.issuePairingCode(user.id);
+    // Stored hashed, like reset and export tokens.
+    expect(JSON.stringify(f.data.verification)).not.toContain(code);
+    vi.mocked(recordSecurityEvent).mockClear();
+
+    const response = await f.auth.handler(
+      new Request("http://auth.example.test/api/auth/pairing/exchange", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "http://web.example.test",
+          [CLIENT_IP_HEADER]: "192.168.1.20",
+        },
+        body: JSON.stringify({ code, deviceName: "Kitchen tablet" }),
+      }),
+    );
+    expect(response.status, await response.clone().text()).toBe(200);
+    const { token } = (await response.json()) as { token: string };
+    expect((await f.sessionFor(token))?.user.id).toBe(user.id);
+    expect(f.data.session!.at(-1)).toMatchObject({
+      pairedDevice: "Kitchen tablet",
+      ipAddress: "192.168.1.20",
+    });
+    expect(afterDevicePaired).toHaveBeenCalledWith(user.id);
+    expect(vi.mocked(recordSecurityEvent).mock.calls.map(([event]) => event)).toContainEqual(
+      expect.objectContaining({ type: "auth.sign_in", metadata: { via: "/pairing/exchange" } }),
+    );
+
+    const devices = f.data.session!.filter((session) => session.pairedDevice !== undefined);
+    await f.auth.endSessions(devices.map((session) => String(session.token)));
+    expect(await f.sessionFor(token)).toBeNull();
   });
 });
 

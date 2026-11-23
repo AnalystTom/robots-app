@@ -55,6 +55,7 @@ describe("desktop preload bridge", () => {
       "menu",
       "monitoring",
       "nativeWindowFrame",
+      "network",
       "oauth",
       "passkeys",
       "platform",
@@ -97,6 +98,9 @@ describe("desktop preload bridge", () => {
     await bridge.update.download();
     await bridge.update.install();
     await bridge.server!.change();
+    await bridge.network!.state();
+    await bridge.network!.setMode("local");
+    expect(invoke).toHaveBeenLastCalledWith("desktop.network.setMode", "local");
     expect(invoke.mock.calls.map(([channel]) => channel)).toEqual([
       "desktop.badge.set",
       "desktop.clipboard.write",
@@ -116,6 +120,8 @@ describe("desktop preload bridge", () => {
       "desktop.update.download",
       "desktop.update.install",
       "desktop.server.change",
+      "desktop.network.state",
+      "desktop.network.setMode",
     ]);
   });
 

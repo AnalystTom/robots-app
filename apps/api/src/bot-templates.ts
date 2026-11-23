@@ -17,16 +17,17 @@ import {
   appConnectCard,
   BOT_TEMPLATES,
   botTemplateApps,
+  botTemplateLook,
   buildSkillMd,
   findBotTemplate,
   renameRoutineSkillMentions,
   renameSkillMd,
+  scanSkillSafety,
 } from "@robots/core";
 import { availableInSpace, Prisma } from "@robots/db";
 import type { AgentImportServices, Built } from "./agent-import.js";
 import { requestDigest, savedTimeZone, writeImportedBot } from "./agent-import.js";
 
-/** One bot per template: creating it again returns the bot it made, until that bot is archived or deleted. */
 function importKey(templateId: string): string {
   return `${BOT_TEMPLATE_IMPORT_KEY_PREFIX}${templateId}`;
 }
@@ -52,7 +53,6 @@ export async function listBotTemplates(
   }));
 }
 
-/** The same plan an agent import writes: instructions, skills, and routines that start paused. */
 export function templatePlan(template: BotTemplate, timezone: string): Built {
   const routineInputs = new Map<string, CreateRoutineInputType>();
   const routines = template.routines.map((routine, index) => {
@@ -60,7 +60,6 @@ export function templatePlan(template: BotTemplate, timezone: string): Built {
     routineInputs.set(
       id,
       CreateRoutineInput.parse({
-        // Replaced by the new bot's id when the routine is written.
         botId: "pending",
         name: routine.name,
         prompt: routine.prompt,
@@ -92,15 +91,19 @@ export function templatePlan(template: BotTemplate, timezone: string): Built {
       },
     ],
     memory: [],
-    skills: template.skills.map((skill) => ({
-      id: skill.name,
-      title: skill.name,
-      name: skill.name,
-      description: skill.description,
-      content: buildSkillMd(skill),
-      warnings: [],
-      status: { kind: "ready" },
-    })),
+    skills: template.skills.map((skill) => {
+      const content = buildSkillMd(skill);
+      return {
+        id: skill.name,
+        title: skill.name,
+        name: skill.name,
+        description: skill.description,
+        content,
+        warnings: [],
+        status: { kind: "ready" as const },
+        safety: scanSkillSafety(content),
+      };
+    }),
     model: null,
     mcpServers: [],
     routines,
@@ -116,7 +119,6 @@ export function templatePlan(template: BotTemplate, timezone: string): Built {
   };
 }
 
-/** Cards for the template's apps that aren't connected yet; apps this server lacks are skipped. */
 export function templateAppCards(
   template: BotTemplate,
   catalog: ConnectionCatalogItem[],
@@ -126,10 +128,6 @@ export function templateAppCards(
     .map(appConnectCard);
 }
 
-/**
- * Creates the template's bot like an agent import: one transaction, paused routines, a setup
- * checklist, and cards for missing apps. Nothing is connected or run for the user.
- */
 export async function createBotFromTemplate<PreparedKey>(
   services: AgentImportServices<PreparedKey>,
   appCatalog: () => Promise<ConnectionCatalogItem[]>,
@@ -139,14 +137,13 @@ export async function createBotFromTemplate<PreparedKey>(
 ) {
   const template = findBotTemplate(input.templateId);
   if (!template) throw new ORPCError("NOT_FOUND", { message: "No template has that id." });
-  // Skills the plan reuses instead of adding, checked again when the bot is written.
   let reusedRows: { id: string; name: string; content: string }[] = [];
   const request: Parameters<typeof writeImportedBot>[2] = {
     importKey: importKey(template.id),
-    // The same for every version, so an existing bot is returned whatever changed since.
     digest: requestDigest({ templateId: template.id }),
     name: input.name ?? template.name,
     description: template.description,
+    color: botTemplateLook(template.id),
     selection: {
       instructions: ["instructions"],
       memory: [],
@@ -155,6 +152,7 @@ export async function createBotFromTemplate<PreparedKey>(
       mcpServers: [],
       routines: template.routines.map((_, index) => `routine-${index}`),
       apiKeys: [],
+      acceptedRisks: [],
     },
     build: async () => {
       if (template.version !== input.version) {
@@ -165,8 +163,6 @@ export async function createBotFromTemplate<PreparedKey>(
       }
       request.cards = templateAppCards(template, template.apps.length ? await appCatalog() : []);
       const built = templatePlan(template, await savedTimeZone(services.prisma, actor));
-      // A skill an earlier copy of this bot added, still unchanged (perhaps renamed on a clash),
-      // is reused rather than added again; the routines' mentions are pointed at it.
       const kept = await services.prisma.agentSkill.findMany({
         where: {
           AND: [
@@ -204,10 +200,7 @@ export async function createBotFromTemplate<PreparedKey>(
       }
       return built;
     },
-    // An archived bot no longer counts as the template's bot: its record makes way for the new
-    // one, in the same transaction, so a failed create leaves the archived bot's record in place.
     beforeWrite: async (tx) => {
-      // A reused skill stays as planned until the bot is written: deleting or editing it waits.
       if (reusedRows.length) {
         const locked = await tx.$queryRaw<{ id: string; name: string; content: string }[]>`
           SELECT id, name, content FROM agent_skills

@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   findAutoReviewPreference,
+  listActionRules,
   listApprovalRules,
   removeApprovalRule,
+  saveActionRules,
   saveApprovalRule,
   saveAutoReviewPreference,
 } from "./approval-settings.js";
@@ -155,5 +157,41 @@ describe("auto review", () => {
       update: { enabled: true },
     });
     expect(client.userActionAutoReviewPreference.upsert).not.toHaveBeenCalled();
+  });
+});
+
+describe("action rules", () => {
+  const rules = [
+    { id: "a", matchKind: "tool", matchValue: "send_email", effect: "deny", initiator: "webhook" },
+  ] as const;
+
+  it("save the ordered list on the account's copy, creating it with the default mode", async () => {
+    const client = confirmationsClient();
+
+    await saveActionRules(client.prisma, scope, [...rules]);
+
+    expect(client.userActionAutoReviewPreference.upsert).toHaveBeenCalledWith({
+      where: { userId: "user" },
+      create: { userId: "user", enabled: true, skipApprovals: false, actionRules: rules },
+      update: { actionRules: rules },
+    });
+    expect(client.actionAutoReviewPreference.upsert).not.toHaveBeenCalled();
+  });
+
+  it("read the Space's own list when it overrides confirmations", async () => {
+    const client = confirmationsClient({ overridden: true });
+    client.actionAutoReviewPreference.findUnique.mockResolvedValueOnce({ actionRules: rules });
+
+    expect(await listActionRules(client.prisma, scope)).toEqual(rules);
+    expect(client.userActionAutoReviewPreference.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("read nothing stored as no rules, and a stored non-list as one rule to validate", async () => {
+    const client = confirmationsClient();
+    expect(await listActionRules(client.prisma, scope)).toEqual([]);
+    client.userActionAutoReviewPreference.findUnique.mockResolvedValueOnce({
+      actionRules: { x: 1 },
+    });
+    expect(await listActionRules(client.prisma, scope)).toEqual([{ x: 1 }]);
   });
 });

@@ -1,13 +1,19 @@
 import type { MessageBlock } from "@robots/contracts";
 import type { ActionApprovalRule } from "@robots/core";
 import {
+  actionInitiator,
   connectorKindFromToolName,
   inboundRoutinePrompts,
   SITE_SENDING_TOOLS,
   siteAlwaysAllowed,
 } from "@robots/core";
 import { sitesInText, urlSite } from "@robots/core/egress";
-import { findAutoReviewPreference, listApprovalRules, storedBatchActions } from "@robots/db";
+import {
+  findAutoReviewPreference,
+  listActionRules,
+  listApprovalRules,
+  storedBatchActions,
+} from "@robots/db";
 import { boundDirectApprovalDetails, catalogApprovalDetails } from "./approval-effect.js";
 import type { ExecutorDeps } from "./executor-deps.js";
 import type { EffectiveModelRole } from "./model-roles.js";
@@ -16,10 +22,6 @@ import { routineTaskInstructions } from "./routine-watch.js";
 import { CATALOG_APPROVAL_TOOL, PASSED_EFFECT_STATUSES } from "./run-effects.js";
 import { BUILTIN_AGENT_TOOL_NAMES } from "./run-tool-selection.js";
 
-/**
- * The connection a connector call reaches, for read trust. Installed APIs are told apart by their
- * resource, since their tool names share a prefix; other connectors by their tool-name kind.
- */
 function connectorTrustKey(
   route: { connectorId?: string; resourceId?: string } | undefined,
   connectorKind: string,
@@ -29,11 +31,6 @@ function connectorTrustKey(
     : `kind:${connectorKind}`;
 }
 
-/**
- * Read trust for each app a batch reaches, since every batch shares one tool: a Gmail batch must
- * not make a later Slack read trusted, nor one server's batch a batch on another server. An action
- * outside every connected app keys by its own name.
- */
 export function connectorTrustKeys(
   batchActions: readonly string[] | undefined,
   route: { connectorId?: string; resourceId?: string } | undefined,
@@ -52,7 +49,6 @@ export function connectorTrustKeys(
   });
 }
 
-/** Approval and trust lookups a run's tool calls share, each loaded at most once. */
 export function createRunTrustLoaders(
   deps: ExecutorDeps,
   input: {
@@ -63,7 +59,6 @@ export function createRunTrustLoaders(
     ownerStartedRun: boolean;
     messagingChannelRun: boolean;
     sourceMessage: { role: string; blocks: unknown } | null;
-    /** The owner's own chat-app message that started a messaging run; absent for anyone else. */
     ownerChatMessageBlocks?: unknown;
     connectedPlugins: readonly { provider: string }[];
   },
@@ -87,6 +82,12 @@ export function createRunTrustLoaders(
     }).then((rules) => rules as ActionApprovalRule[]);
     return approvalRulesPromise;
   };
+  let actionRulesPromise: Promise<unknown[]> | undefined;
+  const loadActionRules = () =>
+    (actionRulesPromise ??= listActionRules(deps.prisma, {
+      userId: run.userId,
+      spaceId: run.spaceId,
+    }));
   let approvalModelPromise: Promise<EffectiveModelRole> | undefined;
   const loadApprovalModel = () =>
     (approvalModelPromise ??= effectiveModelRole(
@@ -108,14 +109,9 @@ export function createRunTrustLoaders(
     }));
     return autoReviewPreferencePromise;
   };
-  // The owner's own words for this run: the message they sent (in RoBots or their own chat app),
-  // or the instructions of the routine that started it. Never a bot, channel or webhook message,
-  // or a tool result. These name the sites a run is given, and are all Auto Review sees of a new
-  // site's run and of a memory save after outside content.
   let ownerWordsPromise: Promise<string> | undefined;
   const loadOwnerWords = () => {
     ownerWordsPromise ??= (async () => {
-      // The executor passes chat-app blocks only for the owner's own message.
       const ownerBlocks =
         ownerStartedRun && !messagingChannelRun && sourceMessage?.role === "user"
           ? sourceMessage.blocks
@@ -127,7 +123,6 @@ export function createRunTrustLoaders(
           .flatMap((block) => (block.kind === "text" ? [block.text] : []))
           .join("\n");
       }
-      // Saved when the routine fired, so a later edit cannot change what this run judges.
       if (run.trigger === "routine") return routineTaskInstructions(taskPrompt);
       if (run.trigger === "webhook") {
         const routines = await deps.prisma.routine.findMany({
@@ -195,8 +190,6 @@ export function createRunTrustLoaders(
       );
     return trustedConnectorsPromise;
   };
-  // Channel and webhook text this run took in mid-turn is not the owner's. Rows queued
-  // before origins were recorded are recognized by their channel message.
   const receivedOutsideMessage = async () =>
     Boolean(
       await deps.prisma.steeringMessage.findFirst({
@@ -212,6 +205,8 @@ export function createRunTrustLoaders(
       }),
     );
   return {
+    initiator: actionInitiator(run.trigger, ownerStartedRun),
+    loadActionRules,
     loadApprovalRules,
     loadApprovalModel,
     loadAutoReviewPreference,

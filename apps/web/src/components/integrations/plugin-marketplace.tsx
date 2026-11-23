@@ -7,7 +7,12 @@ import type {
   PluginPart,
   PluginPreview,
 } from "@robots/contracts";
-import { mcpServerConnection, mcpServerNeedsSignIn, PluginPreviewSchema } from "@robots/contracts";
+import {
+  mcpServerConnection,
+  mcpServerNeedsSignIn,
+  PluginPreviewSchema,
+  skillSafetyBlock,
+} from "@robots/contracts";
 import { installedPluginParts } from "@robots/core";
 import { Button, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, Check, ChevronLeft, FileText, Plug } from "lucide-react";
@@ -17,6 +22,8 @@ import { rpc } from "../../lib/rpc";
 import type { ErrorDetails } from "../../lib/user-error";
 import { errorDetails } from "../../lib/user-error";
 import { ErrorNotice } from "../ErrorNotice";
+import type { RiskySkill } from "../skill-safety";
+import { SkillRiskDialog, SkillSafetyList } from "../skill-safety";
 import { AvailabilityControl, reachesOtherSpaces, useOwnSpaces } from "./space-availability";
 
 export type PluginSelection = {
@@ -39,7 +46,6 @@ export function pluginSelection(entry: PluginMarketplaceEntry): PluginSelection 
   };
 }
 
-/** GitHub homepages would give every plugin the same mark, so they never stand in for a site. */
 function pluginSite(entry: Pick<PluginMarketplaceEntry, "homepage" | "domains">): string | null {
   const domain = entry.domains[0]?.replace(/^https?:\/\//, "");
   if (domain) return `https://${domain}`;
@@ -86,14 +92,11 @@ export function PluginLogo({
   );
 }
 
-/** A list row: icon, text and trailing actions on one line. */
 export const ROW_SHELL = "flex min-w-0 items-center gap-3 rounded-xl px-2.5 py-2";
 
-/** The row's main button, which fills the row up to its trailing actions. */
 export const ROW_BUTTON =
   "flex min-w-0 flex-1 items-center gap-3 text-start focus-visible:outline-none";
 
-/** The whole row highlights, including for keyboard focus on its main button. */
 export const ROW_HOVER = "hover:bg-accent/60 has-[button:focus-visible]:bg-accent/60";
 
 export function PluginRow({
@@ -136,7 +139,6 @@ function sourceHref(source: string, sha: string | undefined) {
 
 const SKILLS_SHOWN = 5;
 
-/** The managed app a plugin page connects instead of the plugin's own connector. */
 export type ManagedAppLink = {
   name: string;
   logo: string | null;
@@ -163,7 +165,6 @@ export function PluginDetail({
   assigned: Set<string>;
   activeBotId?: string;
   managed?: ManagedAppLink;
-  /** Opened from Skills: only the plugin's skills are added here; its connector belongs to Integrations. */
   skillsOnly?: boolean;
   onBack: () => void;
   onChanged: () => Promise<unknown>;
@@ -172,6 +173,7 @@ export function PluginDetail({
   const [preview, setPreview] = useState<PluginPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
+  const [risky, setRisky] = useState<{ skills: RiskySkill[]; retry: () => void } | null>(null);
   const [error, setError] = useState<ErrorDetails | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [recipe, setRecipe] = useState<{ name: string; content: string | null } | null>(null);
@@ -187,7 +189,6 @@ export function PluginDetail({
     };
   }, []);
 
-  // A pasted URL can differ from the normalized source the install is saved under.
   const install = installs.find(
     (row) =>
       row.kind === "plugin" &&
@@ -236,21 +237,34 @@ export function PluginDetail({
     }
   }
 
-  /** The first part installs the plugin; later changes keep its pinned version. */
-  const setParts = (key: string, next: PluginPart[], failure: string) =>
+  const setParts = (key: string, next: PluginPart[], failure: string, acceptRisk = false) =>
     run(
       key,
       async () => {
-        if (install) await rpc.capabilities.pluginParts({ id: install.id, parts: next });
-        else if (preview)
-          await rpc.capabilities.install({
-            kind: "plugin",
-            name: preview.name,
-            source: preview.pinnedSource ?? selection.source,
-            pluginDigest: preview.digest,
-            config: {},
-            pluginParts: next,
-          });
+        const risk = acceptRisk ? { acceptRisk } : {};
+        try {
+          if (install) await rpc.capabilities.pluginParts({ id: install.id, parts: next, ...risk });
+          else if (preview)
+            await rpc.capabilities.install({
+              kind: "plugin",
+              name: preview.name,
+              source: preview.pinnedSource ?? selection.source,
+              pluginDigest: preview.digest,
+              config: {},
+              pluginParts: next,
+              ...risk,
+            });
+        } catch (err) {
+          const blocked = skillSafetyBlock(err);
+          if (!blocked) throw err;
+          if (live.current) {
+            setRisky({
+              skills: blocked.skills,
+              retry: () => void setParts(key, next, failure, true),
+            });
+          }
+          return;
+        }
         setConfirmRemove(false);
         await onChanged();
       },
@@ -286,9 +300,7 @@ export function PluginDetail({
       t`Could not enable tools`,
     );
 
-  // A plugin connector already installed stays manageable here until it is removed.
   const managed = parts.includes("connector") ? undefined : managedApp;
-  // Installed plugin skills are read-only, so their saved instructions open in place.
   async function toggleRecipe(name: string) {
     if (recipe?.name === name) return setRecipe(null);
     setRecipe({ name, content: null });
@@ -308,8 +320,6 @@ export function PluginDetail({
     }
   }
 
-  // An ignored manifest field loses nothing, so it isn't reported. A skill left out for repeating
-  // a built-in one says why, since the user still has that skill.
   const notAdded = [
     ...(detail?.skipped ?? [])
       .filter((entry) => entry.kind !== "unsupported_field")
@@ -320,7 +330,6 @@ export function PluginDetail({
   const skills = detail?.skills ?? [];
   const shownSkills = allSkills ? skills : skills.slice(0, SKILLS_SHOWN);
   const connectorCount = detail?.mcpServers.length ?? 0;
-  // Without a connector there is nothing to connect, so the page adds the skills instead.
   const skillPack = skillsOnly || (!managed && !connectorCount && Boolean(detail));
   const headerPart: PluginPart = skillPack ? "skills" : "connector";
   const headerOn = parts.includes(headerPart);
@@ -625,6 +634,7 @@ export function PluginDetail({
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3">{row}</div>
                   )}
+                  <SkillSafetyList findings={skill.safety ?? []} className="px-4 pb-3 ps-11" />
                   {recipe?.name === skill.name ? (
                     <pre
                       data-testid="plugin-skill-recipe"
@@ -652,6 +662,17 @@ export function PluginDetail({
         <p className="px-1 text-body-sm text-muted-foreground">
           <Trans>Not added: {notAdded.join(", ")}</Trans>
         </p>
+      ) : null}
+      {risky ? (
+        <SkillRiskDialog
+          skills={risky.skills}
+          busy={busy}
+          onCancel={() => setRisky(null)}
+          onConfirm={() => {
+            setRisky(null);
+            risky.retry();
+          }}
+        />
       ) : null}
     </div>
   );

@@ -244,6 +244,7 @@ async function main() {
         sandboxKind: sandboxProvider,
         url: sandboxOptions.hostComputerUrl,
         token: sandboxOptions.hostComputerToken,
+        access: sandboxOptions.hostComputerAccess,
       },
     ),
     paymentWallet,

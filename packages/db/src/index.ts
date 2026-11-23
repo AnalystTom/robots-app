@@ -27,6 +27,7 @@ export * from "./cross-space-communication.js";
 export * from "./database-access.js";
 export * from "./database-outage.js";
 export * from "./deferred-migrations.js";
+export * from "./deployment-admins.js";
 export {
   eventsAfter,
   followThreadEvents,

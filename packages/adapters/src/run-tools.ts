@@ -1,4 +1,5 @@
 import type { AgentToolExecutionObserver } from "@robots/adapter-kit";
+import { MAC_APP_TOOL_NAMES } from "@robots/contracts";
 import { BACKGROUND_HELPER_TRIGGER, toolResultTaintsRun } from "@robots/core";
 import { isTerminatingReplyResult } from "./approval-effect.js";
 import { IMAGE_RETURNING_COMPUTER_TOOLS } from "./model-vision.js";
@@ -20,6 +21,7 @@ import { feedbackTools } from "./run-tools-feedback.js";
 import { fileTools } from "./run-tools-files.js";
 import { fleetTools } from "./run-tools-fleet.js";
 import { cloudAgentTool, connectorTool, integrationTools } from "./run-tools-integrations.js";
+import { macAppTool } from "./run-tools-mac-apps.js";
 import { memoryTools } from "./run-tools-memory.js";
 import { messagingTools } from "./run-tools-messaging.js";
 import { pageTools } from "./run-tools-pages.js";
@@ -53,6 +55,7 @@ const TOOL_HANDLERS = new Map<string, ToolHandler>([
   [USER_COMPUTER_SHELL_TOOL, userComputerShell],
   [USER_COMPUTER_OBSERVE_TOOL, userComputerObserve],
   [USER_COMPUTER_ACT_TOOL, userComputerAct],
+  ...MAC_APP_TOOL_NAMES.map((name) => [name, macAppTool] as const),
   ...Object.entries(purchaseTools),
   ...Object.entries(preferenceTools),
   ...Object.entries(feedbackTools),
