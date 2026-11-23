@@ -3,20 +3,45 @@ import { bestEffort } from "@robots/logging";
 import type { PrismaClient } from "./client.js";
 import { runAsSystem } from "./row-security.js";
 
+const SHARING_TTL_MS = 30_000;
+const MAX_CACHED_USERS = 1000;
+const MAX_IN_FLIGHT_CHECKS = 1000;
+
 export function onlyWhereUsageSharingIsOn(
   analytics: ProductAnalytics | undefined,
   prisma: PrismaClient,
 ): ProductAnalytics | undefined {
   if (!analytics) return undefined;
+  const sharing = new Map<string, { on: Promise<boolean>; expiresAt: number }>();
   const checking = new Set<Promise<unknown>>();
+
+  function sharesUsage(userId: string): Promise<boolean> {
+    const cached = sharing.get(userId);
+    if (cached && cached.expiresAt > Date.now()) return cached.on;
+    const on = runAsSystem("check whether the user shares usage data", () =>
+      prisma.user.findUnique({ where: { id: userId }, select: { usageSharing: true } }),
+    ).then(
+      (user) => Boolean(user?.usageSharing),
+      (error: unknown) => {
+        sharing.delete(userId);
+        throw error;
+      },
+    );
+    sharing.set(userId, { on, expiresAt: Date.now() + SHARING_TTL_MS });
+    if (sharing.size > MAX_CACHED_USERS) {
+      const oldest = sharing.keys().next().value;
+      if (oldest !== undefined) sharing.delete(oldest);
+    }
+    return on;
+  }
+
   return {
     capture(userId, event, identity, experiments) {
+      if (checking.size >= MAX_IN_FLIGHT_CHECKS) return;
       const check = bestEffort(
         "check whether the user shares usage data",
-        runAsSystem("check whether the user shares usage data", () =>
-          prisma.user.findUnique({ where: { id: userId }, select: { usageSharing: true } }),
-        ).then((user) => {
-          if (user?.usageSharing) analytics.capture(userId, event, identity, experiments);
+        sharesUsage(userId).then((on) => {
+          if (on) analytics.capture(userId, event, identity, experiments);
         }),
       ).finally(() => checking.delete(check));
       checking.add(check);

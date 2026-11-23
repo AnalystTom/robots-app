@@ -76,17 +76,23 @@ describePostgres("product analytics gated by usage sharing (PostgreSQL)", () => 
     expect(user).toEqual({ usageSharing: false, usageSharingAnsweredAt: null });
   });
 
-  it("stops forwarding as soon as the user turns sharing off", async () => {
+  it("applies an opt-out within the cache window and to a fresh gate at once", async () => {
     const forwarded: string[] = [];
-    const analytics = onlyWhereUsageSharingIsOn(
-      { capture: (userId) => void forwarded.push(userId), flush: async () => {} },
-      prisma,
-    )!;
+    const sink = { capture: (userId: string) => void forwarded.push(userId), flush: async () => {} };
+    const cached = onlyWhereUsageSharingIsOn(sink, prisma)!;
+    await asSystem(prisma).user.update({ where: { id: sharing }, data: { usageSharing: true } });
+    cached.capture(sharing, { name: "signed_in" });
+    await cached.flush();
+    expect(forwarded).toEqual([sharing]);
+
     await asSystem(prisma).user.update({ where: { id: sharing }, data: { usageSharing: false } });
+    cached.capture(sharing, { name: "signed_in" });
+    await cached.flush();
+    expect(forwarded).toEqual([sharing, sharing]);
 
-    analytics.capture(sharing, { name: "signed_in" });
-    await analytics.flush();
-
-    expect(forwarded).toEqual([]);
+    const fresh = onlyWhereUsageSharingIsOn(sink, prisma)!;
+    fresh.capture(sharing, { name: "signed_in" });
+    await fresh.flush();
+    expect(forwarded).toEqual([sharing, sharing]);
   });
 });

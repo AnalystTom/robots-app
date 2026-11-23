@@ -98,15 +98,25 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
     billingEnabled: Boolean(deps.billing),
     // Only billing deployments ask; self-hosted installs never see the survey.
     needsSignupSurvey: Boolean(deps.billing) && !user.signupSurvey,
-    usageSharing: {
-      available: Boolean(deps.analytics),
-      enabled: user.usageSharing,
-      answered: user.usageSharingAnsweredAt !== null,
-    },
+    usageSharing: await usageSharingState(deps, actor, user),
     paymentWalletProvider: deps.paymentWallet
       ? { id: deps.paymentWallet.describe().id, name: deps.paymentWallet.displayName }
       : null,
   };
+}
+
+async function usageSharingState(
+  deps: RouterDeps,
+  actor: Actor,
+  user: { usageSharing: boolean; usageSharingAnsweredAt: Date | null },
+): Promise<NonNullable<Me["usageSharing"]>> {
+  const available = Boolean(deps.analytics);
+  const answered = user.usageSharingAnsweredAt !== null;
+  const needed =
+    available &&
+    !answered &&
+    (await deps.prisma.bot.count({ where: { userId: actor.userId } })) === 0;
+  return { available, enabled: user.usageSharing, answered, needed };
 }
 
 function computerHostFor(

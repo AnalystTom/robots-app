@@ -139,7 +139,9 @@ When product analytics is configured, each person is asked once, at the start of
 whether to share usage data, and the answer is off until they turn it on. The API and worker
 send no product analytics event for anyone who has not turned it on, and Settings lets each
 person change the choice. Accounts that existed before the choice was introduced count as
-answered and off. Crash and error monitoring is not part of this choice.
+answered and off. Crash and error monitoring is not part of this choice. The API and worker
+read each person's choice at most every 30 seconds, so an opt-out can take up to 30 seconds to
+stop their events.
 
 Delivery is best effort: memory is bounded, requests time out, and shutdown flushes
 pending events. Analytics failure does not fail product operations. This is not a

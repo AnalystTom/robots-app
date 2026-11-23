@@ -11,7 +11,10 @@ async function offerUsageSharing(page: Page) {
     await route.fulfill({
       response,
       json: {
-        json: { ...body.json, usageSharing: { ...body.json.usageSharing, available: true } },
+        json: {
+          ...body.json,
+          usageSharing: { ...body.json.usageSharing, available: true, needed: true },
+        },
       },
     });
   });

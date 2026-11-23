@@ -52,8 +52,7 @@ export function OnboardingPage() {
         const survey = Boolean(me.needsSignupSurvey);
         setAfter({ survey, next });
         if (!linkedStep) {
-          const sharing = me.usageSharing?.available && !me.usageSharing.answered;
-          goTo(sharing ? "sharing" : survey ? "survey" : next);
+          goTo(me.usageSharing?.needed ? "sharing" : survey ? "survey" : next);
         }
       })
       .catch(() => {
