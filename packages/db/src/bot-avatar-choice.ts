@@ -18,7 +18,6 @@ import {
 const RANDOM_RANGE = 2 ** 32;
 const cryptoRandom: UnitIntervalRandom = () => randomInt(RANDOM_RANGE) / RANDOM_RANGE;
 
-/** Tries before settling for a non-heart id; each try matches the wanted family about 1 in 10. */
 export const BOT_ID_ATTEMPTS = 200;
 
 export function chooseRobotCharacter(
@@ -30,14 +29,12 @@ export function chooseRobotCharacter(
   );
 }
 
-/** Cuid-shaped: "c", eight base-36 time digits, then sixteen random base-36 digits. */
 function cuidShapedId(random: UnitIntervalRandom, now: number): string {
   let suffix = "";
   for (let index = 0; index < 16; index++) suffix += Math.floor(random() * 36).toString(36);
   return `c${now.toString(36).padStart(8, "0").slice(-8)}${suffix}`;
 }
 
-/** An id on the look the user's bots use least, never a heart. */
 function balancedId(usedLooks: readonly number[], random: UnitIntervalRandom, now: number): string {
   const look = pickLeastUsed(ORGANIC_AVATAR_LOOKS, usedLooks, random);
   const isHeart = (botId: string) => organicAvatarFamily(botId) === ORGANIC_AVATAR_HEART_FAMILY;
@@ -51,34 +48,17 @@ function balancedId(usedLooks: readonly number[], random: UnitIntervalRandom, no
     id = cuidShapedId(random, now);
     if (!isHeart(id)) lastNonHeart = id;
   }
-  // The cap may relax balancing, but must never relax the heart exclusion.
   if (isHeart(id) && lastNonHeart) id = lastNonHeart;
   while (isHeart(id)) id = cuidShapedId(random, now);
   return id;
 }
 
-/** An id drawn with exactly the requested organic family; each try lands about 1 in 10. */
 function idForFamily(family: number, random: UnitIntervalRandom, now: number): string {
   let id = cuidShapedId(random, now);
   while (organicAvatarFamily(id) !== family) id = cuidShapedId(random, now);
   return id;
 }
 
-/**
- * Picks the id and colour of a new bot so it looks unlike the user's other bots.
- *
- * Every client draws a bot's organic body from a hash of its id (`organicAvatarFamily`), and
- * no shape is stored. Choosing the id is therefore how the choice reaches every device the
- * same way, app builds already installed included, without a new column or avatar value.
- * Existing bots keep their ids, so their look never changes.
- *
- * Shapes are balanced by look, where two near-identical families count as one, and a tie
- * between colours goes to one no bot with the same look wears. Bots with a picture or an
- * Avatar Studio shape do not draw an organic body and are not counted for the look. A colour
- * passed by the caller is kept, and so is an organic family the caller picked (the create
- * dialog previews one before the bot has an id). A reserved preview id takes precedence
- * over automatic family selection.
- */
 export function chooseBotAvatar(
   existing: readonly { id: string; color: string }[],
   color: string | undefined,
@@ -97,8 +77,6 @@ export function chooseBotAvatar(
   },
 ): { id: string; color: string } {
   if (avatarSet === "robots") {
-    // The logo uses no organic family. Keep automatic ids non-heart for a later
-    // Original-set switch, without scanning the roster or balancing unused shapes.
     if (previewId) return { id: previewId, color: color ?? seededLogoAvatarColor(previewId) };
     let id = family === undefined ? cuidShapedId(random, now) : idForFamily(family, random, now);
     while (family === undefined && organicAvatarFamily(id) === ORGANIC_AVATAR_HEART_FAMILY)
@@ -112,7 +90,6 @@ export function chooseBotAvatar(
         avatar.kind === "color" || avatar.kind === "other"
           ? organicAvatarLook(organicAvatarFamily(bot.id))
           : null,
-      // A color saved as its earlier value is shown as, and so counts as, its palette color.
       color:
         avatar.kind === "color" || avatar.kind === "shape"
           ? resolvePersonaColorDef(bot.id, avatar.color).hex.toUpperCase()
