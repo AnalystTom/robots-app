@@ -72,7 +72,11 @@ export function reportMobileError(
   tags?: Record<string, string>,
 ): void {
   // A request that lost its connection, timed out or was cancelled is the network, not a bug.
-  if (operation === "rpc.transport" && isConnectionFailure(error)) return;
+  if (
+    (operation === "rpc.transport" || operation === "mobile.best-effort") &&
+    isConnectionFailure(error)
+  )
+    return;
   errors.capture(error, operation, tags);
 }
 
