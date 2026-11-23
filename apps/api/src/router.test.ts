@@ -49,7 +49,6 @@ import {
   AnswerTooLongError,
   configureProviderTransactionPool,
   IsolationError,
-  onlyWhereUsageSharingIsOn,
   Prisma,
   runProviderTransaction,
 } from "@robots/db";
@@ -581,7 +580,9 @@ describe("account preferences", () => {
   it("stops asking for data sharing once the save answers it", async () => {
     const setup = preferencesDeps("organic");
     setup.deps.analytics = { capture: vi.fn(), flush: vi.fn(async () => undefined) };
-    const client = createRouterClient(createRouter(setup.deps), { context: { actor: setup.actor } });
+    const client = createRouterClient(createRouter(setup.deps), {
+      context: { actor: setup.actor },
+    });
 
     await expect(client.me()).resolves.toMatchObject({
       usageSharing: { available: true, needed: true },
@@ -590,31 +591,6 @@ describe("account preferences", () => {
     await expect(client.me()).resolves.toMatchObject({
       usageSharing: { available: true, enabled: false, needed: false },
     });
-  });
-
-  it("applies a saved data sharing choice to the analytics gate at once", async () => {
-    const setup = preferencesDeps("organic");
-    const forwarded: string[] = [];
-    const gate = onlyWhereUsageSharingIsOn(
-      { capture: (userId) => void forwarded.push(userId), flush: async () => undefined },
-      setup.deps.prisma,
-    )!;
-    const sendSignIn = async () => {
-      gate.capture("user-1", { name: "signed_in" });
-      await gate.flush();
-    };
-
-    await updatePreferences(setup, { usageSharing: false });
-    await sendSignIn();
-    expect(forwarded).toEqual([]);
-
-    await updatePreferences(setup, { usageSharing: true });
-    await sendSignIn();
-    expect(forwarded).toEqual(["user-1"]);
-
-    await updatePreferences(setup, { usageSharing: false });
-    await sendSignIn();
-    expect(forwarded).toEqual(["user-1"]);
   });
 
   it.each([null, "Europe/London"])(

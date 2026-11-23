@@ -26,8 +26,7 @@ export function OnboardingPage() {
         ? "sharing"
         : undefined;
   const [creatingBot, setCreatingBot] = useState(false);
-  const [surveyDone, setSurveyDone] = useState(false);
-  const step = creatingBot ? "bot" : surveyDone ? "loading" : (linkedStep ?? "loading");
+  const step = creatingBot ? "bot" : (linkedStep ?? "loading");
   const [billingEnabled, setBillingEnabled] = useState(false);
   const [after, setAfter] = useState<{ survey: boolean; next: "model" | "bot" } | null>(null);
   const [catalog, setCatalog] = useState<ModelCatalogEntry[]>([]);
@@ -71,12 +70,6 @@ export function OnboardingPage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!surveyDone || !after) return;
-    setSurveyDone(false);
-    goTo(after.next);
-  }, [surveyDone, after]);
-
   function goTo(next: "sharing" | "survey" | "model" | "bot") {
     if (next === "bot") setCreatingBot(true);
     navigate(next === "bot" ? "/onboarding" : `/onboarding/${next}`, { replace: true });
@@ -119,7 +112,7 @@ export function OnboardingPage() {
         {step === "sharing" && after ? (
           <UsageSharingStep onDone={() => goTo(after.survey ? "survey" : after.next)} />
         ) : null}
-        {step === "survey" ? <SignupSurvey onDone={() => setSurveyDone(true)} /> : null}
+        {step === "survey" && after ? <SignupSurvey onDone={() => goTo(after.next)} /> : null}
         {step === "model" ? <ModelStep model={model} fieldId={fieldId} /> : null}
         {step === "bot" ? (
           <FirstBotRetry error={error} onRetry={() => void createFirstBot()} />
