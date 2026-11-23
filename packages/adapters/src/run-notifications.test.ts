@@ -36,7 +36,7 @@ function deps({
   publish = vi.fn(async () => undefined),
   members = ["user-1"],
 } = {}) {
-  const send = vi.fn(async () => undefined);
+  const send = vi.fn(async (_message: NotificationMessage, _context: { userId: string }) => {});
   const value = {
     prisma: {
       spaceMember: {

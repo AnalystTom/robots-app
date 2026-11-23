@@ -39,9 +39,9 @@ class ChatGroupTest {
 
   @Test
   fun chatsShareOneGroupAndAnUpdateReplacesItsNotification() {
-    assertTrue(SenderPush.present(context, push("a", "Bookmark To Skill Creator", "Save marketing-engineer-workflow to the skills folder")))
-    assertTrue(SenderPush.present(context, push("b", "Weekly Digest", "I'm still checking for new bookmarks")))
-    assertTrue(SenderPush.present(context, push("a", "Bookmark To Skill Creator", "Saved. The skill is ready to use.")))
+    assertTrue(SenderPush.present(context, push("a", "Bookmark chat", "Saving the file now")))
+    assertTrue(SenderPush.present(context, push("b", "Digest chat", "Still checking for new items")))
+    assertTrue(SenderPush.present(context, push("a", "Bookmark chat", "Saved. Ready to use.")))
 
     val active = manager.activeNotifications
     val summaries = active.filter { it.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0 }
@@ -51,8 +51,18 @@ class ChatGroupTest {
     assertTrue(chats.all { it.notification.group == ChatGroup.KEY })
     val updated = chats.first { it.notification.extras.getString("robots.threadId") == "a" }
     assertEquals(
-      "Saved. The skill is ready to use.",
+      "Saved. Ready to use.",
       updated.notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
     )
+  }
+
+  @Test
+  fun leaveStackedChatsInTheShade() {
+    SenderPush.present(context, push("a", "Bookmark chat", "First reply from the bot"))
+    SenderPush.present(context, push("b", "Digest chat", "Checking for new items"))
+    SenderPush.present(context, push("a", "Bookmark chat", "Second reply, newer"))
+    SenderPush.present(context, push("b", "Digest chat", "Found two new items"))
+    SenderPush.present(context, push("a", "Bookmark chat", "Third reply, newest"))
+    assertEquals(3, manager.activeNotifications.size)
   }
 }

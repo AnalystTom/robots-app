@@ -1,4 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-  <application android:label="RoBots" />
+  <application android:label="RoBots">
+    <activity android:name="com.robots.notifications.OpenedThreadActivity" android:exported="true" android:theme="@android:style/Theme.Material.Light">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="robots" />
+      </intent-filter>
+    </activity>
+  </application>
 </manifest>
