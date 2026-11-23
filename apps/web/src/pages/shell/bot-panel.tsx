@@ -249,7 +249,7 @@ export function BotSettings({
   const modelChoices = chatModelChoices(
     connectedOptions,
     selectedModelKey,
-    defaultModelLabel ? t`Space default · ${defaultModelLabel}` : t`Space default`,
+    defaultModelLabel ? `${t`Space default`} (${defaultModelLabel})` : t`Space default`,
     defaultEntry?.images,
   );
 
