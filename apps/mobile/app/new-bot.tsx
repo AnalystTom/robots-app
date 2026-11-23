@@ -1,7 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import type { BotAvatarSet } from "@robots/contracts";
-import { BOT_NAME_MAX_LENGTH, resolveBotAvatarSet } from "@robots/contracts";
-import { botLookState, newBotLook, newBotLookInput, newBotPreviewIdentity } from "@robots/core";
+import { BOT_NAME_MAX_LENGTH } from "@robots/contracts";
+import { newBotLook, newBotLookInput } from "@robots/core";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler, ScrollView, Text, TextInput, View } from "react-native";
@@ -21,9 +20,8 @@ export default function NewBot() {
   const { t } = useLingui();
   const tokens = useMobileTokens();
   const router = useRouter();
-  const params = useLocalSearchParams<{ spaceId?: string; avatarSet?: BotAvatarSet }>();
-  const [accountSet, setAccountSet] = useState<BotAvatarSet | null>(null);
-  const avatarSet = accountSet ?? resolveBotAvatarSet(params.avatarSet);
+  const params = useLocalSearchParams<{ spaceId?: string }>();
+  const [accountLoaded, setAccountLoaded] = useState(false);
   const [name, setName] = useState("");
   const [look, setLook] = useState(newBotLook);
   const [pending, setPending] = useState(false);
@@ -33,21 +31,12 @@ export default function NewBot() {
   const gone = useRef(false);
   const modelCheck = useRef<Promise<boolean>>(Promise.resolve(false));
   const trimmed = name.trim();
-  const identity = newBotPreviewIdentity(avatarSet, look);
 
   const readAccountSet = useCallback(() => {
     setAccountFailed(false);
     return rpc("me")
-      .then((me) => {
-        if (gone.current) return;
-        const set = resolveBotAvatarSet(me.botAvatarSet);
-        setAccountSet(set);
-        if (set === "robots")
-          setLook((current) =>
-            botLookState(current.color).shapeIndex === null
-              ? current
-              : { ...current, color: botLookState(current.color).color },
-          );
+      .then(() => {
+        if (!gone.current) setAccountLoaded(true);
       })
       .catch(() => {
         if (!gone.current) setAccountFailed(true);
@@ -73,14 +62,14 @@ export default function NewBot() {
   }, [pending]);
 
   async function create() {
-    if (!trimmed || !accountSet || creating.current) return;
+    if (!trimmed || !accountLoaded || creating.current) return;
     creating.current = true;
     setPending(true);
     setError(null);
     try {
       if (await modelCheck.current) return;
       const outcome = await createInboxBot({
-        input: { name: trimmed, ...newBotLookInput(accountSet, look) },
+        input: { name: trimmed, ...newBotLookInput(look) },
         openChat: (href) => {
           if (gone.current) return;
           router.dismiss();
@@ -114,7 +103,7 @@ export default function NewBot() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ alignItems: "center", marginTop: 8, marginBottom: 24 }}>
-          <BotAvatar color={look.color} identity={identity} size={96} />
+          <BotAvatar color={look.color} size={96} />
         </View>
         <TextInput
           autoFocus
@@ -163,7 +152,7 @@ export default function NewBot() {
         <NativeActionButton
           fill
           label={pending ? t`Creating…` : t`Create`}
-          disabled={!trimmed || !accountSet || pending}
+          disabled={!trimmed || !accountLoaded || pending}
           onPress={() => void create()}
           style={{ marginTop: 28, borderRadius: 28 }}
         />

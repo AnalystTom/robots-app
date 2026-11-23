@@ -63,7 +63,7 @@ export function IncomingCall({
   transcribe,
   onAnswered,
 }: {
-  bots: readonly Pick<Bot, "id" | "name" | "color" | "avatarSet" | "incomingCall">[];
+  bots: readonly Pick<Bot, "id" | "name" | "color" | "incomingCall">[];
   transcribe?: boolean;
   onAnswered: (botId: string) => void;
 }) {
@@ -180,7 +180,6 @@ export function IncomingCall({
         botId: bot.id,
         botName: bot.name,
         botColor: bot.color,
-        botAvatarSet: bot.avatarSet,
         transcribe,
         answered: { callId: call.callId, opening: answered.opening },
       });

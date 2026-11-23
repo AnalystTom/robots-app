@@ -221,7 +221,7 @@ export const BOT_TEMPLATES: readonly BotTemplate[] = [
 
 const BOT_TEMPLATE_ROBOTS: Readonly<Record<string, RobotPresetId>> = {
   "morning-briefing": "host",
-  "pr-reviewer": "critic",
+  "pr-reviewer": "chef",
   "topic-watch": "professor",
 };
 

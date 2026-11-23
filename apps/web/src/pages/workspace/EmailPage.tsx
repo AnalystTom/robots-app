@@ -25,7 +25,7 @@ import { formatRelativeTime } from "../../lib/relative-time";
 import { errorText } from "../../lib/user-error";
 import { WorkspaceLayout } from "./WorkspaceLayout";
 
-type BotLook = Pick<Bot, "id" | "color" | "avatarSet">;
+type BotLook = Pick<Bot, "id" | "color">;
 
 /**
  * The mail the caller's bots received at their addresses and the mail they sent. The selected

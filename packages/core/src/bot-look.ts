@@ -1,4 +1,4 @@
-import type { BotAvatarSet, RobotLook } from "@robots/contracts";
+import type { RobotLook } from "@robots/contracts";
 import { parseBotAvatarValue } from "@robots/contracts";
 import {
   ORGANIC_AVATAR_HEART_FAMILY,
@@ -34,16 +34,12 @@ export function newBotLook(): NewBotLook {
   };
 }
 
-export function newBotPreviewIdentity(avatarSet: BotAvatarSet, look: NewBotLook): string {
-  return avatarSet === "robots" ? look.id : look.identity;
-}
-
-export function newBotLookInput(
-  avatarSet: BotAvatarSet,
-  look: NewBotLook,
-): { color: string; id?: string; avatarFamily?: number } {
+export function newBotLookInput(look: NewBotLook): {
+  color: string;
+  id?: string;
+  avatarFamily?: number;
+} {
   if (botLookState(look.color).robot) return { color: look.color, id: look.id };
-  if (avatarSet === "robots") return { color: botLookState(look.color).color, id: look.id };
   if (botLookState(look.color).shapeIndex !== null) return { color: look.color };
   return { color: look.color, avatarFamily: organicAvatarFamily(look.identity) };
 }

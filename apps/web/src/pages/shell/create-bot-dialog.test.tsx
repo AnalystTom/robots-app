@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 
-import type { BotAvatarSet } from "@robots/contracts";
 import { parseBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
 import { robotCharacterDataUri } from "@robots/core";
 import type { ReactNode } from "react";
@@ -57,14 +56,9 @@ afterEach(() => {
   container.remove();
 });
 
-async function render(
-  onCreate: (input: CreateBotDialogInput) => Promise<void>,
-  avatarSet: BotAvatarSet = "organic",
-) {
+async function render(onCreate: (input: CreateBotDialogInput) => Promise<void>) {
   await act(async () => {
-    root.render(
-      <CreateBotDialog avatarSet={avatarSet} onCancel={() => undefined} onCreate={onCreate} />,
-    );
+    root.render(<CreateBotDialog onCancel={() => undefined} onCreate={onCreate} />);
   });
 }
 
@@ -101,27 +95,24 @@ describe("CreateBotDialog", () => {
     expect(button("Create").disabled).toBe(false);
   });
 
-  it.each(["organic", "robots"] as const)(
-    "starts %s accounts on a random robot character and sends it as previewed",
-    async (avatarSet) => {
-      const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
-      await render(onCreate, avatarSet);
-      expect(document.querySelector('[role="tablist"]')).toBeNull();
-      const preview = document.querySelector<HTMLImageElement>(
-        '[data-testid="create-bot-dialog"] img',
-      )!;
-      await typeName("Scout");
-      await click(button("Create"));
-      const input = onCreate.mock.lastCall![0];
-      expect(parseBotAvatarValue(input.color).kind).toBe("robot");
-      expect(preview.getAttribute("src")).toBe(
-        robotCharacterDataUri(parseRobotCharacter(input.color)!),
-      );
-      expect(input.id).toMatch(/^c[a-z0-9]{24}$/);
-      expect(input).not.toHaveProperty("avatarFamily");
-      expect(input).not.toHaveProperty("avatarSet");
-    },
-  );
+  it("starts on a random robot character and sends it as previewed", async () => {
+    const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
+    await render(onCreate);
+    expect(document.querySelector('[role="tablist"]')).toBeNull();
+    const preview = document.querySelector<HTMLImageElement>(
+      '[data-testid="create-bot-dialog"] img',
+    )!;
+    await typeName("Scout");
+    await click(button("Create"));
+    const input = onCreate.mock.lastCall![0];
+    expect(parseBotAvatarValue(input.color).kind).toBe("robot");
+    expect(preview.getAttribute("src")).toBe(
+      robotCharacterDataUri(parseRobotCharacter(input.color)!),
+    );
+    expect(input.id).toMatch(/^c[a-z0-9]{24}$/);
+    expect(input).not.toHaveProperty("avatarFamily");
+    expect(input).not.toHaveProperty("avatarSet");
+  });
 
   it("offers preset robots and sends the one picked", async () => {
     const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
@@ -153,12 +144,12 @@ it("retains the preview identity and look through rerenders and a retry", async 
   const onCreate = vi
     .fn(async (_input: CreateBotDialogInput) => undefined)
     .mockRejectedValueOnce(new Error("Try again"));
-  await render(onCreate, "robots");
+  await render(onCreate);
   const preview = () =>
     document.querySelector('[data-testid="create-bot-dialog"] img')!.getAttribute("src");
   const look = preview();
   await typeName("First name");
-  await render(onCreate, "robots");
+  await render(onCreate);
   expect(preview()).toBe(look);
   await click(button("Create"));
   const first = onCreate.mock.lastCall![0];
