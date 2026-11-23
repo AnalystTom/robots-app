@@ -40,6 +40,7 @@ import { MessageContextMenu } from "../message-context-menu";
 import { ReplyLine } from "../reply-line";
 import { TimeSeparator } from "../time-separator";
 import { UnreadDivider } from "../unread-divider";
+import { MessageActions } from "./message-actions";
 import type { MessageActionProps } from "./message-bubble";
 import { MessageBubble } from "./message-bubble";
 
@@ -178,8 +179,9 @@ export const MessageRow = memo(function MessageRow({
   }, [hasLike]);
   const displayedReactions = new Map(messageReactions);
   if (optimisticLike && !hasLike) displayedReactions.set("👍", 1);
-  const { actionProps, menu, onMenuAction, likeMessage } = useMemo<{
+  const { actionProps, menu, onMenuAction, likeMessage, copyMessage } = useMemo<{
     actionProps: MessageActionProps;
+    copyMessage: () => void;
     menu: ReturnType<typeof buildMessageContextMenu>;
     onMenuAction: (id: string) => void;
     likeMessage?: () => void;
@@ -328,6 +330,7 @@ export const MessageRow = memo(function MessageRow({
       });
     return {
       menu,
+      copyMessage: copy,
       likeMessage: canDoubleTapReact(includeReact, message.blocks, waitingForUser)
         ? () => {
             if (hasLike || optimisticLike || likeInFlight.current) return;
@@ -379,7 +382,17 @@ export const MessageRow = memo(function MessageRow({
     hasLike,
     optimisticLike,
   ]);
-  const layout = messageRowLayout(message.blocks, { activityBotId, inGroup, columnWidth });
+  const showsActions =
+    message.role === "bot" &&
+    !message.id.startsWith("progress:") &&
+    !isPeerReceiptBlocks(message.blocks) &&
+    Boolean(copyableMessageText(message));
+  const layout = messageRowLayout(message.blocks, {
+    activityBotId,
+    inGroup,
+    columnWidth,
+    plainBotText: message.role === "bot" && message.blocks.every((block) => block.kind === "text"),
+  });
   return (
     <View
       key={message.id}
@@ -472,6 +485,9 @@ export const MessageRow = memo(function MessageRow({
               />
             </ThreadReadOnlyContext.Provider>
           </MessageContextMenu>
+          {showsActions ? (
+            <MessageActions createdAt={message.createdAt} onCopy={copyMessage} />
+          ) : null}
           {displayedReactions.size > 0 ? (
             <View
               style={{

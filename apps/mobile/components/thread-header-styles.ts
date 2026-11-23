@@ -25,16 +25,14 @@ export function createThreadHeaderStyles() {
       ...typeScale.cardTitle,
       color: tokens.foreground,
     },
+    subtitle: {
+      ...typeScale.footnote,
+      color: tokens.mutedForeground,
+    },
     headerActions: {
       flexDirection: "row",
       alignItems: "center",
       gap: 20,
-    },
-    circleButton: {
-      flex: 1,
-      borderRadius: 999,
-      alignItems: "center",
-      justifyContent: "center",
     },
     composerFill: {
       borderWidth: StyleSheet.hairlineWidth,

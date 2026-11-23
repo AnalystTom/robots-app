@@ -3,7 +3,7 @@ import type { SpaceBot } from "@robots/contracts";
 import { displayName as safeDisplayName } from "@robots/core";
 import { useRouter } from "expo-router";
 import { useSyncExternalStore } from "react";
-import { Pressable } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import type { ChatTitleRoute } from "../lib/chat-settings-route";
 import { chatTitleRoute } from "../lib/chat-settings-route";
 import type { MobileBot, MobileGroup } from "../lib/mobile-types";
@@ -95,6 +95,7 @@ export function ChatHeaderTitle({
   const members = inGroup ? (title.members ?? inboxGroup?.members) : undefined;
   const label = safeDisplayName(title.name, inGroup ? t`Group` : t`Bot`) || t`Thread`;
   const opens = title.opens;
+  const subtitle = !inGroup && title.bot && "modelId" in title.bot ? title.bot.modelId : undefined;
   return (
     <Pressable
       accessibilityRole="button"
@@ -109,7 +110,16 @@ export function ChatHeaderTitle({
           <ChatTitleAvatar bot={title.bot} status={title.status} composing={title.composing} />
         ) : null}
         {inGroup ? <GroupSeats members={members ?? []} size={CHAT_TITLE_AVATAR_SIZE} /> : null}
-        <ChatTitleLabel label={label} placeholder={!title.name} style={styles.title} />
+        {subtitle ? (
+          <View style={{ flexShrink: 1 }}>
+            <ChatTitleLabel label={label} placeholder={!title.name} style={styles.title} />
+            <Text numberOfLines={1} style={styles.subtitle}>
+              {subtitle}
+            </Text>
+          </View>
+        ) : (
+          <ChatTitleLabel label={label} placeholder={!title.name} style={styles.title} />
+        )}
       </GlassSurface>
     </Pressable>
   );

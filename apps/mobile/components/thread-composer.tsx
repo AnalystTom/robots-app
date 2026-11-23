@@ -28,7 +28,7 @@ import {
   truncateSlashDescription,
 } from "@robots/core";
 import { MAX_FONT_SCALE } from "@robots/ui-tokens";
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { TextInputInstance, ViewStyle } from "react-native";
 import {
@@ -88,9 +88,11 @@ type ThreadComposerProps = {
   botId?: string;
   onCall: boolean;
   sending: boolean;
-  styles: { circleButton: ViewStyle; composerFill: ViewStyle };
+  styles: { composerFill: ViewStyle };
   attachActions: MenuAction[];
   attachFrom: (source: string) => void;
+  attachmentStrip: ReactNode;
+  model: { label: string; onPress: () => void } | null;
   send: () => Promise<void>;
   startVoiceCall: () => Promise<void>;
   onSlashAction: (action: SlashActionId) => void;
@@ -114,6 +116,8 @@ export function ThreadComposer({
   styles,
   attachActions,
   attachFrom,
+  attachmentStrip,
+  model,
   send,
   startVoiceCall,
   onSlashAction,
@@ -133,7 +137,6 @@ export function ThreadComposer({
   const inputRef = useRef<TextInputInstance>(null);
   const [saved] = useState(() => readComposerDraft(draftScope));
   const [draft, setDraft] = useState(saved.text);
-  const [emptyRowHeight, setEmptyRowHeight] = useState<number>();
   const draftRef = useRef(saved.text);
   const nativeSelection = useRef({ start: saved.text.length, end: saved.text.length });
   const completedSelection = useRef<number | null>(null);
@@ -410,19 +413,13 @@ export function ThreadComposer({
     if (removeSlashQuery()) onSlashAction(action);
   }
 
-  const composerPillStyle = {
+  const actionStyle = {
     width: 36,
-    height: 28,
-    borderRadius: 14,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   } as const;
-
-  // One line of text with its padding, as measured while the box is empty. The pills and attach
-  // button centre on it: the bar can grow past 44 (font scale, Android text metrics), and a fixed
-  // bottom margin would leave them high.
-  const lineHeight = Math.max(44, emptyRowHeight ?? 22 + 22 * textScale);
-  const pillInset = (lineHeight - composerPillStyle.height) / 2;
 
   const canSend = Boolean(draft.trim()) || selectedSkill !== null || attachmentIds.length > 0;
   // Sending resets the box, which would drop a clip still recording or words still being transcribed.
@@ -563,310 +560,299 @@ export function ThreadComposer({
           ))}
         </ScrollView>
       ) : null}
-      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 10, marginTop: 8 }}>
-        <MenuView
-          actions={attachActions}
-          colorScheme={colorScheme}
-          onPressAction={(event) => attachFrom(event.nativeEvent.event)}
-        >
-          <View
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel={t`Attach file`}
-            style={{ width: 44, height: 44, marginBottom: (lineHeight - 44) / 2 }}
-          >
-            <GlassSurface
-              shape="circle"
-              style={styles.circleButton}
-              fallbackStyle={styles.composerFill}
-            >
-              <NativeSymbol ios="plus" android="add" size={18} color={tokens.mutedForeground} />
-            </GlassSurface>
-          </View>
-        </MenuView>
-        <GlassSurface
-          shape="roundedRectangle"
+      <GlassSurface
+        shape="roundedRectangle"
+        style={{
+          marginTop: 8,
+          borderRadius: 28,
+          paddingStart: 16,
+          paddingEnd: 8,
+          paddingTop: 6,
+          paddingBottom: 8,
+        }}
+        fallbackStyle={styles.composerFill}
+      >
+        {attachmentStrip}
+        <View
           style={{
-            flex: 1,
-            minHeight: 44,
-            borderRadius: 22,
             flexDirection: "row",
-            alignItems: "flex-end",
-            // Keeps text clear of the call/send pill even when it runs to the trailing edge (RTL).
-            gap: 8,
-            paddingStart: 16,
-            paddingEnd: 8,
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 6,
           }}
-          fallbackStyle={styles.composerFill}
         >
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            {selectedSkill ? (
-              <View
-                testID="skill-chip"
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  backgroundColor: tokens.muted,
-                  borderRadius: 999,
-                  paddingHorizontal: 10,
-                  paddingVertical: 5,
-                  maxWidth: "100%",
+          {selectedSkill ? (
+            <View
+              testID="skill-chip"
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                backgroundColor: tokens.muted,
+                borderRadius: 999,
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+                maxWidth: "100%",
+              }}
+            >
+              <NativeSymbol
+                ios="cube"
+                android="cube-outline"
+                size={13}
+                color={tokens.mutedForeground}
+              />
+              <Text
+                numberOfLines={1}
+                style={{ color: tokens.foreground, fontSize: 13, flexShrink: 1 }}
+              >
+                {selectedSkill.name}
+              </Text>
+              <Pressable
+                accessibilityLabel={t`Remove skill ${ph({ name: selectedSkill.name })}`}
+                hitSlop={8}
+                onPress={() => {
+                  setSelectedSkill(null);
+                  setSlashQuery(
+                    composerSlashQuery(
+                      draftRef.current,
+                      nativeSelection.current.start,
+                      nativeSelection.current.end,
+                      bindingsRef.current,
+                    ),
+                  );
                 }}
               >
                 <NativeSymbol
-                  ios="cube"
-                  android="cube-outline"
-                  size={13}
+                  ios="xmark"
+                  android="close"
+                  size={12}
                   color={tokens.mutedForeground}
                 />
-                <Text
-                  numberOfLines={1}
-                  style={{ color: tokens.foreground, fontSize: 13, flexShrink: 1 }}
-                >
-                  {selectedSkill.name}
-                </Text>
-                <Pressable
-                  accessibilityLabel={t`Remove skill ${ph({ name: selectedSkill.name })}`}
-                  hitSlop={8}
-                  onPress={() => {
-                    setSelectedSkill(null);
-                    setSlashQuery(
-                      composerSlashQuery(
-                        draftRef.current,
-                        nativeSelection.current.start,
-                        nativeSelection.current.end,
-                        bindingsRef.current,
-                      ),
-                    );
-                  }}
-                >
-                  <NativeSymbol
-                    ios="xmark"
-                    android="close"
-                    size={12}
-                    color={tokens.mutedForeground}
-                  />
-                </Pressable>
-              </View>
-            ) : null}
-            <Pressable
-              accessible={false}
-              onLayout={(event) => {
-                if (!draftRef.current) setEmptyRowHeight(event.nativeEvent.layout.height);
-              }}
-              onPress={() => inputRef.current?.focus()}
-              style={{
-                flexGrow: 1,
-                flexShrink: 1,
-                minWidth: 96,
-                // Keep the inset outside the scrolling native input: iOS can scroll its
-                // padding out of view, leaving a partially visible line at the edge.
-                paddingVertical: 11,
-              }}
-            >
-              {!draft && !selectedSkill ? (
-                <Text
-                  numberOfLines={1}
-                  importantForAccessibility="no"
-                  accessibilityElementsHidden
-                  accessible={false}
-                  pointerEvents="none"
-                  style={{
-                    position: "absolute",
-                    top: 11,
-                    start: 0,
-                    end: 0,
-                    fontSize: 17,
-                    lineHeight: 22,
-                    color: tokens.faintForeground,
-                  }}
-                >
-                  {composerPrompt}
-                </Text>
-              ) : null}
-              <TextInput
-                ref={inputRef}
-                // The iOS file-drop module attaches images pasted into this field only.
-                testID="chat-composer"
-                onChangeText={updateDraft}
-                selection={selection}
-                onSelectionChange={(event) => {
-                  const next = event.nativeEvent.selection;
-                  const pending = pendingNativeEdit.current;
-                  if (pending) {
-                    pendingNativeEdit.current = null;
-                    const shown = draftRef.current;
-                    const resolved = applyNativeEdit(pending, next);
-                    if (resolved.caret !== null || resolved.text !== shown) {
-                      nativeSelection.current =
-                        resolved.caret === null
-                          ? next
-                          : { start: resolved.caret, end: resolved.caret };
-                      selectionHistory.current = [nativeSelection.current];
-                      setSelection(nativeSelection.current);
-                      updatePickerQueries(
-                        resolved.text,
-                        nativeSelection.current.start,
-                        nativeSelection.current.end,
-                      );
-                      return;
-                    }
-                  }
-                  selectionHistory.current = [...selectionHistory.current.slice(-3), next];
-                  nativeSelection.current = next;
-                  // Moving the caret out of a selected mention and its trailing space deselects it. The
-                  // caret may still report the character a backspace is about to delete.
-                  const selectedBinding = bindingsRef.current.find(
-                    (binding) => binding.start === selectedMentionRef.current,
-                  );
-                  if (
-                    selectedBinding &&
-                    !(
-                      next.start === next.end &&
-                      next.start > selectedBinding.start &&
-                      next.start <=
-                        selectedBinding.end +
-                          (draftRef.current[selectedBinding.end] === " " ? 1 : 0)
-                    )
-                  ) {
-                    selectMention(null);
-                  }
-                  setSelection(undefined);
-                  if (
-                    next.start === completedSelection.current &&
-                    next.end === completedSelection.current
-                  ) {
-                    return;
-                  }
-                  completedSelection.current = null;
-                  updatePickerQueries(draftRef.current, next.start, next.end);
-                }}
-                accessibilityLabel={composerPrompt}
-                onKeyPress={(event) => {
-                  if (
-                    event.nativeEvent.key === "Backspace" &&
-                    draft.length === 0 &&
-                    selectedSkill !== null
-                  ) {
-                    setSelectedSkill(null);
-                  }
-                }}
-                keyboardAppearance={colorScheme}
-                multiline
-                scrollEnabled
-                textAlignVertical="top"
-                blurOnSubmit={false}
+              </Pressable>
+            </View>
+          ) : null}
+          <Pressable
+            accessible={false}
+            onPress={() => inputRef.current?.focus()}
+            style={{
+              flexGrow: 1,
+              flexShrink: 1,
+              minWidth: 96,
+              paddingVertical: 11,
+            }}
+          >
+            {!draft && !selectedSkill ? (
+              <Text
+                numberOfLines={1}
+                importantForAccessibility="no"
+                accessibilityElementsHidden
+                accessible={false}
+                pointerEvents="none"
                 style={{
-                  color: tokens.foreground,
+                  position: "absolute",
+                  top: 11,
+                  start: 0,
+                  end: 0,
                   fontSize: 17,
                   lineHeight: 22,
-                  padding: 0,
-                  // Native text and lineHeight scale with Dynamic Type; the viewport must too.
-                  minHeight: 22 * textScale,
-                  maxHeight: 110 * textScale,
-                  writingDirection: "auto",
+                  color: tokens.faintForeground,
                 }}
               >
-                {composerMentionSegments(draft, mentionBindings).map((segment, index) => (
-                  <Text
-                    key={index}
-                    style={
-                      segment.binding
-                        ? mentionStyle(segment.binding.start === selectedMention)
-                        : undefined
-                    }
-                  >
-                    {segment.text}
-                  </Text>
-                ))}
-              </TextInput>
+                {composerPrompt}
+              </Text>
+            ) : null}
+            <TextInput
+              ref={inputRef}
+              testID="chat-composer"
+              onChangeText={updateDraft}
+              selection={selection}
+              onSelectionChange={(event) => {
+                const next = event.nativeEvent.selection;
+                const pending = pendingNativeEdit.current;
+                if (pending) {
+                  pendingNativeEdit.current = null;
+                  const shown = draftRef.current;
+                  const resolved = applyNativeEdit(pending, next);
+                  if (resolved.caret !== null || resolved.text !== shown) {
+                    nativeSelection.current =
+                      resolved.caret === null
+                        ? next
+                        : { start: resolved.caret, end: resolved.caret };
+                    selectionHistory.current = [nativeSelection.current];
+                    setSelection(nativeSelection.current);
+                    updatePickerQueries(
+                      resolved.text,
+                      nativeSelection.current.start,
+                      nativeSelection.current.end,
+                    );
+                    return;
+                  }
+                }
+                selectionHistory.current = [...selectionHistory.current.slice(-3), next];
+                nativeSelection.current = next;
+                const selectedBinding = bindingsRef.current.find(
+                  (binding) => binding.start === selectedMentionRef.current,
+                );
+                if (
+                  selectedBinding &&
+                  !(
+                    next.start === next.end &&
+                    next.start > selectedBinding.start &&
+                    next.start <=
+                      selectedBinding.end + (draftRef.current[selectedBinding.end] === " " ? 1 : 0)
+                  )
+                ) {
+                  selectMention(null);
+                }
+                setSelection(undefined);
+                if (
+                  next.start === completedSelection.current &&
+                  next.end === completedSelection.current
+                ) {
+                  return;
+                }
+                completedSelection.current = null;
+                updatePickerQueries(draftRef.current, next.start, next.end);
+              }}
+              accessibilityLabel={composerPrompt}
+              onKeyPress={(event) => {
+                if (
+                  event.nativeEvent.key === "Backspace" &&
+                  draft.length === 0 &&
+                  selectedSkill !== null
+                ) {
+                  setSelectedSkill(null);
+                }
+              }}
+              keyboardAppearance={colorScheme}
+              multiline
+              scrollEnabled
+              textAlignVertical="top"
+              blurOnSubmit={false}
+              style={{
+                color: tokens.foreground,
+                fontSize: 17,
+                lineHeight: 22,
+                padding: 0,
+                minHeight: 22 * textScale,
+                maxHeight: 110 * textScale,
+                writingDirection: "auto",
+              }}
+            >
+              {composerMentionSegments(draft, mentionBindings).map((segment, index) => (
+                <Text
+                  key={index}
+                  style={
+                    segment.binding
+                      ? mentionStyle(segment.binding.start === selectedMention)
+                      : undefined
+                  }
+                >
+                  {segment.text}
+                </Text>
+              ))}
+            </TextInput>
+          </Pressable>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <MenuView
+            actions={attachActions}
+            colorScheme={colorScheme}
+            onPressAction={(event) => attachFrom(event.nativeEvent.event)}
+          >
+            <View
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={t`Attach file`}
+              style={actionStyle}
+            >
+              <NativeSymbol ios="plus" android="add" size={24} color={tokens.foreground} />
+            </View>
+          </MenuView>
+          <View style={{ flex: 1 }} />
+          {model ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={model.label}
+              hitSlop={8}
+              onPress={model.onPress}
+              style={{ flexDirection: "row", alignItems: "center", gap: 2, maxWidth: 140 }}
+            >
+              <Text
+                numberOfLines={1}
+                style={{ color: tokens.mutedForeground, fontSize: 15, flexShrink: 1 }}
+              >
+                {model.label}
+              </Text>
+              <NativeSymbol
+                ios="chevron.down"
+                android="chevron-down"
+                size={13}
+                color={tokens.mutedForeground}
+              />
             </Pressable>
-          </View>
+          ) : null}
           {onCall ? null : (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={dictation.status === "idle" ? t`Dictate` : t`Stop dictating`}
               disabled={dictation.status === "transcribing"}
-              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              hitSlop={4}
               onPress={toggleDictation}
-              style={{ marginBottom: pillInset }}
+              style={[
+                actionStyle,
+                dictation.status === "idle" ? null : { backgroundColor: tokens.foreground },
+              ]}
             >
-              <GlassSurface
-                tint={dictation.status === "idle" ? undefined : tokens.foreground}
-                style={composerPillStyle}
-                fallbackStyle={{
-                  backgroundColor: dictation.status === "idle" ? tokens.muted : tokens.foreground,
-                }}
-              >
-                {dictation.status === "transcribing" ? (
-                  <ActivityIndicator size="small" color={tokens.background} />
-                ) : (
-                  <NativeSymbol
-                    ios={dictation.status === "listening" ? "mic.fill" : "mic"}
-                    android={dictation.status === "listening" ? "mic" : "mic-outline"}
-                    size={15}
-                    color={dictation.status === "idle" ? tokens.mutedForeground : tokens.background}
-                  />
-                )}
-              </GlassSurface>
+              {dictation.status === "transcribing" ? (
+                <ActivityIndicator size="small" color={tokens.background} />
+              ) : (
+                <NativeSymbol
+                  ios={dictation.status === "listening" ? "mic.fill" : "mic"}
+                  android={dictation.status === "listening" ? "mic" : "mic-outline"}
+                  size={20}
+                  color={dictation.status === "idle" ? tokens.mutedForeground : tokens.background}
+                />
+              )}
             </Pressable>
           )}
-          {/* No call while dictation still owns the microphone or its words are on the way. */}
           {!canSend && botId && !onCall && dictation.status === "idle" ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t`Call`}
-              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              hitSlop={4}
               onPress={() => void startVoiceCall()}
-              style={{ marginBottom: pillInset }}
+              style={[actionStyle, { backgroundColor: tokens.primary }]}
             >
-              <GlassSurface
-                tint={tokens.primary}
-                style={composerPillStyle}
-                fallbackStyle={{ backgroundColor: tokens.primary }}
-              >
-                <NativeSymbol
-                  ios="waveform"
-                  android="pulse-outline"
-                  size={15}
-                  color={tokens.primaryForeground}
-                />
-              </GlassSurface>
+              <NativeSymbol
+                ios="waveform"
+                android="pulse-outline"
+                size={18}
+                color={tokens.primaryForeground}
+              />
             </Pressable>
           ) : (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t`Send`}
               disabled={sendBlocked}
-              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              hitSlop={4}
               onPress={() => void send()}
-              style={{ marginBottom: pillInset, opacity: sendBlocked ? 0.5 : 1 }}
+              style={[
+                actionStyle,
+                { backgroundColor: tokens.primary, opacity: sendBlocked ? 0.5 : 1 },
+              ]}
             >
-              <GlassSurface
-                tint={tokens.primary}
-                style={composerPillStyle}
-                fallbackStyle={{ backgroundColor: tokens.primary }}
-              >
-                <NativeSymbol
-                  ios="arrow.up"
-                  android="arrow-up"
-                  size={15}
-                  color={tokens.primaryForeground}
-                />
-              </GlassSurface>
+              <NativeSymbol
+                ios="arrow.up"
+                android="arrow-up"
+                size={18}
+                color={tokens.primaryForeground}
+              />
             </Pressable>
           )}
-        </GlassSurface>
-      </View>
+        </View>
+      </GlassSurface>
     </>
   );
 }

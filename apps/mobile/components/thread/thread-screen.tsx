@@ -4,7 +4,6 @@ import type { AgentSkillCatalogEntry } from "@robots/contracts";
 import {
   buildComposerMentionOptions,
   channelMessageSender,
-  chatUserBubbleColors,
   isRunWaitingOnUser,
   isRunWorking,
   liveActivityLine,
@@ -71,9 +70,11 @@ import { SelectTextSheet } from "../select-text-sheet";
 import { ThreadComposer } from "../thread-composer";
 import { ThreadErrorNotice, ThreadFetchErrorNotice } from "../thread-error-notice";
 import { createThreadHeaderStyles } from "../thread-header-styles";
+import { ComposerAttachments } from "./composer-attachments";
 import { QuoteSheet } from "./quote-sheet";
 import { ThreadComposerDock } from "./thread-composer-dock";
 import { ThreadEdgeFade } from "./thread-edge-fade";
+import { ThreadEmptyState } from "./thread-empty-state";
 import { useThreadHeader } from "./thread-header";
 import { LoadEarlierButton, ThreadWorkingFooter } from "./thread-list-controls";
 import { ThreadMessageList } from "./thread-message-list";
@@ -283,9 +284,8 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
   const activityLine = liveActivityLine(snap?.messages ?? []);
   const workingRoutine = workingRoutineName(snap?.activeRuns ?? (snap?.run ? [snap.run] : []));
   const userBubble = useMemo(
-    () =>
-      !inGroup && currentBot ? chatUserBubbleColors(currentBot.color, currentBot.id) : undefined,
-    [inGroup, currentBot?.color, currentBot?.id],
+    () => ({ background: tokens.muted, foreground: tokens.foreground }),
+    [tokens.muted, tokens.foreground],
   );
   const activeGroupBots = useMemo(() => {
     if (!inGroup) return [];
@@ -620,6 +620,19 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
               showLatest={showLatest}
             />
           </NewestPageCards.Provider>
+          {snap &&
+          !showingSaved &&
+          !readOnly &&
+          !inGroup &&
+          currentBot &&
+          snap.messages.length === 0 &&
+          feedback.unsentSends.length === 0 ? (
+            <ThreadEmptyState
+              bot={currentBot}
+              bottomInset={bottomInset}
+              onPick={(prompt) => composer.composerRef.current?.insert(prompt)}
+            />
+          ) : null}
           {headerHeight > 0 ? (
             // Ends halfway down the floating header's 44pt pills.
             <ThreadEdgeFade
@@ -650,12 +663,6 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
               setReplyQuote(null);
             }}
             attachmentNotice={attachments.attachmentNotice}
-            attachments={attachments.activePendingAttachments}
-            onRemoveAttachment={(id) =>
-              attachments.setPendingAttachments((current) =>
-                current.filter((item) => item.id !== id),
-              )
-            }
           >
             <ThreadComposer
               key={threadKey}
@@ -676,6 +683,28 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
               styles={styles}
               attachActions={attachments.attachActions}
               attachFrom={attachments.attachFrom}
+              attachmentStrip={
+                <ComposerAttachments
+                  attachments={attachments.activePendingAttachments}
+                  onRemove={(id) =>
+                    attachments.setPendingAttachments((current) =>
+                      current.filter((item) => item.id !== id),
+                    )
+                  }
+                />
+              }
+              model={
+                botId && currentBot
+                  ? {
+                      label: currentBot.modelId ?? t`Auto`,
+                      onPress: () =>
+                        router.push({
+                          pathname: "/bot-settings",
+                          params: { botId, focus: "model" },
+                        }),
+                    }
+                  : null
+              }
               send={composer.send}
               startVoiceCall={startVoiceCall}
               onSlashAction={composer.runSlashAction}

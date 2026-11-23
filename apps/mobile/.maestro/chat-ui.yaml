@@ -1,0 +1,37 @@
+appId: com.analysttom.robotsapp
+name: Chat redesign
+---
+- launchApp:
+    clearState: true
+    permissions:
+      notifications: deny
+- runFlow: helpers/sign-in.yaml
+
+- openLink: "robots:///thread?botId=${ROBOTS_CHAT_EMPTY_BOT_ID}&name=Researcher"
+- extendedWaitUntil:
+    visible: "What can you do?"
+    timeout: 30000
+- assertVisible: "Plan my week"
+- assertVisible: "Help me write an email"
+- assertVisible: "Attach file"
+- assertVisible: "Call"
+- takeScreenshot: "chat-ui-empty"
+
+- tapOn: "What can you do?"
+- assertVisible: "Send"
+- takeScreenshot: "chat-ui-prompt-in-composer"
+- tapOn: "Send"
+- extendedWaitUntil:
+    notVisible: "Plan my week"
+    timeout: 15000
+- assertVisible: "What can you do?"
+- takeScreenshot: "chat-ui-sent"
+
+- openLink: "robots:///thread?botId=${ROBOTS_SCREENSHOT_BOT_ID}&name=Researcher"
+- extendedWaitUntil:
+    visible: "Copy"
+    timeout: 15000
+- takeScreenshot: "chat-ui-conversation"
+- tapOn: "Message .*"
+- takeScreenshot: "chat-ui-keyboard"
+- assertVisible: "Attach file"

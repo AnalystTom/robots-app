@@ -28,6 +28,8 @@ vi.mock("react-native", () => ({
       { type: "button", disabled, "aria-label": accessibilityLabel, onClick: onPress },
       children,
     ),
+  Text: ({ children }: { children?: ReactNode }) => createElement("span", null, children),
+  View: ({ children }: { children?: ReactNode }) => createElement("div", null, children),
 }));
 vi.mock("expo-router", () => ({ useRouter: () => ({ push }) }));
 vi.mock("../components/glass-surface", () => ({
@@ -108,6 +110,18 @@ it("draws the inbox's bot from the route alone, before the chat publishes anythi
   expect(name()?.textContent).toBe("Helper");
   expect(name()?.getAttribute("data-placeholder")).toBe("false");
   expect(button().getAttribute("aria-label")).toBe("Profile");
+});
+
+it("shows the chosen model under the name, and nothing without one", () => {
+  setSearchInbox(inbox([{ ...helper, modelId: "model-x" }]));
+  render({ botId: "bot-1" });
+  expect(button().textContent).toContain("model-x");
+  act(() => root.unmount());
+  container = document.createElement("div");
+  root = createRoot(container);
+  setSearchInbox(inbox([helper]));
+  render({ botId: "bot-1" });
+  expect(button().textContent).toBe("Helper");
 });
 
 it("reserves the avatar for an unknown bot and marks a missing name as a placeholder", () => {
