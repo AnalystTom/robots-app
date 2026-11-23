@@ -37,7 +37,7 @@ Rules: surfaces are opaque; text and hover are ink at an opacity. Bot colours co
 
 ## Spacing, radius, shadows
 - Spacing: 4, 8, 12, 16, 24, 32, 48. No other values.
-- Radius ladder: control 10, card 16, sheet 20, pill 999 (floating buttons, chips only). Replaces the 8 values in use (`rounded-sm/md/lg/xl/2xl/full`, `[14px]`, `[min(...)]`).
+- Radius ladder: control 10, card 16, sheet 20, pill 999 (circular floating icon buttons, chips only). Replaces the 8 values in use (`rounded-sm/md/lg/xl/2xl/full`, `[14px]`, `[min(...)]`).
 - Shadows: `shadow-card` on cards that float over paper; none inside lists, none in dark. Overlays use `overlay`.
 
 ## Layout and breakpoints
@@ -64,7 +64,7 @@ Plain, short, second person. Say what the bot did or needs ("I need to place the
 
 ## Do and don't
 - Do use semantic tokens; do keep one accent; do let bots carry colour.
-- Don't hardcode hex (3 `bg-[#…]` remain today); don't use `accent` for brand; don't add a fourth button style; don't use pill buttons in the app; don't use brand teal for body text on paper.
+- Don't hardcode hex (3 `bg-[#…]` remain today); don't use `accent` for brand; don't add a fourth button style; don't use pill-shaped text buttons in the app; don't use brand teal for body text on paper.
 
 ## Where tokens live in code and how to use them
 Source of truth: `packages/ui-tokens/src/index.ts` (typed `ColorTokens`, `WebColorTokens`, `darkTokens`, `lightTokens`, `webDarkOverrides`, `webLightOverrides`, `radii`), generated to `packages/ui-tokens/src/tokens.css` by `pnpm --filter @robots/ui-tokens generate`. The shared file is `packages/ui-tokens/src/tokens.css`. The marketing site (`apps/www`) is not on the shared file yet: its `src/styles/global.css` token block (card radius 20) moves onto `tokens.css` in a follow-up PR. The Tailwind `@theme` map and type scale are in `packages/ui-web/src/styles.css`; mobile reads the TS palettes via `apps/mobile/lib/appearance`. Adopting the rest of Paper & Ink means changing existing values in `index.ts`, swapping `--font-sans`, and regenerating. Use Tailwind semantic classes (`bg-card`, `text-muted-foreground`, `bg-brand-soft`), never raw values. `--shadow-*` and `--radius-ctl|card|sheet|pill` are CSS variables for now; Tailwind classes for them arrive with the visual PR.
