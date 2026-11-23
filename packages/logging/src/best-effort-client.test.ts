@@ -4,7 +4,10 @@ import { bestEffort, installBestEffortSink } from "./best-effort-client.js";
 describe("bestEffort for clients", () => {
   const sink = vi.fn<(message: string, error: unknown) => void>();
 
-  beforeEach(() => installBestEffortSink(sink));
+  beforeEach(() => {
+    sink.mockClear();
+    installBestEffortSink(sink);
+  });
 
   it("resolves to the value and reports nothing when the work succeeds", async () => {
     await expect(bestEffort("read the cache", Promise.resolve("hit"))).resolves.toBe("hit");
