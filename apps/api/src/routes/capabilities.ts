@@ -34,7 +34,7 @@ import type { RouterContext } from "./context.js";
 
 export function capabilitiesRoutes(ctx: RouterContext) {
   const { deps, removeMcpServerInTransaction, authed } = ctx;
-  const pluginMarketplace = createPluginMarketplace(deps.pluginMarketplaceRead);
+  const pluginMarketplace = deps.pluginMarketplace ?? createPluginMarketplace();
   /** Removes an install and, for a plugin, the servers, secrets and skills it added. */
   const removeInstall = async (actor: Actor, id: string) => {
     const notify: Array<{ threadId: string; seq: number }> = [];

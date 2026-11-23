@@ -216,7 +216,7 @@ export function SkillsDialog({
               </Button>
             </div>
           ) : null}
-          <div data-testid="skill-packs" className="grid grid-cols-2 gap-2">
+          <div data-testid="skill-packs" className="grid gap-2 sm:grid-cols-2">
             {packs.map((entry) => {
               const pack = pluginSelection(entry);
               return (
@@ -226,6 +226,7 @@ export function SkillsDialog({
                   description={entry.description}
                   logo={entry.logo}
                   site={pack.site}
+                  community={entry.community}
                   installed={pluginInstalls.some((row) => row.source === entry.installedSource)}
                   onOpen={() => setSelection(pack)}
                 />

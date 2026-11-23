@@ -1,6 +1,7 @@
 import { t } from "@lingui/core/macro";
 import { agentImportErrorReason } from "@robots/contracts";
 import type { GrokBotExportErrorCode } from "@robots/core";
+import { AGENT_IMPORT_SOURCE_NAMES } from "@robots/core";
 import { translateRunError } from "@robots/i18n/run-error";
 
 function errorProvider(error: unknown): string {
@@ -40,11 +41,11 @@ export function agentImportErrorText(error: unknown): string | undefined {
   }
 }
 
-/** Why a Grok Bot's reply could not be read, and what to ask the Bot for. */
 export function grokBotErrorText(code: GrokBotExportErrorCode): string {
+  const source = AGENT_IMPORT_SOURCE_NAMES.grok_bot;
   switch (code) {
     case "not_export":
-      return t`That isn't a Grok Bot export. Paste the Bot's whole reply.`;
+      return t`That isn't a ${source} export. Paste the Bot's whole reply.`;
     case "cut_off":
       return t`The reply looks cut off. Ask the Bot for the rest, then paste both.`;
     case "too_large":

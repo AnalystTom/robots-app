@@ -9,6 +9,7 @@ import { pluginParams, pluginSite } from "../lib/plugin-marketplace";
 import { createIntegrationsStyles, LOGO_SIZE } from "./integrations-styles";
 import { NativeActionButton } from "./native-action-button";
 import { PluginIcon } from "./plugin-icon";
+import { PluginTitle } from "./plugin-title";
 import { Chevron } from "./row-accessories";
 
 const SECTION_SIZE = 4;
@@ -174,9 +175,7 @@ function PluginRow({
         size={LOGO_SIZE}
       />
       <View style={styles.grow}>
-        <Text numberOfLines={1} style={styles.title}>
-          {entry.displayName}
-        </Text>
+        <PluginTitle name={entry.displayName} community={entry.community} />
         {entry.description ? (
           <Text numberOfLines={1} style={styles.secondary}>
             {entry.description}

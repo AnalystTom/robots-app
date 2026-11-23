@@ -7,6 +7,7 @@ import { buildSkillMd, findSkillByName, parseSkillMd } from "@robots/core";
 import { z } from "zod";
 import { BUILTIN_AGENT_SKILLS } from "./builtin-skills.js";
 import { assertNoSensitiveQuery } from "./connector-http.js";
+import { neutralPluginDescription } from "./plugin-description.js";
 import { fetchSafeWebText } from "./web-ssrf.js";
 
 export type PluginSourceRef = { gitUrl: string; ref?: string; subdir?: string };
@@ -707,7 +708,7 @@ export function pluginPreviewDto(plugin: ParsedPlugin): PluginPreview {
     format: plugin.format,
     name: plugin.name,
     version: plugin.version,
-    description: plugin.description,
+    description: neutralPluginDescription(plugin.description, plugin.name),
     author: plugin.author,
     homepage: plugin.homepage,
     repository: plugin.repository,

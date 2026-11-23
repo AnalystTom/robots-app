@@ -1,7 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createPluginMarketplace, parsePluginMarketplace } from "./plugin-marketplace.js";
+import {
+  createPluginLogos,
+  createPluginMarketplace,
+  parsePluginMarketplace,
+  pluginLogoPng,
+} from "./plugin-marketplace.js";
 
-const registry = { name: "Cursor", repository: "https://github.com/example/plugins" };
+const registry = {
+  name: "Cursor",
+  repository: "https://github.com/example/plugins",
+  publishers: ["Cursor"],
+};
 const index = (plugins: unknown[]) => JSON.stringify({ name: "example", plugins });
 const sha = "a".repeat(40);
 const indexReads = (read: { mock: { calls: unknown[][] } }) =>
@@ -30,7 +39,34 @@ describe("public marketplace indexes", () => {
         installedSource: "https://github.com/example/plugins#notes",
         hasConnector: false,
         skillCount: 0,
+        community: false,
       },
+    ]);
+  });
+  it("neutralises the host assistant in descriptions and marks only named individuals as community", () => {
+    const { entries } = parsePluginMarketplace(
+      index([
+        {
+          name: "payments",
+          source: "./payments",
+          description: "Payments plugin for Grok Build: refunds and invoices.",
+          domains: ["payments.example.test"],
+        },
+        { name: "style", source: "./style", author: { name: "A Person" } },
+        { name: "owned", source: "./owned", author: { name: "xAI" } },
+      ]),
+      {
+        name: "xAI",
+        repository: "https://github.com/example/index",
+        publishers: ["xAI", "xAI Corp"],
+      },
+    );
+    expect(
+      entries.map(({ name, description, community }) => ({ name, description, community })),
+    ).toEqual([
+      { name: "payments", description: "Payments plugin: refunds and invoices.", community: false },
+      { name: "style", description: "", community: true },
+      { name: "owned", description: "", community: false },
     ]);
   });
   it("loads xAI local-directory source objects without allowing traversal", () => {
@@ -39,7 +75,11 @@ describe("public marketplace indexes", () => {
         { name: "neon", source: { type: "local", path: "./external_plugins/neon" } },
         { name: "escape", source: { type: "local", path: "./../escape" } },
       ]),
-      { name: "xAI", repository: "https://github.com/example/index" },
+      {
+        name: "xAI",
+        repository: "https://github.com/example/index",
+        publishers: ["xAI", "xAI Corp"],
+      },
     );
     expect(result.entries[0]?.source).toBe(
       "https://github.com/example/index#external_plugins/neon",
@@ -55,7 +95,11 @@ describe("public marketplace indexes", () => {
           keywords: ["planning"],
         },
       ]),
-      { name: "xAI", repository: "https://github.com/example/index" },
+      {
+        name: "xAI",
+        repository: "https://github.com/example/index",
+        publishers: ["xAI", "xAI Corp"],
+      },
     );
     expect(result.entries[0]).toMatchObject({
       source: `https://github.com/example/tasks@${sha}`,
@@ -103,7 +147,11 @@ describe("public marketplace indexes", () => {
           domains: ["stripe.com"],
         },
       ]),
-      { name: "xAI", repository: "https://github.com/example/index" },
+      {
+        name: "xAI",
+        repository: "https://github.com/example/index",
+        publishers: ["xAI", "xAI Corp"],
+      },
     );
     expect(result.entries[0]).toMatchObject({
       source: `https://github.com/stripe/ai@${sha}#providers/grok`,
@@ -198,19 +246,38 @@ describe("marketplace service", () => {
           displayName: "Mail",
           category: "Productivity",
           logo: "assets/logo.svg",
+          author: { name: "Cursor", email: "plugins@example.test" },
         }),
-        "/notes/.cursor-plugin/plugin.json": JSON.stringify({ logo: "../../escape.svg" }),
+        "/notes/.cursor-plugin/plugin.json": JSON.stringify({
+          logo: "../../escape.svg",
+          author: { name: "A Person" },
+        }),
       },
     });
     const { entries } = await createPluginMarketplace(read).catalog("");
+    const logo = Buffer.from("mail/assets/logo.svg").toString("base64url");
     expect(entries).toMatchObject([
       {
         name: "mail",
         displayName: "Mail",
         category: "productivity",
-        logo: "https://raw.githubusercontent.com/cursor/plugins/HEAD/mail/assets/logo.svg",
+        logo: `/api/v1/plugin-logos/Cursor/${logo}.png`,
+        community: false,
       },
-      { name: "notes", displayName: "Notes", category: null, logo: null },
+      { name: "notes", displayName: "Notes", category: null, logo: null, community: true },
+    ]);
+  });
+  it("does not label a plugin published under a registry name variant as community", async () => {
+    const read = registryReader({
+      cursor: [{ name: "mail", source: "mail" }],
+      tree: ["mail/skills/send/SKILL.md"],
+      text: {
+        "/mail/.cursor-plugin/plugin.json": JSON.stringify({ author: { name: "Cursor, Inc." } }),
+      },
+    });
+    const { entries } = await createPluginMarketplace(read).catalog("");
+    expect(entries.map(({ name, community }) => ({ name, community }))).toEqual([
+      { name: "mail", community: false },
     ]);
   });
   it("lists only plugins whose every part installs, and says which have a connector", async () => {
@@ -313,5 +380,194 @@ describe("marketplace service", () => {
       unavailableRegistries: ["Cursor", "xAI"],
       skippedEntries: 0,
     });
+  });
+});
+
+const svgLogo = new TextEncoder().encode(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="16" height="16" fill="#123456"/></svg>',
+);
+const logoKey = (path: string) => `${Buffer.from(path).toString("base64url")}.png`;
+const logoRegistry = (files: Parameters<typeof registryReader>[0]) => {
+  const read = registryReader(files);
+  return { read, marketplace: createPluginMarketplace(read) };
+};
+const listedMail = {
+  cursor: [{ name: "mail", source: "mail" }],
+  tree: ["mail/skills/send/SKILL.md"],
+  text: { "/mail/.cursor-plugin/plugin.json": JSON.stringify({ logo: "assets/logo.svg" }) },
+};
+
+describe("plugin logos", () => {
+  it("serves a listed registry logo as a cached PNG from the server", async () => {
+    const { marketplace } = logoRegistry(listedMail);
+    const { entries } = await marketplace.catalog("");
+    const file = entries[0]!.logo!.split("/").pop()!;
+    const fetchLogo = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read: fetchLogo, listed: marketplace.listedLogoUrl });
+    const png = await logos.logo("Cursor", file);
+    expect(fetchLogo).toHaveBeenCalledWith(
+      "https://raw.githubusercontent.com/cursor/plugins/HEAD/mail/assets/logo.svg",
+      expect.any(Number),
+      expect.any(AbortSignal),
+    );
+    expect(Buffer.from(png!.subarray(1, 4)).toString()).toBe("PNG");
+    expect(await logos.logo("Cursor", file)).toBe(png);
+    expect(fetchLogo).toHaveBeenCalledTimes(1);
+  });
+  it("serves only logos the current catalog lists, without fetching anything else", async () => {
+    const { marketplace } = logoRegistry(listedMail);
+    await marketplace.catalog("");
+    const fetchLogo = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read: fetchLogo, listed: marketplace.listedLogoUrl });
+    for (const [registry, file] of [
+      ["Elsewhere", logoKey("mail/assets/logo.svg")],
+      ["Cursor", logoKey("../escape/logo.svg")],
+      ["Cursor", logoKey("/etc/logo.svg")],
+      ["Cursor", logoKey("mail/.cursor-plugin/plugin.json")],
+      ["Cursor", logoKey("mail/assets/unlisted.svg")],
+      ["Cursor", "mail/assets/logo.svg"],
+    ] as const)
+      expect(await logos.logo(registry, file)).toBeNull();
+    expect(fetchLogo).not.toHaveBeenCalled();
+  });
+  it("serves approved submissions' logos from one lookup per TTL", async () => {
+    const read = vi.fn(async () => svgLogo);
+    const logos = vi.fn(async () => new Map([["sub-1", "https://cdn.example.test/logo.svg"]]));
+    const service = createPluginLogos({
+      read,
+      listed: async () => null,
+      submitted: { registry: "RoBots", logos },
+    });
+    expect(await service.logo("RoBots", "sub-1.png")).not.toBeNull();
+    expect(read).toHaveBeenCalledWith(
+      "https://cdn.example.test/logo.svg",
+      expect.any(Number),
+      expect.any(AbortSignal),
+    );
+    for (let i = 0; i < 50; i++)
+      expect(await service.logo("RoBots", `unknown-${i}.png`)).toBeNull();
+    expect(await service.logo("RoBots", "sub-2.png")).toBeNull();
+    expect(await service.logo("constructor", "sub-1.png")).toBeNull();
+    expect(logos).toHaveBeenCalledTimes(1);
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+  it("does not let one failed submitted lookup hide another submission's logo", async () => {
+    let lookups = 0;
+    const logos = vi.fn(async () => {
+      lookups += 1;
+      if (lookups === 1) throw new Error("database unavailable");
+      return new Map([["sub-2", "https://cdn.example.test/logo.svg"]]);
+    });
+    const read = vi.fn(async () => svgLogo);
+    const service = createPluginLogos({
+      read,
+      listed: async () => null,
+      submitted: { registry: "RoBots", logos },
+    });
+    expect(await service.logo("RoBots", "sub-1.png")).toBeNull();
+    expect(await service.logo("RoBots", "sub-2.png")).not.toBeNull();
+    expect(logos).toHaveBeenCalledTimes(2);
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+  it("gives a submission approved after a miss its logo once the approved map refreshes", async () => {
+    let clock = 0;
+    const approved = new Map<string, string>();
+    const logos = vi.fn(async () => new Map(approved));
+    const read = vi.fn(async () => svgLogo);
+    const service = createPluginLogos({
+      read,
+      listed: async () => null,
+      now: () => clock,
+      submitted: { registry: "RoBots", logos },
+    });
+    expect(await service.logo("RoBots", "sub-1.png")).toBeNull();
+    approved.set("sub-1", "https://cdn.example.test/logo.svg");
+    clock = 61_000;
+    expect(await service.logo("RoBots", "sub-1.png")).not.toBeNull();
+    expect(logos).toHaveBeenCalledTimes(2);
+  });
+  it("does not read a failing registry catalog again for each logo key", async () => {
+    const read = vi.fn(async () => {
+      throw new Error("Request failed: HTTP 500");
+    });
+    const marketplace = createPluginMarketplace(read);
+    const logos = createPluginLogos({
+      read: async () => svgLogo,
+      listed: marketplace.listedLogoUrl,
+    });
+    for (let i = 0; i < 5; i++)
+      expect(await logos.logo("Cursor", logoKey(`mail/assets/${i}.svg`))).toBeNull();
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+  it("answers a failing submitted lookup as a missing logo, not an error", async () => {
+    const read = vi.fn(async () => svgLogo);
+    const logos = vi.fn(async () => {
+      throw new Error("database unavailable");
+    });
+    const service = createPluginLogos({
+      read,
+      listed: async () => null,
+      submitted: { registry: "RoBots", logos },
+    });
+    expect(await service.logo("RoBots", "sub-1.png")).toBeNull();
+    expect(await service.logo("RoBots", "sub-1.png")).toBeNull();
+    expect(logos).toHaveBeenCalledTimes(1);
+    expect(read).not.toHaveBeenCalled();
+  });
+  it("remembers a failed logo briefly, whatever the failure", async () => {
+    const read = vi
+      .fn<(url: string) => Promise<Uint8Array>>()
+      .mockRejectedValueOnce(new Error("Request failed: HTTP 500"))
+      .mockResolvedValue(svgLogo);
+    const logos = createPluginLogos({
+      read,
+      listed: async (_registry, path) => `https://raw.example.test/${path}`,
+    });
+    expect(await logos.logo("xAI", logoKey("neon/logo.svg"))).toBeNull();
+    expect(await logos.logo("xAI", logoKey("neon/logo.svg"))).toBeNull();
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+  it("remembers a logo that is not listed, so repeats do no work", async () => {
+    const listed = vi.fn(async () => null);
+    const read = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read, listed });
+    expect(await logos.logo("Cursor", logoKey("mail/assets/logo.svg"))).toBeNull();
+    expect(await logos.logo("Cursor", logoKey("mail/assets/logo.svg"))).toBeNull();
+    expect(listed).toHaveBeenCalledTimes(1);
+    expect(read).not.toHaveBeenCalled();
+  });
+  it("serves a listed logo only under its canonical key", async () => {
+    const { marketplace } = logoRegistry(listedMail);
+    const { entries } = await marketplace.catalog("");
+    const canonical = entries[0]!.logo!.split("/").pop()!.slice(0, -".png".length);
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const variant = canonical.slice(0, -1) + alphabet[alphabet.indexOf(canonical.at(-1)!) ^ 1];
+    expect(Buffer.from(variant, "base64url").equals(Buffer.from(canonical, "base64url"))).toBe(
+      true,
+    );
+    const read = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read, listed: marketplace.listedLogoUrl });
+    expect(await logos.logo("Cursor", `${variant}.png`)).toBeNull();
+    expect(read).not.toHaveBeenCalled();
+    expect(await logos.logo("Cursor", `${canonical}.png`)).not.toBeNull();
+  });
+  it("keeps a cached logo when many unlisted keys are requested", async () => {
+    const { marketplace } = logoRegistry(listedMail);
+    const { entries } = await marketplace.catalog("");
+    const file = entries[0]!.logo!.split("/").pop()!;
+    const read = vi.fn(async () => svgLogo);
+    const logos = createPluginLogos({ read, listed: marketplace.listedLogoUrl });
+    await logos.logo("Cursor", file);
+    for (let i = 0; i < 2_100; i++) await logos.logo("Cursor", logoKey(`unlisted/${i}.svg`));
+    expect(await logos.logo("Cursor", file)).not.toBeNull();
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+  it("draws raster and SVG logos and rejects anything else", async () => {
+    const fromSvg = await pluginLogoPng(svgLogo);
+    expect(fromSvg).not.toBeNull();
+    expect(await pluginLogoPng(fromSvg!)).not.toBeNull();
+    expect(await pluginLogoPng(new TextEncoder().encode("<html><script></script></html>"))).toBe(
+      null,
+    );
   });
 });

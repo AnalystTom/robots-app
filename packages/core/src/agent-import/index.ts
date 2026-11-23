@@ -72,6 +72,7 @@ export {
 export { bundledSkillNames } from "./hermes.js";
 export type { AgentImportReader, SkillFiles } from "./shared.js";
 export { renameSkillMd } from "./shared.js";
+export { AGENT_IMPORT_SOURCE_NAMES } from "./source-names.js";
 
 export const AGENT_IMPORT_NOT_FOUND = "No OpenClaw, Hermes or agent document found.";
 

@@ -262,6 +262,7 @@ it("opens both Unicode fallback screenshot targets through browse and manage", a
         installedSource: "https://example.test/plugin",
         hasConnector: true,
         skillCount: 0,
+        community: false,
       },
     ],
     unavailableRegistries: [],
@@ -291,4 +292,48 @@ it("opens both Unicode fallback screenshot targets through browse and manage", a
   expect(
     host.querySelector('[data-testid="connection-detail"] .place-items-center')?.textContent,
   ).toBe("𠮷");
+});
+
+it("labels plugins published by individuals as community in browse", async () => {
+  api.connections.catalog.mockResolvedValue([]);
+  const entry = (name: string, community: boolean) => ({
+    id: name,
+    name,
+    displayName: name,
+    description: `${name} plugin`,
+    keywords: [],
+    category: "productivity",
+    logo: null,
+    homepage: null,
+    domains: [],
+    registry: "fixture",
+    source: `https://example.test/${name}`,
+    installedSource: `https://example.test/${name}`,
+    hasConnector: true,
+    skillCount: 0,
+    community,
+  });
+  api.marketplace.catalog.mockResolvedValue({
+    entries: [entry("Official", false), entry("Personal", true)],
+    unavailableRegistries: [],
+    skippedEntries: 0,
+  });
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={client}>
+        <PluginsOverlay onClose={() => {}} />
+      </QueryClientProvider>,
+    ),
+  );
+  await vi.waitFor(() =>
+    expect(host.querySelectorAll('[data-testid="plugin-row"]')).toHaveLength(2),
+  );
+  const rows = Object.fromEntries(
+    [...host.querySelectorAll('[data-testid="plugin-row"]')].map((row) => [
+      row.querySelector("button")!.textContent!.includes("Personal") ? "Personal" : "Official",
+      row.textContent,
+    ]),
+  );
+  expect(rows.Personal).toContain("Community");
+  expect(rows.Official).not.toContain("Community");
 });

@@ -95,6 +95,7 @@ export function PluginBrowse({
         description={entry.description}
         logo={entry.logo}
         site={selection.site}
+        community={entry.community}
         installed={Boolean(installedPlugin(entry.installedSource))}
         onOpen={() => onOpenPlugin(selection)}
       />

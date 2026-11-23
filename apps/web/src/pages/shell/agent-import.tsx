@@ -1,6 +1,10 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Bot, ComputerMode } from "@robots/contracts";
-import { AGENT_IMPORT_PROMPT, GROK_BOT_EXPORT_PROMPT } from "@robots/core";
+import {
+  AGENT_IMPORT_PROMPT,
+  AGENT_IMPORT_SOURCE_NAMES,
+  GROK_BOT_EXPORT_PROMPT,
+} from "@robots/core";
 import { Button, CopyTextFallback, Textarea, useCopyText } from "@robots/ui-web";
 import { ArrowLeft, X } from "lucide-react";
 import type { ReactNode } from "react";
@@ -299,7 +303,7 @@ export function AgentImportForm({
           <PromptReplySection
             testId="agent-import-grok"
             fileTestId="agent-import-grok-file"
-            title={<Trans>Grok Bot</Trans>}
+            title={AGENT_IMPORT_SOURCE_NAMES.grok_bot}
             prompt={GROK_BOT_EXPORT_PROMPT}
             reply={grokReply}
             onReplyChange={(reply) => {

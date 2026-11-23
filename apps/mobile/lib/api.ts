@@ -27,7 +27,7 @@ import {
 } from "./logo-avatar-activity";
 import { reportMobileError } from "./monitoring";
 import { followSelectedSpace, selectedSpaceChanged } from "./referral";
-import { fetchServer } from "./server-headers";
+import { fetchServer, serverHeadersForUrl } from "./server-headers";
 import {
   clearSessionToken,
   currentSessionGeneration,
@@ -138,6 +138,11 @@ export function currentApiBase() {
   const parsed = normalizeApiBase(cachedApiBase ?? defaultApiBase());
   if (!parsed.ok) throw new Error(parsed.error);
   return parsed.url;
+}
+export function serverImageSource(path: string): { uri: string; headers: Record<string, string> } {
+  const apiBase = currentApiBase();
+  const uri = new URL(path, apiBase).href;
+  return { uri, headers: serverHeadersForUrl(uri, apiBase) };
 }
 export function selectedSpaceId(): string | null {
   return cachedSpaceId || null;

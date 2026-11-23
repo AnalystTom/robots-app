@@ -21,6 +21,7 @@ const CURSOR_FILES: Record<string, string> = {
   "review-kit/.cursor-plugin/plugin.json": JSON.stringify({
     name: "review-kit",
     displayName: "Review Kit",
+    author: { name: "A Person" },
   }),
   "review-kit/agents/reviewer.md":
     "---\nname: reviewer\ndescription: Reviews a draft for gaps\n---\n\nList what is missing.\n",

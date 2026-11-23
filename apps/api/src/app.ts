@@ -39,6 +39,8 @@ import {
   createConnectorRuntime,
   createMediaGenerationProvider,
   createPaymentWalletProvider,
+  createPluginLogos,
+  createPluginMarketplace,
   createProductAnalytics,
   createRunReconciler,
   createRunRuntime,
@@ -160,7 +162,12 @@ import { marketingEmailRoutes, sendWelcomeEmail } from "./marketing-email.js";
 import { moveMcpArgsIntoSecrets } from "./mcp-args-migration.js";
 import { startMessagingRuntime } from "./messaging-runtime.js";
 import { monitoringRoutes } from "./monitoring.js";
-import { pluginSubmissionRoutes } from "./plugin-submissions.js";
+import { mountPluginLogos } from "./plugin-logos.js";
+import {
+  approvedPluginLogos,
+  PLUGIN_REGISTRY,
+  pluginSubmissionRoutes,
+} from "./plugin-submissions.js";
 import { sendReferralEmails } from "./referral-email.js";
 import { mountApiRequestBodyLimits, rpcBodyLimit } from "./request-body-limit.js";
 import { createRouter } from "./router.js";
@@ -747,6 +754,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     (error) => getLogger().error("stalled organization deletion failed", error),
   );
 
+  const pluginMarketplace = createPluginMarketplace(pluginMarketplaceRead);
   const router = createRouter({
     speechSummary:
       env.voiceSummaryMinChars === undefined
@@ -761,7 +769,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
           },
     analytics,
     pluginRepoFetcher,
-    pluginMarketplaceRead,
+    pluginMarketplace,
     cloudAgent,
     userCloudAgents,
     paymentWallet,
@@ -916,6 +924,13 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
   mountApiRequestBodyLimits(app);
   mountScreenTarget(app, prisma, env.screenProxySecret);
   mountScriptAssets(app);
+  mountPluginLogos(
+    app,
+    createPluginLogos({
+      listed: pluginMarketplace.listedLogoUrl,
+      submitted: { registry: PLUGIN_REGISTRY, logos: () => approvedPluginLogos(prisma) },
+    }),
+  );
   mountSharedPages(app, prisma, requestClientIp);
   const auditAuthResponse = createAuthResponseAudit();
   for (const [path, reason] of SYSTEM_CONTEXT_PATHS) {

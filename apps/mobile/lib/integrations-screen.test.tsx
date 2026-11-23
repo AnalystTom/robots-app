@@ -39,6 +39,7 @@ vi.mock("./api-server", () => ({}));
 vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
 vi.mock("./api", () => ({
+  serverImageSource: (path: string) => ({ uri: `https://api.example.test${path}`, headers: {} }),
   rpc: (proc: string, ...args: unknown[]) =>
     proc === "marketplace/catalog" ? state.marketplace() : state.rpc(proc, ...args),
 }));
@@ -810,6 +811,7 @@ const plugin = {
   installedSource: "https://github.com/acme/plugins#calcom",
   hasConnector: true,
   skillCount: 1,
+  community: false,
 };
 
 it("lists plugins by category, hides ones named like a managed app, and opens one", async () => {
@@ -843,6 +845,23 @@ it("lists plugins by category, hides ones named like a managed app, and opens on
       site: "https://cal.com",
     },
   });
+});
+
+it("labels a plugin published by an individual as community", async () => {
+  state.marketplace.mockResolvedValue({
+    entries: [
+      plugin,
+      { ...plugin, id: "personal", name: "personal", displayName: "Personal", community: true },
+    ],
+    unavailableRegistries: [],
+    skippedEntries: 0,
+  });
+  await render();
+  await act(async () => resolveCatalog([item]));
+  const sections = container.querySelectorAll('[data-testid="plugin-section"]');
+  expect([...sections].map((section) => section.textContent)).toEqual([
+    "ProductivityCCalcomSchedulingPPersonalCommunityScheduling",
+  ]);
 });
 
 it("opens a managed app's brand plugin as one page and keeps skill packs out", async () => {
