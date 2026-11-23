@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { AI_PRIVACY_URL, BOT_COLOR_LIST } from "@robots/contracts";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LogoAvatar } from "../../components/logo-avatar";
@@ -27,7 +27,8 @@ export default function UsageSharingStep() {
   const stacked = useStackedSettings();
   const { survey } = useLocalSearchParams<{ survey?: string }>();
   const [shared, setShared] = useState(false);
-  const { needed, loaded, save } = useUsageSharing({
+  const { needed, loaded, loadError, retry, save } = useUsageSharing({
+    closesScreen: true,
     onSaved: continueOnboarding,
     onFailed: (error) =>
       Alert.alert(t`Enable data sharing`, errorText(error, t`Could not save your choice`)),
@@ -36,6 +37,10 @@ export default function UsageSharingStep() {
   function continueOnboarding() {
     if (survey) router.replace("/signup-survey");
     else closeSettingsSheet();
+  }
+
+  if (loaded && !needed && !save.pending) {
+    return <Redirect href={survey ? "/signup-survey" : "/"} />;
   }
 
   return (
@@ -58,11 +63,18 @@ export default function UsageSharingStep() {
           onChange={setShared}
         />
       </SettingsGroup>
-      <NativeActionButton
-        label={t`Continue`}
-        busy={save.pending || !loaded}
-        onPress={() => (needed ? save.run(shared) : continueOnboarding())}
-      />
+      {loadError ? (
+        <Text style={styles.subtitle}>{errorText(loadError, t`Could not load your choice`)}</Text>
+      ) : null}
+      {loadError ? (
+        <NativeActionButton label={t`Retry`} onPress={retry} />
+      ) : (
+        <NativeActionButton
+          label={t`Continue`}
+          busy={save.pending || !loaded}
+          onPress={() => save.run(shared)}
+        />
+      )}
       <SettingsGroup>
         <SettingsRow
           accessibilityRole="link"
