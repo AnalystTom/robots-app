@@ -4,7 +4,6 @@ import {
   initialLogoAvatarSignals,
   logoAvatarActivity,
   logoAvatarNeedsAttention,
-  usesLogoAvatar,
 } from "./logo-avatar-activity.js";
 import { createLogoAvatarActivityStore } from "./logo-avatar-activity-store.js";
 import { robotPresetValue } from "./robot-presets.js";
@@ -75,10 +74,5 @@ describe("avatar attention", () => {
       payload: {},
     });
     expect(needsAttention(store.getActivity("bot", "idle"))).toBe(true);
-  });
-
-  it("keeps the drawn robot out of the logo renderer while it still raises attention", () => {
-    expect(usesLogoAvatar(bot)).toBe(false);
-    expect(botAvatarActivity(bot, "waiting")).toBe("waiting");
   });
 });
