@@ -1,6 +1,5 @@
 import type {
   Bot,
-  BotAvatarSet,
   LabFeature,
   Me,
   Space,
@@ -150,7 +149,7 @@ export function SettingsOverlays({
   peerConversation: { peerBotId: string; peerBotName: string } | null;
   setPeerConversation: (peer: null) => void;
   active: Bot | undefined;
-  peerBot: (botId: string) => { color: string; avatarSet?: BotAvatarSet } | undefined;
+  peerBot: (botId: string) => { color: string } | undefined;
 }) {
   const usageQuery = useQuery({ ...queries.usage.summary.queryOptions(), enabled: false });
   const usage: UsageSummary | null = usageQuery.data ?? null;

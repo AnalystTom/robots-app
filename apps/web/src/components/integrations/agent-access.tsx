@@ -1,5 +1,4 @@
 import { Trans } from "@lingui/react/macro";
-import type { BotAvatarSet } from "@robots/contracts";
 import {
   BotAvatar,
   Button,
@@ -13,7 +12,7 @@ import { ChevronDown } from "lucide-react";
 
 export type AgentAccess = { allBots: boolean; botIds: string[] };
 
-type AccessBot = { id: string; name: string; color: string; avatarSet?: BotAvatarSet };
+type AccessBot = { id: string; name: string; color: string };
 
 const SHOWN_AVATARS = 4;
 

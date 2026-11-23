@@ -1,6 +1,5 @@
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import type { BotAvatarSet } from "@robots/contracts";
 import {
   BotAvatar,
   Dialog,
@@ -24,9 +23,8 @@ export interface AvatarStudioPopoverProps {
   value: string;
   identity?: string;
   status?: string;
-  avatarSet?: BotAvatarSet;
   size?: number;
-  onChange: (value: string, avatarSet?: BotAvatarSet) => void;
+  onChange: (value: string) => void;
   disabled?: boolean;
 }
 
@@ -34,7 +32,6 @@ export function AvatarStudioPopover({
   value,
   identity,
   status,
-  avatarSet = "organic",
   size = 72,
   onChange,
   disabled = false,

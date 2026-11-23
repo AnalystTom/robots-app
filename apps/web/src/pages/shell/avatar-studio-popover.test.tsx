@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 
-import type { BotAvatarSet } from "@robots/contracts";
 import { parseRobotCharacter } from "@robots/contracts";
 import { robotCharacterDataUri } from "@robots/core";
 import type { ReactNode } from "react";
@@ -19,26 +18,17 @@ import { AvatarStudioPopover } from "./avatar-studio-popover";
 
 let container: HTMLDivElement;
 let root: Root;
-const changed = vi.fn<(value: string, avatarSet?: BotAvatarSet) => void>();
+const changed = vi.fn<(value: string) => void>();
 
-function Harness({
-  value: initial,
-  avatarSet: initialSet,
-}: {
-  value: string;
-  avatarSet?: BotAvatarSet;
-}) {
+function Harness({ value: initial }: { value: string }) {
   const [value, setValue] = useState(initial);
-  const [avatarSet, setAvatarSet] = useState(initialSet);
   return (
     <AvatarStudioPopover
       value={value}
       identity="sample-bot"
-      avatarSet={avatarSet}
-      onChange={(next, nextSet) => {
-        changed(next, nextSet);
+      onChange={(next) => {
+        changed(next);
         setValue(next);
-        if (nextSet !== undefined) setAvatarSet(nextSet);
       }}
     />
   );
@@ -71,30 +61,26 @@ function button(name: string) {
 async function click(name: string) {
   await act(async () => button(name).click());
 }
-async function render(value: string, avatarSet?: BotAvatarSet, key = "initial") {
-  await act(async () => root.render(<Harness key={key} value={value} avatarSet={avatarSet} />));
+async function render(value: string) {
+  await act(async () => root.render(<Harness key={value} value={value} />));
 }
 
 describe("the robot-only picker", () => {
   it.each([
-    ["a plain hex", "#10B981", "organic"],
-    ["an organic shape", "#8B5CF6::shape_2", "organic"],
-    ["a plain hex under the robots set", "#10B981", "robots"],
-  ] as const)(
-    "draws %s as a robot preset and offers no Original style",
-    async (_label, value, set) => {
-      await render(value, set);
-      expect(document.querySelector(".robots-organic-avatar")).toBeNull();
-      expect(document.querySelector(".robots-logo-avatar")).toBeNull();
-      expect(document.querySelector('img[src^="data:image/svg+xml"]')).not.toBeNull();
-      await click("Customize bot avatar");
-      expect(document.body.textContent).not.toContain("Original");
-      expect(document.body.textContent).not.toContain("More styles");
-      expect(document.querySelector('[role="tab"][aria-selected]')).not.toBeNull();
-      expect(document.querySelectorAll('[role="radio"]')).toHaveLength(15);
-      expect(changed).not.toHaveBeenCalled();
-    },
-  );
+    ["a plain hex", "#10B981"],
+    ["an organic shape", "#8B5CF6::shape_2"],
+  ] as const)("draws %s as a robot preset and offers no Original style", async (_label, value) => {
+    await render(value);
+    expect(document.querySelector(".robots-organic-avatar")).toBeNull();
+    expect(document.querySelector(".robots-logo-avatar")).toBeNull();
+    expect(document.querySelector('img[src^="data:image/svg+xml"]')).not.toBeNull();
+    await click("Customize bot avatar");
+    expect(document.body.textContent).not.toContain("Original");
+    expect(document.body.textContent).not.toContain("More styles");
+    expect(document.querySelector('[role="tab"][aria-selected]')).not.toBeNull();
+    expect(document.querySelectorAll('[role="radio"]')).toHaveLength(15);
+    expect(changed).not.toHaveBeenCalled();
+  });
 
   it("replaces a photo only when a robot is picked", async () => {
     const photo = "data:image/png;base64,abc";
@@ -110,7 +96,7 @@ describe("the robot-only picker", () => {
   it("keeps a legacy robot the bot wears, lists only the listed robots, and saves only a picked one", async () => {
     const legacyRobot = "robot:teal.top-hat.hearts.cape.none";
     const detective = "robot:purple.deerstalker.magnifier.cape.none";
-    await render(legacyRobot, "robots");
+    await render(legacyRobot);
     const legacyUri = robotCharacterDataUri(parseRobotCharacter(legacyRobot)!);
     expect([...document.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toContain(
       legacyUri,
@@ -143,7 +129,7 @@ describe("the robot-only picker", () => {
     expect(checked()).toEqual([]);
     expect(changed).not.toHaveBeenCalled();
     await click("Detective");
-    expect(changed).toHaveBeenLastCalledWith(detective, undefined);
+    expect(changed).toHaveBeenLastCalledWith(detective);
     expect(checked()).toEqual(["Detective"]);
   });
 });

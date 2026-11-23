@@ -1,7 +1,6 @@
 import { i18n } from "@lingui/core";
 import { useLingui } from "@lingui/react/macro";
 import type {
-  BotAvatarSet,
   ComputerReleaseReason,
   LoginFieldInput,
   MessageReaction,
@@ -143,9 +142,7 @@ export const Transcript = memo(function Transcript({
   onJumpToMessage: (messageId: string) => void;
   onOpenPeerMessages: (peer: { peerBotId: string; peerBotName: string }) => void;
   memberName?: (botId: string | undefined) => string | undefined;
-  peerBot: (
-    botId: string,
-  ) => { name?: string; color: string; status?: string; avatarSet?: BotAvatarSet } | undefined;
+  peerBot: (botId: string) => { name?: string; color: string; status?: string } | undefined;
   onRefresh: () => Promise<void>;
   onBotChanged: () => Promise<void>;
   onAddRoutine: (name: string, prompt: string) => void;
