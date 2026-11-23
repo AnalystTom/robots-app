@@ -8,7 +8,6 @@ import {
   completeOnboarding,
   manageModelConnection,
   modelConnectionDialog,
-  modelConnectOption,
   openBotPanelTab,
   openModelConnection,
   openUserSettings,

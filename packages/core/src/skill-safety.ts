@@ -30,7 +30,7 @@ const REASON: Record<SkillSafetyRule, string> = {
 
 const SHELL = String.raw`(?:sudo\s+(?:-\S+\s+)*)?(?:env\s+)?(?:ba|z|da|k|c|tc|fi)?sh\b`;
 const INTERPRETER = String.raw`(?:sudo\s+)?(?:python[\d.]*|perl|ruby|node|php|iex|Invoke-Expression)\b`;
-const FETCHER = String.raw`(?:curl|wget|fetch|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)`;
+const FETCHER = `(?:curl|wget|fetch|iwr|irm|Invoke-WebRequest|Invoke-RestMethod)`;
 
 const LINE_RULES: [Exclude<SkillSafetyRule, "credential_access">, RegExp[]][] = [
   [
