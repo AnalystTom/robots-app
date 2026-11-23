@@ -122,6 +122,7 @@ export async function signupThroughForm(
   await page.getByPlaceholder("Your email address").fill(email);
   await page.getByPlaceholder("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
+  await answerDataSharing(page);
 }
 
 /** Brings the window back into view, which reads live lists again as returning to the tab does. */

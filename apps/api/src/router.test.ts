@@ -86,16 +86,19 @@ async function handle(handler: RouterHandler, ...args: Parameters<RouterHandler[
 
 describe("account preferences", () => {
   function preferencesDeps(avatarStyle: string, timezone: string | null = null) {
-    const update = vi.fn().mockResolvedValue({});
     const user = {
       email: "user@robots.test",
       name: "Test User",
       avatarStyle,
       timezone,
       usageSharing: false,
-      usageSharingAnsweredAt: null,
+      usageSharingAnsweredAt: null as Date | null,
       secrets: [],
     };
+    const update = vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+      Object.assign(user, data);
+      return {};
+    });
     const updateMany = vi.fn(
       async ({ where, data }: { where: { timezone: null }; data: { timezone: string } }) => {
         if (user.timezone !== where.timezone) return { count: 0 };
@@ -118,7 +121,7 @@ describe("account preferences", () => {
         findUnique: vi.fn(async () => ({ timezone: user.timezone })),
         findUniqueOrThrow: vi.fn().mockResolvedValue(user),
       },
-      bot: { findMany: botFindMany },
+      bot: { findMany: botFindMany, count: vi.fn().mockResolvedValue(0) },
       routine: {
         findMany: vi.fn(async ({ where }: { where: Record<string, unknown> }) =>
           routines.filter((row) => matches(row, where)),
@@ -572,6 +575,20 @@ describe("account preferences", () => {
     expect(setup.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: { usageSharing: shared, usageSharingAnsweredAt: expect.any(Date) },
+    });
+  });
+
+  it("stops asking for data sharing once the save answers it", async () => {
+    const setup = preferencesDeps("organic");
+    setup.deps.analytics = { capture: vi.fn(), flush: vi.fn(async () => undefined) };
+    const client = createRouterClient(createRouter(setup.deps), { context: { actor: setup.actor } });
+
+    await expect(client.me()).resolves.toMatchObject({
+      usageSharing: { available: true, needed: true },
+    });
+    await updatePreferences(setup, { usageSharing: false });
+    await expect(client.me()).resolves.toMatchObject({
+      usageSharing: { available: true, enabled: false, needed: false },
     });
   });
 
