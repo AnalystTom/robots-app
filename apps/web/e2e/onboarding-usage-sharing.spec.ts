@@ -43,6 +43,7 @@ test("a new user chooses data sharing first and finds the choice in Settings", a
   await captureScreenshot(page, testInfo, "02-data-sharing-on");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.waitForURL(/\/app\//, { timeout: 20_000 });
+  await page.unroute("**/rpc/me");
 
   await page.reload();
   await page.waitForURL(/\/app\//);
@@ -59,19 +60,15 @@ test("a new user chooses data sharing first and finds the choice in Settings", a
   await expect(reopened.getByTestId("usage-sharing-toggle")).not.toBeChecked();
 });
 
-test("continuing without touching the switch records an off answer and is not asked again", async ({
-  page,
-}) => {
+test("continuing without touching the switch leaves data sharing off", async ({ page }) => {
   await offerUsageSharing(page);
   await signup(page, `sharing-off-${Date.now()}@robots.test`, "password12", "SharingOff");
 
   await expect(page.getByRole("heading", { name: "Enable data sharing" })).toBeVisible();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.waitForURL(/\/app\//, { timeout: 20_000 });
+  await page.unroute("**/rpc/me");
 
-  await page.goto("/onboarding");
-  await page.waitForURL(/\/app\//, { timeout: 20_000 });
-  await expect(page.getByRole("heading", { name: "Enable data sharing" })).toHaveCount(0);
   const settings = await openUserSettings(page);
   await expect(settings.getByTestId("usage-sharing-toggle")).not.toBeChecked();
 });

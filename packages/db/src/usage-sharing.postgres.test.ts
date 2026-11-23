@@ -4,7 +4,7 @@ import type { PrismaClient } from "./client.js";
 import { createDb } from "./client.js";
 import { provisionMessagingIdentity } from "./messaging.js";
 import { asSystem, runAsSystem } from "./row-security.js";
-import { onlyWhereUsageSharingIsOn, rememberUsageSharing } from "./usage-sharing.js";
+import { onlyWhereUsageSharingIsOn } from "./usage-sharing.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const describePostgres = process.env.VERIFY_DATABASE && databaseUrl ? describe : describe.skip;
@@ -76,26 +76,4 @@ describePostgres("product analytics gated by usage sharing (PostgreSQL)", () => 
     expect(user).toEqual({ usageSharing: false, usageSharingAnsweredAt: null });
   });
 
-  it("applies a choice saved in this process at once, in both directions", async () => {
-    const forwarded: string[] = [];
-    const gate = onlyWhereUsageSharingIsOn(
-      { capture: (userId) => void forwarded.push(userId), flush: async () => {} },
-      prisma,
-    )!;
-
-    gate.capture(silent, { name: "signed_in" });
-    await gate.flush();
-    expect(forwarded).toEqual([]);
-    await asSystem(prisma).user.update({ where: { id: silent }, data: { usageSharing: true } });
-    rememberUsageSharing(silent, true);
-    gate.capture(silent, { name: "signed_in" });
-    await gate.flush();
-    expect(forwarded).toEqual([silent]);
-
-    await asSystem(prisma).user.update({ where: { id: silent }, data: { usageSharing: false } });
-    rememberUsageSharing(silent, false);
-    gate.capture(silent, { name: "signed_in" });
-    await gate.flush();
-    expect(forwarded).toEqual([silent]);
-  });
 });

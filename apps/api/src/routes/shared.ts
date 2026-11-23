@@ -9,6 +9,7 @@ import {
   selectConfiguredModel,
 } from "@robots/adapters";
 import type { Actor, Me } from "@robots/contracts";
+import { runAsSystem } from "@robots/db";
 import {
   attachmentMaxBytes,
   attachmentMaxCount,
@@ -115,7 +116,9 @@ async function usageSharingState(
   const needed =
     available &&
     !answered &&
-    (await deps.prisma.bot.count({ where: { userId: actor.userId } })) === 0;
+    (await runAsSystem("count the user's own bots in all their spaces", () =>
+      deps.prisma.bot.count({ where: { userId: actor.userId } }),
+    )) === 0;
   return { available, enabled: user.usageSharing, needed };
 }
 

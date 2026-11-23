@@ -49,6 +49,7 @@ import {
   AnswerTooLongError,
   configureProviderTransactionPool,
   IsolationError,
+  onlyWhereUsageSharingIsOn,
   Prisma,
   runProviderTransaction,
 } from "@robots/db";
@@ -574,6 +575,31 @@ describe("account preferences", () => {
     });
   });
 
+  it("applies a saved data sharing choice to the analytics gate at once", async () => {
+    const setup = preferencesDeps("organic");
+    const forwarded: string[] = [];
+    const gate = onlyWhereUsageSharingIsOn(
+      { capture: (userId) => void forwarded.push(userId), flush: async () => undefined },
+      setup.deps.prisma,
+    )!;
+    const sendSignIn = async () => {
+      gate.capture("user-1", { name: "signed_in" });
+      await gate.flush();
+    };
+
+    await updatePreferences(setup, { usageSharing: false });
+    await sendSignIn();
+    expect(forwarded).toEqual([]);
+
+    await updatePreferences(setup, { usageSharing: true });
+    await sendSignIn();
+    expect(forwarded).toEqual(["user-1"]);
+
+    await updatePreferences(setup, { usageSharing: false });
+    await sendSignIn();
+    expect(forwarded).toEqual(["user-1"]);
+  });
+
   it.each([null, "Europe/London"])(
     "adopts the browser timezone only while the saved value is null (%s)",
     async (timezone) => {
@@ -700,6 +726,7 @@ describe("billing", () => {
     billing?: RouterDeps["billing"],
     signupSurvey: { userId: string } | null = null,
     analytics?: RouterDeps["analytics"],
+    sharing: { answered: boolean; ownedBots: number } = { answered: false, ownedBots: 0 },
   ) {
     const prisma = {
       user: {
@@ -710,9 +737,10 @@ describe("billing", () => {
           signupSurvey,
           secrets: [],
           usageSharing: false,
-          usageSharingAnsweredAt: null,
+          usageSharingAnsweredAt: sharing.answered ? new Date("2026-11-01T00:00:00Z") : null,
         }),
       },
+      bot: { count: vi.fn().mockResolvedValue(sharing.ownedBots) },
       signupSurvey: { upsert: upsertSignupSurvey },
       userModelPreference: { findFirst: vi.fn().mockResolvedValue(null) },
       deploymentSettings: { findUnique: vi.fn().mockResolvedValue(null) },
@@ -753,6 +781,25 @@ describe("billing", () => {
       code: "NOT_FOUND",
     });
     await expect(client.me()).resolves.toMatchObject({ billingEnabled: false });
+  });
+
+  it.each([
+    { analytics: false, sharing: { answered: false, ownedBots: 0 }, needed: false },
+    { analytics: true, sharing: { answered: false, ownedBots: 0 }, needed: true },
+    { analytics: true, sharing: { answered: false, ownedBots: 1 }, needed: false },
+    { analytics: true, sharing: { answered: true, ownedBots: 0 }, needed: false },
+  ])("asks for data sharing only before the first bot (%o)", async (scenario) => {
+    const analyticsSink = { capture: vi.fn(), flush: vi.fn(async () => undefined) };
+    const client = billingDeps(
+      false,
+      undefined,
+      null,
+      scenario.analytics ? analyticsSink : undefined,
+      scenario.sharing,
+    );
+    await expect(client.me()).resolves.toMatchObject({
+      usageSharing: { available: scenario.analytics, needed: scenario.needed },
+    });
   });
 
   it("enables billing on me for admins too", async () => {
