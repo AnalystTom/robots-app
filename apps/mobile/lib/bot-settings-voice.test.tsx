@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { BOT_COLORS, BOT_SETTINGS_SECTIONS } from "@robots/contracts";
+import { DEFAULT_BOT_AVATAR_COLOR } from "@robots/core";
 import * as Notifications from "expo-notifications";
 import type { ComponentProps, ReactNode } from "react";
 import { act, createElement, useEffect } from "react";
@@ -672,6 +673,31 @@ describe("bot settings device voice menu", () => {
     expect(mocks.rpc).toHaveBeenLastCalledWith("bots/update", {
       botId: "bot-fixture",
       color: BOT_COLORS[1],
+      avatarSet: "organic",
+    });
+  });
+
+  it("saves a non-robot colour when a stored RoBots bot is switched to Original", async () => {
+    mocks.avatarSet = "robots";
+    mocks.color = "robot:purple.deerstalker.magnifier.cape.none";
+    await render();
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
+    );
+    const setOption = (label: string) =>
+      [...container.querySelectorAll<HTMLButtonElement>('[data-menu="Icon set"] button')].find(
+        (button) => button.textContent === label,
+      )!;
+    mocks.rpc.mockResolvedValueOnce({ avatarSet: "organic" });
+    await act(async () => setOption("Original").click());
+    await act(async () =>
+      [...container.querySelectorAll<HTMLButtonElement>("button")]
+        .find((button) => button.textContent === "Save")!
+        .click(),
+    );
+    expect(mocks.rpc).toHaveBeenCalledWith("bots/update", {
+      botId: "bot-fixture",
+      color: DEFAULT_BOT_AVATAR_COLOR,
       avatarSet: "organic",
     });
   });

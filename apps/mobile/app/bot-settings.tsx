@@ -422,7 +422,9 @@ export default function BotSettingsScreen() {
         input.instructions = instructions;
         input.expectedInstructions = bot.instructions;
       }
-      if (color !== bot.color) input.color = color;
+      const savedColor =
+        avatarSet === "organic" && botLookState(color).robot ? DEFAULT_BOT_AVATAR_COLOR : color;
+      if (savedColor !== bot.color) input.color = savedColor;
       if (avatarSet !== resolveBotAvatarSet(bot.avatarSet)) input.avatarSet = avatarSet;
       const modelChanged =
         (selected?.provider ?? null) !== (bot.modelProvider ?? null) ||
