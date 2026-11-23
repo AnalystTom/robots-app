@@ -25,6 +25,7 @@ import { rpc } from "../../lib/api";
 import { useAppForeground } from "../../lib/app-foreground";
 import { mobileTokens } from "../../lib/appearance";
 import type { MobileArtifactTarget } from "../../lib/artifact-open";
+import { botModelLabel } from "../../lib/bot-model-label";
 import { CallKeyboardContext } from "../../lib/call-keyboard-context";
 import { useCallSession } from "../../lib/call-session";
 import { composerDraftScope } from "../../lib/composer-draft";
@@ -696,7 +697,7 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
               model={
                 botId && currentBot
                   ? {
-                      label: currentBot.modelId ?? t`Auto`,
+                      label: botModelLabel(currentBot.modelId),
                       onPress: () =>
                         router.push({
                           pathname: "/bot-settings",
