@@ -1,8 +1,39 @@
-# Private registration preview
+# Register for RoBots
 
-Open [Choose your setup](http://localhost:5194/api/registration) on the machine running the preview. The hosted workspace costs US$20 per month in simulated checkout. It uses the customer's model account. Confirming a test subscription activates one workspace. Ending it in billing removes workspace access. The preview uses its own PostgreSQL and local payment simulator. It accepts no payment credentials.
+Open **Choose your setup** on the machine running the private preview. **Run locally** is free and stores your workspace on your computer. **Hosted workspace** uses a simulated US$20 monthly subscription per workspace. Both options use your own model account. [Open the registration preview](http://localhost:5194/api/registration)
 
-The free installer includes the Linux x86-64 app, computer, database and utility images. Extract the archive and run `bash install-local.sh` on a machine with Docker Engine, Docker Compose, Bash and OpenSSL. The installer prints the local signup URL. Each installation keeps its own database and encryption settings.
+[View the setup screen](screenshots/choose-setup.png)
+
+## Create a free local account
+
+1. Choose **Set up locally**, then **Download the local installer**. The download is about 1.3 GB. Use a Linux x86-64 machine with Docker Engine running, Docker Compose, Bash and OpenSSL.
+2. Open a terminal in the download directory and run the commands below. Keep the extracted folder for subsequent starts. It contains the configuration for this installation.
+
+   ```sh
+   tar -xzf robots-local-linux-amd64.tar.gz
+   cd robots-local
+   bash install-local.sh
+   ```
+
+3. When the installer prints **Create your local account at …**, open that address on the same computer. With the default ports it is [local signup](http://127.0.0.1:5193/sign-up).
+4. Enter your name, email and password, then choose **Create account**. RoBots opens your local workspace or its onboarding screen. Local registration requires no subscription.
+5. To return, open the same local installation, choose **Sign in**, and enter the same email and password. With the default ports, use [local sign-in](http://127.0.0.1:5193/sign-in).
+
+## Create a hosted test account
+
+1. On **Choose your setup**, choose **Create a hosted account**.
+2. Enter your name, email and password. Choose **Create account**. Your account now exists and RoBots displays **Subscribe**. Workspace access starts after confirmation.
+3. Choose **Subscribe**. The **Test checkout** page shows **Hosted workspace** at **US$20 / month**. It has no card form and makes no charge.
+4. Choose **Confirm test subscription**. RoBots returns you to your own workspace. To return later, choose **Sign in** on the setup page and use your hosted credentials.
+
+[View the test checkout screen](screenshots/test-checkout.png)
+
+### Leave checkout or end a test subscription
+
+- **Before confirming**, choose **Back to RoBots**. The workspace stays unpaid. You can sign in later with the same account and choose **Subscribe** to open a new checkout.
+- **After confirming**, open the account menu in the workspace sidebar. Choose **Settings → Billing → Manage**, then **End test subscription**. RoBots displays **Subscribe** again and blocks workspace access. The account remains available for sign-in.
+
+The hosted preview uses its own database and payment simulator. Hosted bot computers are disabled in this preview. Registration testing covers access to the workspace. Connecting a model and running a bot require separate setup.
 
 ## Run the preview
 
@@ -27,4 +58,19 @@ Start both installs and run the registration journeys.
 pnpm --filter @robots/web exec playwright test -c playwright.registration.config.ts
 ```
 
-The journeys create new test accounts and exercise signup, returning sign-in, checkout, cancellation and cross-workspace access. Screenshots are under `apps/web/test-results/registration`.
+Each run creates fresh test accounts. The browser downloads the full installer, so allow about 1.3 GB of temporary disk space. Screenshots are under `apps/web/test-results/registration`.
+
+### Results from 23 November 2026
+
+Both Chromium journeys passed in 32.6 seconds against the private preview and the local Linux installation. The API typecheck and all 37 billing provider and webhook checks also passed.
+
+| Action tested | Observed result |
+| --- | --- |
+| Download and install locally | The 1,287,929,894-byte download matched the packaged archive byte for byte. Rerunning its installer in the existing test installation printed the local signup URL on port 5193. |
+| Create a local account and sign back in | The browser accepted the credentials. Billing was disabled and the workspace API returned HTTP 200. |
+| Leave hosted checkout, sign back in and retry | The first checkout closed. The unpaid account returned to **Subscribe** and could open a new checkout. Opening the billing return URL alone kept the workspace locked. |
+| Confirm checkout and sign back in | Billing reported one active workspace at US$20 per month. The workspace API returned HTTP 200. |
+| Open another customer's checkout or workspace | Two independently registered users had different workspaces. Each could use their own. Requests for the other user's checkout or workspace were denied. |
+| End the test subscription in Settings | Billing showed **Active** before cancellation. Ending the subscription brought back **Subscribe**, and the workspace API returned HTTP 402. |
+
+Verification covered Chromium on Linux and a repeat install on the existing Docker test stack. Live charges, monthly renewals, model execution and installation on a clean operating system were outside this run.

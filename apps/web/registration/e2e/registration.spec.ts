@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { stat } from "node:fs/promises";
 import type { APIRequestContext, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
-import { signupThroughForm } from "../../e2e/helpers";
+import { openEmailSignIn, openUserSettings, signupThroughForm } from "../../e2e/helpers";
 
 const hosted = "http://localhost:5194";
 const local = "http://127.0.0.1:5193";
@@ -25,6 +26,21 @@ async function signup(page: Page) {
   return user;
 }
 
+async function signIn(page: Page, user: ReturnType<typeof account>) {
+  await page.context().clearCookies();
+  if (new URL(page.url()).origin === hosted) {
+    await page.goto(setup);
+    await page.getByRole("link", { name: "Sign in", exact: true }).click();
+  } else {
+    await page.goto("/sign-in");
+  }
+  await openEmailSignIn(page);
+  await page.getByLabel("Email", { exact: true }).fill(user.email);
+  await page.getByLabel("Password", { exact: true }).fill(user.password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/(onboarding|app)/);
+}
+
 test("free download, local account creation and a fresh sign-in", async ({
   page,
   browser,
@@ -33,24 +49,27 @@ test("free download, local account creation and a fresh sign-in", async ({
   await expect(page.getByRole("heading", { name: "Choose your setup" })).toBeVisible();
   await page.screenshot({ path: info.outputPath("setup.png") });
   await page.getByRole("link", { name: "Set up locally" }).click();
-  const archive = await page
-    .getByRole("link", { name: "Download the local installer" })
-    .getAttribute("href");
-  const download = await page.request.head(`${hosted}${archive}`);
-  expect(download.status()).toBe(200);
-  expect(Number(download.headers()["content-length"])).toBeGreaterThan(1000000);
+  const installer = page.getByRole("link", { name: "Download the local installer" });
+  const downloading = page.waitForEvent("download");
+  await installer.click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toBe("robots-local-linux-amd64.tar.gz");
+  const file = await download.path();
+  if (!file) throw new Error("The browser did not save the installer");
+  const response = await page.request.head(download.url());
+  expect(response.ok()).toBe(true);
+  const expectedBytes = Number(response.headers()["content-length"]);
+  expect(expectedBytes).toBeGreaterThan(1_000_000);
+  expect((await stat(file)).size).toBe(expectedBytes);
+  await download.delete();
   const localContext = await browser.newContext({ baseURL: local });
   try {
-    const user = await signup(await localContext.newPage());
+    const localPage = await localContext.newPage();
+    const user = await signup(localPage);
     expect((await (await rpc(localContext.request, local, "me")).json()).json.billingEnabled).toBe(
       false,
     );
-    await localContext.clearCookies();
-    const signIn = await localContext.request.post(`${local}/api/auth/sign-in/email`, {
-      headers: { origin: local },
-      data: user,
-    });
-    expect(signIn.status()).toBe(200);
+    await signIn(localPage, user);
     expect((await rpc(localContext.request, local, "bots/list")).status()).toBe(200);
   } finally {
     await localContext.close();
@@ -84,6 +103,8 @@ test("hosted checkout, cancellation, retry, return and workspace isolation", asy
   await page.getByRole("button", { name: "Back to RoBots" }).click();
   await expect(subscribe).toBeVisible();
   expect((await page.request.get(canceledUrl)).status()).toBe(404);
+  await signIn(page, owner);
+  await expect(subscribe).toBeVisible();
   await subscribe.click();
   await expect(page.getByRole("button", { name: "Confirm test subscription" })).toBeVisible();
   const checkout = page.url();
@@ -119,12 +140,7 @@ test("hosted checkout, cancellation, retry, return and workspace isolation", asy
     await other.getByRole("button", { name: "Confirm test subscription" }).click();
     await expect(other).toHaveURL(/\/(app|onboarding)/);
     expect((await rpc(second.request, hosted, "bots/list")).status()).toBe(200);
-    await page.context().clearCookies();
-    const signIn = await page.request.post(`${hosted}/api/auth/sign-in/email`, {
-      headers: { origin: hosted },
-      data: owner,
-    });
-    expect(signIn.status()).toBe(200);
+    await signIn(page, owner);
     expect((await (await rpc(page.request, hosted, "billing/status")).json()).json.access).toBe(
       true,
     );
@@ -137,8 +153,10 @@ test("hosted checkout, cancellation, retry, return and workspace isolation", asy
     expect([401, 403, 404]).toContain(
       (await rpc(second.request, hosted, "bots/list", {}, mySpace)).status(),
     );
-    const portal = (await (await rpc(page.request, hosted, "billing/portal")).json()).json.url;
-    await page.goto(portal);
+    const settings = await openUserSettings(page, "billing");
+    await expect(settings.getByTestId("billing-settings")).toContainText("Active");
+    await settings.getByRole("button", { name: "Manage", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Manage test subscription" })).toBeVisible();
     await page.getByRole("button", { name: "End test subscription" }).click();
     await expect(subscribe).toBeVisible();
     expect((await rpc(page.request, hosted, "bots/list")).status()).toBe(402);
