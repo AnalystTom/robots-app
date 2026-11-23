@@ -1,6 +1,5 @@
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { BotAvatarSet } from "@robots/contracts";
 import { splitPeerLabel } from "@robots/core";
 import type { PressableProps } from "react-native";
 import { Pressable, StyleSheet, Text } from "react-native";
@@ -12,7 +11,6 @@ export function PeerReceiptLine({
   peerBotId,
   peerBotName,
   color,
-  avatarSet,
   count,
   direction,
   onPress,
@@ -21,7 +19,6 @@ export function PeerReceiptLine({
   peerBotId: string;
   peerBotName: string;
   color: string;
-  avatarSet?: BotAvatarSet;
   count: number;
   direction: "sent" | "received";
   onPress?: () => void;

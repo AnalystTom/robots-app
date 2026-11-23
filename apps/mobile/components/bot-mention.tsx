@@ -1,4 +1,3 @@
-import type { BotAvatarSet } from "@robots/contracts";
 import type { ChildBotBlock } from "@robots/core";
 import { resolvePersonaColorDef } from "@robots/core";
 import type { ColorTokens } from "@robots/ui-tokens";
@@ -14,13 +13,11 @@ const ICON_SIZE = 16;
 export function BotMention({
   block,
   color,
-  avatarSet,
   tokens,
   onOpenBot,
 }: {
   block: ChildBotBlock;
   color: string | undefined;
-  avatarSet?: BotAvatarSet;
   tokens: ColorTokens;
   onOpenBot: (botId: string, name: string) => void;
 }) {
@@ -56,14 +53,12 @@ export function BotMention({
 export function MessageMentions({
   mentions,
   colorOf,
-  avatarSetOf,
   tokens,
   onOpenBot,
   children,
 }: {
   mentions: readonly ChildBotBlock[];
   colorOf: (botId: string) => string | undefined;
-  avatarSetOf?: (botId: string) => BotAvatarSet | undefined;
   tokens: ColorTokens;
   onOpenBot: (botId: string, name: string) => void;
   children: ReactNode;
@@ -71,13 +66,7 @@ export function MessageMentions({
   const render = (id: string) => {
     const block = mentions.find((mention) => mention.botId === id);
     return block ? (
-      <BotMention
-        block={block}
-        color={colorOf(id)}
-        avatarSet={avatarSetOf?.(id)}
-        tokens={tokens}
-        onOpenBot={onOpenBot}
-      />
+      <BotMention block={block} color={colorOf(id)} tokens={tokens} onOpenBot={onOpenBot} />
     ) : undefined;
   };
   return (

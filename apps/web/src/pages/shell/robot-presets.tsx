@@ -1,13 +1,15 @@
 import { useLingui } from "@lingui/react/macro";
 import type { RobotPresetId } from "@robots/core";
-import { ROBOT_PRESETS, robotPresetValue } from "@robots/core";
+import { ROBOT_PRESETS, robotPresetValue, robotsOnlyAvatarValue } from "@robots/core";
 import { BotAvatar } from "@robots/ui-web";
 
 export function RobotPresetPicker({
   value,
+  identity,
   onChange,
 }: {
   value: string;
+  identity?: string;
   onChange: (value: string) => void;
 }) {
   const { t } = useLingui();
@@ -28,6 +30,7 @@ export function RobotPresetPicker({
     hustler: t`Hustler`,
     host: t`Host`,
   };
+  const drawn = robotsOnlyAvatarValue(value, identity);
   const choices = ROBOT_PRESETS.map((preset) => ({
     key: preset.id,
     label: labels[preset.id],
@@ -36,7 +39,7 @@ export function RobotPresetPicker({
   return (
     <div role="radiogroup" aria-label={t`Character`} className="grid grid-cols-4 gap-2">
       {choices.map((choice) => {
-        const selected = choice.value === value;
+        const selected = choice.value === drawn;
         return (
           // biome-ignore lint/a11y/useSemanticElements: a grid of picture buttons, not radio inputs
           <button

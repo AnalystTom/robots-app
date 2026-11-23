@@ -20,16 +20,6 @@ import type { ClipboardEvent, DragEvent } from "react";
 import { useRef, useState } from "react";
 import { RobotPresetPicker } from "./robot-presets";
 
-export function BotLookPicker({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return <RobotPresetPicker value={value} onChange={onChange} />;
-}
-
 export interface AvatarStudioPopoverProps {
   value: string;
   identity?: string;
@@ -169,7 +159,11 @@ export function AvatarStudioPopover({
             </div>
 
             <TabsContent value="bot" className="pt-1" data-testid="avatar-studio-bot-tab">
-              <BotLookPicker value={value} onChange={(next) => onChange(next)} />
+              <RobotPresetPicker
+                value={value}
+                identity={identity}
+                onChange={(next) => onChange(next)}
+              />
             </TabsContent>
             <TabsContent value="upload">
               <button

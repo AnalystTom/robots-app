@@ -1,6 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { ChatMarkdown } from "@robots/chat-ui/web";
-import type { BotAvatarSet } from "@robots/contracts";
 import {
   loadPeerHistory,
   newestPageCards,
@@ -37,21 +36,17 @@ export function PeerMessagesOverlay({
   botId,
   botName,
   botColor,
-  botAvatarSet,
   peerBotId,
   peerBotName: initialPeerBotName,
   peerBotColor,
-  peerBotAvatarSet,
   onClose,
 }: {
   botId: string;
   botName: string;
   botColor: string;
-  botAvatarSet?: BotAvatarSet;
   peerBotId: string;
   peerBotName: string;
   peerBotColor: string;
-  peerBotAvatarSet?: BotAvatarSet;
   onClose: () => void;
 }) {
   const { t } = useLingui();

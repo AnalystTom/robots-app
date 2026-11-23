@@ -240,11 +240,9 @@ export function SettingsOverlays({
           botId={active.id}
           botName={active.name}
           botColor={active.color}
-          botAvatarSet={active.avatarSet}
           peerBotId={peerConversation.peerBotId}
           peerBotName={peerConversation.peerBotName}
           peerBotColor={peerBot(peerConversation.peerBotId)?.color ?? FALLBACK_BOT_COLOR}
-          peerBotAvatarSet={peerBot(peerConversation.peerBotId)?.avatarSet}
           onClose={() => setPeerConversation(null)}
         />
       ) : null}

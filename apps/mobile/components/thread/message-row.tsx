@@ -1,11 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { markdownCodeBlocks } from "@robots/chat-ui/native";
-import type {
-  BotAvatarSet,
-  LoginFieldInput,
-  MessageBlock,
-  MessageReaction,
-} from "@robots/contracts";
+import type { LoginFieldInput, MessageBlock, MessageReaction } from "@robots/contracts";
 import { canReactToThreadMessage, MESSAGE_REACTIONS } from "@robots/contracts";
 import type { ChildBotBlock, PeerExchange } from "@robots/core";
 import {
@@ -103,7 +98,6 @@ type MessageRowProps = {
   peerExchange?: PeerExchange;
   activityBotId?: string;
   activityColor?: string;
-  activityAvatarSet?: BotAvatarSet;
   activityStatus?: MobileBot["status"];
   userBubble?: UserBubble;
   inGroup: boolean;
@@ -141,7 +135,6 @@ export const MessageRow = memo(function MessageRow({
   peerExchange,
   activityBotId,
   activityColor,
-  activityAvatarSet,
   activityStatus,
   userBubble,
   inGroup,

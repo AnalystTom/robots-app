@@ -1,5 +1,4 @@
 import { plainTextLinkParts } from "@robots/chat-ui/native";
-import type { BotAvatarSet } from "@robots/contracts";
 import type { MentionTextPart } from "@robots/core";
 import { displayName, everyoneWords, groupMentionNames, splitMentionText } from "@robots/core";
 import type { ReactNode } from "react";
@@ -12,7 +11,7 @@ export const MessageMentionsContext = createContext<((id: string) => ReactNode) 
 
 /** A group member a sent message can name with `@Name`, or everyone in the group. */
 export type UserMentionTarget =
-  | { kind: "bot"; id: string; name: string; color: string; avatarSet?: BotAvatarSet }
+  | { kind: "bot"; id: string; name: string; color: string }
   | { kind: "everyone"; id: "everyone"; name: string };
 
 /** Who a sent message's `@Name` can refer to; absent outside groups. */
@@ -31,7 +30,7 @@ export const UserMentionsContext = createContext<
  * them.
  */
 export function userMentionTargets(
-  members: readonly { botId: string; name: string; color: string; avatarSet?: BotAvatarSet }[],
+  members: readonly { botId: string; name: string; color: string }[],
   text: string,
 ): UserMentionTarget[] {
   const named = members.map((member) => ({ member, name: displayName(member.name, "Bot") }));
@@ -51,7 +50,6 @@ export function userMentionTargets(
       id: member.botId,
       name,
       color: member.color,
-      avatarSet: member.avatarSet,
     }));
   targets.unshift(
     ...everyone.map((name) => ({ kind: "everyone" as const, id: "everyone" as const, name })),

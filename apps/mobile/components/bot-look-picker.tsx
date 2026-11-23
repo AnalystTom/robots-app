@@ -1,6 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
 import type { RobotPresetId } from "@robots/core";
-import { botLookState, ROBOT_PRESETS, robotPresetOf, robotPresetValue } from "@robots/core";
+import {
+  botLookState,
+  ROBOT_PRESETS,
+  robotPresetOf,
+  robotPresetValue,
+  robotsOnlyAvatarValue,
+} from "@robots/core";
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { useMobileTokens } from "../lib/native";
@@ -10,15 +16,17 @@ const ROBOT_SIZE = 48;
 
 export function BotLookPicker({
   value,
+  identity,
   disabled = false,
   onChange,
 }: {
   value: string;
+  identity?: string;
   disabled?: boolean;
   onChange: (value: string) => void;
 }) {
   const { t } = useLingui();
-  const { robot } = botLookState(value);
+  const { robot } = botLookState(robotsOnlyAvatarValue(value, identity));
   const pickedPreset = robot ? robotPresetOf(robot) : null;
   const presetLabels: Record<RobotPresetId, string> = {
     assistant: t`Assistant`,
