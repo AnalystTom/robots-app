@@ -9,7 +9,7 @@ import {
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
 } from "@robots/core";
-import { bestEffort } from "@robots/logging";
+import { bestEffort } from "@robots/logging/monitoring";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler, ScrollView, Text, TextInput, View } from "react-native";
