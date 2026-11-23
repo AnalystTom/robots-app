@@ -1,4 +1,4 @@
-import { notificationAvatarSource } from "@robots/core";
+import { notificationAvatarSource, ROBOT_PRESETS, robotCharacterSvg } from "@robots/core";
 import { expect, it, vi } from "vitest";
 import { notificationIdentity } from "./notification-identity.js";
 
@@ -32,14 +32,27 @@ it.each([
     expect(format).toBe("png");
     expect(width).toBe(height);
     expect([96, 64, 40]).toContain(width);
-    const portrait = await sharp(bytes).raw().toBuffer();
-    const palette = new Set<number>();
-    for (let index = 0; index < portrait.length; index += 3) {
-      palette.add((portrait[index]! << 16) | (portrait[index + 1]! << 8) | portrait[index + 2]!);
-    }
-    expect(palette.size).toBeGreaterThan(3);
   },
 );
+
+it("draws a legacy colour as the preset robot its identity picks", async () => {
+  const identity = await notificationIdentity({
+    id: "agent-1",
+    name: "Head of Marketing",
+    color: "#14b8a6",
+    avatarSet: "robots",
+  });
+  const { default: sharp } = await import("sharp");
+  const bytes = Buffer.from(identity.avatar!, "base64");
+  const { width } = await sharp(bytes).metadata();
+  const assistant = ROBOT_PRESETS.find((preset) => preset.id === "assistant")!;
+  const expected = await sharp(Buffer.from(robotCharacterSvg(assistant.look)))
+    .resize(width!, width!, { fit: "cover" })
+    .flatten({ background: "white" })
+    .png({ palette: true, colours: 16, effort: 10 })
+    .toBuffer();
+  expect(await sharp(bytes).raw().toBuffer()).toEqual(await sharp(expected).raw().toBuffer());
+});
 
 it.each([
   { side: 96, sent: 64 },

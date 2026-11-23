@@ -87,17 +87,15 @@ afterEach(async () => {
 });
 
 describe("New bot dialog avatar set", () => {
-  it("does not open while the account's set is unknown", async () => {
+  it("opens the RoBots preview while the account's set is unknown", async () => {
     await render(undefined);
     await act(async () => newBotButton().click());
-    expect(newBotDialog()).toBeNull();
-  });
-
-  it("opens the Original preview once an Original set arrives, not RoBots", async () => {
-    await render(undefined);
-    await act(async () => newBotButton().click());
-    await render("organic");
-    expect(newBotDialog()?.querySelector(".robots-organic-avatar")).not.toBeNull();
+    expect(newBotDialog()?.querySelector(".robots-organic-avatar")).toBeNull();
+    expect(
+      newBotDialog()?.querySelectorAll(
+        '[role="radiogroup"][aria-label="Character"] [role="radio"]',
+      ),
+    ).toHaveLength(15);
   });
 
   it("opens the RoBots preview for a RoBots account", async () => {

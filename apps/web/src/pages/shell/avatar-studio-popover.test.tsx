@@ -207,4 +207,11 @@ describe("robot character picker", () => {
     expect(changed).toHaveBeenLastCalledWith("robot:red.antenna.aviators.cape.confetti", "robots");
     expect(button("RoBots").getAttribute("aria-selected")).toBe("true");
   });
+
+  it("hides the colour row for a robot look, as the mobile picker does", async () => {
+    await render("robot:purple.deerstalker.magnifier.cape.none", "robots");
+    await click("Customize bot avatar");
+    await click("More styles");
+    expect(document.querySelector('[aria-label^="Color "]')).toBeNull();
+  });
 });

@@ -1,5 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Bot, BotAvatarSet, BotSection, Group, Space } from "@robots/contracts";
+import { DEFAULT_NEW_BOT_AVATAR_SET } from "@robots/contracts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -337,9 +338,9 @@ export function ShellDialogs({
         }))}
       />
 
-      {createBotOpen && botAvatarSet ? (
+      {createBotOpen ? (
         <CreateBotDialog
-          avatarSet={botAvatarSet}
+          avatarSet={botAvatarSet ?? DEFAULT_NEW_BOT_AVATAR_SET}
           ownBotColors={ownBotColors}
           onCancel={() => setCreateBotOpen(false)}
           onCreate={createBot}
