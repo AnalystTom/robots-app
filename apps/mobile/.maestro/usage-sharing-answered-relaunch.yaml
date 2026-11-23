@@ -1,0 +1,43 @@
+appId: com.analysttom.robotsapp
+name: RoBots data sharing stays answered across a relaunch
+---
+- launchApp:
+    clearState: true
+    permissions:
+      notifications: deny
+- extendedWaitUntil:
+    visible: "Sign up for RoBots|Pixel Launcher isn't responding"
+    timeout: 60000
+- runFlow:
+    when:
+      visible: "Pixel Launcher isn't responding"
+    commands:
+      - tapOn: "Close app"
+- extendedWaitUntil:
+    visible: "Sign up for RoBots"
+    timeout: 30000
+- runFlow:
+    when:
+      true: ${typeof ROBOTS_MOBILE_API_URL !== "undefined" && ROBOTS_MOBILE_API_URL != null && ROBOTS_MOBILE_API_URL.trim() !== ""}
+    file: helpers/server.yaml
+- evalScript: ${output.email = "usage-sharing-answered-" + Date.now() + "@robots.test"}
+- tapOn: "Name"
+- inputText: "Answered Test"
+- tapOn: "Email"
+- inputText: ${output.email}
+- tapOn: "Password"
+- inputText: "fake-test-password-1"
+- hideKeyboard
+- tapOn: "Sign up"
+
+- extendedWaitUntil:
+    visible: "Help make RoBots better for everyone"
+    timeout: 30000
+- tapOn: "Continue"
+- stopApp
+- launchApp
+- openLink: "robots:///general"
+- extendedWaitUntil:
+    visible: "Share usage data"
+    timeout: 30000
+- assertNotVisible: "Help make RoBots better for everyone"
