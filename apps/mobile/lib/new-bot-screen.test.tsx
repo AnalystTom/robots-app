@@ -325,6 +325,7 @@ vi.mock("react-native-svg", () => {
 function serveRpc(me: () => Promise<unknown>) {
   mocks.rpc.mockImplementation((path: string) => {
     if (path === "me") return me();
+    if (path === "bots/list") return Promise.resolve([{ id: "existing-bot" }]);
     if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
     return Promise.resolve(undefined);
   });

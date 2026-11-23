@@ -312,18 +312,3 @@ export function nativeMonitoringDsn(
   target.pathname = `${target.pathname.replace(/\/$/, "")}/api/monitoring/native/${surface}/0`;
   return target.href;
 }
-
-export async function bestEffort<T>(
-  label: string,
-  attempt: PromiseLike<T> | undefined,
-): Promise<T | undefined> {
-  try {
-    return await attempt;
-  } catch (error) {
-    if (!(error instanceof Error && error.name === "AbortError")) {
-      // biome-ignore lint/suspicious/noConsole: the client bundle has no server logger.
-      console.warn(`best effort failed: ${label}`, error);
-    }
-    return undefined;
-  }
-}
