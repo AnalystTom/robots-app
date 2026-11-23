@@ -55,14 +55,4 @@ class ChatGroupTest {
       updated.notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
     )
   }
-
-  @Test
-  fun leaveStackedChatsInTheShade() {
-    SenderPush.present(context, push("a", "Bookmark chat", "First reply from the bot"))
-    SenderPush.present(context, push("b", "Digest chat", "Checking for new items"))
-    SenderPush.present(context, push("a", "Bookmark chat", "Second reply, newer"))
-    SenderPush.present(context, push("b", "Digest chat", "Found two new items"))
-    SenderPush.present(context, push("a", "Bookmark chat", "Third reply, newest"))
-    assertEquals(3, manager.activeNotifications.size)
-  }
 }

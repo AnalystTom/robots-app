@@ -198,12 +198,15 @@ async function deliverChatNotice(
         })
       : new Set<string>();
   const recipients = input.recipients.filter((userId) => !snoozing.has(userId));
+  const notifications = deps.notifications;
+  const pushing =
+    notifications && recipients.length
+      ? await usersPushing(deps.prisma, recipients, input.retryOnFailure)
+      : new Set<string>();
   for (const userId of recipients) {
     publishChatAlert(deps.events, { spaceId, userId }, message, groupId);
   }
-  const notifications = deps.notifications;
   if (!notifications || !recipients.length) return;
-  const pushing = await usersPushing(deps.prisma, recipients, input.retryOnFailure);
   const sender = bot && (await notificationIdentity(bot));
   const deliver = async (userId: string) => {
     if (!pushing.has(userId)) return;
