@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { captureScreenshot, completeOnboarding, openBotPanelTab, signup } from "./helpers";
+import { captureScreenshot, completeOnboarding, openBotPanelTab, rpc, signup } from "./helpers";
 
 test("bot settings open Avatar Studio on the Bot tab", async ({ page }, testInfo) => {
   const stamp = Date.now();
   await signup(page, `avatar-studio-${stamp}@robots.test`, "password12", "Avatar Studio");
   await completeOnboarding(page);
+  await rpc(page, "preferences/update", { botAvatarSet: "organic" });
   await page.goto("/app");
   await page.waitForURL(/\/app\/[^/]+$/);
 
@@ -20,12 +21,22 @@ test("bot settings open Avatar Studio on the Bot tab", async ({ page }, testInfo
   await expect(studio.getByRole("tab", { name: "Upload", exact: true })).toBeVisible();
   await expect(studio.getByTestId("avatar-studio-bot-tab")).toBeVisible();
 
+  const characters = studio.getByRole("radiogroup", { name: "Character" });
+  const detective = characters.getByRole("radio", { name: "Detective", exact: true });
+  await detective.click();
+  await expect(detective).toHaveAttribute("aria-checked", "true");
+  await expect(studio.locator('img[src^="data:image/svg+xml"]').first()).toBeVisible();
+  await captureScreenshot(page, testInfo, "avatar-studio-robot-characters");
+
+  await studio.getByText("More styles", { exact: true }).click();
   await expect(studio.getByRole("tab", { name: "Original", exact: true })).toHaveAttribute(
     "aria-selected",
     "true",
   );
   const defaultLook = studio.getByTestId("avatar-studio-default");
   const wedge = studio.getByRole("button", { name: "wedge", exact: true });
+  await expect(defaultLook).toHaveAttribute("aria-pressed", "false");
+  await defaultLook.click();
   await expect(defaultLook).toHaveAttribute("aria-pressed", "true");
   await expect(wedge).toHaveAttribute("aria-pressed", "false");
 

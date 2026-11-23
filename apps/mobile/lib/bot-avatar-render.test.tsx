@@ -1,14 +1,6 @@
 // @vitest-environment jsdom
 
-import {
-  avatarIdentitySeed,
-  LOGO_BODY_PATH,
-  logoAvatarFrame,
-  logoAvatarTraits,
-  organicAvatarPath,
-  seededLogoAvatarColor,
-  shippedBotAvatarShapePath,
-} from "@robots/core";
+import { ROBOT_PRESETS, robotCharacterSvg } from "@robots/core";
 import type { ColorTokens } from "@robots/ui-tokens";
 import { tokensForAppearance } from "@robots/ui-tokens";
 import type { ReactNode } from "react";
@@ -127,6 +119,7 @@ vi.mock("react-native-svg", () => {
     LinearGradient: element("linearGradient"),
     RadialGradient: element("radialGradient"),
     Stop: element("stop"),
+    SvgXml: ({ xml }: { xml: string }) => createElement("svgxml", { "data-xml": xml }),
   };
 });
 
@@ -146,43 +139,6 @@ vi.mock("./native", () => ({
 }));
 
 describe("BotAvatar", () => {
-  it("renders the thinking pose only while the production mobile store has a genuine marker", () => {
-    mobileLogoAvatarActivity.hydrate("native-test", {
-      threadId: "native-thread",
-      cursor: 0,
-      botId: "bot-1",
-      run: { id: "native-run", botId: "bot-1", status: "running", trigger: "user" },
-    });
-    render("#10B981", "robots");
-    const latestEye = () =>
-      nativeProps
-        .map((sample) => sample())
-        .filter((props) => typeof props.cx === "number")
-        .slice(-2)[0]!;
-    const send = (seq: number, thinking: boolean) =>
-      act(() =>
-        mobileLogoAvatarActivity.apply("native-test", {
-          threadId: "native-thread",
-          seq,
-          botId: "bot-1",
-          runId: "native-run",
-          type: "thread.meta",
-          payload: { activity: { thinking } },
-        }),
-      );
-    send(1, true);
-    const frame = logoAvatarFrame("thinking", logoAvatarTraits("bot-1", "#10B981"), 0, true);
-    expect(latestEye()).toMatchObject({ cx: 40.5 + frame.eyeX, cy: 49 + frame.eyeY });
-    send(2, false);
-    expect(latestEye()).toMatchObject({ cx: 40.5, cy: 49 });
-  });
-
-  it("uses the same shared seed colour as SSR for a bot without a saved colour", () => {
-    const node = render("", "robots");
-    expect(
-      node.querySelector(`stop[data-stop-color="${seededLogoAvatarColor("bot-1").toLowerCase()}"]`),
-    ).not.toBeNull();
-  });
   let root: Root | undefined;
   let container: HTMLDivElement | undefined;
 
@@ -230,73 +186,18 @@ describe("BotAvatar", () => {
   const bodies = (view: HTMLElement) =>
     Array.from(view.querySelectorAll("path"), (path) => path.dataset.d);
 
-  it("preserves the shared native tap reactions on the RoBots set", () => {
-    nativeMotion.reduced = false;
-    const view = render("#3EC5A8", "robots", { pokeable: true, motion: "running" });
-    const button = view.querySelector("button");
-    expect(button).not.toBeNull();
-    expect(button!.dataset.accessible).toBe("false");
-    act(() => button!.click());
-    expect(nativeMotion.timings.filter((ms) => ms < 1000)).toEqual([800]);
-    expect(nativeMotion.styles.at(-1)!().transform).not.toEqual([
-      { translateY: 0 },
-      { rotate: "0deg" },
-      { scaleY: 1 },
-    ]);
-    act(() => button!.click());
-    expect(nativeMotion.timings.filter((ms) => ms < 1000)).toEqual([800, 700]);
-    expect(nativeMotion.timings.filter((ms) => ms >= 1000)).toEqual([24_000]);
-  });
-
-  it("settles an active tap when reduced motion becomes enabled", () => {
-    nativeMotion.reduced = false;
-    const view = render("#3EC5A8", "robots", { pokeable: true, motion: "running" });
-    act(() => view.querySelector("button")!.click());
-    nativeMotion.reduced = true;
-    act(() =>
-      root?.render(
-        <BotAvatar
-          color="#3EC5A8"
-          avatarSet="robots"
-          identity="bot-1"
-          size={42}
-          status="running"
-          pokeable
-          motion="running"
-        />,
-      ),
-    );
-    expect(nativeMotion.styles.at(-1)!().transform).toEqual([
-      { translateY: 0 },
-      { rotate: "0deg" },
-      { scaleY: 1 },
-    ]);
-  });
-
-  it.each(["reduced", "offscreen", "static"])("keeps tap motion still when %s", (condition) => {
-    nativeMotion.reduced = condition === "reduced";
-    const view = render(
-      "#3EC5A8",
-      "robots",
-      { pokeable: true, motion: condition === "static" ? "static" : "running" },
-      condition !== "offscreen",
-    );
-    const button = view.querySelector("button");
-    expect(button).not.toBeNull();
-    act(() => button!.click());
-    expect(nativeMotion.timings.filter((ms) => ms > 0 && ms < 1000)).toEqual([]);
-  });
-
-  it("draws a plain-colour bot with the organic body for its identity", () => {
-    const view = render("#3EC5A8");
-    expect(bodies(view)).toEqual([organicAvatarPath(avatarIdentitySeed("bot-1"))]);
-    // A pale body keeps dark eyes on a light page, the same as a group title's still faces.
-    expect(Array.from(view.querySelectorAll("rect"), (eye) => eye.dataset.fill)).toEqual([
-      "#141414",
-      "#141414",
-    ]);
-    expect(view.querySelector("img")).toBeNull();
+  it.each([
+    ["a ghost-style colour", "#3EC5A8", "robots"],
+    ["a plain colour in the original set", "#3EC5A8", "organic"],
+    ["an organic shape", "#8B5CF6::shape_3", "robots"],
+  ] as const)("draws %s as a preset robot picture", (_, color, avatarSet) => {
+    const view = render(color, avatarSet);
+    const robot = view.querySelector("svgxml")?.getAttribute("data-xml");
+    const presets = ROBOT_PRESETS.map((preset) => robotCharacterSvg(preset.look));
+    expect(presets).toContain(robot);
+    expect(bodies(view)).toEqual([]);
     expect(view.querySelector("ellipse")).toBeNull();
+    expect(render(color, avatarSet).querySelector("svgxml")?.getAttribute("data-xml")).toBe(robot);
   });
 
   it("keeps a picture", () => {
@@ -305,52 +206,10 @@ describe("BotAvatar", () => {
     expect(bodies(view)).toEqual([]);
   });
 
-  it("keeps a shape picked in Avatar Studio", () => {
-    const view = render("#8B5CF6::shape_3");
-    expect(bodies(view)).toEqual([shippedBotAvatarShapePath(3)]);
-    // Studio shapes wear the same bar eyes as organic bodies.
-    expect(view.querySelectorAll("rect")).toHaveLength(2);
-    expect(view.querySelector("ellipse")).toBeNull();
-  });
-  it("draws the explicitly selected RoBots set as paths and gradients without a raster image", () => {
-    const view = render("#3EC5A8", "robots");
-    expect(bodies(view)).toContain(LOGO_BODY_PATH);
-    expect(bodies(view)).not.toContain(organicAvatarPath(avatarIdentitySeed("bot-1")));
-    expect(view.querySelector("img, image")).toBeNull();
-    expect(view.querySelectorAll("ellipse")).toHaveLength(2);
-    expect(view.querySelector("radialGradient")).not.toBeNull();
-  });
-
   it("keeps a custom picture when the stored set is RoBots", () => {
     const view = render("data:image/png;base64,abc", "robots");
     expect(view.querySelector("img")?.getAttribute("src")).toBe("data:image/png;base64,abc");
     expect(bodies(view)).toEqual([]);
-  });
-
-  it("keeps an explicitly selected original shape when the stored set is RoBots", () => {
-    const view = render("#8B5CF6::shape_3", "robots");
-    expect(bodies(view)).toEqual([shippedBotAvatarShapePath(3)]);
-  });
-  it("updates native SVG hosts with finite six-value matrices and numeric eye props", () => {
-    render("#3EC5A8", "robots");
-    const updates = nativeProps.map((sample) => sample());
-    const matrices = updates.flatMap((update) =>
-      Array.isArray(update.matrix) ? [update.matrix] : [],
-    );
-    expect(matrices).toHaveLength(5);
-    for (const matrix of matrices) {
-      expect(matrix).toHaveLength(6);
-      expect(matrix.every(Number.isFinite)).toBe(true);
-    }
-    expect(updates.filter((update) => "cx" in update)).toHaveLength(2);
-    expect(updates.every((update) => !("transform" in update))).toBe(true);
-  });
-
-  it("keeps eyes legible on a saved dark body in the light theme", () => {
-    const view = render("#101014", "robots");
-    expect(
-      Array.from(view.querySelectorAll("ellipse"), (eye) => eye.getAttribute("data-fill")),
-    ).toEqual(["#FFF", "#FFF"]);
   });
 
   it.each([

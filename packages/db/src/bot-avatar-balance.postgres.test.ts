@@ -1,10 +1,14 @@
-import { BOT_COLORS } from "@robots/contracts";
+import { randomUUID } from "node:crypto";
+import { BOT_COLORS, parseRobotCharacter } from "@robots/contracts";
 import {
   newClientId,
+  ORGANIC_AVATAR_FAMILY_COUNT,
   ORGANIC_AVATAR_HEART_FAMILY,
+  ORGANIC_AVATAR_LOOKS,
   organicAvatarFamily,
   organicAvatarLook,
-  seededLogoAvatarColor,
+  ROBOT_PRESETS,
+  robotPresetValue,
 } from "@robots/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PrismaClient } from "./client.js";
@@ -18,7 +22,6 @@ const describePostgres = process.env.VERIFY_DATABASE && databaseUrl ? describe :
 
 describePostgres("new bot avatars (PostgreSQL)", () => {
   const provider = "sendblue";
-  // A prefix no other test file uses, so parallel files never share this account.
   const address = `+1554${Math.floor(Math.random() * 9_000_000 + 1_000_000)}`;
   let prisma: PrismaClient;
   let close: () => Promise<void>;
@@ -64,7 +67,7 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     await close?.();
   });
 
-  it("gives each new bot a shape and colour the user's other bots use least", async () => {
+  it("gives each new bot the ready-made robot the user's other bots wear least", async () => {
     const repos = createRepos(prisma);
     const system = asSystem(prisma);
     const before = await system.bot.findMany({
@@ -76,14 +79,13 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       const bots = [];
       for (let index = 0; index < 9; index++) {
         bots.push(
-          await repos.createBot(actor(), { ...botInput(`Helper ${index}`), avatarSet: "organic" }),
+          await repos.createBot(actor(), { ...botInput(`Helper ${index}`), avatarSet: "robots" }),
         );
       }
-      // A bot made by a bot goes through the same choice.
       bots.push(
         await repos.createBot(actor(), {
           ...botInput("Child"),
-          avatarSet: "organic",
+          avatarSet: "robots",
           parentBotId: bots[0]!.id,
         }),
       );
@@ -91,19 +93,18 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     });
 
     const all = [...before, ...created];
-    const lookOf = (id: string) => organicAvatarLook(organicAvatarFamily(id));
-    // Eight automatic looks: the heart is excluded and the two round families share a look.
-    const firstEight = all.slice(0, 8);
-    expect(new Set(firstEight.map((bot) => lookOf(bot.id))).size).toBe(firstEight.length);
     expect(
       created.every((bot) => organicAvatarFamily(bot.id) !== ORGANIC_AVATAR_HEART_FAMILY),
     ).toBe(true);
-    // The starter bot counts too: no colour repeats until the palette is used up.
-    const firstColors = all.slice(0, BOT_COLORS.length).map((bot) => bot.color);
-    expect(new Set(firstColors).size).toBe(firstColors.length);
+    const offered = ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id));
+    expect(created.every((bot) => offered.includes(bot.color))).toBe(true);
+    const firstRobots = all
+      .filter((bot) => offered.includes(bot.color))
+      .slice(0, ROBOT_PRESETS.length)
+      .map((bot) => bot.color);
+    expect(new Set(firstRobots).size).toBe(firstRobots.length);
     expect(created.every((bot) => /^c[a-z0-9]{24}$/.test(bot.id))).toBe(true);
 
-    // Existing bots keep their id and colour.
     const after = await system.bot.findMany({
       where: { id: { in: before.map((bot) => bot.id) } },
       select: { id: true, color: true },
@@ -111,13 +112,152 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     expect(after).toEqual(expect.arrayContaining(before));
   });
 
-  it("defaults new creation to Original and reloads explicit sets without altering photos or shapes", async () => {
+  it("gives a RoBots bot created without a look the listed robot no other bot wears", async () => {
     const repos = createRepos(prisma);
+    await asSystem(prisma).bot.updateMany({
+      where: { spaceId: owner.spaceId, userId: owner.userId },
+      data: { archivedAt: new Date() },
+    });
+    await runAsTenant(owner, async () => {
+      for (const preset of ROBOT_PRESETS.filter((candidate) => candidate.id !== "hero")) {
+        await repos.createBot(actor(), {
+          ...botInput(`Worn ${preset.id}`),
+          avatarSet: "robots",
+          color: robotPresetValue(preset.id),
+        });
+      }
+    });
     const created = await runAsTenant(owner, () =>
-      repos.createBot(actor(), botInput("Original default")),
+      repos.createBot(actor(), { ...botInput("Unpicked"), avatarSet: "robots" }),
     );
-    expect(created.avatarSet).toBe("organic");
-    expect(BOT_COLORS).toContain(created.color);
+    expect(created.color).toBe("robot:red.antenna.aviators.cape.confetti");
+  });
+
+  async function addSpaceMember() {
+    const system = asSystem(prisma);
+    const memberAddress = `+1555${Math.floor(Math.random() * 9_000_000 + 1_000_000)}`;
+    const member = await runAsSystem("test fixture", () =>
+      provisionMessagingIdentity(
+        prisma,
+        { provider, address: memberAddress },
+        { signupsEnabled: undefined, signupAllowlist: undefined },
+      ),
+    );
+    const { organizationId } = await system.space.findUniqueOrThrow({
+      where: { id: owner.spaceId },
+      select: { organizationId: true },
+    });
+    await system.member.create({
+      data: {
+        id: randomUUID(),
+        organizationId,
+        userId: member.userId,
+        role: "member",
+        createdAt: new Date(),
+      },
+    });
+    const memberActor = {
+      userId: member.userId,
+      spaceId: owner.spaceId,
+      email: "member@example.com",
+      isDeploymentOwner: false,
+    };
+    const remove = async () => {
+      await system.spaceMember.deleteMany({
+        where: { spaceId: owner.spaceId, userId: member.userId },
+      });
+      await system.messagingIdentity.deleteMany({
+        where: { provider, address: memberAddress },
+      });
+      await system.user.deleteMany({ where: { id: member.userId } });
+    };
+    return { member, memberActor, remove };
+  }
+
+  it("counts only the creating member's bots toward the least-worn default", async () => {
+    const repos = createRepos(prisma);
+    const { member, memberActor, remove } = await addSpaceMember();
+    try {
+      await asSystem(prisma).bot.updateMany({
+        where: { spaceId: owner.spaceId, userId: owner.userId },
+        data: { archivedAt: new Date() },
+      });
+      await runAsTenant(owner, async () => {
+        for (const preset of ROBOT_PRESETS.filter((candidate) => candidate.id !== "hero")) {
+          await repos.createBot(actor(), {
+            ...botInput(`Owner ${preset.id}`),
+            avatarSet: "robots",
+            color: robotPresetValue(preset.id),
+          });
+        }
+      });
+      await runAsTenant({ ...owner, userId: member.userId }, async () => {
+        for (const index of [0, 1]) {
+          await repos.createBot(memberActor, {
+            ...botInput(`Member ${index}`),
+            avatarSet: "robots",
+            color: robotPresetValue("hero"),
+          });
+        }
+      });
+      const created = await runAsTenant(owner, () =>
+        repos.createBot(actor(), { ...botInput("Unpicked"), avatarSet: "robots" }),
+      );
+      expect(created.color).toBe("robot:red.antenna.aviators.cape.confetti");
+    } finally {
+      await remove();
+    }
+  });
+
+  it("balances an Original bot's look against the other members' bots in the Space", async () => {
+    const repos = createRepos(prisma);
+    const { member, memberActor, remove } = await addSpaceMember();
+    try {
+      await asSystem(prisma).bot.updateMany({
+        where: { spaceId: owner.spaceId, archivedAt: null },
+        data: { archivedAt: new Date() },
+      });
+      const [free, ...taken] = ORGANIC_AVATAR_LOOKS;
+      const familyOfLook = (look: number) =>
+        Array.from({ length: ORGANIC_AVATAR_FAMILY_COUNT }, (_, family) => family).find(
+          (family) => family !== ORGANIC_AVATAR_HEART_FAMILY && organicAvatarLook(family) === look,
+        )!;
+      await runAsTenant({ ...owner, userId: member.userId }, async () => {
+        for (const look of taken) {
+          await repos.createBot(memberActor, {
+            ...botInput(`Member look ${look}`),
+            avatarSet: "organic",
+            avatarFamily: familyOfLook(look),
+          });
+        }
+      });
+      const created = await runAsTenant(owner, () =>
+        repos.createBot(actor(), { ...botInput("Balanced"), avatarSet: "organic" }),
+      );
+      expect(organicAvatarLook(organicAvatarFamily(created.id))).toBe(free);
+    } finally {
+      await remove();
+    }
+  });
+
+  it("defaults a new account's bots to RoBots, keeps an Original account on Original, and reloads explicit sets without altering photos or shapes", async () => {
+    const repos = createRepos(prisma);
+    const system = asSystem(prisma);
+    expect(
+      (await system.user.findUniqueOrThrow({ where: { id: owner.userId } })).botAvatarSet,
+    ).toBe("robots");
+    const created = await runAsTenant(owner, () =>
+      repos.createBot(actor(), botInput("RoBots default")),
+    );
+    expect(created).toMatchObject({ avatarSet: "robots" });
+    expect(parseRobotCharacter(created.color)).not.toBeNull();
+    await system.user.update({ where: { id: owner.userId }, data: { botAvatarSet: "organic" } });
+    const keptOriginal = await runAsTenant(owner, () =>
+      repos.createBot(actor(), botInput("Original account")),
+    );
+    expect(keptOriginal).toMatchObject({ avatarSet: "organic" });
+    expect(BOT_COLORS).toContain(keptOriginal.color);
+    await system.user.update({ where: { id: owner.userId }, data: { botAvatarSet: "robots" } });
     for (const color of ["#8B5CF6", "#8B5CF6::shape_3", "data:image/png;base64,aGVsbG8="]) {
       const original = await runAsTenant(owner, () =>
         repos.createBot(actor(), { ...botInput("Original look"), avatarSet: "organic", color }),
@@ -143,7 +283,9 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       const [first, retry] = await runAsTenant(owner, () =>
         Promise.all([repos.createBot(actor(), input), repos.createBot(actor(), input)]),
       );
-      expect(first).toMatchObject({ id, color: explicit ?? seededLogoAvatarColor(id) });
+      expect(first.id).toBe(id);
+      if (explicit) expect(first.color).toBe(explicit);
+      else expect(parseRobotCharacter(first.color)).not.toBeNull();
       expect(retry).toMatchObject({ id: first.id, color: first.color, threadId: first.threadId });
       expect(await runAsTenant(owner, () => repos.getBot(actor(), id))).toMatchObject({
         id,
@@ -215,10 +357,10 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
     }
   });
 
-  it("serializes concurrent creation before reading the existing avatar looks", async () => {
+  it("serializes concurrent creation before reading the existing robots", async () => {
     const repos = createRepos(prisma);
     await asSystem(prisma).bot.updateMany({
-      where: { spaceId: owner.spaceId, userId: owner.userId },
+      where: { spaceId: owner.spaceId, archivedAt: null },
       data: { archivedAt: new Date() },
     });
     const created = await runAsTenant(owner, () =>
@@ -228,9 +370,7 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
         ),
       ),
     );
-    expect(new Set(created.map((bot) => organicAvatarLook(organicAvatarFamily(bot.id)))).size).toBe(
-      8,
-    );
+    expect(new Set(created.map((bot) => bot.color)).size).toBe(8);
     expect(
       created.every((bot) => organicAvatarFamily(bot.id) !== ORGANIC_AVATAR_HEART_FAMILY),
     ).toBe(true);
@@ -243,7 +383,6 @@ describePostgres("new bot avatars (PostgreSQL)", () => {
       where: { spaceId: owner.spaceId, userId: owner.userId, archivedAt: null },
       select: { id: true },
     });
-    // Archive every bot but one; the next bot then avoids only that one's family.
     const [kept, ...rest] = live;
     await system.bot.updateMany({
       where: { id: { in: rest.map((bot) => bot.id) } },

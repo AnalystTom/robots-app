@@ -41,7 +41,7 @@ model User {
   updatedAt                   DateTime                     @updatedAt
   avatarStyle                 String                       @default("organic")
   /// The icon set this user's bots wear unless one is pinned to another: "organic" or "robots".
-  botAvatarSet                String                       @default("organic")
+  botAvatarSet                String                       @default("robots")
   /// IANA timezone such as "Pacific/Auckland". Null until set; bots then get UTC only.
   timezone                    String?
   /// The app language last chosen, such as "es" or "pt-BR". Null until an app reports it;
@@ -982,7 +982,7 @@ model Bot {
   instructions      String            @default("")
   instructionHistory Json @default("[]")
   color             String
-  avatarSet         String            @default("organic")
+  avatarSet         String            @default("robots")
   /// True once the owner picks this bot a set other than their default; the default no longer moves it.
   avatarSetPinned   Boolean           @default(false)
   notifyOnFinish    Boolean           @default(true)

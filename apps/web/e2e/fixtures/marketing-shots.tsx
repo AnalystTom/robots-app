@@ -124,6 +124,7 @@ function CreateShot() {
     <main data-ready={ready ? "true" : "false"} className="min-h-screen bg-background">
       <CreateBotDialog
         avatarSet="organic"
+        ownBotColors={[]}
         onCreate={async () => undefined}
         onCancel={() => undefined}
       />

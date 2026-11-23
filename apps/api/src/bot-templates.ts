@@ -17,6 +17,7 @@ import {
   appConnectCard,
   BOT_TEMPLATES,
   botTemplateApps,
+  botTemplateLook,
   buildSkillMd,
   findBotTemplate,
   renameRoutineSkillMentions,
@@ -141,12 +142,15 @@ export async function createBotFromTemplate<PreparedKey>(
   if (!template) throw new ORPCError("NOT_FOUND", { message: "No template has that id." });
   // Skills the plan reuses instead of adding, checked again when the bot is written.
   let reusedRows: { id: string; name: string; content: string }[] = [];
+  const look = botTemplateLook(template.id);
   const request: Parameters<typeof writeImportedBot>[2] = {
     importKey: importKey(template.id),
     // The same for every version, so an existing bot is returned whatever changed since.
     digest: requestDigest({ templateId: template.id }),
     name: input.name ?? template.name,
     description: template.description,
+    color: look,
+    avatarSet: look ? "robots" : undefined,
     selection: {
       instructions: ["instructions"],
       memory: [],

@@ -1,14 +1,5 @@
-import {
-  avatarEyeRects,
-  avatarIdentitySeed,
-  botEyeInk,
-  ORGANIC_AVATAR_EYES,
-  ORGANIC_AVATAR_VIEWBOX,
-  organicAvatarEyeTilt,
-  organicAvatarPath,
-  SHIPPED_BOT_AVATAR_EYES,
-  SHIPPED_BOT_AVATAR_VIEWBOX,
-} from "@robots/core";
+import { parseRobotCharacter } from "@robots/contracts";
+import { robotCharacterSvg, robotLookForIdentity } from "@robots/core";
 import type { ReactNode } from "react";
 import { memo, useId } from "react";
 import type { ColorValue } from "react-native";
@@ -23,8 +14,8 @@ import Svg, {
   Path,
   Rect,
   Text as SvgText,
+  SvgXml,
 } from "react-native-svg";
-import { mobileBotAvatarPresentation } from "../lib/bot-avatar";
 import type { GroupSeat } from "../lib/group-seats";
 import {
   GROUP_SEAT_SIZE,
@@ -33,7 +24,7 @@ import {
   groupSeats,
   groupSeatsWidth,
 } from "../lib/group-seats";
-import { native, useMobileTokens, useResolvedAppearance } from "../lib/native";
+import { native, useResolvedAppearance } from "../lib/native";
 
 type SeatMember = { botId?: string; name?: string; color: string };
 
@@ -60,14 +51,13 @@ export const GroupSeats = memo(function GroupSeats({
   const id = useId().replace(/:/g, "");
   // Redraws the faint "+N" when the appearance changes.
   useResolvedAppearance();
-  const page = useMobileTokens();
   const seats = groupSeats(members);
   const step = groupSeatStep(size);
   const gap = groupSeatGap(size);
   const width = groupSeatsWidth(seats.length, size);
   const arts = seats.map((seat, index) =>
     seat.kind === "member"
-      ? seatArt(seat.member, size, `${id}-${index}`, page)
+      ? seatArt(seat.member, size, `${id}-${index}`)
       : markArt(seat, size, native.systemTertiaryLabel),
   );
   const placed = (index: number, art: SeatArt) => {
@@ -151,73 +141,31 @@ function markArt(
 }
 
 /** A still face in the member's shape: the same drawing as their avatar at rest. */
-function seatArt(
-  member: SeatMember,
-  size: number,
-  key: string,
-  page: { background: string; foreground: string },
-): SeatArt {
-  const parsed = mobileBotAvatarPresentation(member.color);
+function seatArt(member: SeatMember, size: number, key: string): SeatArt {
   const r = size / 2;
-  if (parsed.kind === "image" && parsed.imageUrl) {
-    // Drawn in points, so the photo keeps its full resolution.
-    return {
-      box: [0, 0, size],
-      outline: (paint) => <Circle cx={r} cy={r} r={r} {...paint} />,
-      face: (
-        <>
-          <ClipPath id={`${key}-photo`}>
-            <Circle cx={r} cy={r} r={r} />
-          </ClipPath>
-          {/* A plain circle holds the photo's place while it loads, as on the avatar. */}
-          <Circle cx={r} cy={r} r={r} fill={native.fill} />
+  const drawn = robotLookForIdentity(member.color, member.botId ?? member.name ?? "");
+  const look = parseRobotCharacter(drawn);
+  const clipPath = `url(#${key}-picture)`;
+  return {
+    box: [0, 0, size],
+    outline: (paint) => <Circle cx={r} cy={r} r={r} {...paint} />,
+    face: (
+      <>
+        <ClipPath id={`${key}-picture`}>
+          <Circle cx={r} cy={r} r={r} />
+        </ClipPath>
+        <Circle cx={r} cy={r} r={r} fill={native.fill} />
+        {look ? (
+          <SvgXml xml={robotCharacterSvg(look)} width={size} height={size} clipPath={clipPath} />
+        ) : (
           <Image
-            href={{ uri: parsed.imageUrl }}
+            href={{ uri: drawn }}
             width={size}
             height={size}
             preserveAspectRatio="xMidYMid slice"
-            clipPath={`url(#${key}-photo)`}
+            clipPath={clipPath}
           />
-        </>
-      ),
-    };
-  }
-  if (parsed.kind === "shape") {
-    const [x, y, units] = SHIPPED_BOT_AVATAR_VIEWBOX.split(" ").map(Number) as [
-      number,
-      number,
-      number,
-    ];
-    return {
-      box: [x, y, units],
-      outline: (paint) => <Path d={parsed.shapePath} {...paint} />,
-      face: (
-        <>
-          <Path d={parsed.shapePath} fill={parsed.color} />
-          <G fill={botEyeInk(parsed.color, page)}>
-            {avatarEyeRects(SHIPPED_BOT_AVATAR_EYES).map((rect) => (
-              <Rect key={rect.x} {...rect} />
-            ))}
-          </G>
-        </>
-      ),
-    };
-  }
-  const color = parsed.kind === "color" ? parsed.color : member.color;
-  const seed = avatarIdentitySeed(member.botId ?? member.name ?? color);
-  const outline = organicAvatarPath(seed);
-  const [x, y, units] = ORGANIC_AVATAR_VIEWBOX.split(" ").map(Number) as [number, number, number];
-  return {
-    box: [x, y, units],
-    outline: (paint) => <Path d={outline} {...paint} />,
-    face: (
-      <>
-        <Path d={outline} fill={color} />
-        <G transform={`rotate(${organicAvatarEyeTilt(seed)})`} fill={botEyeInk(color, page)}>
-          {avatarEyeRects(ORGANIC_AVATAR_EYES).map((rect) => (
-            <Rect key={rect.x} {...rect} />
-          ))}
-        </G>
+        )}
       </>
     ),
   };

@@ -1,10 +1,11 @@
-import { BotTemplateSchema } from "@robots/contracts";
+import { BotTemplateSchema, parseRobotCharacter } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import { looksLikeCredential } from "./agent-import/index.js";
 import { extractRoutineSkillMentions } from "./agent-skill.js";
-import { BOT_TEMPLATES, findBotTemplate } from "./bot-templates.js";
+import { BOT_TEMPLATES, botTemplateLook, findBotTemplate } from "./bot-templates.js";
 import { presetFromCron } from "./cron.js";
 import { matchFeaturedConnectorId } from "./featured-connectors.js";
+import { ROBOT_PRESETS, robotPresetValue } from "./robot-presets.js";
 
 describe("bot templates", () => {
   it("each validates strictly and has a unique id", () => {
@@ -51,6 +52,19 @@ describe("bot templates", () => {
     // Featured apps match by alias; the code host is matched by its own slug.
     for (const app of BOT_TEMPLATES.flatMap((template) => template.apps)) {
       expect(app === "github" || matchFeaturedConnectorId(app) !== null).toBe(true);
+    }
+  });
+
+  it("dress a template whose role matches a listed robot in it", () => {
+    expect(parseRobotCharacter(botTemplateLook("pr-reviewer") ?? "")).toMatchObject({
+      headwear: "chef-hat",
+      outfit: "chef-jacket",
+    });
+    expect(botTemplateLook("inbox-triage")).toBeUndefined();
+    const listed: string[] = ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id));
+    for (const template of BOT_TEMPLATES) {
+      const look = botTemplateLook(template.id);
+      if (look) expect(listed).toContain(look);
     }
   });
 });

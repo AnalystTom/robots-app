@@ -83,6 +83,11 @@ describeJourneys("required product journeys", () => {
         `run ${runId} ended ${terminal.status}: ${terminal.error ?? "unknown error"}`,
       );
     }
+    await waitForDatabase(
+      async () =>
+        (await rpc<{ busyBotName: string | null }>(app, cookie, "computer/status", { botId }))
+          .busyBotName === null,
+    );
     return {
       ...(await rpc<Snap>(app, cookie, "threads/get", { botId })),
       run: { id: runId, status: terminal.status },

@@ -5,6 +5,7 @@ import {
   BOT_DESCRIPTION_MAX_LENGTH,
   BOT_INSTRUCTIONS_MAX_LENGTH,
   BOT_NAME_MAX_LENGTH,
+  DEFAULT_NEW_BOT_AVATAR_SET,
   resolveBotAvatarSet,
 } from "@robots/contracts";
 import {
@@ -79,7 +80,10 @@ export default function BotSettingsScreen() {
   const [instructions, setInstructions] = useState("");
   const [color, setColor] = useState<string>(DEFAULT_BOT_AVATAR_COLOR);
   const [computerMode, setComputerMode] = useState<ComputerMode>("team");
-  const [avatarSet, setAvatarSet] = useState<BotAvatarSet>("organic");
+  const [avatarSet, setAvatarSet] = useState<BotAvatarSet>(DEFAULT_NEW_BOT_AVATAR_SET);
+  const originalColor =
+    bot && !botLookState(bot.color).robot ? bot.color : DEFAULT_BOT_AVATAR_COLOR;
+  const shownColor = avatarSet === "organic" && botLookState(color).robot ? originalColor : color;
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(focus === "model" || pickedModel !== undefined);
   const [modelKey, setModelKey] = useState("");
@@ -421,7 +425,7 @@ export default function BotSettingsScreen() {
         input.instructions = instructions;
         input.expectedInstructions = bot.instructions;
       }
-      if (color !== bot.color) input.color = color;
+      if (shownColor !== bot.color) input.color = shownColor;
       if (avatarSet !== resolveBotAvatarSet(bot.avatarSet)) input.avatarSet = avatarSet;
       const modelChanged =
         (selected?.provider ?? null) !== (bot.modelProvider ?? null) ||
@@ -474,7 +478,7 @@ export default function BotSettingsScreen() {
     bot &&
     (description.trim() !== (bot.description ?? "") ||
       instructions !== (bot.instructions ?? "") ||
-      color !== bot.color ||
+      shownColor !== bot.color ||
       avatarSet !== resolveBotAvatarSet(bot.avatarSet) ||
       computerMode !== bot.computerMode ||
       autoSpeak !== bot.autoSpeak ||
@@ -541,11 +545,13 @@ export default function BotSettingsScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t`Edit avatar`}
-              onPress={() => setAvatarOpen(true)}
+              onPress={() => {
+                setAvatarOpen(true);
+              }}
               style={{ padding: 4 }}
             >
               <BotAvatar
-                color={color}
+                color={shownColor}
                 avatarSet={avatarSet}
                 identity={bot.id}
                 size={64}
@@ -878,16 +884,19 @@ export default function BotSettingsScreen() {
               value={avatarSet}
               onChange={(next) => {
                 setAvatarSet(resolveBotAvatarSet(next));
-                setColor((current) => botLookState(current).color);
               }}
               plain
             />
             {bot ? (
               <BotLookPicker
-                value={color}
+                value={shownColor}
                 identity={bot.id}
                 avatarSet={avatarSet}
-                onChange={(next) => setColor(next)}
+                onChange={(next) => {
+                  const set = botLookState(next).robot ? "robots" : avatarSet;
+                  setColor(next);
+                  setAvatarSet(set);
+                }}
               />
             ) : null}
           </ScrollView>
