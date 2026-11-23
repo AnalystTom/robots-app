@@ -27,9 +27,7 @@ export function threadHeaderRight({
   readOnly: boolean;
   color: string;
   onGroupSettings: () => void;
-  /** Opens the invite sheet; absent when the account cannot invite. */
   onInvite?: () => void;
-  /** Starts a new chat; absent in a group or an archived chat. */
   onNewChat?: () => void;
 }): NativeStackNavigationOptions {
   const settingsLabel = inGroup ? t`Group settings` : t`Invite a friend`;
