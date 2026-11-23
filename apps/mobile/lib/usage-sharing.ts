@@ -16,7 +16,6 @@ export function useUsageSharing(
   });
   return {
     available: Boolean(sharing?.available),
-    needsSignupSurvey: Boolean(me?.needsSignupSurvey),
     enabled: save.pending ? Boolean(save.input) : (sharing?.enabled ?? false),
     save,
   };

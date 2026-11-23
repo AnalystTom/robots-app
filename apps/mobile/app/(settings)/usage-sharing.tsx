@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { AI_PRIVACY_URL, BOT_COLOR_LIST } from "@robots/contracts";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LogoAvatar } from "../../components/logo-avatar";
@@ -25,15 +25,16 @@ export default function UsageSharingStep() {
   const sideInsets = useSideInsets();
   const styles = useThemedStyles(createStyles);
   const stacked = useStackedSettings();
+  const { survey } = useLocalSearchParams<{ survey?: string }>();
   const [shared, setShared] = useState(false);
-  const { needsSignupSurvey, save } = useUsageSharing({
+  const { save } = useUsageSharing({
     onSaved: continueOnboarding,
     onFailed: (error) =>
       Alert.alert(t`Enable data sharing`, errorText(error, t`Could not save your choice`)),
   });
 
   function continueOnboarding() {
-    if (needsSignupSurvey) router.replace("/signup-survey");
+    if (survey) router.replace("/signup-survey");
     else closeSettingsSheet();
   }
 

@@ -235,9 +235,9 @@ export default function SignIn() {
   async function openApp() {
     if (hasIncomingShare()) return router.replace("/share");
     const me = await rpc("me").catch(() => null);
-    router.replace(
-      me?.usageSharing?.needed ? "/usage-sharing" : me?.needsSignupSurvey ? "/signup-survey" : "/",
-    );
+    const survey = me?.needsSignupSurvey ? "1" : undefined;
+    if (me?.usageSharing?.needed) router.replace({ pathname: "/usage-sharing", params: { survey } });
+    else router.replace(survey ? "/signup-survey" : "/");
   }
 
   function startProvider(provider: (typeof providers)[number]) {
