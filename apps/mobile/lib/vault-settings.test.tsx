@@ -10,6 +10,8 @@ import Vault from "../app/(settings)/vault";
 import { resetI18nForTests } from "./i18n";
 import { queryClient } from "./query";
 
+const lastListRead = () => state.rpc.mock.calls.filter(([proc]) => proc === "vault/list").at(-1);
+
 // RFC 6238's test key, written in pieces so it never reads as a saved secret.
 const TEST_KEY = ("GEZDGNBV" + "GY3TQOJQ").repeat(2);
 
@@ -63,14 +65,18 @@ vi.mock("./user-error", () => ({
 vi.mock("../components/bot-email", () => ({ BotEmailAddressesGroup: () => null }));
 vi.mock("./api-server", () => ({}));
 vi.mock("./api-auth", () => ({}));
-vi.mock("./api-live", () => ({}));
+vi.mock("./api-live", () => ({ subscribeRosterSignals: () => new Promise<void>(() => undefined) }));
 vi.mock("./api", () => ({
   rpc: state.rpc,
   currentApiBase: () => "https://app.example.test",
   selectedSpaceId: () => "space-selected",
+  subscribeSpaceSelection: () => () => undefined,
   captureApiRequestContext: async (spaceId: string) => ({ headers: { space: spaceId } }),
 }));
-vi.mock("./session", () => ({ currentSessionGeneration: () => 1 }));
+vi.mock("./session", () => ({
+  currentSessionGeneration: () => 1,
+  subscribeSessionGeneration: () => () => undefined,
+}));
 vi.mock("expo-router", () => {
   // The same object on every render, as the app's navigation is.
   const navigation = { setOptions: (options: unknown) => state.setOptions(options) };
@@ -87,6 +93,7 @@ vi.mock("expo-router", () => {
 vi.mock("./native-controls", () => ({ iosAtLeast: () => state.ios26 }));
 vi.mock("react-native", () => ({
   Alert: { alert: state.alert },
+  AppState: { currentState: "active", addEventListener: () => ({ remove: () => undefined }) },
   Platform: { OS: "ios" },
   Pressable: element("span"),
   ScrollView: element("div"),
@@ -536,7 +543,7 @@ it("adds an item of the kind picked from New, and closes the editor once saved",
 
   await act(async () => button("Save", dialog())!.click());
   expect(container.querySelector("dialog")).toBeNull();
-  expect(state.rpc).toHaveBeenLastCalledWith("vault/list", { scope: "account" }, expect.anything());
+  expect(lastListRead()).toEqual(["vault/list", { scope: "account" }, expect.anything()]);
   expect(rows()).toEqual(["api.github.com: API key", "netbird-key: $NETBIRD_KEY"]);
 });
 
@@ -870,7 +877,7 @@ it("removes an item only once the destructive alert is confirmed", async () => {
 
   await act(async () => alertButton("Remove").onPress?.());
   expect(state.rpc).toHaveBeenCalledWith("vault/remove", { scope: "account", name: "github" });
-  expect(state.rpc).toHaveBeenLastCalledWith("vault/list", { scope: "account" }, expect.anything());
+  expect(lastListRead()).toEqual(["vault/list", { scope: "account" }, expect.anything()]);
   expect(rows()).toEqual(["netbird-key: $NETBIRD_KEY"]);
 });
 
@@ -1337,13 +1344,13 @@ it("reads the list again when an import's read was out across a save, and shows 
   });
   // Each list read answers with the list as it was when sent, once let go.
   const reads: (() => void)[] = [];
-  const read = () =>
-    state.rpc.mockImplementationOnce(async (proc: string, input: Record<string, unknown>) => {
-      const list = await server(proc, input);
-      return new Promise((resolve) => reads.push(() => resolve(list)));
-    });
-  read();
-  read();
+  let listsHeld = 2;
+  state.rpc.mockImplementation(async (proc: string, input: Record<string, unknown>) => {
+    if (proc !== "vault/list" || listsHeld === 0) return server(proc, input);
+    listsHeld -= 1;
+    const list = await server(proc, input);
+    return new Promise((resolve) => reads.push(() => resolve(list)));
+  });
   await act(async () => void alertButton("Import").onPress?.());
   await settle();
   expect(reads).toHaveLength(1);
@@ -1462,7 +1469,7 @@ it.each([
     expect(container.textContent).toContain("Importing the file again skips them.");
   await act(async () => button("Something went wrong. Try again. Retry")!.click());
   await settle();
-  expect(state.rpc).toHaveBeenLastCalledWith("vault/list", { scope: "account" }, expect.anything());
+  expect(lastListRead()).toEqual(["vault/list", { scope: "account" }, expect.anything()]);
   expect(container.textContent).not.toContain("Something went wrong.");
   expect(button("Import CSV", menu("New item"))?.disabled).toBe(false);
 });

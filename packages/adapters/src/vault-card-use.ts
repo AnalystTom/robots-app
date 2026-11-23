@@ -1,5 +1,6 @@
 import { BotSecretName, OneTimeCodeTarget } from "@robots/contracts";
 import type { FleetCardSummary } from "./approval-ask.js";
+import { LOGIN_CODE_FIELD } from "./login-code-field.js";
 import type { PurchaseApproval } from "./purchase-gate.js";
 import { purchaseCardSummary } from "./purchase-gate.js";
 
@@ -61,12 +62,6 @@ export function vaultLoginUseOf(value: unknown): VaultLoginUse | undefined {
     savedAt,
   };
 }
-
-/**
- * What an approval names for a login's authenticator code, which fill_code types. Field labels are
- * trimmed, so none ends in a space and a field named the same is never taken for the code.
- */
-export const LOGIN_CODE_FIELD = "Authenticator code ";
 
 /** Each saved login a browser_act call fills, with the fields it fills, as browser_act reads them. */
 export function requestedLoginFills(actions: unknown): Map<string, string[]> {

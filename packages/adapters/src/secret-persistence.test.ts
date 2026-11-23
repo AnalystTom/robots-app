@@ -57,6 +57,7 @@ function database() {
     Object.entries(where).every(([key, value]) => {
       if (key === "OR")
         return (value as Array<Record<string, unknown>>).some((branch) => matches(row, branch));
+      if (key === "NOT") return !matches(row, value as Record<string, unknown>);
       // As the vault's bot filter reads: no item is limited to chosen bots here.
       if (key === "limits") return true;
       if (key === "bots") return false;

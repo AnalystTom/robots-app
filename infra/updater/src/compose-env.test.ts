@@ -56,6 +56,8 @@ const NOT_PASSED: Record<string, string> = {
   AWS_KMS_PROFILE: "for maintainer laptops; servers use AWS_KMS_ACCESS_KEY_ID and its secret",
   GIT_SHA: "baked into the image at build time; a pass-through entry would unset it",
   SHELL: "host shell for the desktop computer, which only the Electron app runs",
+  LOCALAPPDATA: "Chrome profile lookup on Windows, which only the desktop app runs",
+  XDG_CONFIG_HOME: "Chrome profile lookup on Linux, which only the desktop app runs",
   CLOUDFLARE_ACCOUNT_ID: "written into Pi's environment from stored gateway settings",
   CLOUDFLARE_GATEWAY_ID: "written into Pi's environment from stored gateway settings",
   COMPOSE_PROJECT_NAME: "read by the updater sidecar, which has its own environment",

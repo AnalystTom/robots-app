@@ -114,11 +114,7 @@ describe("host-aware sandbox", () => {
   });
 
   it("does not expose page commands when neither provider supports them", () => {
-    const sandbox = new HostAwareSandbox(
-      new FakeSandboxProvider(),
-      new DesktopSandboxProvider(),
-      async () => false,
-    );
+    const sandbox = new HostAwareSandbox({} as never, {} as never, async () => false);
     expect(sandbox.pageBrowser).toBeUndefined();
   });
 

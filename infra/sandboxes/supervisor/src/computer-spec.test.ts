@@ -60,6 +60,12 @@ import {
   xdotoolCommand,
 } from "./computer-spec.js";
 
+function keyringStub(dir: string) {
+  const keyring = path.join(dir, "robots-browser-keyring");
+  writeFileSync(keyring, "#!/bin/sh\nexit 0\n");
+  chmodSync(keyring, 0o755);
+}
+
 describe("graphical computer spec", () => {
   it("binds the embed WebSocket path to the current screen capability", () => {
     const url = new URL(screenUrlWithToken("http://screen.test:6080/embed.html", "current-token"));
@@ -716,6 +722,7 @@ describe("graphical computer spec", () => {
       const snapChromium = path.join(bin, "chromium-browser");
       const chrome = path.join(bin, "google-chrome");
       mkdirSync(bin);
+      keyringStub(bin);
       writeFileSync(snapChromium, '#!/bin/sh\nexec /snap/bin/chromium "$@"\n');
       writeFileSync(chrome, '#!/bin/sh\nprintf "%s" "$0" > "$ROBOTS_TEST_LAUNCHED"\n');
       chmodSync(snapChromium, 0o755);
@@ -960,6 +967,7 @@ describe("graphical computer spec", () => {
         // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
         writeFileSync(chromium, '#!/bin/sh\nprintf "%s" "${LD_PRELOAD-unset}"\n');
         chmodSync(chromium, 0o755);
+        keyringStub(temp);
         for (const [preload, expected] of [
           ["/usr/local/lib/libnss_wrapper.so", "unset"],
           [
@@ -1006,6 +1014,7 @@ describe("graphical computer spec", () => {
       const home = path.join(temp, "home");
       const chromium = path.join(bin, "chromium");
       mkdirSync(bin);
+      keyringStub(bin);
       writeFileSync(chromium, '#!/bin/sh\nprintf "%s\\n" "$@" > "$ROBOTS_TEST_ARGS"\n');
       chmodSync(chromium, 0o755);
 
@@ -1060,6 +1069,7 @@ describe("graphical computer spec", () => {
       const bin = path.join(temp, "bin");
       const capture = path.join(temp, "args");
       mkdirSync(bin);
+      keyringStub(bin);
       const chromium = path.join(bin, "chromium");
       writeFileSync(
         chromium,
@@ -1111,6 +1121,7 @@ describe("graphical computer spec", () => {
       const home = path.join(temp, "home");
       const chromium = path.join(bin, "chromium");
       mkdirSync(bin);
+      keyringStub(bin);
       writeFileSync(chromium, '#!/bin/sh\nprintf "%s\\n" "$@" > "$ROBOTS_TEST_ARGS"\n');
       chmodSync(chromium, 0o755);
 
@@ -1160,6 +1171,7 @@ describe("graphical computer spec", () => {
       const home = path.join(temp, "home");
       const chromium = path.join(bin, "chromium");
       mkdirSync(bin);
+      keyringStub(bin);
       writeFileSync(chromium, '#!/bin/sh\nprintf "%s\\n" "$@" > "$ROBOTS_TEST_ARGS"\n');
       chmodSync(chromium, 0o755);
       const profile = path.join(home, ".browser-profiles", "chromium-bot-screen");
@@ -1206,6 +1218,7 @@ describe("graphical computer spec", () => {
       const prefsPath = path.join(profile, "Default", "Preferences");
       const liveBin = path.join(temp, "live", "chromium");
       mkdirSync(bin);
+      keyringStub(bin);
       mkdirSync(path.dirname(liveBin));
       mkdirSync(path.dirname(prefsPath), { recursive: true });
       writeFileSync(
@@ -1279,6 +1292,7 @@ describe("graphical computer spec", () => {
       const profile = path.join(temp, "robots-browser");
       const prefsPath = path.join(profile, "Default", "Preferences");
       mkdirSync(bin);
+      keyringStub(bin);
       mkdirSync(path.dirname(prefsPath), { recursive: true });
       writeFileSync(
         path.join(bin, "chromium"),
@@ -1340,6 +1354,7 @@ describe("graphical computer spec", () => {
       const chromium = path.join(bin, "chromium");
       const capture = path.join(temp, "args");
       mkdirSync(bin);
+      keyringStub(bin);
       writeFileSync(chromium, '#!/bin/sh\nprintf "%s\\n" "$@" > "$ROBOTS_TEST_ARGS"\n');
       chmodSync(chromium, 0o755);
 
@@ -1554,6 +1569,7 @@ describe("graphical computer spec", () => {
       const dropFile = path.join(temp, "drop");
       const portFile = path.join(temp, "port");
       mkdirSync(bin);
+      keyringStub(bin);
       writeFileSync(
         path.join(bin, "chromium"),
         '#!/bin/sh\nprintf "%s\\n" "$@" > "$ROBOTS_TEST_ARGS"\n',

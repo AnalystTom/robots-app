@@ -64,6 +64,7 @@ import {
 import { getLogger } from "@robots/logging";
 import { z } from "zod";
 import { combineSignals, redactConnectorPayload } from "./connector-safety.js";
+import { LOGIN_CODE_FIELD } from "./login-code-field.js";
 import type { RemoteTransportDependencies } from "./remote-mcp.js";
 import {
   ConnectorRedirectError,
@@ -76,7 +77,6 @@ import { persistPreparedSecret } from "./secret-persistence.js";
 import { isPermanentDecryptFailure } from "./secrets.js";
 import { totpCode, totpCodeEnd } from "./totp.js";
 import type { VaultLoginUse } from "./vault-card-use.js";
-import { LOGIN_CODE_FIELD } from "./vault-card-use.js";
 import { openVaultValue, sealVaultValue } from "./vault-values.js";
 import { readBodyCapped, withAbort } from "./web-ssrf.js";
 

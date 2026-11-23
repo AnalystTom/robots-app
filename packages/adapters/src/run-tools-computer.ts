@@ -44,6 +44,7 @@ import {
   desktopProtectionGuardMessage,
   protectedComputerLifecycleRefusal,
 } from "./desktop-command-guard.js";
+import { LOGIN_CODE_FIELD } from "./login-code-field.js";
 import { nativeShellCommandArgv } from "./native-shell.js";
 import { purchaseApprovalOf } from "./purchase-gate.js";
 import { resolvePurchaseCardFill, resolvePurchasePayTokenFill } from "./purchase-service.js";
@@ -63,7 +64,7 @@ import {
 import { recordPagePayment } from "./spending-gate.js";
 import { DESKTOP_HELD_FOR_TAKEOVER_MESSAGE } from "./takeover-resume.prompt.js";
 import { getActiveTeachingSession } from "./teaching-session.js";
-import { LOGIN_CODE_FIELD, vaultCardUseOf, vaultLoginUseOf } from "./vault-card-use.js";
+import { vaultCardUseOf, vaultLoginUseOf } from "./vault-card-use.js";
 
 function appendComputerCommand(ctx: RunContext, payload: ComputerCommand) {
   const { deps, run, runId, bot, thread } = ctx;

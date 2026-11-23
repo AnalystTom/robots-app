@@ -30,6 +30,7 @@ import {
   storeBotSecret,
 } from "./bot-secrets.js";
 import { fakeDatabase } from "./bot-secrets.test-support.js";
+import { LOGIN_CODE_FIELD } from "./login-code-field.js";
 import { gateToolCall } from "./run-tool-gate.js";
 import type { ToolRequest } from "./run-tool-request.js";
 import { prepareToolRequest } from "./run-tool-request.js";
@@ -39,7 +40,6 @@ import { listVaultItemUses } from "./vault-activity.js";
 import type { VaultLoginUse } from "./vault-card-use.js";
 import {
   cardUseSummary,
-  LOGIN_CODE_FIELD,
   loginUseSummary,
   requestedCardUse,
   requestedLoginFills,
