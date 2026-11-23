@@ -76,7 +76,6 @@ function mapBot(
   bot: {
     id: string;
     spaceId: string;
-    userId: string;
     name: string;
     description: string;
     instructions: string;
@@ -120,7 +119,6 @@ function mapBot(
   return {
     id: bot.id,
     spaceId: bot.spaceId,
-    userId: bot.userId,
     name: bot.name,
     title: "",
     description: bot.description,

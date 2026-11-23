@@ -81,7 +81,6 @@ export const InstructionVersionSchema = z.object({
 export const BotSchema = z.object({
   id: Id,
   spaceId: Id,
-  userId: Id,
   name: z.string(),
   /** Always empty; installed mobile apps still read it. */
   title: z.string(),

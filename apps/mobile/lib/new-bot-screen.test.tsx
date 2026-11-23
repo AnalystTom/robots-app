@@ -325,8 +325,6 @@ vi.mock("react-native-svg", () => {
 function serveRpc(me: () => Promise<unknown>) {
   mocks.rpc.mockImplementation((path: string) => {
     if (path === "me") return me();
-    if (path === "bots/list")
-      return Promise.resolve([{ id: "existing-bot", userId: "user-other" }]);
     if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
     return Promise.resolve(undefined);
   });
@@ -430,39 +428,6 @@ it("creates the robot the preview preselected, so the stored bot is the one show
   );
 });
 
-it("preselects the robot the user's own bots wear least, not one another member wears", async () => {
-  const hero = CHARACTERS.find((character) => character.name === "Hero")!;
-  const own = CHARACTERS.filter((character) => character.name !== "Hero").map((character) =>
-    robotCharacterValue(character.look),
-  );
-  const bots = [
-    ...own.map((color, index) => ({ id: `own-${index}`, userId: "user-me", color })),
-    { id: "other-1", userId: "user-other", color: robotCharacterValue(hero.look) },
-    { id: "other-2", userId: "user-other", color: robotCharacterValue(hero.look) },
-  ];
-  mocks.rpc.mockImplementation((path: string) => {
-    if (path === "me") return Promise.resolve({ botAvatarSet: "robots", userId: "user-me" });
-    if (path === "bots/list") return Promise.resolve(bots);
-    return Promise.resolve(undefined);
-  });
-  const random = vi.spyOn(Math, "random").mockReturnValue(0);
-  try {
-    await render();
-    expect(CHARACTER_NAMES.filter(checked)).toEqual(["Hero"]);
-    await typeName("Gordon");
-    await tap(createButton());
-    await vi.waitFor(() => expect(createdBot()).toBeDefined());
-    expect(createdBot()).toEqual(
-      expect.objectContaining({
-        name: "Gordon",
-        color: "robot:red.antenna.aviators.cape.confetti",
-      }),
-    );
-  } finally {
-    random.mockRestore();
-  }
-});
-
 it("sends a robot picked on an Original account with the RoBots set", async () => {
   serveRpc(() => Promise.resolve({ botAvatarSet: "organic" }));
   await render();
@@ -520,83 +485,6 @@ it("enables Create once a retry reads the account's bot style", async () => {
   await tap(tryAgainButton());
   expect(container.textContent).not.toContain("Couldn't load your bot style.");
   expect(createButton().disabled).toBe(false);
-});
-
-it("keeps Create on and sends the previewed robot when the bot list cannot load", async () => {
-  mocks.rpc.mockImplementation((path: string) => {
-    if (path === "me") return Promise.resolve({ botAvatarSet: "robots", userId: "user-me" });
-    if (path === "bots/list") return Promise.reject(new Error("Bots unavailable"));
-    if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
-    return Promise.resolve(undefined);
-  });
-  await render();
-  const previewed = CHARACTER_NAMES.filter(checked);
-  expect(previewed).toHaveLength(1);
-  await typeName("Gordon");
-  expect(container.textContent).not.toContain("Couldn't load your bot style.");
-  expect(createButton().disabled).toBe(false);
-  await tap(createButton());
-  await vi.waitFor(() => expect(createdBot()).toBeDefined());
-  const character = CHARACTERS.find((candidate) => candidate.name === previewed[0])!;
-  expect(createdBot()).toEqual(
-    expect.objectContaining({ color: robotCharacterValue(character.look) }),
-  );
-});
-
-function serveWithHeldBotList() {
-  let releaseBotList!: (bots: unknown) => void;
-  const botList = new Promise((resolve) => {
-    releaseBotList = resolve;
-  });
-  mocks.rpc.mockImplementation((path: string) => {
-    if (path === "me") return Promise.resolve({ botAvatarSet: "robots", userId: "user-me" });
-    if (path === "bots/list") return botList;
-    if (path === "bots/create") return Promise.resolve({ id: "bot-1", name: "Gordon" });
-    return Promise.resolve(undefined);
-  });
-  return (bots: unknown) => act(async () => releaseBotList(bots));
-}
-
-function ownBotsWearingEveryRobotBut(name: string) {
-  return CHARACTERS.filter((character) => character.name !== name).map((character, index) => ({
-    id: `own-${index}`,
-    userId: "user-me",
-    color: robotCharacterValue(character.look),
-  }));
-}
-
-it("enables Create while the bot list is still loading, and sends the robot the preview showed", async () => {
-  const answerBotList = serveWithHeldBotList();
-  await render();
-  const previewed = CHARACTER_NAMES.filter(checked);
-  expect(previewed).toHaveLength(1);
-  await typeName("Gordon");
-  expect(createButton().disabled).toBe(false);
-  await tap(createButton());
-  await answerBotList(ownBotsWearingEveryRobotBut("Hero"));
-  await vi.waitFor(() => expect(createdBot()).toBeDefined());
-  const character = CHARACTERS.find((candidate) => candidate.name === previewed[0])!;
-  expect(createdBot()).toEqual(
-    expect.objectContaining({ color: robotCharacterValue(character.look) }),
-  );
-  expect(CHARACTER_NAMES.filter(checked)).toEqual(previewed);
-});
-
-it("moves the preview to the robot the user's bots wear least when the list arrives before any pick", async () => {
-  const answerBotList = serveWithHeldBotList();
-  await render();
-  await typeName("Gordon");
-  await answerBotList(ownBotsWearingEveryRobotBut("Hero"));
-  expect(CHARACTER_NAMES.filter(checked)).toEqual(["Hero"]);
-});
-
-it("keeps the robot the user picked when a late bot list arrives", async () => {
-  const answerBotList = serveWithHeldBotList();
-  await render();
-  await typeName("Gordon");
-  await tap(radio("Chef"));
-  await answerBotList(ownBotsWearingEveryRobotBut("Hero"));
-  expect(CHARACTER_NAMES.filter(checked)).toEqual(["Chef"]);
 });
 
 it("keeps the look the user picked when the account read resolves after the pick", async () => {
