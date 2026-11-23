@@ -1,11 +1,14 @@
-export async function bestEffort<T>(
+export type BestEffortWarn = (label: string, error: unknown) => void;
+
+export async function settleBestEffort<T>(
   label: string,
   attempt: PromiseLike<T> | undefined,
+  warn: BestEffortWarn,
 ): Promise<T | undefined> {
   try {
     return await attempt;
   } catch (error) {
-    if (!isAbort(error)) console.warn(`best effort failed: ${label}`, error);
+    if (!isAbort(error)) warn(label, error);
     return undefined;
   }
 }
