@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { ROBOT_PRESETS, robotCharacterSvg, robotPresetForIdentity } from "@robots/core";
+import { ROBOT_PRESETS, robotCharacterSvg } from "@robots/core";
 import type { ReactNode } from "react";
 import { act, createElement } from "react";
 import type { Root } from "react-dom/client";
@@ -134,9 +134,7 @@ describe("GroupSeats", () => {
     act(() =>
       root.render(<GroupSeats members={[{ botId: "bot-a", name: "A", color: "#3EC5A8" }]} />),
     );
-    const preset = ROBOT_PRESETS.find(
-      (candidate) => candidate.id === robotPresetForIdentity("bot-a"),
-    );
+    const preset = ROBOT_PRESETS.find((candidate) => candidate.id === "coder");
     const drawn = Array.from(container.querySelectorAll("svg-svgxml"), (node) =>
       node.getAttribute("data-xml"),
     );
