@@ -108,7 +108,9 @@ A RoBots package is one UTF-8 JSON file, named `<bot-name>.robot.json`. Version 
     "avatarSet": "robots",
     "model": { "provider": "openrouter", "modelId": "anthropic/claude-sonnet-4.6" }
   },
-  "skills": [{ "content": "---\nname: digest\ndescription: Summarise the inbox.\n---\n\nSteps.\n" }],
+  "skills": [
+    { "content": "---\nname: digest\ndescription: Summarise the inbox.\n---\n\nSteps.\n" }
+  ],
   "routines": [
     {
       "name": "Morning digest",

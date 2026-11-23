@@ -33,7 +33,8 @@
         "!**/*.test.tsx",
         "!**/packages/ui-web/src/bot-avatar.tsx",
         "!**/apps/mobile/components/bot-avatar.tsx",
-        "!**/apps/web/src/pages/WindowChrome.tsx"
+        "!**/apps/web/src/pages/WindowChrome.tsx",
+        "!**/apps/web/src/components/RobotsMark.tsx"
       ]
     },
     {
