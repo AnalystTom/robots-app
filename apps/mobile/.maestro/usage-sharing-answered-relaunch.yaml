@@ -36,8 +36,7 @@ name: RoBots data sharing stays answered across a relaunch
 - tapOn: "Continue"
 - stopApp
 - launchApp
-- openLink: "robots:///general"
 - extendedWaitUntil:
-    visible: "Share usage data"
+    visible: "New bot"
     timeout: 30000
 - assertNotVisible: "Help make RoBots better for everyone"

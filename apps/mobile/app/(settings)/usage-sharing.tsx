@@ -12,7 +12,6 @@ import {
   useStackedSettings,
 } from "../../components/settings-group";
 import { native, useThemedStyles } from "../../lib/native";
-import { closeSettingsSheet } from "../../lib/settings-sheet";
 import { useSideInsets } from "../../lib/side-insets";
 import { useUsageSharing } from "../../lib/usage-sharing";
 import { errorText } from "../../lib/user-error";
@@ -32,13 +31,14 @@ export default function UsageSharingStep() {
       Alert.alert(t`Enable data sharing`, errorText(error, t`Could not save your choice`)),
   });
 
+  const next = survey ? "/signup-survey" : "/";
+
   function continueOnboarding() {
-    if (survey) router.replace("/signup-survey");
-    else closeSettingsSheet();
+    router.replace(next);
   }
 
   if (loaded && !needed && !save.pending) {
-    return <Redirect href={survey ? "/signup-survey" : "/"} />;
+    return <Redirect href={next} />;
   }
 
   return (

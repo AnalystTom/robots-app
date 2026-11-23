@@ -35,6 +35,10 @@ name: RoBots data sharing onboarding
     timeout: 30000
 - tapOn: "Share data"
 - tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "New bot"
+    timeout: 30000
+- assertNotVisible: "Help make RoBots better for everyone"
 
 - openLink: "robots:///general"
 - extendedWaitUntil:
