@@ -79,6 +79,28 @@ describeRunsList("runs.list activity tracker", () => {
     expect(recent.runs.some((run) => run.botName === "Beta")).toBe(false);
   });
 
+  it("turns notifications off for every run while the account's pushes are off", async () => {
+    const cookie = await signup(app, `runs-push-${stamp}@robots.test`, "Push User");
+    const bot = await rpc<{ id: string }>(app, cookie, "bots/create", {
+      name: "Pusher",
+      title: "Pusher",
+      description: "",
+      instructions: "",
+      notifyOnFinish: true,
+    });
+    await seedRun(prisma, bot.id, "running", "push in flight");
+    const notificationsEnabled = async () =>
+      (
+        await rpc<{ runs: RunActivityRow[] }>(app, cookie, "runs/list", { filter: "active" })
+      ).runs.map((run) => run.notificationsEnabled);
+
+    expect(await notificationsEnabled()).toEqual([true]);
+    await rpc(app, cookie, "preferences/update", { pushNotifications: false });
+    expect(await notificationsEnabled()).toEqual([false]);
+    await rpc(app, cookie, "preferences/update", { pushNotifications: true });
+    expect(await notificationsEnabled()).toEqual([true]);
+  });
+
   it("never returns runs from another workspace", async () => {
     const ownerCookie = await signup(app, `runs-owner-${stamp}@robots.test`, "Owner");
     const ownerBot = await rpc<{ id: string }>(app, ownerCookie, "bots/create", {
@@ -153,7 +175,6 @@ describeRunsList("runs.list activity tracker", () => {
     const now = Date.now();
     await seedRun(prisma, quiet.id, "completed", "quiet run", new Date(now - 86_400_000));
     for (let i = 0; i < 21; i += 1) {
-      // Bridged team-chat conversations get their own threads but are still the bot's chat.
       const thread = await bridgedThread(prisma, busy.id, `busy-${stamp}-${i}`);
       await seedRun(
         prisma,

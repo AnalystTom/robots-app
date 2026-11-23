@@ -1474,6 +1474,7 @@ export const MeSchema = z.object({
   labs: z.array(LabFeatureSchema).default([]),
   /** Labs features this account can switch; the deployment turns the rest on for everyone. */
   labsAvailable: z.array(LabFeatureSchema).default([]),
+  pushNotifications: z.boolean().default(true),
   /** Deprecated: whether `labs` includes "board", kept for apps that predate Labs. */
   ticketBoardEnabled: z.boolean(),
   phoneCallsEnabled: z.boolean().default(false),

@@ -281,8 +281,10 @@ class RobotsNotificationService : Service() {
       })
       .setAutoCancel(true)
       .setCategory(Notification.CATEGORY_MESSAGE)
+      .setGroup(ChatGroup.KEY)
       .build()
     manager.notify(run.threadId.hashCode(), notification)
+    ChatGroup.postSummary(this, copy.channel)
   }
 
   private fun showLive(active: List<RunRecord>, avatarStyle: String, context: Context) {

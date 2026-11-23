@@ -49,6 +49,7 @@ model User {
   locale                      String?
   /// Labs features this person turned on, by contracts' LabFeature id. Unknown ids are ignored.
   labs                        String[]                     @default([])
+  pushNotifications           Boolean                      @default(true)
   marketingEmailOptOutAt      DateTime?
   /// When an organization this person owns first subscribed; uses up every trial kind.
   billingTrialUsedAt          DateTime?

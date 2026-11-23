@@ -35,7 +35,6 @@ async function runNotice(
   groupId: string | null;
   bot?: { id: string; name: string; color: string; avatarSet: string };
 }> {
-  // A routine carries its own notify setting, which decides on its failures.
   const routine = routineId
     ? await prisma.routine.findUnique({ where: { id: routineId }, select: { notify: true } })
     : null;
@@ -84,8 +83,6 @@ export async function notifyRun(
     return null;
   });
   if (!notice?.enabled) return;
-  // A reply is news to everyone in the Space. Only the person whose run it is can answer its
-  // questions, take its screen, or fix what made it fail, and a reply to another bot is theirs.
   const recipients =
     message.kind === "completion" && run.trigger !== "bot_message"
       ? await spaceMemberIds(deps.prisma, run.spaceId).catch((error) => {
@@ -104,10 +101,6 @@ export async function notifyRun(
   });
 }
 
-/**
- * Another member's message in a chat: everyone else in the Space hears about it, as they would a
- * reply. Nothing goes to the person who wrote it, or anywhere when the chat is muted.
- */
 export async function notifyMemberMessage(
   deps: Pick<ExecutorDeps, "prisma" | "events" | "notifications">,
   input: { spaceId: string; threadId: string; authorUserId: string; text: string },
@@ -147,7 +140,6 @@ export async function notifyMemberMessage(
     spaceId: input.spaceId,
     recipients,
     message: {
-      // Reads like a reply: new in the chat, nothing to act on.
       kind: "completion",
       title: displayName(chatName, "Chat"),
       body: completionNotificationPreview(`${authorName}: ${input.text}`),
@@ -159,7 +151,24 @@ export async function notifyMemberMessage(
   });
 }
 
-/** Everyone in the Space. Leaving it ends their notifications from it. */
+export async function usersPushing(
+  prisma: PrismaClient,
+  userIds: string[],
+  retryOnFailure = false,
+): Promise<Set<string>> {
+  const rows = await prisma.user
+    .findMany({
+      where: { id: { in: userIds }, pushNotifications: true },
+      select: { id: true },
+    })
+    .catch((error: unknown) => {
+      if (retryOnFailure) throw error;
+      getLogger().error("push setting lookup", error);
+      return [];
+    });
+  return new Set(rows.map((row) => row.id));
+}
+
 async function spaceMemberIds(prisma: PrismaClient, spaceId: string): Promise<string[]> {
   const members = await prisma.spaceMember.findMany({
     where: { spaceId },
@@ -168,7 +177,6 @@ async function spaceMemberIds(prisma: PrismaClient, spaceId: string): Promise<st
   return members.map((member) => member.userId);
 }
 
-/** Alerts open apps and pushes to each recipient's devices, with their own unread count. */
 async function deliverChatNotice(
   deps: Pick<ExecutorDeps, "prisma" | "events" | "notifications">,
   input: {
@@ -181,27 +189,27 @@ async function deliverChatNotice(
   },
 ) {
   const { spaceId, message, groupId, bot } = input;
-  // News in a chat waits for whoever snoozed it. Questions, takeovers and failures still reach
-  // the person whose run it is: the chat is hidden, so this is how they would hear of it.
   const snoozing =
     message.kind === "completion"
       ? await membersSnoozing(deps.prisma, message.threadId, input.recipients).catch((error) => {
-          // A retried delivery waits for the answer; otherwise everyone hears, rather than no one.
           if (input.retryOnFailure) throw error;
           getLogger().error("snoozed chat lookup", error);
           return new Set<string>();
         })
       : new Set<string>();
   const recipients = input.recipients.filter((userId) => !snoozing.has(userId));
+  const notifications = deps.notifications;
+  const pushing =
+    notifications && recipients.length
+      ? await usersPushing(deps.prisma, recipients, input.retryOnFailure)
+      : new Set<string>();
   for (const userId of recipients) {
     publishChatAlert(deps.events, { spaceId, userId }, message, groupId);
   }
-  const notifications = deps.notifications;
   if (!notifications || !recipients.length) return;
   const sender = bot && (await notificationIdentity(bot));
   const deliver = async (userId: string) => {
-    // The icon shows what the inbox shows: unread chats across the user's Spaces. Without a
-    // count the push leaves the badge as it is.
+    if (!pushing.has(userId)) return;
     const badge = await countUnreadInboxChats(deps.prisma, { spaceId, userId }).catch((error) => {
       getLogger().error("unread chat count", error);
       return undefined;
@@ -231,7 +239,6 @@ async function deliverChatNotice(
         },
       );
   };
-  // A few members at a time, so a large Space does not take the whole connection pool at once.
   const failures: Array<{ error: unknown } | undefined> = [];
   for (let start = 0; start < recipients.length; start += NOTIFY_RECIPIENTS_AT_ONCE) {
     const batch = recipients.slice(start, start + NOTIFY_RECIPIENTS_AT_ONCE);
@@ -241,7 +248,6 @@ async function deliverChatNotice(
   if (failed && input.retryOnFailure) throw failed.error;
 }
 
-/** Open apps alert from the same message. Not awaited, so it never holds up the push. */
 export function publishChatAlert(
   events: Pick<ThreadEvents, "publishChatAlert"> | undefined,
   run: { spaceId: string; userId: string },
@@ -261,7 +267,6 @@ export function publishChatAlert(
 }
 
 export function runSendsFinishNotification(trigger: string): boolean {
-  // A background helper's result is announced by the turn that passes it on.
   return (
     trigger !== "created" &&
     trigger !== BACKGROUND_HELPER_TRIGGER &&
@@ -269,20 +274,16 @@ export function runSendsFinishNotification(trigger: string): boolean {
   );
 }
 
-/** User-facing text for completion notifications; empty when only tool/step activity remains. */
 export function completionNotificationBody(assembled: string, blocks: MessageBlock[]): string {
   if (assembled) return assembled;
   return messageBlocksText(blocks);
 }
 
-/** Push body: Markdown stripped, then truncated so a cut cannot land inside a marker. */
 export function completionNotificationPreview(text: string): string {
   return truncatedPlainText(text, COMPLETION_NOTIFICATION_MAX_CHARS);
 }
 
-/** A secret card can ask for a code or a login, so the title stays generic and the label short. */
 export function secretAskNotification(botName: string, label: string, runSecrets: string[]) {
-  // Strip and redact before shortening so no protected value is left half-shown.
   const text = plainTextFromMarkdown(redactSecrets(label, runSecrets), { maxSource: Infinity });
   const body = truncatePlainText(
     redactSecrets(text, runSecrets),

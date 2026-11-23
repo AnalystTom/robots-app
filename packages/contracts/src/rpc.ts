@@ -409,6 +409,7 @@ export const appContract = {
             locale: AppLocaleSchema.optional(),
             /** Replaces the account's Labs list. */
             labs: z.array(LabFeatureSchema).optional(),
+            pushNotifications: z.boolean().optional(),
           })
           .refine(
             (input) =>
@@ -416,7 +417,8 @@ export const appContract = {
               input.botAvatarSet !== undefined ||
               input.timezone !== undefined ||
               input.locale !== undefined ||
-              input.labs !== undefined,
+              input.labs !== undefined ||
+              input.pushNotifications !== undefined,
             { message: "Nothing to update" },
           ),
       )

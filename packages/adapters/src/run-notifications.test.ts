@@ -4,8 +4,8 @@ import type { ExecutorDeps } from "./executor-deps.js";
 import { notifyMemberMessage, notifyRun } from "./run-notifications.js";
 
 vi.mock("./notification-identity.js", () => ({ notificationIdentity: async () => undefined }));
-// Each person's own unread count: Ada has 2 unread chats, Bea 5.
 const snoozing = vi.hoisted(() => new Set<string>());
+const pushOff = vi.hoisted(() => new Set<string>());
 vi.mock("@robots/db", () => ({
   countUnreadInboxChats: async (_: unknown, { userId }: { userId: string }) =>
     userId === "user-1" ? 2 : 5,
@@ -36,7 +36,7 @@ function deps({
   publish = vi.fn(async () => undefined),
   members = ["user-1"],
 } = {}) {
-  const send = vi.fn(async () => undefined);
+  const send = vi.fn(async (_message: NotificationMessage, _context: { userId: string }) => {});
   const value = {
     prisma: {
       spaceMember: {
@@ -50,7 +50,17 @@ function deps({
           groupId,
         }),
       },
-      user: { findUnique: async () => ({ name: "Ada" }) },
+      user: {
+        findUnique: async () => ({ name: "Ada" }),
+        findMany: async ({
+          where,
+        }: {
+          where: { id: { in: string[] }; pushNotifications?: boolean };
+        }) =>
+          where.id.in
+            .filter((id) => !(where.pushNotifications && pushOff.has(id)))
+            .map((id) => ({ id })),
+      },
       routine: { findUnique: async () => null },
       run: {
         findFirst: async () => ({
@@ -64,6 +74,40 @@ function deps({
   } as unknown as ExecutorDeps;
   return { value, publish, send };
 }
+
+describe("account push setting", () => {
+  it("still alerts the app but sends no push when the push setting cannot be read", async () => {
+    const { value, publish, send } = deps();
+    vi.spyOn(value.prisma.user, "findMany").mockRejectedValueOnce(new Error("database blip"));
+    await expect(notifyRun(value, run, message)).resolves.toBeUndefined();
+    expect(publish).toHaveBeenCalledOnce();
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("keeps the in-app alert but sends no push when the account turned pushes off", async () => {
+    pushOff.add("user-1");
+    try {
+      const { value, publish, send } = deps();
+      await notifyRun(value, run, message);
+      expect(publish).toHaveBeenCalledOnce();
+      expect(send).not.toHaveBeenCalled();
+    } finally {
+      pushOff.clear();
+    }
+  });
+
+  it("pushes only to the members who left pushes on", async () => {
+    pushOff.add("user-2");
+    try {
+      const { value, send } = deps({ members: ["user-1", "user-2"] });
+      await notifyRun(value, run, message);
+      expect(send).toHaveBeenCalledOnce();
+      expect(send.mock.calls[0]?.[1]).toMatchObject({ userId: "user-1" });
+    } finally {
+      pushOff.clear();
+    }
+  });
+});
 
 describe("notifyRun chat alerts", () => {
   it("publishes the alert for open apps alongside the push", async () => {
@@ -117,7 +161,6 @@ describe("notifyRun chat alerts", () => {
   });
 });
 
-// Ada (user-1) and Bea (user-2) share space-1; nobody else is in it.
 describe("notifications in a shared Space", () => {
   const shared = ["user-1", "user-2"];
   const recipients = (send: ReturnType<typeof deps>["send"]) =>

@@ -41,6 +41,7 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
         locale: true,
         botAvatarSet: true,
         labs: true,
+        pushNotifications: true,
         signupSurvey: { select: { userId: true } },
       },
     }),
@@ -53,6 +54,7 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
   const labs = resolveLabs(user.labs, deploymentLabs);
   return {
     labs,
+    pushNotifications: user.pushNotifications,
     labsAvailable: LAB_FEATURES.filter((feature) => !deploymentLabs.includes(feature)),
     ticketBoardEnabled: labs.includes("board"),
     phoneCallsEnabled: deps.env.phoneCallsEnabled === true,
