@@ -1,9 +1,7 @@
 export { AppMarkStack } from "./app-mark-stack.js";
 export {
   BOT_COLORS,
-  BOT_MASCOT_SHAPES,
   BotAvatar,
-  BotShapePreview,
   DEFAULT_BOT_AVATAR_COLOR,
   defaultBotAvatarValue,
   parseBotAvatar,

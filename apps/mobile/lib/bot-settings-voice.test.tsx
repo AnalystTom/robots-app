@@ -612,61 +612,30 @@ describe("bot settings device voice menu", () => {
 
   it("opens avatar controls from the header and closes the sheet", async () => {
     await render();
-    expect(container.textContent).not.toContain("Shape");
+    expect(container.querySelector('[aria-label="Assistant"]')).toBeNull();
     await act(async () =>
       container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
     );
-    expect(container.textContent).toContain("Shape");
+    expect(container.querySelector('[aria-label="Assistant"]')).not.toBeNull();
     await act(async () =>
       [...container.querySelectorAll("button")]
         .find((button) => button.textContent === "Done")!
         .click(),
     );
-    expect(container.textContent).not.toContain("Shape");
+    expect(container.querySelector('[aria-label="Assistant"]')).toBeNull();
   });
 
-  it("keeps a legacy set until explicitly switched, saves the choice, and reloads it", async () => {
+  it("offers only the fifteen robots in the avatar sheet, with no icon set menu", async () => {
     await render();
     await act(async () =>
       container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
     );
-    const setMenu = () => container.querySelector('[data-menu="Icon set"]')!;
-    const option = (label: string) =>
-      [...setMenu().querySelectorAll<HTMLButtonElement>("button")].find(
-        (button) => button.textContent === label,
-      )!;
-    expect(option("Original").dataset.state).toBe("on");
+    expect(container.querySelector('[data-menu="Icon set"]')).toBeNull();
+    expect(container.textContent).not.toContain("Original");
+    expect(container.textContent).not.toContain("Shape");
+    expect(container.querySelector('[aria-label="Host"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label^="Shape"]')).toBeNull();
     expect(mocks.rpc).not.toHaveBeenCalled();
-    await act(async () => option("RoBots").click());
-    mocks.rpc.mockResolvedValueOnce({ avatarSet: "robots" });
-    await act(async () =>
-      [...container.querySelectorAll<HTMLButtonElement>("button")]
-        .find((button) => button.textContent === "Save")!
-        .click(),
-    );
-    expect(mocks.rpc).toHaveBeenCalledWith("bots/update", {
-      botId: "bot-fixture",
-      avatarSet: "robots",
-    });
-    act(() => root.unmount());
-    root = createRoot(container);
-    mocks.avatarSet = "robots";
-    await render();
-    await act(async () =>
-      container.querySelector<HTMLButtonElement>('[aria-label="Edit avatar"]')!.click(),
-    );
-    expect(option("RoBots").dataset.state).toBe("on");
-    await act(async () => option("Original").click());
-    mocks.rpc.mockResolvedValueOnce({ avatarSet: "organic" });
-    await act(async () =>
-      [...container.querySelectorAll<HTMLButtonElement>("button")]
-        .find((button) => button.textContent === "Save")!
-        .click(),
-    );
-    expect(mocks.rpc).toHaveBeenLastCalledWith("bots/update", {
-      botId: "bot-fixture",
-      avatarSet: "organic",
-    });
   });
 
   it("keeps a legacy robot the bot wears, lists only the listed robots, and saves only a picked one", async () => {

@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet, RobotLook } from "@robots/contracts";
-import type { AvatarEyes, AvatarMotionMode, LogoAvatarActivity } from "@robots/core";
+import type { AvatarMotionMode, LogoAvatarActivity } from "@robots/core";
 import {
   AVATAR_LID_CLOSE,
   AVATAR_MOTION_UNITS,
@@ -8,42 +8,26 @@ import {
   avatarClip,
   avatarClock,
   avatarFrame,
-  avatarIdentitySeed,
   avatarLifeState,
   avatarPokeFrame,
   avatarRestingBlink,
   avatarSchedulePose,
   avatarThinkingDot,
   avatarWorkingDot,
-  botAvatarActivity,
   botEyeInk,
   isRunWorking,
-  ORGANIC_AVATAR_EYES,
-  ORGANIC_AVATAR_VIEWBOX,
-  organicAvatarEyeTilt,
-  organicAvatarPath,
   robotCharacterSvg,
-  SHIPPED_BOT_AVATAR_EYES,
-  SHIPPED_BOT_AVATAR_VIEWBOX,
-  usesLogoAvatar,
+  robotsOnlyAvatarValue,
 } from "@robots/core";
-import { memo, useMemo, useSyncExternalStore } from "react";
+import { memo, useMemo } from "react";
 import { Image, Pressable, View } from "react-native";
-import Animated, {
-  useAnimatedProps,
-  useAnimatedStyle,
-  useReducedMotion,
-} from "react-native-reanimated";
-import Svg, { G, Path, Rect, SvgXml } from "react-native-svg";
+import Animated, { useAnimatedStyle, useReducedMotion } from "react-native-reanimated";
+import { SvgXml } from "react-native-svg";
 import type { AvatarLife } from "../lib/avatar-life";
 import { useAvatarOnScreen, useLife, usePoke, useSettling } from "../lib/avatar-life";
 import { mobileBotAvatarPresentation } from "../lib/bot-avatar";
-import { mobileLogoAvatarActivity } from "../lib/logo-avatar-activity";
 import { useMobileTokens } from "../lib/native";
-import { LogoAvatar } from "./logo-avatar";
 import { NativeSymbol } from "./native-symbol";
-
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 /** How far (0–1) the face has turned into the typing dots, for a morph of 0–1. */
 function morphGrow(morph: number): number {
@@ -54,7 +38,7 @@ function morphGrow(morph: number): number {
 /** The face shrinks until it is the size of the middle typing dot. */
 const MORPH_SHRINK = 1 - (2 * AVATAR_TYPING_DOTS.radius) / AVATAR_MOTION_UNITS;
 /** How many units wide a view box is. */
-function viewBoxUnits(viewBox: string): number {
+function _viewBoxUnits(viewBox: string): number {
   return Number(viewBox.split(" ")[2]);
 }
 
@@ -109,7 +93,7 @@ function useBodyStyle(life: AvatarLife, size: number) {
 }
 
 /** An eye's offset (motion units), its height and whether it shows. */
-function eyeState(life: AvatarLife) {
+function _eyeState(life: AvatarLife) {
   "worklet";
   const { frame, grow } = liveFrame(life);
   return { x: frame.eyeX, y: frame.eyeY, lid: frame.lid, hidden: grow >= 0.5 };
@@ -128,53 +112,9 @@ export interface BotAvatarProps {
   pokeable?: boolean;
 }
 
-/** Missing set metadata deliberately preserves every existing avatar. */
 export const BotAvatar = memo(function BotAvatar(props: BotAvatarProps) {
-  if (usesLogoAvatar(props)) {
-    return <RobotsBotAvatar {...props} />;
-  }
-  return <LegacyBotAvatar {...props} />;
+  return <LegacyBotAvatar {...props} color={robotsOnlyAvatarValue(props.color, props.identity)} />;
 });
-
-function RobotsBotAvatar({
-  color,
-  identity,
-  size = 54,
-  status,
-  activity,
-  composing = false,
-  muted = false,
-  motion = "static",
-  pokeable = false,
-}: BotAvatarProps) {
-  const liveActivity = useSyncExternalStore(
-    mobileLogoAvatarActivity.subscribe,
-    () => mobileLogoAvatarActivity.getActivity(identity ?? "", status),
-    (): LogoAvatarActivity => "idle",
-  );
-  const resolved = botAvatarActivity(
-    { color, avatarSet: "robots" },
-    activity ??
-      (composing && (liveActivity === "working" || liveActivity === "idle")
-        ? "writing"
-        : liveActivity),
-  );
-  const working = isRunWorking(status) && resolved !== "writing" && motion !== "running";
-  return (
-    <View style={{ width: size, height: size }}>
-      <LogoAvatar
-        color={color}
-        identity={identity}
-        size={size}
-        activity={resolved}
-        motion={motion}
-        pokeable={pokeable}
-      />
-      {working ? <WorkingDot size={size} muted={muted} /> : null}
-      {muted ? <MutedBadge size={size} /> : null}
-    </View>
-  );
-}
 
 function WorkingDot({ size, muted }: { size: number; muted: boolean }) {
   const tokens = useMobileTokens();
@@ -246,7 +186,6 @@ function LegacyBotAvatar({
   color,
   size = 54,
   status,
-  identity,
   muted = false,
   motion = "static",
   composing = false,
@@ -255,7 +194,6 @@ function LegacyBotAvatar({
   color: string;
   size?: number;
   status?: string;
-  identity?: string;
   muted?: boolean;
   /**
    * How the avatar may move: still (the default), lazy (inbox rows and pinned chats: still
@@ -283,7 +221,7 @@ function LegacyBotAvatar({
       : color;
   // A photo or a robot character is a still picture: no eyes to animate.
   const picturePainted = parsed.kind === "image" || parsed.kind === "robot";
-  const eyeColor = botEyeInk(fillColor, tokens);
+  const _eyeColor = botEyeInk(fillColor, tokens);
   const onScreen = useAvatarOnScreen();
   const reducedMotion = useReducedMotion();
   const settling = useSettling(state);
@@ -298,7 +236,7 @@ function LegacyBotAvatar({
   });
   const life = useLife(state, clock, size, motion);
   const poke = usePoke(life, pokeable && clock === "running");
-  const bodyStyle = useBodyStyle(life, size);
+  const _bodyStyle = useBodyStyle(life, size);
   const picture =
     parsed.kind === "image" && parsed.imageUrl ? (
       <View
@@ -315,25 +253,7 @@ function LegacyBotAvatar({
       </View>
     ) : parsed.kind === "robot" ? (
       <RobotCharacter look={parsed.look} size={size} />
-    ) : parsed.kind === "shape" ? (
-      <ShippedShapeAvatar
-        color={parsed.color}
-        eyeColor={eyeColor}
-        shapePath={parsed.shapePath}
-        size={size}
-        life={life}
-        bodyStyle={bodyStyle}
-      />
-    ) : (
-      <OrganicAvatar
-        color={fillColor}
-        eyeColor={eyeColor}
-        identity={identity}
-        size={size}
-        life={life}
-        bodyStyle={bodyStyle}
-      />
-    );
+    ) : null;
   const avatar = (
     <View style={{ width: size, height: size }}>
       {picture}
@@ -392,24 +312,6 @@ function Dot({
   return <Animated.View style={[{ position: "absolute", backgroundColor: color }, style]} />;
 }
 
-type BodyStyle = ReturnType<typeof useAnimatedStyle>;
-
-/** Bar eyes' live props: motion offsets scaled to the view box, closing about their centre. */
-function useBarEyes(eyes: AvatarEyes, viewBox: string, life: AvatarLife) {
-  const scale = viewBoxUnits(viewBox) / AVATAR_MOTION_UNITS;
-  const eyeProps = (cx: number) => () => {
-    "worklet";
-    const state = eyeState(life);
-    const height = state.hidden ? 0 : eyes.height * state.lid;
-    return {
-      x: cx - eyes.width / 2 + state.x * scale,
-      y: eyes.cy - height / 2 + state.y * scale,
-      height,
-    };
-  };
-  return [useAnimatedProps(eyeProps(eyes.leftCx)), useAnimatedProps(eyeProps(eyes.rightCx))];
-}
-
 /** A robot character, drawn once per look from fixed artwork and clipped to a circle. */
 const RobotCharacter = memo(function RobotCharacter({
   look,
@@ -425,71 +327,3 @@ const RobotCharacter = memo(function RobotCharacter({
     </View>
   );
 });
-
-function ShippedShapeAvatar({
-  color,
-  eyeColor,
-  shapePath,
-  size,
-  life,
-  bodyStyle,
-}: {
-  color: string;
-  eyeColor: string;
-  shapePath: string;
-  size: number;
-  life: AvatarLife;
-  bodyStyle: BodyStyle;
-}) {
-  const eyes = SHIPPED_BOT_AVATAR_EYES;
-  const [leftEye, rightEye] = useBarEyes(eyes, SHIPPED_BOT_AVATAR_VIEWBOX, life);
-  return (
-    <Animated.View style={[{ width: size, height: size }, bodyStyle]}>
-      <Svg width={size} height={size} viewBox={SHIPPED_BOT_AVATAR_VIEWBOX}>
-        <Path d={shapePath} fill={color} />
-        <G fill={eyeColor}>
-          <AnimatedRect animatedProps={leftEye} width={eyes.width} rx={eyes.width / 2} />
-          <AnimatedRect animatedProps={rightEye} width={eyes.width} rx={eyes.width / 2} />
-        </G>
-      </Svg>
-    </Animated.View>
-  );
-}
-
-function OrganicAvatar({
-  color,
-  eyeColor,
-  identity,
-  size,
-  life,
-  bodyStyle,
-}: {
-  color: string;
-  eyeColor: string;
-  identity?: string;
-  size: number;
-  life: AvatarLife;
-  bodyStyle: BodyStyle;
-}) {
-  const seed = avatarIdentitySeed(identity || color || "#8B5CF6");
-  const eyes = ORGANIC_AVATAR_EYES;
-  const [leftEye, rightEye] = useBarEyes(eyes, ORGANIC_AVATAR_VIEWBOX, life);
-  return (
-    <Animated.View style={[{ width: size, height: size }, bodyStyle]}>
-      <Svg width={size} height={size} viewBox={ORGANIC_AVATAR_VIEWBOX}>
-        <Path d={organicAvatarPath(seed)} fill={color} />
-        <G transform={`rotate(${organicAvatarEyeTilt(seed)})`}>
-          {[leftEye, rightEye].map((props, index) => (
-            <AnimatedRect
-              key={index}
-              animatedProps={props}
-              width={eyes.width}
-              rx={eyes.width / 2}
-              fill={eyeColor}
-            />
-          ))}
-        </G>
-      </Svg>
-    </Animated.View>
-  );
-}

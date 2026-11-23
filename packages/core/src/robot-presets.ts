@@ -1,5 +1,6 @@
 import type { RobotLook } from "@robots/contracts";
-import { robotCharacterValue } from "@robots/contracts";
+import { parseBotAvatarValue, robotCharacterValue } from "@robots/contracts";
+import { avatarIdentitySeed } from "./avatar-shape.js";
 
 export const ROBOT_PRESETS = [
   {
@@ -150,4 +151,15 @@ export function randomRobotPreset(random: () => number = Math.random): RobotPres
 export function robotPresetOf(look: RobotLook): RobotPresetId | null {
   const value = robotCharacterValue(look);
   return ROBOT_PRESETS.find((preset) => robotCharacterValue(preset.look) === value)?.id ?? null;
+}
+
+export function robotPresetForIdentity(identity: string): RobotPresetId {
+  return (ROBOT_PRESETS[avatarIdentitySeed(identity) % ROBOT_PRESETS.length] ?? ROBOT_PRESETS[0])
+    .id;
+}
+
+export function robotsOnlyAvatarValue(color: string, identity = ""): string {
+  const kind = parseBotAvatarValue(color).kind;
+  if (kind === "image" || kind === "robot") return color;
+  return robotPresetValue(robotPresetForIdentity(identity || color));
 }

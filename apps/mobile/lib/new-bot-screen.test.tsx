@@ -420,11 +420,9 @@ it("keeps Create off until the account's bot style is known", async () => {
   );
   await render();
   await typeName("Gordon");
-  expect(radio("Shape 1")).not.toBeNull();
   expect(createButton().disabled).toBe(true);
 
   await act(async () => answer({ botAvatarSet: "robots" }));
-  expect(radio("Shape 1")).toBeNull();
   expect(createButton().disabled).toBe(false);
 });
 

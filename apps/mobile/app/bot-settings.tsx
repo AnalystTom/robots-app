@@ -888,27 +888,7 @@ export default function BotSettingsScreen() {
                 </Text>
               </Pressable>
             ) : null}
-            <MenuPicker
-              label={t`Icon set`}
-              choices={[
-                { key: "organic", label: t`Original` },
-                { key: "robots", label: t`RoBots` },
-              ]}
-              value={avatarSet}
-              onChange={(next) => {
-                setAvatarSet(resolveBotAvatarSet(next));
-                setColor((current) => botLookState(current).color);
-              }}
-              plain
-            />
-            {bot ? (
-              <BotLookPicker
-                value={color}
-                identity={bot.id}
-                avatarSet={avatarSet}
-                onChange={(next) => setColor(next)}
-              />
-            ) : null}
+            {bot ? <BotLookPicker value={color} onChange={(next) => setColor(next)} /> : null}
           </ScrollView>
         </Modal>
       ) : null}

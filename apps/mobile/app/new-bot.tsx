@@ -1,13 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_NAME_MAX_LENGTH, resolveBotAvatarSet } from "@robots/contracts";
-import {
-  botLookState,
-  newBotLook,
-  newBotLookInput,
-  newBotPreviewIdentity,
-  ORGANIC_PREVIEW_IDENTITIES,
-} from "@robots/core";
+import { botLookState, newBotLook, newBotLookInput, newBotPreviewIdentity } from "@robots/core";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler, ScrollView, Text, TextInput, View } from "react-native";
@@ -149,13 +143,8 @@ export default function NewBot() {
         <View style={{ marginTop: 24 }}>
           <BotLookPicker
             value={look.color}
-            identity={identity}
-            organicIdentities={ORGANIC_PREVIEW_IDENTITIES}
-            avatarSet={avatarSet}
             disabled={pending}
-            onChange={(color, picked) => {
-              setLook((current) => ({ ...current, color, identity: picked ?? current.identity }));
-            }}
+            onChange={(color) => setLook((current) => ({ ...current, color }))}
           />
         </View>
         {error ? <Text style={{ color: tokens.destructive, marginTop: 16 }}>{error}</Text> : null}

@@ -3,7 +3,6 @@
 import type { BotAvatarSet } from "@robots/contracts";
 import { parseRobotCharacter } from "@robots/contracts";
 import { robotCharacterDataUri } from "@robots/core";
-import { DEFAULT_BOT_AVATAR_COLOR } from "@robots/ui-web";
 import type { ReactNode } from "react";
 import { act, useState } from "react";
 import type { Root } from "react-dom/client";
@@ -76,34 +75,35 @@ async function render(value: string, avatarSet?: BotAvatarSet, key = "initial") 
   await act(async () => root.render(<Harness key={key} value={value} avatarSet={avatarSet} />));
 }
 
-describe("selectable bot icon sets", () => {
-  it("keeps a legacy appearance on open, saves a RoBots switch, and restores the saved set on reload", async () => {
-    await render("#10B981");
-    await click("Customize bot avatar");
-    expect(button("Original").getAttribute("aria-selected")).toBe("true");
-    expect(document.querySelector(".robots-organic-avatar")).not.toBeNull();
-    expect(changed).not.toHaveBeenCalled();
-    await click("RoBots");
-    expect(changed).toHaveBeenLastCalledWith("#10B981", "robots");
-    expect(document.querySelector(".robots-logo-avatar")).not.toBeNull();
-    await render("#10B981", "robots", "reload");
-    await click("Customize bot avatar");
-    expect(button("RoBots").getAttribute("aria-selected")).toBe("true");
-    await click("Original");
-    expect(changed).toHaveBeenLastCalledWith("#10B981", "organic");
-    expect(document.querySelector(".robots-organic-avatar")).not.toBeNull();
-    expect(button("wedge")).toBeDefined();
-  });
+describe("the robot-only picker", () => {
+  it.each([
+    ["a plain hex", "#10B981", "organic"],
+    ["an organic shape", "#8B5CF6::shape_2", "organic"],
+    ["a plain hex under the robots set", "#10B981", "robots"],
+  ] as const)(
+    "draws %s as a robot preset and offers no Original style",
+    async (_label, value, set) => {
+      await render(value, set);
+      expect(document.querySelector(".robots-organic-avatar")).toBeNull();
+      expect(document.querySelector(".robots-logo-avatar")).toBeNull();
+      expect(document.querySelector('img[src^="data:image/svg+xml"]')).not.toBeNull();
+      await click("Customize bot avatar");
+      expect(document.body.textContent).not.toContain("Original");
+      expect(document.body.textContent).not.toContain("More styles");
+      expect(document.querySelector('[role="tab"][aria-selected]')).not.toBeNull();
+      expect(document.querySelectorAll('[role="radio"]')).toHaveLength(15);
+      expect(changed).not.toHaveBeenCalled();
+    },
+  );
 
-  it("leaves a photo intact until the user explicitly selects another set", async () => {
+  it("replaces a photo only when a robot is picked", async () => {
     const photo = "data:image/png;base64,abc";
     await render(photo);
-    expect(document.querySelector(`img[src="${photo}"]`)).not.toBeNull();
     await click("Customize bot avatar");
     expect(changed).not.toHaveBeenCalled();
     expect(document.querySelector(`img[src="${photo}"]`)).not.toBeNull();
-    await click("RoBots");
-    expect(changed).toHaveBeenLastCalledWith(DEFAULT_BOT_AVATAR_COLOR, "robots");
+    await click("Hero");
+    expect(changed).toHaveBeenCalledTimes(1);
     expect(document.querySelector(`img[src="${photo}"]`)).toBeNull();
   });
 
@@ -145,16 +145,5 @@ describe("selectable bot icon sets", () => {
     await click("Detective");
     expect(changed).toHaveBeenLastCalledWith(detective, undefined);
     expect(checked()).toEqual(["Detective"]);
-  });
-
-  it("keeps explicit original shapes and their chosen set while changing colour", async () => {
-    await render("#8B5CF6::shape_2", "organic");
-    await click("Customize bot avatar");
-    expect(changed).not.toHaveBeenCalled();
-    await click("Color #00C972");
-    expect(changed).toHaveBeenLastCalledWith("#00C972::shape_2", undefined);
-    expect(button("Original").getAttribute("aria-selected")).toBe("true");
-    await click("RoBots");
-    expect(changed).toHaveBeenLastCalledWith("#00C972", "robots");
   });
 });
