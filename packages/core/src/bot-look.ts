@@ -101,11 +101,6 @@ export function botLookState(value: string): BotLookState {
   };
 }
 
-export function organicAvatarValue(value: string, avatarSet: BotAvatarSet | undefined): string {
-  const parsed = parseBotAvatarValue(value);
-  return avatarSet === "organic" && parsed.kind === "robot" ? parsed.color : value;
-}
-
 export function botLookWithShape(color: string, shapeIndex: number): string {
   return `${color}::shape_${shapeIndex}`;
 }

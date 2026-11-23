@@ -22,7 +22,6 @@ import {
   ORGANIC_AVATAR_VIEWBOX,
   organicAvatarEyeTilt,
   organicAvatarPath,
-  organicAvatarValue,
   robotCharacterSvg,
   SHIPPED_BOT_AVATAR_EYES,
   SHIPPED_BOT_AVATAR_VIEWBOX,
@@ -130,11 +129,10 @@ export interface BotAvatarProps {
 }
 
 export const BotAvatar = memo(function BotAvatar(props: BotAvatarProps) {
-  const drawn = { ...props, color: organicAvatarValue(props.color, props.avatarSet) };
-  if (usesLogoAvatar(drawn)) {
-    return <RobotsBotAvatar {...drawn} />;
+  if (usesLogoAvatar(props)) {
+    return <RobotsBotAvatar {...props} />;
   }
-  return <LegacyBotAvatar {...drawn} />;
+  return <LegacyBotAvatar {...props} />;
 });
 
 function RobotsBotAvatar({

@@ -11,7 +11,6 @@ import {
   newBotLookForSet,
   newBotLookInput,
   newBotPreviewIdentity,
-  organicAvatarValue,
 } from "./bot-look.js";
 import { ROBOT_PRESETS, robotPresetValue } from "./robot-presets.js";
 
@@ -137,15 +136,5 @@ describe("botLookState", () => {
       defaultLook: false,
     });
     expect(botLookWithColor(photo, "#2A92FE")).toBe("#2A92FE");
-  });
-});
-
-describe("organicAvatarValue", () => {
-  it("draws a stored robot as its colour on an Original bot only", () => {
-    const robot = "robot:red.antenna.aviators.cape.confetti";
-    expect(organicAvatarValue(robot, "organic")).toBe("#D9483B");
-    expect(organicAvatarValue(robot, "robots")).toBe(robot);
-    expect(organicAvatarValue(robot, undefined)).toBe(robot);
-    expect(organicAvatarValue("#8B5CF6", "organic")).toBe("#8B5CF6");
   });
 });

@@ -7,7 +7,6 @@ import {
   ORGANIC_AVATAR_VIEWBOX,
   organicAvatarEyeTilt,
   organicAvatarPath,
-  organicAvatarValue,
   SHIPPED_BOT_AVATAR_EYES,
   SHIPPED_BOT_AVATAR_VIEWBOX,
 } from "@robots/core";
@@ -159,7 +158,7 @@ function seatArt(
   key: string,
   page: { background: string; foreground: string },
 ): SeatArt {
-  const parsed = mobileBotAvatarPresentation(organicAvatarValue(member.color, member.avatarSet));
+  const parsed = mobileBotAvatarPresentation(member.color);
   const r = size / 2;
   if (parsed.kind === "image" && parsed.imageUrl) {
     // Drawn in points, so the photo keeps its full resolution.

@@ -16,7 +16,6 @@ import {
   ORGANIC_AVATAR_VIEWBOX,
   organicAvatarEyeTilt,
   organicAvatarPath,
-  organicAvatarValue,
   resolvePersonaColorDef,
   robotCharacterDataUri,
   SHIPPED_BOT_AVATAR_EYES,
@@ -114,8 +113,7 @@ export const BotAvatar = memo(function BotAvatar({
   const id = useId().replace(/[^a-zA-Z0-9-_]/g, "");
   const isWorking = ACTIVE_RUN_STATUSES.some((s) => s === status);
 
-  const drawn = organicAvatarValue(color, avatarSet);
-  const parsed = useMemo(() => parseBotAvatar(drawn, identity), [drawn, identity]);
+  const parsed = useMemo(() => parseBotAvatar(color, identity), [color, identity]);
   const effectiveId = identity || parsed.color || "agent";
 
   const colorDef = useMemo(
