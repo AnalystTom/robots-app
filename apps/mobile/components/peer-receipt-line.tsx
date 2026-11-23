@@ -53,7 +53,7 @@ export function PeerReceiptLine({
       style={({ pressed }) => [styles.line, { opacity: pressed ? 0.6 : 1 }]}
     >
       {parts.before ? <Text style={styles.label}>{parts.before}</Text> : null}
-      <BotAvatar avatarSet={avatarSet} color={color} identity={peerBotId} size={16} />
+      <BotAvatar color={color} identity={peerBotId} size={16} />
       {parts.name ? (
         <Text numberOfLines={1} style={[styles.label, styles.name]}>
           {parts.name}

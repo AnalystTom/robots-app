@@ -38,7 +38,6 @@ export function InviteDialog({
               key={color}
               identity={`invite-${index}`}
               color={color}
-              avatarSet={DEFAULT_NEW_BOT_AVATAR_SET}
               size={index === 2 ? 64 : 48}
             />
           ))}

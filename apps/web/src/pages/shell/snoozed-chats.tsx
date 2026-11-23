@@ -45,13 +45,7 @@ export function SnoozedChats({
             }
           >
             {kind === "bot" ? (
-              <BotAvatar
-                avatarSet={chat.avatarSet}
-                color={chat.color}
-                identity={chat.id}
-                size={28}
-                status={chat.status}
-              />
+              <BotAvatar color={chat.color} identity={chat.id} size={28} status={chat.status} />
             ) : (
               <GroupAvatar members={chat.members} size={28} />
             )}

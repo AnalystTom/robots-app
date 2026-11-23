@@ -13,7 +13,7 @@ import {
   SettingsSwitch,
   useStackedSettings,
 } from "../../components/settings-group";
-import { currentApiBase, rpc, selectedSpaceId } from "../../lib/api";
+import { currentApiBase, selectedSpaceId } from "../../lib/api";
 import { getCachedAppearancePreference, setAppearancePreference } from "../../lib/appearance";
 import {
   getHapticsEnabled,
@@ -32,7 +32,6 @@ import {
   openPromotedNotificationSettings,
   setLiveNotificationSettings,
 } from "../../lib/live-notifications";
-import type { MobileMe } from "../../lib/mobile-types";
 import { useThemedStyles } from "../../lib/native";
 import { registerPushToken } from "../../lib/push";
 import { createQueuedSave } from "../../lib/queued-save";
@@ -60,8 +59,6 @@ export default function General() {
   const router = useRouter();
   const styles = useThemedStyles(createSettingsPageStyles);
   const stacked = useStackedSettings();
-  const [me, setMe] = useState<MobileMe | null>(null);
-  const botStyleRequest = useRef(0);
   const appearance = getCachedAppearancePreference();
   const streamReplies = useSyncExternalStore(
     subscribeResponseStreaming,
@@ -104,21 +101,6 @@ export default function General() {
       ]);
     });
   }
-
-  // Read on every visit, so a failed read retries when the page is shown again.
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      void rpc("me")
-        .then((next) => {
-          if (active) setMe(next);
-        })
-        .catch(() => undefined);
-      return () => {
-        active = false;
-      };
-    }, []),
-  );
 
   useEffect(() => {
     if (Platform.OS === "android") {
@@ -187,25 +169,6 @@ export default function General() {
     notificationQueue.current.update(next);
   }
 
-  function updateBotStyle(botAvatarSet: MobileMe["botAvatarSet"] | "") {
-    if (!me || !botAvatarSet) return;
-    const previous = me.botAvatarSet;
-    // Only the latest tap's reply may land, so a slower earlier save can't undo it.
-    const request = ++botStyleRequest.current;
-    setMe((current) => (current ? { ...current, botAvatarSet } : current));
-    rpc("preferences/update", { botAvatarSet })
-      .then((next) => {
-        // Take only the style, so an older snapshot can't undo another edit.
-        if (request !== botStyleRequest.current) return;
-        setMe((current) => (current ? { ...current, botAvatarSet: next.botAvatarSet } : next));
-      })
-      .catch(() => {
-        if (request !== botStyleRequest.current) return;
-        setMe((current) => (current ? { ...current, botAvatarSet: previous } : current));
-        Alert.alert(t`Couldn't update bot style`);
-      });
-  }
-
   return (
     <SafeAreaView edges={["bottom"]} style={styles.screen}>
       <ScrollView
@@ -226,21 +189,6 @@ export default function General() {
             value={appearance}
           />
         </View>
-
-        {me ? (
-          <View accessibilityLabel={t`Bot style`} style={styles.section}>
-            <SettingsLabel>{t`Bot style`}</SettingsLabel>
-            <NativeSegmentedControl
-              accessibilityLabel={t`Bot style`}
-              onChange={updateBotStyle}
-              options={[
-                { value: "organic", label: t`Original` },
-                { value: "robots", label: t`RoBots` },
-              ]}
-              value={me.botAvatarSet ?? ""}
-            />
-          </View>
-        ) : null}
 
         <SettingsGroup>
           <SettingsRow

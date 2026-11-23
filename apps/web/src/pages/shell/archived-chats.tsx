@@ -81,13 +81,7 @@ export function ArchivedChats({
         row(
           `bot:${bot.id}`,
           bot.name,
-          <BotAvatar
-            avatarSet={bot.avatarSet}
-            color={bot.color}
-            identity={bot.id}
-            size={28}
-            status={bot.status}
-          />,
+          <BotAvatar color={bot.color} identity={bot.id} size={28} status={bot.status} />,
           () => rpc.bots.restore({ botId: bot.id }),
           () => setDeleteTarget(bot),
         ),

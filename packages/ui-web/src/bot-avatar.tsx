@@ -1,4 +1,4 @@
-import type { BotAvatarSet, BotColorDef } from "@robots/contracts";
+import type { BotColorDef } from "@robots/contracts";
 import {
   BOT_COLOR_LIST,
   BOT_COLORS,
@@ -74,7 +74,6 @@ export function defaultBotAvatarValue(rawColor: string): string {
 
 export interface BotAvatarProps {
   color: string;
-  avatarSet?: BotAvatarSet;
   activity?: LogoAvatarActivity;
   size?: number;
   status?: string;

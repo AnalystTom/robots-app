@@ -644,13 +644,7 @@ function BotFilter({
 function BotOption({ bot }: { bot: Bot }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <BotAvatar
-        avatarSet={bot.avatarSet}
-        color={bot.color}
-        identity={bot.id}
-        size={16}
-        status={bot.status}
-      />
+      <BotAvatar color={bot.color} identity={bot.id} size={16} status={bot.status} />
       <span className="truncate">{bot.name}</span>
     </span>
   );
@@ -749,13 +743,7 @@ function ArtifactCard({
         <div className="mt-auto flex items-center gap-2 text-label text-muted-foreground">
           {bot ? (
             <>
-              <BotAvatar
-                avatarSet={bot.avatarSet}
-                color={bot.color}
-                identity={bot.id}
-                size={20}
-                status={bot.status}
-              />
+              <BotAvatar color={bot.color} identity={bot.id} size={20} status={bot.status} />
               <span className="min-w-0 flex-1 truncate">{bot.name}</span>
             </>
           ) : (
@@ -817,13 +805,7 @@ function ArtifactRow({
         <div className="flex items-center gap-1.5 ps-8 text-label text-muted-foreground">
           {bot ? (
             <>
-              <BotAvatar
-                avatarSet={bot.avatarSet}
-                color={bot.color}
-                identity={bot.id}
-                size={14}
-                status={bot.status}
-              />
+              <BotAvatar color={bot.color} identity={bot.id} size={14} status={bot.status} />
               <span className="me-1 max-w-[140px] truncate">{bot.name}</span>
             </>
           ) : null}

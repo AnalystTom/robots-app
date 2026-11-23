@@ -37,7 +37,7 @@ export function BotMention({
       {/* An inline view sits on the baseline; this lowers it to centre on the capitals. */}
       <View style={{ width: ICON_SIZE + 5, height: ICON_SIZE, transform: [{ translateY: 3 }] }}>
         {live ? (
-          <BotAvatar color={color} avatarSet={avatarSet} identity={block.botId} size={ICON_SIZE} />
+          <BotAvatar color={color} identity={block.botId} size={ICON_SIZE} />
         ) : (
           <NativeSymbol
             ios="person"

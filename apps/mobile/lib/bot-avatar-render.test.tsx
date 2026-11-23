@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { parseRobotCharacter } from "@robots/contracts";
-import { robotCharacterSvg, robotPresetForIdentity, robotPresetValue } from "@robots/core";
+import { robotCharacterSvg, robotPresetValue } from "@robots/core";
 import type { ColorTokens } from "@robots/ui-tokens";
 import { tokensForAppearance } from "@robots/ui-tokens";
 import type { ReactNode } from "react";
@@ -161,22 +161,17 @@ function drawnXml(view: HTMLElement): string[] {
 }
 
 describe("BotAvatar", () => {
-  const preset = robotPresetValue(robotPresetForIdentity("bot-1"));
+  const preset = robotPresetValue("host");
 
   it.each([
-    ["a plain hex", "#3EC5A8", "organic"],
-    ["a plain hex under the robots set", "#3EC5A8", "robots"],
-    ["an empty colour", "", "robots"],
-    ["an organic shape", "#8B5CF6::shape_3", "organic"],
-    ["an organic shape under the robots set", "#8B5CF6::shape_3", "robots"],
-  ] as const)(
-    "draws %s as the RoBots preset its identity hashes to",
-    (_label, color, avatarSet) => {
-      const view = render(color, { avatarSet });
-      expect(drawnXml(view)).toEqual([robotCharacterSvg(parseRobotCharacter(preset)!)]);
-      expect(view.querySelector("ellipse, path, rect, radialGradient")).toBeNull();
-    },
-  );
+    ["a plain hex", "#3EC5A8"],
+    ["an empty colour", ""],
+    ["an organic shape", "#8B5CF6::shape_3"],
+  ] as const)("draws %s as the RoBots preset its identity hashes to", (_label, color) => {
+    const view = render(color);
+    expect(drawnXml(view)).toEqual([robotCharacterSvg(parseRobotCharacter(preset)!)]);
+    expect(view.querySelector("ellipse, path, rect, radialGradient")).toBeNull();
+  });
 
   it("keeps a picture", () => {
     const view = render("data:image/png;base64,abc");
@@ -186,7 +181,7 @@ describe("BotAvatar", () => {
 
   it("keeps a robot the bot wears", () => {
     const worn = robotPresetValue("detective");
-    const view = render(worn, { avatarSet: "robots" });
+    const view = render(worn);
     expect(drawnXml(view)).toEqual([robotCharacterSvg(parseRobotCharacter(worn)!)]);
   });
 

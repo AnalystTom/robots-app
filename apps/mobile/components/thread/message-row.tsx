@@ -405,7 +405,6 @@ export const MessageRow = memo(function MessageRow({
           <View style={{ paddingTop: 22 }}>
             <BotAvatar
               color={activityColor ?? tokens.mutedForeground}
-              avatarSet={activityAvatarSet}
               identity={activityBotId}
               size={inGroup ? 20 : 28}
               status={activityStatus}

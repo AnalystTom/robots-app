@@ -117,13 +117,7 @@ export function AvatarStudioPopover({
         aria-label={t`Customize bot avatar`}
         data-testid="avatar-studio-trigger"
       >
-        <BotAvatar
-          color={value}
-          identity={identity}
-          size={size}
-          status={status}
-          avatarSet={avatarSet}
-        />
+        <BotAvatar color={value} identity={identity} size={size} status={status} />
         <div className="absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full border-2 border-background bg-secondary text-foreground shadow-md opacity-0 transition group-hover:scale-110 group-hover:opacity-100 group-focus-visible:opacity-100 [@media(hover:none)]:opacity-100">
           <Pencil size={12} strokeWidth={2.2} />
         </div>
@@ -155,13 +149,7 @@ export function AvatarStudioPopover({
           </DialogHeader>
 
           <div className="flex flex-col items-center justify-center py-2">
-            <BotAvatar
-              color={value}
-              identity={identity}
-              size={78}
-              status={status}
-              avatarSet={avatarSet}
-            />
+            <BotAvatar color={value} identity={identity} size={78} status={status} />
           </div>
 
           <Tabs

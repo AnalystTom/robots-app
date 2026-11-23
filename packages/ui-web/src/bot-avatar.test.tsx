@@ -1,4 +1,4 @@
-import { ACTIVE_RUN_STATUSES, robotPresetForIdentity, robotPresetValue } from "@robots/core";
+import { ACTIVE_RUN_STATUSES, robotPresetValue } from "@robots/core";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
@@ -86,15 +86,13 @@ describe("BotAvatar", () => {
 
   it("draws a robot character as an image in any set, sized and ringed like a photo", () => {
     const value = "robot:red.chef-hat.grumpy.chef-jacket.steam";
-    for (const avatarSet of ["organic", "robots"] as const) {
-      const html = renderToString(
-        <BotAvatar color={value} avatarSet={avatarSet} identity="b1" size={40} status="running" />,
-      );
-      expect(html).toMatch(/<img src="data:image\/svg\+xml,%3Csvg[^"]*"/);
-      expect(html).toContain("width:40px;height:40px");
-      expect(html).toContain('data-working="true"');
-      expect(html).toContain("robots-bot-avatar-ring-working");
-    }
+    const html = renderToString(
+      <BotAvatar color={value} identity="b1" size={40} status="running" />,
+    );
+    expect(html).toMatch(/<img src="data:image\/svg\+xml,%3Csvg[^"]*"/);
+    expect(html).toContain("width:40px;height:40px");
+    expect(html).toContain('data-working="true"');
+    expect(html).toContain("robots-bot-avatar-ring-working");
     expect(defaultBotAvatarValue(value)).toBe("#D9483B");
     expect(resolvePersonaColorDef("b1", value).hex).toBe("#D9483B");
   });
@@ -123,30 +121,23 @@ describe("BotAvatar", () => {
   });
 
   it.each([
-    ["a plain hex under the robots set", "#8B5CF6", "robots"],
-    ["a plain hex under the organic set", "#8B5CF6", "organic"],
-    ["an organic shape", "#10B981::shape_3", "organic"],
-    ["an organic shape under the robots set", "#10B981::shape_3", "robots"],
-  ] as const)(
-    "draws %s as the RoBots preset its identity hashes to",
-    (_label, color, avatarSet) => {
-      const expected = renderToString(
-        <BotAvatar color={robotPresetValue(robotPresetForIdentity("maya"))} identity="maya" />,
-      );
-      const html = renderToString(
-        <BotAvatar color={color} avatarSet={avatarSet} identity="maya" />,
-      );
-      expect(html).toBe(expected);
-      expect(html).toMatch(/<img src="data:image\/svg\+xml,%3Csvg/);
-      expect(html).not.toContain("robots-organic-avatar");
-      expect(html).not.toContain("robots-logo-avatar");
-    },
-  );
+    ["a plain hex", "#8B5CF6"],
+    ["an organic shape", "#10B981::shape_3"],
+  ] as const)("draws %s as the RoBots preset its identity hashes to", (_label, color) => {
+    const expected = renderToString(
+      <BotAvatar color={robotPresetValue("analyst")} identity="maya" />,
+    );
+    const html = renderToString(<BotAvatar color={color} identity="maya" />);
+    expect(html).toBe(expected);
+    expect(html).toMatch(/<img src="data:image\/svg\+xml,%3Csvg/);
+    expect(html).not.toContain("robots-organic-avatar");
+    expect(html).not.toContain("robots-logo-avatar");
+  });
 
   it("spreads identities over more than one preset", () => {
     const drawn = new Set(
       ["maya", "github", "stripe", "notion", "linear", "slack", "figma", "vercel"].map((identity) =>
-        renderToString(<BotAvatar color="#8B5CF6" avatarSet="robots" identity={identity} />),
+        renderToString(<BotAvatar color="#8B5CF6" identity={identity} />),
       ),
     );
     expect(drawn.size).toBeGreaterThan(3);

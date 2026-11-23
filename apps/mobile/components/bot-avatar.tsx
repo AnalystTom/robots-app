@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import type { BotAvatarSet, RobotLook } from "@robots/contracts";
+import type { RobotLook } from "@robots/contracts";
 import type { AvatarMotionMode, LogoAvatarActivity } from "@robots/core";
 import {
   AVATAR_MOTION_UNITS,
@@ -26,7 +26,6 @@ export interface BotAvatarProps {
   size?: number;
   status?: string;
   identity?: string;
-  avatarSet?: BotAvatarSet;
   activity?: LogoAvatarActivity;
   muted?: boolean;
   motion?: AvatarMotionMode;

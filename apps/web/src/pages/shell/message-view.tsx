@@ -211,7 +211,6 @@ export const MessageView = memo(function MessageView({
         >
           <BotAvatar
             color={speakerBot?.color ?? FALLBACK_BOT_COLOR}
-            avatarSet={speakerBot?.avatarSet}
             identity={message.botId}
             size={22}
           />
@@ -397,7 +396,6 @@ export const MessageView = memo(function MessageView({
                 key={i}
                 peerName={peer}
                 color={peerBot(peerBotId)?.color ?? FALLBACK_BOT_COLOR}
-                avatarSet={peerBot(peerBotId)?.avatarSet}
                 identity={peerBotId}
                 label={label}
                 onClick={() => onOpenPeerMessages({ peerBotId, peerBotName: peer })}
@@ -727,7 +725,7 @@ function BotMention({
       className="-mx-1 inline-flex items-baseline gap-1.5 rounded-md px-1 transition-colors hover:bg-accent"
     >
       <span className="self-center">
-        <BotAvatar avatarSet={avatarSet} color={color} identity={block.botId} size={18} />
+        <BotAvatar color={color} identity={block.botId} size={18} />
       </span>
       {name}
     </button>

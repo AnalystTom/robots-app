@@ -1,10 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type {
-  AccountSecurity,
-  BotAvatarSet,
-  SignInProvider,
-  UsageSummary,
-} from "@robots/contracts";
+import type { AccountSecurity, SignInProvider, UsageSummary } from "@robots/contracts";
 import {
   APP_LOCALE_LABELS,
   accountDisplay,
@@ -73,9 +68,6 @@ export type SettingsGeneralProps = {
   /** The user's saved IANA timezone, or null before one is set. */
   timezone?: string | null;
   onTimezoneChange?: (timezone: string) => Promise<void>;
-  /** The icon set new and unpinned bots wear; absent from servers that predate it. */
-  botAvatarSet?: BotAvatarSet;
-  onBotAvatarSetChange?: (set: BotAvatarSet) => Promise<void>;
   onAccountImported?: () => Promise<void>;
   onImportAgent?: () => void;
 };
@@ -86,8 +78,6 @@ export function GeneralSettingsPanels({
   onNameSaved,
   timezone = null,
   onTimezoneChange,
-  botAvatarSet,
-  onBotAvatarSetChange,
   onAccountImported,
   onImportAgent,
 }: SettingsGeneralProps) {
@@ -139,8 +129,6 @@ export function GeneralSettingsPanels({
   );
   const sidebarDensity = botsSidebarDensityPreference.use();
   const sidebarDensityLabelId = useId();
-  const botStyleLabelId = useId();
-  const [botStyleError, setBotStyleError] = useState<string | null>(null);
   const streamReplies = responseStreamingPreference.use();
   const streamRepliesId = useId();
   const showToolActivity = toolActivityPreference.use();
@@ -295,51 +283,6 @@ export function GeneralSettingsPanels({
             />
           }
         />
-        {onBotAvatarSetChange ? (
-          <SettingsRow
-            label={
-              <span id={botStyleLabelId}>
-                <Trans>Bot style</Trans>
-              </span>
-            }
-            control={
-              <div className="space-y-1">
-                <ToggleGroup
-                  aria-labelledby={botStyleLabelId}
-                  data-testid="bot-style-select"
-                  value={botAvatarSet ? [botAvatarSet] : []}
-                  onValueChange={([next]) => {
-                    if (!next || next === botAvatarSet) return;
-                    setBotStyleError(null);
-                    onBotAvatarSetChange(next as BotAvatarSet).catch(() =>
-                      setBotStyleError(t`Couldn't update bot style`),
-                    );
-                  }}
-                  spacing={1}
-                  className="grid min-w-0 grid-cols-2 rounded-lg bg-muted p-1"
-                >
-                  <ToggleGroupItem
-                    value="organic"
-                    className="text-body-sm aria-pressed:bg-background aria-pressed:shadow-sm"
-                  >
-                    <Trans>Original</Trans>
-                  </ToggleGroupItem>
-                  <ToggleGroupItem
-                    value="robots"
-                    className="text-body-sm aria-pressed:bg-background aria-pressed:shadow-sm"
-                  >
-                    <Trans>RoBots</Trans>
-                  </ToggleGroupItem>
-                </ToggleGroup>
-                {botStyleError ? (
-                  <p role="alert" className="text-body-sm text-destructive">
-                    {botStyleError}
-                  </p>
-                ) : null}
-              </div>
-            }
-          />
-        ) : null}
         <SettingsRow
           label={
             <span id={sidebarDensityLabelId}>

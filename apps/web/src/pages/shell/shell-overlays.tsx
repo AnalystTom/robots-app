@@ -197,14 +197,6 @@ export function SettingsOverlays({
             const nextMe = await rpc.preferences.update({ timezone });
             setBootstrapMe((prev) => (prev ? { ...prev, timezone: nextMe.timezone } : nextMe));
           }}
-          botAvatarSet={bootstrapMe?.botAvatarSet}
-          onBotAvatarSetChange={async (botAvatarSet) => {
-            const nextMe = await rpc.preferences.update({ botAvatarSet });
-            setBootstrapMe((prev) =>
-              prev ? { ...prev, botAvatarSet: nextMe.botAvatarSet } : nextMe,
-            );
-            void refreshSpaces().catch(() => undefined);
-          }}
           labs={parseLabs(bootstrapMe?.labs)}
           labsAvailable={parseLabs(bootstrapMe?.labsAvailable)}
           onLabsChange={async (labs) => {

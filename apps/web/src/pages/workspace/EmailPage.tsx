@@ -153,15 +153,7 @@ function Failed({ error }: { error: unknown }) {
 
 function Avatar({ bots, botId, size }: { bots: readonly BotLook[]; botId: string; size: number }) {
   const bot = bots.find((candidate) => candidate.id === botId);
-  return (
-    <BotAvatar
-      color={bot?.color ?? ""}
-      avatarSet={bot?.avatarSet}
-      identity={botId}
-      size={size}
-      className="shrink-0"
-    />
-  );
+  return <BotAvatar color={bot?.color ?? ""} identity={botId} size={size} className="shrink-0" />;
 }
 
 /** No bot has an address yet: say where mail arrives and offer each bot one. */

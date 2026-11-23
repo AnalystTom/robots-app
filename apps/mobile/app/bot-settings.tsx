@@ -560,13 +560,7 @@ export default function BotSettingsScreen() {
               onPress={() => setAvatarOpen(true)}
               style={{ padding: 4 }}
             >
-              <BotAvatar
-                color={color}
-                avatarSet={avatarSet}
-                identity={bot.id}
-                size={64}
-                status={bot.status}
-              />
+              <BotAvatar color={color} identity={bot.id} size={64} status={bot.status} />
               <View
                 style={{
                   position: "absolute",

@@ -114,7 +114,7 @@ export default function NewBot() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ alignItems: "center", marginTop: 8, marginBottom: 24 }}>
-          <BotAvatar color={look.color} identity={identity} avatarSet={avatarSet} size={96} />
+          <BotAvatar color={look.color} identity={identity} size={96} />
         </View>
         <TextInput
           autoFocus

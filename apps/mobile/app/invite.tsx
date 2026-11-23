@@ -49,7 +49,6 @@ export default function InviteScreen() {
             key={INVITE_AVATAR_COLORS[index]}
             color={INVITE_AVATAR_COLORS[index]!}
             identity={`invite-${index}`}
-            avatarSet={DEFAULT_NEW_BOT_AVATAR_SET}
             size={size}
           />
         ))}
