@@ -271,12 +271,9 @@ vi.mock("./native", () => ({
   useResolvedAppearance: () => "light",
   useThemedStyles: (createStyles: () => unknown) => createStyles(),
 }));
-vi.mock("../components/bot-avatar", async () => {
-  const { createElement } = await import("react");
-  return {
-    BotAvatar: ({ color }: { color: string }) => createElement("span", { "data-bot-color": color }),
-  };
-});
+vi.mock("../components/bot-avatar", () => ({
+  BotAvatar: ({ color }: { color: string }) => createElement("span", { "data-bot-color": color }),
+}));
 vi.mock("../components/native-segmented-control", () => ({
   NativeSegmentedControl: ({
     options,
@@ -690,28 +687,16 @@ describe("bot settings device voice menu", () => {
       [...container.querySelectorAll<HTMLButtonElement>("button")].find(
         (button) => button.textContent === "Save",
       );
-    expect(radios().map((node) => node.getAttribute("aria-label"))).toEqual([
-      "Assistant",
-      "Researcher",
-      "Coder",
-      "Writer",
-      "Analyst",
-      "Creator",
-      "Chef",
-      "Hero",
-      "Hoodie",
-      "Critic",
-      "Professor",
-      "Detective",
-      "Keynote",
-      "Hustler",
-      "Host",
-    ]);
+    const listed = radios()
+      .map((node) => node.getAttribute("aria-label"))
+      .join(" ");
+    expect(listed).toBe(
+      "Assistant Researcher Coder Writer Analyst Creator Chef Hero Hoodie Critic Professor Detective Keynote Hustler Host",
+    );
     expect(checkedRadios()).toEqual([]);
     expect(container.querySelector('[aria-label="Shuffle"]')).toBeNull();
     expect(save()).toBeUndefined();
     expect(mocks.rpc).not.toHaveBeenCalled();
-
     await act(async () =>
       container.querySelector<HTMLButtonElement>('[aria-label="Detective"]')!.click(),
     );
