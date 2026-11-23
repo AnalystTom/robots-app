@@ -1,0 +1,90 @@
+name: robots-registration-preview
+x-runtime: &runtime
+  DATABASE_URL: postgres://robots_app:${PREVIEW_RUNTIME_PASSWORD:?}@registration-db:5432/registration_preview
+  DATA_DIR: /data
+  ENCRYPTION_KEY: ${PREVIEW_ENCRYPTION_KEY:?}
+  BETTER_AUTH_SECRET: ${PREVIEW_AUTH_SECRET:?}
+  SCREEN_PROXY_SECRET: ${PREVIEW_SCREEN_SECRET:?}
+  BETTER_AUTH_URL: http://localhost:5194
+  WEB_ORIGIN: http://localhost:5194
+  API_URL: http://localhost:5194
+  SANDBOX_PROVIDER: none
+  WAKEUP_DRIVER: graphile
+  AGENT_RUNTIME: pi
+  SIGNUPS_ENABLED: "true"
+  ROBOTS_LIVE_MODEL_CATALOG: "off"
+  AUTH_BREACHED_PASSWORD_CHECK_ENABLED: "false"
+services:
+  registration-db:
+    image: robots-registration/postgres:16
+    environment:
+      POSTGRES_USER: preview
+      POSTGRES_DB: registration_preview
+      POSTGRES_PASSWORD: ${PREVIEW_DB_PASSWORD:?}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "preview", "-d", "registration_preview"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  migrate:
+    image: robots-registration/app:local
+    environment:
+      DATABASE_URL: postgres://robots_app:${PREVIEW_RUNTIME_PASSWORD:?}@registration-db:5432/registration_preview
+      DATABASE_MIGRATION_URL: postgres://preview:${PREVIEW_DB_PASSWORD:?}@registration-db:5432/registration_preview
+    working_dir: /app/apps/api
+    command: ["node", "dist/cli/migrate-database.js"]
+    depends_on:
+      registration-db:
+        condition: service_healthy
+  api:
+    image: robots-registration/api-preview:local
+    environment:
+      <<: *runtime
+      API_HOST: 0.0.0.0
+      ROBOTS_REGISTRATION_MODE: private-test
+    command: ["node", "/app/apps/api/dist/registration-preview/serve.js"]
+    volumes:
+      - appdata:/data
+      - type: bind
+        source: ${PREVIEW_ARCHIVE:?}
+        target: /downloads/robots-local-linux-amd64.tar.gz
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/ready').then(r=>process.exit(r.ok?0:1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  worker:
+    image: robots-registration/app:local
+    environment: *runtime
+    working_dir: /app/apps/worker
+    command: ["node", "dist/index.js"]
+    volumes:
+      - appdata:/data
+    depends_on:
+      api:
+        condition: service_healthy
+  web:
+    image: robots-registration/app:local
+    working_dir: /app/apps/web
+    command: ["node_modules/.bin/vite", "preview", "--host", "0.0.0.0", "--port", "5173"]
+    environment:
+      API_PROXY_TARGET: http://api:3100
+      ROBOTS_HOST: localhost
+      RAYON_NUM_THREADS: "4"
+      SCREEN_PROXY_SECRET: ${PREVIEW_SCREEN_SECRET:?}
+    ports:
+      - "127.0.0.1:5194:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  appdata:
+  db:

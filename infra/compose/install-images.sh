@@ -2,7 +2,6 @@
 
 set -Eeuo pipefail
 
-# A pinned release gets its own Compose files. Like Compose, prefer the shell's tag over .env.
 image_tag="${ROBOTS_IMAGE_TAG-}"
 if [[ -z "${ROBOTS_IMAGE_TAG+x}" && -f .env ]]; then
   image_tag=$(sed -nE "s/^[[:space:]]*(export[[:space:]]+)?ROBOTS_IMAGE_TAG[[:space:]]*=[[:space:]]*[\"']?([^\"'#[:space:]]*).*/\2/p" .env | tail -n 1)
@@ -25,7 +24,6 @@ esac
 readonly DOWNLOAD_BASE
 
 readonly COMPOSE_FILE="docker-compose.images.yml"
-# Optional operator overlay, layered after the base file the way Compose itself does by default.
 readonly OVERRIDE_FILE="docker-compose.override.yml"
 readonly ENV_EXAMPLE=".env.images.example"
 readonly ENV_FILE=".env"
@@ -54,7 +52,6 @@ for arg in "$@"; do
       pull_never=true
       ;;
     --offline)
-      # Air-gap bootstrap: keep local Compose/env files and do not pull images.
       skip_existing=true
       pull_never=true
       offline=true
@@ -93,12 +90,6 @@ for command_name in docker openssl; do
 done
 docker compose version >/dev/null 2>&1 || fail "the Docker Compose plugin is required."
 
-# Optional proxy knobs from an existing .env (operators often set them there for
-# containers). Do not override values already present in the shell. Treat each
-# HTTP/HTTPS/NO_PROXY pair as one family so either case in the shell wins.
-# Within .env, later assignments for a family win (shell presence is snapshotted
-# before the file is read). Comment stripping is quote-aware so `#` inside
-# matching quotes is kept; this is not a full dotenv parser.
 load_proxy_vars_from_env_file() {
   local file="$1"
   local line key value
@@ -109,14 +100,12 @@ load_proxy_vars_from_env_file() {
   [[ -n "${HTTPS_PROXY+x}" || -n "${https_proxy+x}" ]] && shell_https=1
   [[ -n "${NO_PROXY+x}" || -n "${no_proxy+x}" ]] && shell_no=1
   while IFS= read -r line || [[ -n "$line" ]]; do
-    # Windows/.editorconfig CRLF: drop trailing CR so quoted values still match.
     line="${line%$'\r'}"
     out=""
     quote=""
     for ((i = 0; i < ${#line}; i++)); do
       c="${line:i:1}"
       if [[ -n "$quote" ]]; then
-        # Inside double quotes, treat \" and \\ as escaped so \# stays in-value.
         if [[ "$quote" == '"' && "$c" == '\' ]] && ((i + 1 < ${#line})); then
           out+="$c"
           i=$((i + 1))
@@ -171,7 +160,6 @@ load_proxy_vars_from_env_file() {
   done <"$file"
 }
 
-# curl uses lowercase http_proxy for http:// URLs; many Mainland hosts only export HTTP_PROXY.
 sync_curl_proxy_env() {
   if [[ -n "${HTTP_PROXY+x}" && -z "${http_proxy+x}" ]]; then
     export http_proxy="$HTTP_PROXY"
@@ -271,14 +259,11 @@ create_env() {
   mv -- "$temporary_file" "$ENV_FILE"
   temporary_file=""
   echo "Created .env with random secrets."
-  # Name the variable and file only: the key itself never reaches the terminal or its logs.
   if [[ "$generated_encryption_key" == true ]]; then
     echo "Back up ENCRYPTION_KEY from ${PWD}/${ENV_FILE}. Encrypted content cannot be recovered without it."
   fi
 }
 
-# Secrets added after a .env was created. Append them so an upgrade still starts,
-# leaving every existing line untouched.
 add_missing_secrets() {
   if ! grep -Eq '^POSTGRES_APP_PASSWORD=[^[:space:]]' "$ENV_FILE"; then
     [[ ! -s "$ENV_FILE" || -z "$(tail -c 1 "$ENV_FILE")" ]] || printf '\n' >> "$ENV_FILE"
@@ -329,8 +314,6 @@ YAML
   fi
 }
 
-# The Compose file passes each container only the settings it names. Say which .env settings it
-# does not name, such as TELEGRAM_BOT_TOKEN_<NAME>, rather than let an upgrade drop them silently.
 warn_unpassed_settings() {
   local key unpassed=""
   while IFS= read -r key; do
@@ -341,7 +324,6 @@ warn_unpassed_settings() {
   echo "List them in an override file; see Settings with names you choose in docs/self-host-configuration.md." >&2
 }
 
-# Why this host cannot take the restricted-egress firewall rules; empty when it can.
 egress_rules_unsupported() {
   local os security
   [[ "$(uname -s)" == Linux ]] || { echo "Docker runs in a VM on this OS"; return; }
@@ -352,12 +334,8 @@ egress_rules_unsupported() {
   command -v iptables >/dev/null 2>&1 || echo "iptables is not installed"
 }
 
-# Compose defaults computers to restricted egress, which only works once the host
-# rules are in place. Install them where possible; otherwise record open explicitly
-# so computers keep working, and say what that leaves reachable.
 configure_computer_egress() {
   local reason
-  # Compose takes the shell value over .env, so either one is the operator's choice.
   if [[ -n "${SANDBOX_COMPUTER_EGRESS:-}" ]] ||
     grep -Eq '^[[:space:]]*SANDBOX_COMPUTER_EGRESS=' "$ENV_FILE"; then
     return 0
@@ -431,8 +409,6 @@ else
     fail "could not pull images. Shell HTTP_PROXY often does not reach the Docker daemon. Configure daemon proxy/registry-mirrors, set image env vars to a reachable registry, or preload images then compose up with --pull never."
   fi
 fi
-# `--wait` without `--wait-timeout` can hang on one-shot services (Compose < 2.7)
-# or never return if a healthcheck stays red (Compose < 2.17). Prefer both flags.
 compose_up_help=$(docker compose up --help 2>/dev/null || true)
 up_pull_args=()
 if [[ "$pull_never" == true ]]; then
@@ -442,7 +418,6 @@ if [[ "$pull_never" == true ]]; then
     echo "cannot enforce pull-never on this Compose version; startup fails if an image is missing locally" >&2
   fi
 fi
-# bash 3.2 + set -u: "${arr[@]}" aborts when arr is empty.
 if grep -q -- '--wait-timeout' <<<"$compose_up_help"; then
   echo "Waiting for healthy services."
   docker compose --env-file "$ENV_FILE" "${compose_files[@]}" up -d ${up_pull_args[@]+"${up_pull_args[@]}"} --wait --wait-timeout 300
@@ -451,4 +426,4 @@ else
 fi
 remove_replaced_images
 
-echo "RoBots is starting at http://127.0.0.1:5173"
+echo "RoBots is starting at ${WEB_ORIGIN:-http://127.0.0.1:${ROBOTS_WEB_PORT:-5173}}"
