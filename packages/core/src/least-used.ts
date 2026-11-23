@@ -1,10 +1,9 @@
-/** A uniform number in [0, 1). */
-export type Random = () => number;
+export type UnitIntervalRandom = () => number;
 
 export function pickLeastUsed<T>(
   options: readonly T[],
   used: readonly T[],
-  random: Random,
+  random: UnitIntervalRandom,
   avoid: readonly T[] = [],
 ): T {
   const counts = options.map((option) => used.filter((value) => value === option).length);

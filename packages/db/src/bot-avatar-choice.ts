@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
 import type { BotAvatarSet } from "@robots/contracts";
 import { BOT_COLORS, parseBotAvatarValue } from "@robots/contracts";
-import type { Random } from "@robots/core";
+import type { UnitIntervalRandom } from "@robots/core";
 import {
   ORGANIC_AVATAR_HEART_FAMILY,
   ORGANIC_AVATAR_LOOKS,
@@ -16,14 +16,14 @@ import {
 } from "@robots/core";
 
 const RANDOM_RANGE = 2 ** 32;
-const cryptoRandom: Random = () => randomInt(RANDOM_RANGE) / RANDOM_RANGE;
+const cryptoRandom: UnitIntervalRandom = () => randomInt(RANDOM_RANGE) / RANDOM_RANGE;
 
 /** Tries before settling for a non-heart id; each try matches the wanted family about 1 in 10. */
 export const BOT_ID_ATTEMPTS = 200;
 
 export function chooseRobotCharacter(
   existing: readonly { color: string }[],
-  random: Random = cryptoRandom,
+  random: UnitIntervalRandom = cryptoRandom,
 ): string {
   return robotPresetValue(
     pickLeastUsed(ROBOT_PRESET_IDS, wornRobotPresetIds(existing.map((bot) => bot.color)), random),
@@ -31,14 +31,14 @@ export function chooseRobotCharacter(
 }
 
 /** Cuid-shaped: "c", eight base-36 time digits, then sixteen random base-36 digits. */
-function cuidShapedId(random: Random, now: number): string {
+function cuidShapedId(random: UnitIntervalRandom, now: number): string {
   let suffix = "";
   for (let index = 0; index < 16; index++) suffix += Math.floor(random() * 36).toString(36);
   return `c${now.toString(36).padStart(8, "0").slice(-8)}${suffix}`;
 }
 
 /** An id on the look the user's bots use least, never a heart. */
-function balancedId(usedLooks: readonly number[], random: Random, now: number): string {
+function balancedId(usedLooks: readonly number[], random: UnitIntervalRandom, now: number): string {
   const look = pickLeastUsed(ORGANIC_AVATAR_LOOKS, usedLooks, random);
   const isHeart = (botId: string) => organicAvatarFamily(botId) === ORGANIC_AVATAR_HEART_FAMILY;
   let id = cuidShapedId(random, now);
@@ -58,7 +58,7 @@ function balancedId(usedLooks: readonly number[], random: Random, now: number): 
 }
 
 /** An id drawn with exactly the requested organic family; each try lands about 1 in 10. */
-function idForFamily(family: number, random: Random, now: number): string {
+function idForFamily(family: number, random: UnitIntervalRandom, now: number): string {
   let id = cuidShapedId(random, now);
   while (organicAvatarFamily(id) !== family) id = cuidShapedId(random, now);
   return id;
@@ -88,7 +88,13 @@ export function chooseBotAvatar(
     family,
     avatarSet,
     id: previewId,
-  }: { random?: Random; now?: number; family?: number; avatarSet: BotAvatarSet; id?: string },
+  }: {
+    random?: UnitIntervalRandom;
+    now?: number;
+    family?: number;
+    avatarSet: BotAvatarSet;
+    id?: string;
+  },
 ): { id: string; color: string } {
   if (avatarSet === "robots") {
     // The logo uses no organic family. Keep automatic ids non-heart for a later
