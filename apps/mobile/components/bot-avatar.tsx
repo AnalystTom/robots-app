@@ -2,19 +2,11 @@ import { useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet, RobotLook } from "@robots/contracts";
 import type { AvatarMotionMode, LogoAvatarActivity } from "@robots/core";
 import {
-  AVATAR_LID_CLOSE,
   AVATAR_MOTION_UNITS,
-  AVATAR_TYPING_DOTS,
-  avatarClip,
   avatarClock,
-  avatarFrame,
   avatarLifeState,
-  avatarPokeFrame,
-  avatarRestingBlink,
-  avatarSchedulePose,
   avatarThinkingDot,
   avatarWorkingDot,
-  botEyeInk,
   isRunWorking,
   robotCharacterSvg,
   robotsOnlyAvatarValue,
@@ -28,76 +20,6 @@ import { useAvatarOnScreen, useLife, usePoke, useSettling } from "../lib/avatar-
 import { mobileBotAvatarPresentation } from "../lib/bot-avatar";
 import { useMobileTokens } from "../lib/native";
 import { NativeSymbol } from "./native-symbol";
-
-/** How far (0–1) the face has turned into the typing dots, for a morph of 0–1. */
-function morphGrow(morph: number): number {
-  "worklet";
-  const t = Math.min(Math.max(morph, 0), 1);
-  return t * t * (3 - 2 * t);
-}
-/** The face shrinks until it is the size of the middle typing dot. */
-const MORPH_SHRINK = 1 - (2 * AVATAR_TYPING_DOTS.radius) / AVATAR_MOTION_UNITS;
-/** How many units wide a view box is. */
-function _viewBoxUnits(viewBox: string): number {
-  return Number(viewBox.split(" ")[2]);
-}
-
-/** The avatar's flat frame right now, a tap poke included; a worklet. */
-function liveFrame(life: AvatarLife) {
-  "worklet";
-  const now = life.seconds.value;
-  const segments = life.schedule.value;
-  const pose = avatarSchedulePose(segments, now);
-  const frame = avatarFrame(pose, life.awake.value);
-  if (life.awake.value < 1) {
-    // Resting and Reduce Motion blinks: the authored blink times, with the resting blink.
-    let shut = 0;
-    for (const segment of segments) {
-      if (!segment.clip || segment.start > now) continue;
-      const clip = avatarClip(segment.clip);
-      for (const blink of clip.blinks ?? [])
-        shut = Math.max(shut, avatarRestingBlink(now - segment.start - blink));
-    }
-    frame.lid = Math.min(frame.lid, 1 - AVATAR_LID_CLOSE * shut);
-  }
-  const poke = life.poke.value;
-  if (poke) {
-    const extra = avatarPokeFrame(poke, life.pokeProgress.value);
-    frame.rotate += extra.rotate;
-    frame.translateY += extra.translateY;
-    frame.scaleY *= extra.scaleY;
-    frame.eyeY += extra.eyeY;
-  }
-  // The face shrinks into the middle typing dot while the bot writes.
-  const grow = morphGrow(life.morph.value);
-  frame.scaleX *= 1 - MORPH_SHRINK * grow;
-  frame.scaleY *= 1 - MORPH_SHRINK * grow;
-  return { frame, grow };
-}
-
-/** The body transform for an avatar `size` points wide. */
-function useBodyStyle(life: AvatarLife, size: number) {
-  return useAnimatedStyle(() => {
-    const { frame, grow } = liveFrame(life);
-    return {
-      opacity: 1 - grow,
-      transform: [
-        { translateX: frame.translateX * size },
-        { translateY: frame.translateY * size },
-        { rotate: `${frame.rotate}deg` },
-        { scaleX: frame.scaleX },
-        { scaleY: frame.scaleY },
-      ],
-    };
-  });
-}
-
-/** An eye's offset (motion units), its height and whether it shows. */
-function _eyeState(life: AvatarLife) {
-  "worklet";
-  const { frame, grow } = liveFrame(life);
-  return { x: frame.eyeX, y: frame.eyeY, lid: frame.lid, hidden: grow >= 0.5 };
-}
 
 export interface BotAvatarProps {
   color: string;
@@ -155,7 +77,6 @@ function MutedBadge({ size }: { size: number }) {
         borderRadius: size,
         borderWidth: 2,
         borderColor: tokens.background,
-        // Opaque under the translucent fill, so the avatar does not show through the bell.
         backgroundColor: tokens.background,
         alignItems: "center",
         justifyContent: "center",
@@ -195,33 +116,19 @@ function LegacyBotAvatar({
   size?: number;
   status?: string;
   muted?: boolean;
-  /**
-   * How the avatar may move: still (the default), lazy (inbox rows and pinned chats: still
-   * at rest, moving while the bot is busy), live (the call card: also blinks at rest) or
-   * running (the activity mark in a chat).
-   */
   motion?: AvatarMotionMode;
-  /**
-   * The bot is writing its reply: a moving avatar turns into the typing dots, and no avatar
-   * shows the working dot.
-   */
   composing?: boolean;
-  /** A tap plays a little reaction (the activity mark). */
   pokeable?: boolean;
 }) {
   const tokens = useMobileTokens();
   const state = avatarLifeState(status, composing);
-  // The working dot marks a bot at work, not one writing its reply; a running avatar is
-  // itself that sign, so it carries none.
   const isWorking = isRunWorking(status) && !composing && motion !== "running";
   const parsed = mobileBotAvatarPresentation(color);
   const fillColor =
     parsed.kind === "shape" || parsed.kind === "color" || parsed.kind === "robot"
       ? parsed.color
       : color;
-  // A photo or a robot character is a still picture: no eyes to animate.
   const picturePainted = parsed.kind === "image" || parsed.kind === "robot";
-  const _eyeColor = botEyeInk(fillColor, tokens);
   const onScreen = useAvatarOnScreen();
   const reducedMotion = useReducedMotion();
   const settling = useSettling(state);
@@ -236,7 +143,6 @@ function LegacyBotAvatar({
   });
   const life = useLife(state, clock, size, motion);
   const poke = usePoke(life, pokeable && clock === "running");
-  const _bodyStyle = useBodyStyle(life, size);
   const picture =
     parsed.kind === "image" && parsed.imageUrl ? (
       <View
@@ -245,7 +151,6 @@ function LegacyBotAvatar({
           height: size,
           borderRadius: size / 2,
           overflow: "hidden",
-          // A plain circle holds the photo's place while it loads, or if it fails to.
           backgroundColor: tokens.secondary,
         }}
       >
@@ -264,7 +169,6 @@ function LegacyBotAvatar({
       {muted ? <MutedBadge size={size} /> : null}
     </View>
   );
-  // A tap is a little toy, not an action, so it stays out of the accessibility tree.
   return pokeable ? (
     <Pressable accessible={false} onPress={poke}>
       {avatar}
@@ -274,7 +178,6 @@ function LegacyBotAvatar({
   );
 }
 
-/** The three typing dots a writing bot's avatar turns into; the middle one is its body. */
 function ThinkingDots({ color, size, life }: { color: string; size: number; life: AvatarLife }) {
   return (
     <View pointerEvents="none" style={{ position: "absolute", width: size, height: size }}>
@@ -312,7 +215,6 @@ function Dot({
   return <Animated.View style={[{ position: "absolute", backgroundColor: color }, style]} />;
 }
 
-/** A robot character, drawn once per look from fixed artwork and clipped to a circle. */
 const RobotCharacter = memo(function RobotCharacter({
   look,
   size,

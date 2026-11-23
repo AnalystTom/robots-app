@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import type { Bot, CreateBotInput } from "@robots/contracts";
 import { PRIMARY_BOT_SPAWN_KEY } from "@robots/contracts";
-import { randomRobotPreset, robotPresetValue } from "@robots/core";
+import { robotPresetValue } from "@robots/core";
 import { BotAvatar } from "@robots/ui-web";
 import { Plus, Star } from "lucide-react";
 
@@ -20,7 +20,6 @@ export const PRIMARY_BOT_INSTRUCTIONS = `You are RoBot: the user's primary bot a
 - While you work, post a short line saying what you are checking next. Keep replies short and concrete, with real names and numbers.
 - Ask before anything that sends email, publishes, spends money or can't be undone.`;
 
-/** Creating twice returns the same Bot: the server treats the spawn key as idempotent. */
 export function primaryBotCreateInput(name: string): CreateBotInput {
   return {
     name,
@@ -29,11 +28,10 @@ export function primaryBotCreateInput(name: string): CreateBotInput {
     notifyOnFinish: true,
     fleetManagement: true,
     spawnKey: PRIMARY_BOT_SPAWN_KEY,
-    color: robotPresetValue(randomRobotPreset()),
+    color: robotPresetValue("assistant"),
   };
 }
 
-/** RoBot pinned at the top of the sidebar, or a button to set it up. In the rail it is a tile. */
 export function PrimaryBotRow({
   bot,
   current,
@@ -47,7 +45,6 @@ export function PrimaryBotRow({
   current: boolean;
   mini: boolean;
   creating: boolean;
-  /** The ⌘-number that opens it, shown in the rail while the modifier is held. */
   shortcut?: string;
   onOpen: (bot: Bot) => void;
   onSetUp: () => void;
@@ -129,7 +126,6 @@ export function PrimaryBotRow({
   );
 }
 
-/** A "⌘2"-style badge on a rail item; visible only while the shortcut modifier is held. */
 export function ShortcutHint({
   label,
   className = "-end-2 -top-2",

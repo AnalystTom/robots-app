@@ -1,14 +1,5 @@
-import {
-  avatarEyeRects,
-  avatarIdentitySeed,
-  botEyeInk,
-  ORGANIC_AVATAR_EYES,
-  ORGANIC_AVATAR_VIEWBOX,
-  organicAvatarEyeTilt,
-  organicAvatarPath,
-  SHIPPED_BOT_AVATAR_EYES,
-  SHIPPED_BOT_AVATAR_VIEWBOX,
-} from "@robots/core";
+import { parseRobotCharacter } from "@robots/contracts";
+import { robotCharacterSvg, robotsOnlyAvatarValue } from "@robots/core";
 import type { ReactNode } from "react";
 import { memo, useId } from "react";
 import type { ColorValue } from "react-native";
@@ -23,8 +14,8 @@ import Svg, {
   Path,
   Rect,
   Text as SvgText,
+  SvgXml,
 } from "react-native-svg";
-import { mobileBotAvatarPresentation } from "../lib/bot-avatar";
 import type { GroupSeat } from "../lib/group-seats";
 import {
   GROUP_SEAT_SIZE,
@@ -33,23 +24,20 @@ import {
   groupSeats,
   groupSeatsWidth,
 } from "../lib/group-seats";
-import { native, useMobileTokens, useResolvedAppearance } from "../lib/native";
+import { native, useResolvedAppearance } from "../lib/native";
 
 type SeatMember = { botId?: string; name?: string; color: string };
 
 type Paint = { fill: ColorValue; stroke?: string; strokeWidth?: number };
 
-/** A seat's drawing in its own units; its outline cuts the seat under it. */
 type SeatArt = {
   box: [number, number, number];
   outline: (paint: Paint) => ReactNode;
   face: ReactNode;
 };
 
-/**
- * The group title's row of member faces: each seat overlaps the one before it, which is cut
- * away around it so the header shows through. Faces stay still here.
- */
+const ROBOT_CHARACTER_UNITS = 256;
+
 export const GroupSeats = memo(function GroupSeats({
   members,
   size = GROUP_SEAT_SIZE,
@@ -58,16 +46,14 @@ export const GroupSeats = memo(function GroupSeats({
   size?: number;
 }) {
   const id = useId().replace(/:/g, "");
-  // Redraws the faint "+N" when the appearance changes.
   useResolvedAppearance();
-  const page = useMobileTokens();
   const seats = groupSeats(members);
   const step = groupSeatStep(size);
   const gap = groupSeatGap(size);
   const width = groupSeatsWidth(seats.length, size);
   const arts = seats.map((seat, index) =>
     seat.kind === "member"
-      ? seatArt(seat.member, size, `${id}-${index}`, page)
+      ? seatArt(seat.member, size, `${id}-${index}`)
       : markArt(seat, size, native.systemTertiaryLabel),
   );
   const placed = (index: number, art: SeatArt) => {
@@ -114,14 +100,12 @@ export const GroupSeats = memo(function GroupSeats({
   );
 });
 
-/** The "+N" for members past the row, or the group's "#" mark: ink, no disc. */
 function markArt(
   seat: Exclude<GroupSeat<SeatMember>, { kind: "member" }>,
   size: number,
   color: ColorValue,
 ): SeatArt {
   if (seat.kind === "group") {
-    // A hash about two thirds of the seat across, in a 24-unit box.
     const hash = (paint: Paint) => (
       <Path
         d="M9.5 4L8 20M16 4L14.5 20M4.5 9H20M4 15H19.5"
@@ -137,7 +121,6 @@ function markArt(
   const label = (paint: Paint) => (
     <SvgText
       x={size / 2}
-      // Centre the figures' cap height in the seat.
       y={size / 2 + fontSize * 0.36}
       textAnchor="middle"
       fontSize={fontSize}
@@ -150,74 +133,31 @@ function markArt(
   return { box: [0, 0, size], outline: label, face: label({ fill: color }) };
 }
 
-/** A still face in the member's shape: the same drawing as their avatar at rest. */
-function seatArt(
-  member: SeatMember,
-  size: number,
-  key: string,
-  page: { background: string; foreground: string },
-): SeatArt {
-  const parsed = mobileBotAvatarPresentation(member.color);
-  const r = size / 2;
-  if (parsed.kind === "image" && parsed.imageUrl) {
-    // Drawn in points, so the photo keeps its full resolution.
-    return {
-      box: [0, 0, size],
-      outline: (paint) => <Circle cx={r} cy={r} r={r} {...paint} />,
-      face: (
-        <>
-          <ClipPath id={`${key}-photo`}>
-            <Circle cx={r} cy={r} r={r} />
-          </ClipPath>
-          {/* A plain circle holds the photo's place while it loads, as on the avatar. */}
-          <Circle cx={r} cy={r} r={r} fill={native.fill} />
-          <Image
-            href={{ uri: parsed.imageUrl }}
-            width={size}
-            height={size}
-            preserveAspectRatio="xMidYMid slice"
-            clipPath={`url(#${key}-photo)`}
-          />
-        </>
-      ),
-    };
-  }
-  if (parsed.kind === "shape") {
-    const [x, y, units] = SHIPPED_BOT_AVATAR_VIEWBOX.split(" ").map(Number) as [
-      number,
-      number,
-      number,
-    ];
-    return {
-      box: [x, y, units],
-      outline: (paint) => <Path d={parsed.shapePath} {...paint} />,
-      face: (
-        <>
-          <Path d={parsed.shapePath} fill={parsed.color} />
-          <G fill={botEyeInk(parsed.color, page)}>
-            {avatarEyeRects(SHIPPED_BOT_AVATAR_EYES).map((rect) => (
-              <Rect key={rect.x} {...rect} />
-            ))}
-          </G>
-        </>
-      ),
-    };
-  }
-  // A seat is one vector drawing, so a robot character sits as a body in its colour.
-  const color = parsed.kind === "color" || parsed.kind === "robot" ? parsed.color : member.color;
-  const seed = avatarIdentitySeed(member.botId ?? member.name ?? color);
-  const outline = organicAvatarPath(seed);
-  const [x, y, units] = ORGANIC_AVATAR_VIEWBOX.split(" ").map(Number) as [number, number, number];
+function seatArt(member: SeatMember, size: number, key: string): SeatArt {
+  const value = robotsOnlyAvatarValue(member.color, member.botId);
+  const look = parseRobotCharacter(value);
+  const units = look ? ROBOT_CHARACTER_UNITS : size;
+  const r = units / 2;
   return {
-    box: [x, y, units],
-    outline: (paint) => <Path d={outline} {...paint} />,
+    box: [0, 0, units],
+    outline: (paint) => <Circle cx={r} cy={r} r={r} {...paint} />,
     face: (
       <>
-        <Path d={outline} fill={color} />
-        <G transform={`rotate(${organicAvatarEyeTilt(seed)})`} fill={botEyeInk(color, page)}>
-          {avatarEyeRects(ORGANIC_AVATAR_EYES).map((rect) => (
-            <Rect key={rect.x} {...rect} />
-          ))}
+        <ClipPath id={`${key}-picture`}>
+          <Circle cx={r} cy={r} r={r} />
+        </ClipPath>
+        <Circle cx={r} cy={r} r={r} fill={native.fill} />
+        <G clipPath={`url(#${key}-picture)`}>
+          {look ? (
+            <SvgXml xml={robotCharacterSvg(look)} width={units} height={units} />
+          ) : (
+            <Image
+              href={{ uri: value }}
+              width={size}
+              height={size}
+              preserveAspectRatio="xMidYMid slice"
+            />
+          )}
         </G>
       </>
     ),

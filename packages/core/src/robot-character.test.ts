@@ -74,7 +74,7 @@ describe("robotCharacterSvg", () => {
 
   it("is the notification portrait for a robot bot", () => {
     const value = robotPresetValue("detective");
-    expect(notificationAvatarSource({ id: "b1", color: value, avatarSet: "robots" })).toBe(
+    expect(notificationAvatarSource({ id: "b1", color: value })).toBe(
       robotCharacterDataUri(listed("detective")),
     );
   });
