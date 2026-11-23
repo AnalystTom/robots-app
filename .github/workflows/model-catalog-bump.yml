@@ -20,7 +20,7 @@ concurrency:
 jobs:
   update:
     name: Update pi packages and verify
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 20
     permissions:
       contents: read
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: ./.github/actions/setup-pnpm
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
@@ -73,19 +73,15 @@ jobs:
         run: |
           git add packages/adapters/package.json pnpm-lock.yaml
           git diff --cached --binary > bump.patch
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: Keep the bump patch on the runner
         if: steps.changed.outputs.changed == 'true'
-        with:
-          name: model-catalog-bump
-          path: bump.patch
-          retention-days: 1
-          if-no-files-found: error
+        run: bash .github/scripts/local-artifact.sh upload model-catalog-bump bump.patch
 
   publish:
     name: Open bump PR
     needs: update
     if: needs.update.outputs.changed == 'true'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 10
     permissions:
       contents: read
@@ -93,13 +89,11 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: model-catalog-bump
-          path: ${{ runner.temp }}/model-catalog-bump
+      - name: Collect the bump patch from the runner
+        run: bash .github/scripts/local-artifact.sh download model-catalog-bump "$RUNNER_TEMP/runner-artifacts"
       - name: Apply bump patch
         env:
-          BUMP_DIR: ${{ runner.temp }}/model-catalog-bump
+          BUMP_DIR: ${{ runner.temp }}/runner-artifacts/model-catalog-bump
         run: |
           set -euo pipefail
           shopt -s dotglob nullglob
