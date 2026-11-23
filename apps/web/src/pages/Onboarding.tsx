@@ -26,8 +26,8 @@ export function OnboardingPage() {
         ? "sharing"
         : undefined;
   const [creatingBot, setCreatingBot] = useState(false);
-  const [finished, setFinished] = useState<"sharing" | "survey" | null>(null);
-  const step = creatingBot ? "bot" : finished ? "loading" : (linkedStep ?? "loading");
+  const [surveyDone, setSurveyDone] = useState(false);
+  const step = creatingBot ? "bot" : surveyDone ? "loading" : (linkedStep ?? "loading");
   const [billingEnabled, setBillingEnabled] = useState(false);
   const [after, setAfter] = useState<{ survey: boolean; next: "model" | "bot" } | null>(null);
   const [catalog, setCatalog] = useState<ModelCatalogEntry[]>([]);
@@ -72,10 +72,10 @@ export function OnboardingPage() {
   }, []);
 
   useEffect(() => {
-    if (!finished || !after) return;
-    setFinished(null);
-    goTo(finished === "sharing" && after.survey ? "survey" : after.next);
-  }, [finished, after]);
+    if (!surveyDone || !after) return;
+    setSurveyDone(false);
+    goTo(after.next);
+  }, [surveyDone, after]);
 
   function goTo(next: "sharing" | "survey" | "model" | "bot") {
     if (next === "bot") setCreatingBot(true);
@@ -116,8 +116,10 @@ export function OnboardingPage() {
     <div className="min-h-full bg-background px-6 py-12" data-robots-surface="onboarding">
       <AccountMenu signingOut={signingOut} onLogOut={() => void logOut()} />
       <div className="mx-auto w-full max-w-[560px]">
-        {step === "sharing" ? <UsageSharingStep onDone={() => setFinished("sharing")} /> : null}
-        {step === "survey" ? <SignupSurvey onDone={() => setFinished("survey")} /> : null}
+        {step === "sharing" && after ? (
+          <UsageSharingStep onDone={() => goTo(after.survey ? "survey" : after.next)} />
+        ) : null}
+        {step === "survey" ? <SignupSurvey onDone={() => setSurveyDone(true)} /> : null}
         {step === "model" ? <ModelStep model={model} fieldId={fieldId} /> : null}
         {step === "bot" ? (
           <FirstBotRetry error={error} onRetry={() => void createFirstBot()} />
