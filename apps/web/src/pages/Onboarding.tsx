@@ -26,7 +26,13 @@ export function OnboardingPage() {
     survey: boolean;
     next: "model" | "bot";
   } | null>(null);
-  const step = creatingBot ? "bot" : after?.sharing ? "sharing" : (linkedStep ?? "loading");
+  const step = creatingBot
+    ? "bot"
+    : !after
+      ? "loading"
+      : after.sharing
+        ? "sharing"
+        : (linkedStep ?? "loading");
   const [catalog, setCatalog] = useState<ModelCatalogEntry[]>([]);
   const model = useOnboardingModel({
     catalog,

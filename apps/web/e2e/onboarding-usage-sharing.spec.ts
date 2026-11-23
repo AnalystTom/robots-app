@@ -72,6 +72,29 @@ test("continuing without touching the switch leaves data sharing off", async ({ 
   await expect(settings.getByTestId("usage-sharing-toggle")).not.toBeChecked();
 });
 
+test("a new user opening a later onboarding step is asked for data sharing first", async ({
+  page,
+}) => {
+  await createAccount(page, `sharing-deep-${Date.now()}@robots.test`, "password12", "SharingDeep");
+  let releaseMe!: () => void;
+  const meReleased = new Promise<void>((resolve) => {
+    releaseMe = resolve;
+  });
+  await page.route("**/rpc/me", async (route) => {
+    await meReleased;
+    await route.continue();
+  });
+
+  const meRequest = page.waitForRequest("**/rpc/me");
+  await page.goto("/onboarding/model");
+  await meRequest;
+  await expect(page.getByRole("heading", { name: "Connect a model" })).toHaveCount(0);
+
+  releaseMe();
+  await expect(page.getByRole("heading", { name: "Enable data sharing" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Connect a model" })).toHaveCount(0);
+});
+
 test("a deployment without product analytics never shows the step or the setting", async ({
   page,
 }, testInfo) => {
