@@ -14,6 +14,7 @@ import { ApprovalRulesSettings } from "../components/ApprovalRulesSettings";
 import { computersAreUnavailable } from "../components/ComputersUnavailableHint";
 import { PlanUsage } from "../components/PlanUsage";
 import { SETTINGS_CONTENT_WIDTH, SettingsGroup, SettingsRow } from "../components/SettingsRows";
+import { UsageSharingSetting } from "../components/UsageSharing";
 import { VaultSettings } from "../components/VaultSettings";
 import { canChooseOwnComputer } from "../lib/computer-sandbox";
 import { desktopBridge } from "../lib/desktop";
@@ -404,6 +405,7 @@ export function SettingsOverlay({
                         onAccountImported={onAccountImported}
                         onImportAgent={onImportAgent}
                       />
+                      <UsageSharingSetting />
                       {/* One space is just the app, so there is nothing to tell apart or manage. */}
                       {spaces.length > 1 && onOpenSpace ? (
                         <SettingsGroup title={t`Spaces`} data-testid="settings-spaces">

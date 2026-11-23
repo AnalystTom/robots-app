@@ -91,6 +91,8 @@ describe("account preferences", () => {
       name: "Test User",
       avatarStyle,
       timezone,
+      usageSharing: false,
+      usageSharingAnsweredAt: null,
       secrets: [],
     };
     const updateMany = vi.fn(
@@ -560,6 +562,18 @@ describe("account preferences", () => {
     });
   });
 
+  it.each([true, false])("saves the data sharing choice as an answer (%s)", async (shared) => {
+    const setup = preferencesDeps("organic");
+
+    const response = await updatePreferences(setup, { usageSharing: shared });
+
+    expect(response.status).toBe(200);
+    expect(setup.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { usageSharing: shared, usageSharingAnsweredAt: expect.any(Date) },
+    });
+  });
+
   it.each([null, "Europe/London"])(
     "adopts the browser timezone only while the saved value is null (%s)",
     async (timezone) => {
@@ -695,6 +709,8 @@ describe("billing", () => {
           avatarStyle: "robot",
           signupSurvey,
           secrets: [],
+          usageSharing: false,
+          usageSharingAnsweredAt: null,
         }),
       },
       signupSurvey: { upsert: upsertSignupSurvey },
@@ -841,6 +857,8 @@ describe("model setup gate", () => {
           name: "Test User",
           avatarStyle: "robot",
           secrets: [],
+          usageSharing: false,
+          usageSharingAnsweredAt: null,
         }),
       },
       // A bot that follows the main model.
@@ -2458,6 +2476,8 @@ describe("MCP server health", () => {
           email: "owner@robots.test",
           name: "Owner",
           secrets: [],
+          usageSharing: false,
+          usageSharingAnsweredAt: null,
         })),
       },
       deploymentSettings: { findUnique: vi.fn().mockResolvedValue({ ownerUserId: "owner-1" }) },
@@ -4918,6 +4938,8 @@ describe("updater owner gate", () => {
           name: "Test User",
           avatarStyle: "robot",
           secrets: [],
+          usageSharing: false,
+          usageSharingAnsweredAt: null,
         }),
       },
       userModelPreference: { findFirst: vi.fn().mockResolvedValue(null) },
@@ -9674,6 +9696,8 @@ describe("openai-compatible enabled models", () => {
           name: "User",
           avatarStyle: "organic",
           secrets: [],
+          usageSharing: false,
+          usageSharingAnsweredAt: null,
         })),
       },
       $transaction: vi.fn(async (fn: (client: unknown) => unknown) => fn(prisma)),

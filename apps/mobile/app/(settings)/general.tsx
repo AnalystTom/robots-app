@@ -13,6 +13,7 @@ import {
   SettingsSwitch,
   useStackedSettings,
 } from "../../components/settings-group";
+import { UsageSharingSetting } from "../../components/usage-sharing-setting";
 import { currentApiBase, rpc, selectedSpaceId } from "../../lib/api";
 import { getCachedAppearancePreference, setAppearancePreference } from "../../lib/appearance";
 import {
@@ -360,6 +361,8 @@ export default function General() {
             title={t`AI data sharing`}
           />
         </SettingsGroup>
+
+        <UsageSharingSetting />
       </ScrollView>
     </SafeAreaView>
   );

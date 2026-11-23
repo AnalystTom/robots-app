@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AccountMenu } from "../components/AccountMenu";
 import { PageLoading } from "../components/PageLoading";
 import { SignupSurvey } from "../components/SignupSurvey";
+import { UsageSharingStep } from "../components/UsageSharing";
 import type { ModelCatalogEntry } from "../lib/model-auth";
 import { rpc } from "../lib/rpc";
 import { useSignOut } from "../lib/sign-out";
@@ -16,15 +17,16 @@ export function OnboardingPage() {
   const { t } = useLingui();
   const navigate = useNavigate();
   const fieldId = useId();
-  // The URL holds the survey and model steps, so /onboarding/survey and /onboarding/model open directly.
   const { step: routeStep } = useParams();
-  const linkedStep = routeStep === "survey" || routeStep === "model" ? routeStep : undefined;
+  const linkedStep =
+    routeStep === "sharing" || routeStep === "survey" || routeStep === "model"
+      ? routeStep
+      : undefined;
   const [creatingBot, setCreatingBot] = useState(false);
-  const [surveyDone, setSurveyDone] = useState(false);
-  const step = creatingBot ? "bot" : surveyDone ? "loading" : (linkedStep ?? "loading");
+  const [finished, setFinished] = useState<"sharing" | "survey" | null>(null);
+  const step = creatingBot ? "bot" : finished ? "loading" : (linkedStep ?? "loading");
   const [billingEnabled, setBillingEnabled] = useState(false);
-  // The step after the survey; null until me loads.
-  const [afterSurvey, setAfterSurvey] = useState<"model" | "bot" | null>(null);
+  const [after, setAfter] = useState<{ survey: boolean; next: "model" | "bot" } | null>(null);
   const [catalog, setCatalog] = useState<ModelCatalogEntry[]>([]);
   const model = useOnboardingModel({
     catalog,
@@ -47,12 +49,16 @@ export function OnboardingPage() {
         setBillingEnabled(me.billingEnabled);
         setCatalog(models);
         const next = me.needsModel ? "model" : "bot";
-        setAfterSurvey(next);
-        if (!linkedStep) goTo(me.needsSignupSurvey ? "survey" : next);
+        const survey = Boolean(me.needsSignupSurvey);
+        setAfter({ survey, next });
+        if (!linkedStep) {
+          const sharing = me.usageSharing?.available && !me.usageSharing.answered;
+          goTo(sharing ? "sharing" : survey ? "survey" : next);
+        }
       })
       .catch(() => {
         if (signal.aborted) return;
-        setAfterSurvey("bot");
+        setAfter({ survey: false, next: "bot" });
         if (!linkedStep) goTo("bot");
       });
     return () => {
@@ -62,12 +68,12 @@ export function OnboardingPage() {
   }, []);
 
   useEffect(() => {
-    if (!surveyDone || !afterSurvey) return;
-    setSurveyDone(false);
-    goTo(afterSurvey);
-  }, [surveyDone, afterSurvey]);
+    if (!finished || !after) return;
+    setFinished(null);
+    goTo(finished === "sharing" && after.survey ? "survey" : after.next);
+  }, [finished, after]);
 
-  function goTo(next: "survey" | "model" | "bot") {
+  function goTo(next: "sharing" | "survey" | "model" | "bot") {
     if (next === "bot") setCreatingBot(true);
     navigate(next === "bot" ? "/onboarding" : `/onboarding/${next}`, { replace: true });
   }
@@ -106,7 +112,8 @@ export function OnboardingPage() {
     <div className="min-h-full bg-background px-6 py-12" data-robots-surface="onboarding">
       <AccountMenu signingOut={signingOut} onLogOut={() => void logOut()} />
       <div className="mx-auto w-full max-w-[560px]">
-        {step === "survey" ? <SignupSurvey onDone={() => setSurveyDone(true)} /> : null}
+        {step === "sharing" ? <UsageSharingStep onDone={() => setFinished("sharing")} /> : null}
+        {step === "survey" ? <SignupSurvey onDone={() => setFinished("survey")} /> : null}
         {step === "model" ? <ModelStep model={model} fieldId={fieldId} /> : null}
         {step === "bot" ? (
           <FirstBotRetry error={error} onRetry={() => void createFirstBot()} />

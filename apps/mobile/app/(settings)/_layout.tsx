@@ -82,6 +82,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="ai-data-sharing" options={glassHeaderOptions(t`AI data sharing`)} />
       <Stack.Screen name="archived-bots" options={{ title: t`Archived` }} />
       <Stack.Screen name="change-password" options={{ title: t`Change password` }} />
+      <Stack.Screen name="usage-sharing" options={glassHeaderOptions(t`Enable data sharing`)} />
       <Stack.Screen name="signup-survey" options={glassHeaderOptions(t`Welcome to RoBots`)} />
       <Stack.Screen name="language" options={glassHeaderOptions(t`Language`)} />
       <Stack.Screen name="model-picker" options={glassHeaderOptions(t`Model`)} />

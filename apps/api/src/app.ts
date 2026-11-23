@@ -108,6 +108,7 @@ import {
   installAuditEventStore,
   installSecurityEventStore,
   observeThreadChanges,
+  onlyWhereUsageSharingIsOn,
   parsePositiveInteger,
   pushSessionExpiresAt,
   requireMembership,
@@ -324,7 +325,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     logger.error("Stored space keys need master keys that are not configured", undefined, {
       masterKeyIds: unreadableMasterKeys,
     });
-  const analytics = createProductAnalytics();
+  const analytics = onlyWhereUsageSharingIsOn(createProductAnalytics(), prisma);
   const events = createThreadEvents(prisma, realtime, {
     analytics,
     runSecretWriter: createRunSecretWriter(secrets),

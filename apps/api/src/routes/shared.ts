@@ -43,6 +43,8 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
         labs: true,
         pushNotifications: true,
         signupSurvey: { select: { userId: true } },
+        usageSharing: true,
+        usageSharingAnsweredAt: true,
       },
     }),
     modelSetup(deps, actor),
@@ -96,6 +98,11 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
     billingEnabled: Boolean(deps.billing),
     // Only billing deployments ask; self-hosted installs never see the survey.
     needsSignupSurvey: Boolean(deps.billing) && !user.signupSurvey,
+    usageSharing: {
+      available: Boolean(deps.analytics),
+      enabled: user.usageSharing,
+      answered: user.usageSharingAnsweredAt !== null,
+    },
     paymentWalletProvider: deps.paymentWallet
       ? { id: deps.paymentWallet.describe().id, name: deps.paymentWallet.displayName }
       : null,

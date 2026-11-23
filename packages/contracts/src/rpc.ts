@@ -410,6 +410,7 @@ export const appContract = {
             /** Replaces the account's Labs list. */
             labs: z.array(LabFeatureSchema).optional(),
             pushNotifications: z.boolean().optional(),
+            usageSharing: z.boolean().optional(),
           })
           .refine(
             (input) =>
@@ -418,7 +419,8 @@ export const appContract = {
               input.timezone !== undefined ||
               input.locale !== undefined ||
               input.labs !== undefined ||
-              input.pushNotifications !== undefined,
+              input.pushNotifications !== undefined ||
+              input.usageSharing !== undefined,
             { message: "Nothing to update" },
           ),
       )
