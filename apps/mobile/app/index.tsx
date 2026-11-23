@@ -175,6 +175,7 @@ function Home({ embedded, onSelectSpace, onShareSelect }: InboxPaneProps & { emb
     setSpaces,
     me,
     setMe,
+    signupSharing,
     error,
     setError,
     inboxLoading,
@@ -754,8 +755,8 @@ function Home({ embedded, onSelectSpace, onShareSelect }: InboxPaneProps & { emb
     );
   }
   if (!hasSession) return <Redirect href={returningUser ? explicitSignInRoute : "/sign-in"} />;
-  if (me?.usageSharing?.needed) {
-    const survey = me.needsSignupSurvey ? "1" : undefined;
+  if (signupSharing) {
+    const survey = signupSharing.survey ? "1" : undefined;
     return <Redirect href={{ pathname: "/usage-sharing", params: { survey } }} />;
   }
   // With nothing to show, the failure takes the screen; over saved chats it stays one line.
