@@ -234,6 +234,7 @@ const subscriptionMe: Me = {
   labsAvailable: [],
   navLinks: [],
   phoneCallsEnabled: false,
+  pushNotifications: false,
   userId: "user-demo",
   email: "ada@example.test",
   name: "Ada",

@@ -189,6 +189,7 @@ function account(provider: string, modelId: string) {
     labsAvailable: [],
     navLinks: [],
     phoneCallsEnabled: false,
+    pushNotifications: false,
   };
 }
 
