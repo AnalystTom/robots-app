@@ -10,6 +10,7 @@ import type { ChatTitle } from "../components/chat-header-title";
 import { ChatHeaderTitle, publishChatTitle } from "../components/chat-header-title";
 import type { InboxSpace } from "./inbox-spaces";
 import type { MobileBot } from "./mobile-types";
+import { queryClient } from "./query";
 import { setSearchInbox } from "./search-inbox";
 
 const push = vi.hoisted(() => vi.fn());
@@ -94,6 +95,7 @@ let container: HTMLDivElement;
 beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   push.mockClear();
+  queryClient.clear();
   mocks.catalog = [];
   setSearchInbox([]);
   container = document.createElement("div");
