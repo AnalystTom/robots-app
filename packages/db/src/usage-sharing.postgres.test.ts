@@ -75,5 +75,4 @@ describePostgres("product analytics gated by usage sharing (PostgreSQL)", () => 
     });
     expect(user).toEqual({ usageSharing: false, usageSharingAnsweredAt: null });
   });
-
 });

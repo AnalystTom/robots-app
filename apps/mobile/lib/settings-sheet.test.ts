@@ -67,9 +67,12 @@ describe("settings links", () => {
     const pages = readdirSync(resolve(mobileRoot, "app/(settings)"))
       .filter(
         (file) =>
-          !["_layout.tsx", "model-picker.tsx", "model-connection.tsx", "usage-sharing.tsx"].includes(
-            file,
-          ),
+          ![
+            "_layout.tsx",
+            "model-picker.tsx",
+            "model-connection.tsx",
+            "usage-sharing.tsx",
+          ].includes(file),
       )
       .map((file) => file.replace(/\.tsx$/, ""));
 

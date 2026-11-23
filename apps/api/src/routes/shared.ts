@@ -9,7 +9,6 @@ import {
   selectConfiguredModel,
 } from "@robots/adapters";
 import type { Actor, Me } from "@robots/contracts";
-import { runAsSystem } from "@robots/db";
 import {
   attachmentMaxBytes,
   attachmentMaxCount,
@@ -19,6 +18,7 @@ import {
   resolveBotAvatarSet,
   resolveLabs,
 } from "@robots/contracts";
+import { runAsSystem } from "@robots/db";
 import { isAdmin } from "../admins.js";
 import { effectiveSandboxProvider } from "../computer-provider-config.js";
 import type { RouterDeps } from "../router.js";

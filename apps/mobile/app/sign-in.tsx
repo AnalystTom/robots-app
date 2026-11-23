@@ -236,7 +236,8 @@ export default function SignIn() {
     if (hasIncomingShare()) return router.replace("/share");
     const me = await rpc("me").catch(() => null);
     const survey = me?.needsSignupSurvey ? "1" : undefined;
-    if (me?.usageSharing?.needed) router.replace({ pathname: "/usage-sharing", params: { survey } });
+    if (me?.usageSharing?.needed)
+      router.replace({ pathname: "/usage-sharing", params: { survey } });
     else router.replace(survey ? "/signup-survey" : "/");
   }
 
