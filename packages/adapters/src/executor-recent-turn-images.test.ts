@@ -177,7 +177,9 @@ async function runWithModel(
     },
     user: {
       findUnique: vi.fn(async () => null),
-      findMany: vi.fn(async () => []),
+      findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
+        where.id.in.map((id) => ({ id })),
+      ),
     },
     run: {
       findUnique: vi.fn(async () => run),
