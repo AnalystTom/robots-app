@@ -507,7 +507,11 @@ describe("bot settings device voice menu", () => {
     expect(history.querySelector('[aria-label="Instruction history"]')).not.toBeNull();
     await act(async () => history.querySelector<HTMLButtonElement>("button")!.click());
     expect(mocks.alert).toHaveBeenCalledWith("Restore", "Earlier", expect.any(Array));
-    mocks.rpc.mockResolvedValueOnce({ id: "bot-fixture", instructions: "Earlier" });
+    mocks.rpc.mockResolvedValueOnce({
+      id: "bot-fixture",
+      instructions: "Earlier",
+      color: mocks.color,
+    });
     await act(async () => mocks.alert.mock.calls.at(-1)![2][1].onPress());
     expect(mocks.rpc).toHaveBeenCalledWith("bots/restoreInstructions", {
       botId: "bot-fixture",
@@ -527,7 +531,7 @@ describe("bot settings device voice menu", () => {
           createdAt: "2026-10-01T00:00:00Z",
         },
       ];
-      const restore = deferredSave<{ id: string; instructions: string }>();
+      const restore = deferredSave<{ id: string; instructions: string; color: string }>();
       mocks.rpc.mockReturnValue(restore.promise);
       await render();
       await act(async () =>
@@ -552,7 +556,7 @@ describe("bot settings device voice menu", () => {
       expect(mocks.rpc).toHaveBeenCalledTimes(1);
       await act(async () => {
         if (fails) restore.reject(new Error("restore failed"));
-        else restore.resolve({ id: "bot-fixture", instructions: "Earlier" });
+        else restore.resolve({ id: "bot-fixture", instructions: "Earlier", color: mocks.color });
       });
       expect(input.disabled).toBe(false);
       expect(input.value).toBe(fails ? "" : "Earlier");
@@ -725,6 +729,7 @@ describe("bot settings device voice menu", () => {
   });
 
   it("shows a stored off-list robot as the selected Current look and saves only a picked preset", async () => {
+    mocks.avatarSet = "robots";
     mocks.color = "robot:green.top-hat.grumpy.cape.none";
     await render();
     await act(async () =>

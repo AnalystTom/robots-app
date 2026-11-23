@@ -81,6 +81,9 @@ export default function BotSettingsScreen() {
   const [color, setColor] = useState<string>(DEFAULT_BOT_AVATAR_COLOR);
   const [computerMode, setComputerMode] = useState<ComputerMode>("team");
   const [avatarSet, setAvatarSet] = useState<BotAvatarSet>(DEFAULT_NEW_BOT_AVATAR_SET);
+  const originalColor =
+    bot && !botLookState(bot.color).robot ? bot.color : DEFAULT_BOT_AVATAR_COLOR;
+  const shownColor = avatarSet === "organic" && botLookState(color).robot ? originalColor : color;
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(focus === "model" || pickedModel !== undefined);
   const [modelKey, setModelKey] = useState("");
@@ -422,9 +425,7 @@ export default function BotSettingsScreen() {
         input.instructions = instructions;
         input.expectedInstructions = bot.instructions;
       }
-      const savedColor =
-        avatarSet === "organic" && botLookState(color).robot ? DEFAULT_BOT_AVATAR_COLOR : color;
-      if (savedColor !== bot.color) input.color = savedColor;
+      if (shownColor !== bot.color) input.color = shownColor;
       if (avatarSet !== resolveBotAvatarSet(bot.avatarSet)) input.avatarSet = avatarSet;
       const modelChanged =
         (selected?.provider ?? null) !== (bot.modelProvider ?? null) ||
@@ -477,7 +478,7 @@ export default function BotSettingsScreen() {
     bot &&
     (description.trim() !== (bot.description ?? "") ||
       instructions !== (bot.instructions ?? "") ||
-      color !== bot.color ||
+      shownColor !== bot.color ||
       avatarSet !== resolveBotAvatarSet(bot.avatarSet) ||
       computerMode !== bot.computerMode ||
       autoSpeak !== bot.autoSpeak ||
@@ -550,7 +551,7 @@ export default function BotSettingsScreen() {
               style={{ padding: 4 }}
             >
               <BotAvatar
-                color={color}
+                color={shownColor}
                 avatarSet={avatarSet}
                 identity={bot.id}
                 size={64}
@@ -882,15 +883,13 @@ export default function BotSettingsScreen() {
               ]}
               value={avatarSet}
               onChange={(next) => {
-                const set = resolveBotAvatarSet(next);
-                if (set === "organic" && bot && botLookState(color).robot) setColor(bot.color);
-                setAvatarSet(set);
+                setAvatarSet(resolveBotAvatarSet(next));
               }}
               plain
             />
             {bot ? (
               <BotLookPicker
-                value={color}
+                value={shownColor}
                 identity={bot.id}
                 avatarSet={avatarSet}
                 onChange={(next) => {
