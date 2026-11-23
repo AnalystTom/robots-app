@@ -49,8 +49,8 @@ They are unavailable with the App Store build connected to a self-hosted server;
 On Android, **Notifications** in Settings also lets you choose which kinds you get, including a live
 working status while a bot runs. Each chat shows as its own notification under one RoBots group.
 
-**Push notifications** in **Settings → General** turns off push notifications from the RoBots server
-for your account. Bots keep working, and the chat still shows the update when you open the app.
+**Push notifications** in **Settings → General** silences all RoBots notifications for your account,
+including the live completion alerts on Android. Bots keep working, and the chat still shows the update when you open the app.
 
 ## Shortcuts and Siri
 
