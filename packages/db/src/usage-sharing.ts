@@ -31,7 +31,11 @@ export function onlyWhereUsageSharingIsOn(
 
   function sharesUsage(userId: string): Promise<boolean> {
     const cached = cachedSharing.get(userId);
-    if (cached && cached.expiresAt > Date.now()) return cached.on;
+    if (cached && cached.expiresAt > Date.now()) {
+      cachedSharing.delete(userId);
+      cachedSharing.set(userId, cached);
+      return cached.on;
+    }
     const on = runAsSystem("check whether the user shares usage data", () =>
       prisma.user.findUnique({ where: { id: userId }, select: { usageSharing: true } }),
     ).then(

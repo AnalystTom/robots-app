@@ -145,8 +145,9 @@ person's choice at most every 30 seconds, so an opt-in or an opt-out can take up
 to apply there.
 
 Delivery is best effort: memory is bounded, requests time out, and shutdown flushes
-pending events. Analytics failure does not fail product operations. This is not a
-durable audit trail, and events from before enablement are not backfilled.
+pending events. Analytics failure does not fail product operations. While 1000 usage-data
+checks are already waiting on the database, further events are dropped rather than queued.
+This is not a durable audit trail, and events from before enablement are not backfilled.
 
 ## Security events
 

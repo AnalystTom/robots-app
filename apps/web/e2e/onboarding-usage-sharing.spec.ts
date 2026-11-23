@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { captureScreenshot, openUserSettings, signup } from "./helpers";
+import { captureScreenshot, createAccount, openUserSettings } from "./helpers";
 
 test("a new user chooses data sharing first and finds the choice in Settings", async ({
   page,
 }, testInfo) => {
-  await signup(page, `sharing-${Date.now()}@robots.test`, "password12", "Sharing");
+  await createAccount(page, `sharing-${Date.now()}@robots.test`, "password12", "Sharing");
 
   await expect(page.getByRole("heading", { name: "Enable data sharing" })).toBeVisible();
   await expect(page).toHaveURL(/\/onboarding\/sharing$/);
@@ -41,7 +41,7 @@ test("a new user chooses data sharing first and finds the choice in Settings", a
 });
 
 test("continuing without touching the switch leaves data sharing off", async ({ page }) => {
-  await signup(page, `sharing-off-${Date.now()}@robots.test`, "password12", "SharingOff");
+  await createAccount(page, `sharing-off-${Date.now()}@robots.test`, "password12", "SharingOff");
 
   await expect(page.getByRole("heading", { name: "Enable data sharing" })).toBeVisible();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
