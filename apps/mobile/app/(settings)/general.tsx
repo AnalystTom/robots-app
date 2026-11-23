@@ -53,6 +53,13 @@ import { errorText } from "../../lib/user-error";
 
 let hapticsSaveVersion = 0;
 
+function savePreferences(patch: {
+  botAvatarSet?: MobileMe["botAvatarSet"];
+  pushNotifications?: boolean;
+}) {
+  return rpc("preferences/update", patch);
+}
+
 export default function General() {
   const sideInsets = useSideInsets();
   const { t } = useLingui();
@@ -195,7 +202,7 @@ export default function General() {
       onChange: (value) =>
         setMe((current) => (current ? { ...current, pushNotifications: value } : current)),
       save: async (value) => {
-        await rpc("preferences/update", { pushNotifications: value });
+        await savePreferences({ pushNotifications: value });
       },
       onError: () => Alert.alert(t`Push notifications`, t`Could not save`),
     });
@@ -208,7 +215,7 @@ export default function General() {
     // Only the latest tap's reply may land, so a slower earlier save can't undo it.
     const request = ++botStyleRequest.current;
     setMe((current) => (current ? { ...current, botAvatarSet } : current));
-    rpc("preferences/update", { botAvatarSet })
+    savePreferences({ botAvatarSet })
       .then((next) => {
         // Take only the style, so an older snapshot can't undo another edit.
         if (request !== botStyleRequest.current) return;
