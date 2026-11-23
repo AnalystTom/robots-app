@@ -123,8 +123,8 @@ the public capture token so user and event identities stay stable. Never send th
 secret to the browser or collector. Set `ANALYTICS_PROVIDER=none` to disable it.
 The public website uses its separate `PUBLIC_POSTHOG_KEY` configuration.
 
-The backend sends account creation, session creation, fixed screen names, message
-counts, and run starts/outcomes. Run events include the shared trigger enum;
+For people who have turned on usage sharing (see below), the backend sends account
+creation, session creation, fixed screen names, message counts, and run starts/outcomes. Run events include the shared trigger enum;
 analytics does not read or classify error text. User identifiers are pseudonymized
 with the server-only secret. No names,
 emails, prompts, responses, message text, DOM, URLs, search parameters, document
@@ -135,9 +135,18 @@ API; lifecycle events come from the shared backend. This works across clients
 without giving a collector access to their content. Local and self-hosted
 installations remain off until their backend is configured.
 
+When product analytics is configured, each person is asked once, at the start of onboarding,
+whether to share usage data, and the answer is off until they turn it on. The API and worker
+send no product analytics event for anyone who has not turned it on, and Settings lets each
+person change the choice. Accounts that existed before the choice was introduced count as
+answered and off. Crash and error monitoring is not part of this choice. The API process
+applies a choice it saves at once. Other processes read each person's choice at most every
+30 seconds, so an opt-in or an opt-out can take up to 30 seconds to apply there.
+
 Delivery is best effort: memory is bounded, requests time out, and shutdown flushes
-pending events. Analytics failure does not fail product operations. This is not a
-durable audit trail, and events from before enablement are not backfilled.
+pending events. Analytics failure does not fail product operations. While 1000 usage-data
+checks are already waiting on the database, further events are dropped rather than queued.
+This is not a durable audit trail, and events from before enablement are not backfilled.
 
 ## Security events
 

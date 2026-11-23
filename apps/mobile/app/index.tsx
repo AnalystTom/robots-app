@@ -175,6 +175,7 @@ function Home({ embedded, onSelectSpace, onShareSelect }: InboxPaneProps & { emb
     setSpaces,
     me,
     setMe,
+    signupSharing,
     error,
     setError,
     inboxLoading,
@@ -754,6 +755,10 @@ function Home({ embedded, onSelectSpace, onShareSelect }: InboxPaneProps & { emb
     );
   }
   if (!hasSession) return <Redirect href={returningUser ? explicitSignInRoute : "/sign-in"} />;
+  if (signupSharing) {
+    const survey = signupSharing.survey ? "1" : undefined;
+    return <Redirect href={{ pathname: "/usage-sharing", params: { survey } }} />;
+  }
   // With nothing to show, the failure takes the screen; over saved chats it stays one line.
   // Headings of empty saved Spaces are not chats, so they do not hide the failure.
   const showLoadFailure = Boolean(loadFailure) && inboxHasNoChats(listData);

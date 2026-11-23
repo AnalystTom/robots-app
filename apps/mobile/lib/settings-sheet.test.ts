@@ -65,7 +65,15 @@ describe("settings links", () => {
   });
   it("knows every public page in the settings group", () => {
     const pages = readdirSync(resolve(mobileRoot, "app/(settings)"))
-      .filter((file) => !["_layout.tsx", "model-picker.tsx", "model-connection.tsx"].includes(file))
+      .filter(
+        (file) =>
+          ![
+            "_layout.tsx",
+            "model-picker.tsx",
+            "model-connection.tsx",
+            "usage-sharing.tsx",
+          ].includes(file),
+      )
       .map((file) => file.replace(/\.tsx$/, ""));
 
     for (const page of pages) expect(isSettingsLink(`/${page}`), page).toBe(true);

@@ -322,6 +322,8 @@ export async function changeUserTimezone(
     botAvatarSet?: string;
     labs?: string[];
     pushNotifications?: boolean;
+    usageSharing?: boolean;
+    usageSharingAnsweredAt?: Date;
     marketingEmailOptOutAt?: Date | null;
   },
 ): Promise<void> {

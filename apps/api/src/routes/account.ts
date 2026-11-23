@@ -37,6 +37,7 @@ import {
   lockSpaceSettings,
   newestVoiceCredentialOrder,
   Prisma,
+  rememberUsageSharing,
   removeApprovalRule,
   runAsSystem,
   runAsTenant,
@@ -193,6 +194,10 @@ export function accountRoutes(ctx: RouterContext) {
           input.labs === undefined
             ? undefined
             : parseLabs(input.labs).filter((feature) => !deploymentLabs.includes(feature));
+        const usageSharing =
+          input.usageSharing === undefined
+            ? {}
+            : { usageSharing: input.usageSharing, usageSharingAnsweredAt: new Date() };
         if (input.timezone !== undefined) {
           // The routines that took the account zone keep their local schedule in the new
           // one, and the other fields commit in the same save. The move's row lock still
@@ -204,6 +209,7 @@ export function accountRoutes(ctx: RouterContext) {
             ...(input.pushNotifications === undefined
               ? {}
               : { pushNotifications: input.pushNotifications }),
+            ...usageSharing,
           });
         } else {
           await deps.prisma.user.update({
@@ -216,9 +222,11 @@ export function accountRoutes(ctx: RouterContext) {
               ...(input.pushNotifications === undefined
                 ? {}
                 : { pushNotifications: input.pushNotifications }),
+              ...usageSharing,
             },
           });
         }
+        if (input.usageSharing !== undefined) rememberUsageSharing(userId, input.usageSharing);
         if (botAvatarSet !== undefined) {
           // Every bot of this user not pinned to another set follows the new default, in every
           // space they own bots in, announced like any edit so other devices redraw it.

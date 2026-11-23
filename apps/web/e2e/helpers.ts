@@ -37,8 +37,11 @@ export async function completeOnboarding(page: Page, testInfo?: TestInfo) {
   await page.waitForURL(/\/(onboarding|app)/, { timeout: 20_000 });
   // Optional Server integrations step (needsSetup). Skip when shown, then the
   // first bot is created automatically — land in Chief's chat with no form.
+  const sharing = page.getByRole("heading", { name: "Enable data sharing", exact: true });
   const integrations = page.getByRole("heading", { name: "Server integrations", exact: true });
   const chief = page.getByText("Chief").first();
+  await sharing.or(integrations).or(chief).first().waitFor({ timeout: 20_000 });
+  if (await sharing.isVisible()) await answerDataSharing(page);
   await integrations.or(chief).waitFor({ timeout: 20_000 });
   if ((await chief.isVisible().catch(() => false)) && page.url().includes("/app")) {
     if (testInfo) {
@@ -64,14 +67,7 @@ export async function completeOnboarding(page: Page, testInfo?: TestInfo) {
  * the page the form would land on. Passing testInfo goes through the form to
  * capture it; tests of the form itself use signupThroughForm.
  */
-export async function signup(
-  page: Page,
-  email: string,
-  password: string,
-  name: string,
-  testInfo?: TestInfo,
-) {
-  if (testInfo) return signupThroughForm(page, email, password, name, testInfo);
+export async function createAccount(page: Page, email: string, password: string, name: string) {
   const baseURL = test.info().project.use.baseURL;
   if (!baseURL) throw new Error("signup needs a baseURL");
   const response = await page.request.post("/api/auth/sign-up/email", {
@@ -82,6 +78,24 @@ export async function signup(
   if (!response.ok()) throw new Error(`sign-up ${response.status()}: ${await response.text()}`);
   const verify = signupRequiresEmailVerification(await response.json());
   await page.goto(verify ? "/sign-up?verify=email" : "/onboarding");
+  return verify;
+}
+
+export async function answerDataSharing(page: Page) {
+  const sharing = page.getByRole("heading", { name: "Enable data sharing", exact: true });
+  await expect(sharing).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+}
+
+export async function signup(
+  page: Page,
+  email: string,
+  password: string,
+  name: string,
+  testInfo?: TestInfo,
+) {
+  if (testInfo) return signupThroughForm(page, email, password, name, testInfo);
+  if (!(await createAccount(page, email, password, name))) await answerDataSharing(page);
 }
 
 /** Opens the email form when the server offers a provider chooser first. */
@@ -108,6 +122,7 @@ export async function signupThroughForm(
   await page.getByPlaceholder("Your email address").fill(email);
   await page.getByPlaceholder("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
+  await answerDataSharing(page);
 }
 
 /** Brings the window back into view, which reads live lists again as returning to the tab does. */

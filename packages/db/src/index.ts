@@ -78,4 +78,5 @@ export * from "./thread-takeover.js";
 export * from "./transaction-retry.js";
 export * from "./unread-inbox-chats.js";
 export * from "./usage.js";
+export * from "./usage-sharing.js";
 export * from "./voice-credentials.js";

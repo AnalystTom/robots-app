@@ -49,6 +49,7 @@ import {
   AnswerTooLongError,
   configureProviderTransactionPool,
   IsolationError,
+  onlyWhereUsageSharingIsOn,
   Prisma,
   runProviderTransaction,
 } from "@robots/db";
@@ -85,14 +86,19 @@ async function handle(handler: RouterHandler, ...args: Parameters<RouterHandler[
 
 describe("account preferences", () => {
   function preferencesDeps(avatarStyle: string, timezone: string | null = null) {
-    const update = vi.fn().mockResolvedValue({});
     const user = {
       email: "user@robots.test",
       name: "Test User",
       avatarStyle,
       timezone,
+      usageSharing: false,
+      usageSharingAnsweredAt: null as Date | null,
       secrets: [],
     };
+    const update = vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+      Object.assign(user, data);
+      return {};
+    });
     const updateMany = vi.fn(
       async ({ where, data }: { where: { timezone: null }; data: { timezone: string } }) => {
         if (user.timezone !== where.timezone) return { count: 0 };
@@ -115,7 +121,7 @@ describe("account preferences", () => {
         findUnique: vi.fn(async () => ({ timezone: user.timezone })),
         findUniqueOrThrow: vi.fn().mockResolvedValue(user),
       },
-      bot: { findMany: botFindMany },
+      bot: { findMany: botFindMany, count: vi.fn().mockResolvedValue(0) },
       routine: {
         findMany: vi.fn(async ({ where }: { where: Record<string, unknown> }) =>
           routines.filter((row) => matches(row, where)),
@@ -560,6 +566,58 @@ describe("account preferences", () => {
     });
   });
 
+  it.each([true, false])("saves the data sharing choice as an answer (%s)", async (shared) => {
+    const setup = preferencesDeps("organic");
+
+    const response = await updatePreferences(setup, { usageSharing: shared });
+
+    expect(response.status).toBe(200);
+    expect(setup.update).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      data: { usageSharing: shared, usageSharingAnsweredAt: expect.any(Date) },
+    });
+  });
+
+  it("stops asking for data sharing once the save answers it", async () => {
+    const setup = preferencesDeps("organic");
+    setup.deps.analytics = { capture: vi.fn(), flush: vi.fn(async () => undefined) };
+    const client = createRouterClient(createRouter(setup.deps), {
+      context: { actor: setup.actor },
+    });
+
+    await expect(client.me()).resolves.toMatchObject({
+      usageSharing: { available: true, needed: true },
+    });
+    await updatePreferences(setup, { usageSharing: false });
+    await expect(client.me()).resolves.toMatchObject({
+      usageSharing: { available: true, enabled: false, needed: false },
+    });
+  });
+
+  it.each([{}, { timezone: "Europe/London" }])(
+    "stops forwarding analytics at once when a save turns sharing off (%o)",
+    async (extra) => {
+      const setup = preferencesDeps("organic");
+      const sink = { capture: vi.fn(), flush: vi.fn(async () => undefined) };
+      const analytics = onlyWhereUsageSharingIsOn(sink, setup.deps.prisma);
+      setup.deps.analytics = analytics;
+      const client = createRouterClient(createRouter(setup.deps), {
+        context: { actor: setup.actor } as never,
+      });
+      const screen = { screen: "chat", surface: "web" } as const;
+
+      await updatePreferences(setup, { usageSharing: true, ...extra });
+      await client.analytics.screen(screen);
+      await analytics.flush();
+      expect(sink.capture).toHaveBeenCalledTimes(1);
+
+      await updatePreferences(setup, { usageSharing: false, ...extra });
+      await client.analytics.screen(screen);
+      await analytics.flush();
+      expect(sink.capture).toHaveBeenCalledTimes(1);
+    },
+  );
+
   it.each([null, "Europe/London"])(
     "adopts the browser timezone only while the saved value is null (%s)",
     async (timezone) => {
@@ -686,6 +744,7 @@ describe("billing", () => {
     billing?: RouterDeps["billing"],
     signupSurvey: { userId: string } | null = null,
     analytics?: RouterDeps["analytics"],
+    sharing: { answered: boolean; ownedBots: number } = { answered: false, ownedBots: 0 },
   ) {
     const prisma = {
       user: {
@@ -695,8 +754,11 @@ describe("billing", () => {
           avatarStyle: "robot",
           signupSurvey,
           secrets: [],
+          usageSharing: false,
+          usageSharingAnsweredAt: sharing.answered ? new Date("2026-11-01T00:00:00Z") : null,
         }),
       },
+      bot: { count: vi.fn().mockResolvedValue(sharing.ownedBots) },
       signupSurvey: { upsert: upsertSignupSurvey },
       userModelPreference: { findFirst: vi.fn().mockResolvedValue(null) },
       deploymentSettings: { findUnique: vi.fn().mockResolvedValue(null) },
@@ -737,6 +799,25 @@ describe("billing", () => {
       code: "NOT_FOUND",
     });
     await expect(client.me()).resolves.toMatchObject({ billingEnabled: false });
+  });
+
+  it.each([
+    { analytics: false, sharing: { answered: false, ownedBots: 0 }, needed: false },
+    { analytics: true, sharing: { answered: false, ownedBots: 0 }, needed: true },
+    { analytics: true, sharing: { answered: false, ownedBots: 1 }, needed: false },
+    { analytics: true, sharing: { answered: true, ownedBots: 0 }, needed: false },
+  ])("asks for data sharing only before the first bot (%o)", async (scenario) => {
+    const analyticsSink = { capture: vi.fn(), flush: vi.fn(async () => undefined) };
+    const client = billingDeps(
+      false,
+      undefined,
+      null,
+      scenario.analytics ? analyticsSink : undefined,
+      scenario.sharing,
+    );
+    await expect(client.me()).resolves.toMatchObject({
+      usageSharing: { available: scenario.analytics, needed: scenario.needed },
+    });
   });
 
   it("enables billing on me for admins too", async () => {
@@ -841,6 +922,8 @@ describe("model setup gate", () => {
           name: "Test User",
           avatarStyle: "robot",
           secrets: [],
+          usageSharing: false,
+          usageSharingAnsweredAt: null,
         }),
       },
       // A bot that follows the main model.
@@ -2458,6 +2541,8 @@ describe("MCP server health", () => {
           email: "owner@robots.test",
           name: "Owner",
           secrets: [],
+          usageSharing: false,
+          usageSharingAnsweredAt: null,
         })),
       },
       deploymentSettings: { findUnique: vi.fn().mockResolvedValue({ ownerUserId: "owner-1" }) },
@@ -4918,6 +5003,8 @@ describe("updater owner gate", () => {
           name: "Test User",
           avatarStyle: "robot",
           secrets: [],
+          usageSharing: false,
+          usageSharingAnsweredAt: null,
         }),
       },
       userModelPreference: { findFirst: vi.fn().mockResolvedValue(null) },
@@ -9674,6 +9761,8 @@ describe("openai-compatible enabled models", () => {
           name: "User",
           avatarStyle: "organic",
           secrets: [],
+          usageSharing: false,
+          usageSharingAnsweredAt: null,
         })),
       },
       $transaction: vi.fn(async (fn: (client: unknown) => unknown) => fn(prisma)),

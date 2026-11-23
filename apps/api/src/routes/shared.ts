@@ -18,6 +18,7 @@ import {
   resolveBotAvatarSet,
   resolveLabs,
 } from "@robots/contracts";
+import { runAsSystem } from "@robots/db";
 import { isAdmin } from "../admins.js";
 import { effectiveSandboxProvider } from "../computer-provider-config.js";
 import type { RouterDeps } from "../router.js";
@@ -43,6 +44,8 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
         labs: true,
         pushNotifications: true,
         signupSurvey: { select: { userId: true } },
+        usageSharing: true,
+        usageSharingAnsweredAt: true,
       },
     }),
     modelSetup(deps, actor),
@@ -96,10 +99,27 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
     billingEnabled: Boolean(deps.billing),
     // Only billing deployments ask; self-hosted installs never see the survey.
     needsSignupSurvey: Boolean(deps.billing) && !user.signupSurvey,
+    usageSharing: await usageSharingState(deps, actor, user),
     paymentWalletProvider: deps.paymentWallet
       ? { id: deps.paymentWallet.describe().id, name: deps.paymentWallet.displayName }
       : null,
   };
+}
+
+async function usageSharingState(
+  deps: RouterDeps,
+  actor: Actor,
+  user: { usageSharing: boolean; usageSharingAnsweredAt: Date | null },
+): Promise<NonNullable<Me["usageSharing"]>> {
+  const available = Boolean(deps.analytics);
+  const answered = user.usageSharingAnsweredAt !== null;
+  const needed =
+    available &&
+    !answered &&
+    (await runAsSystem("count the user's own bots in all their spaces", () =>
+      deps.prisma.bot.count({ where: { userId: actor.userId } }),
+    )) === 0;
+  return { available, enabled: user.usageSharing, needed };
 }
 
 function computerHostFor(
