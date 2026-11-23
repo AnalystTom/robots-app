@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 
-import { parseRobotCharacter } from "@robots/contracts";
-import { ROBOT_PRESETS, robotCharacterSvg, robotLookForIdentity } from "@robots/core";
+import { ROBOT_PRESETS, robotCharacterSvg } from "@robots/core";
 import type { ReactNode } from "react";
 import { act, createElement } from "react";
 import type { Root } from "react-dom/client";
@@ -140,14 +139,9 @@ describe("GroupSeats", () => {
     const drawn = Array.from(container.querySelectorAll("svg-xml"), (node) =>
       node.getAttribute("data-xml"),
     );
-    const presets = ROBOT_PRESETS.map((preset) => robotCharacterSvg(preset.look));
-    expect(drawn).toHaveLength(2);
-    for (const xml of drawn) expect(presets).toContain(xml);
-    expect(drawn).toEqual(
-      members.map((member) =>
-        robotCharacterSvg(parseRobotCharacter(robotLookForIdentity(member.color, member.botId))),
-      ),
-    );
+    const presetXml = (id: string) =>
+      robotCharacterSvg(ROBOT_PRESETS.find((preset) => preset.id === id)!.look);
+    expect(drawn).toEqual([presetXml("coder"), presetXml("writer")]);
     expect(container.querySelectorAll("svg-path")).toHaveLength(0);
   });
 });
