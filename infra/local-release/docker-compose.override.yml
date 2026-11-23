@@ -1,0 +1,10 @@
+services:
+  migrate:
+    command: ["node", "dist/cli/migrate-database.js"]
+  supervisor:
+    command: ["node", "/app/infra/sandboxes/supervisor/dist/index.js"]
+  web:
+    command: ["node", "dist-server/index.js"]
+    environment:
+      WEB_HOST: 0.0.0.0
+      WEB_PORT: "5173"
