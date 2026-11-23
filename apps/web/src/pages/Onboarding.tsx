@@ -18,17 +18,15 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const fieldId = useId();
   const { step: routeStep } = useParams();
-  const [sharingNeeded, setSharingNeeded] = useState(false);
-  const linkedStep =
-    routeStep === "survey" || routeStep === "model"
-      ? routeStep
-      : routeStep === "sharing" && sharingNeeded
-        ? "sharing"
-        : undefined;
+  const linkedStep = routeStep === "survey" || routeStep === "model" ? routeStep : undefined;
   const [creatingBot, setCreatingBot] = useState(false);
-  const step = creatingBot ? "bot" : (linkedStep ?? "loading");
   const [billingEnabled, setBillingEnabled] = useState(false);
-  const [after, setAfter] = useState<{ survey: boolean; next: "model" | "bot" } | null>(null);
+  const [after, setAfter] = useState<{
+    sharing: boolean;
+    survey: boolean;
+    next: "model" | "bot";
+  } | null>(null);
+  const step = creatingBot ? "bot" : after?.sharing ? "sharing" : (linkedStep ?? "loading");
   const [catalog, setCatalog] = useState<ModelCatalogEntry[]>([]);
   const model = useOnboardingModel({
     catalog,
@@ -52,16 +50,13 @@ export function OnboardingPage() {
         setCatalog(models);
         const next = me.needsModel ? "model" : "bot";
         const survey = Boolean(me.needsSignupSurvey);
-        setAfter({ survey, next });
         const sharing = Boolean(me.usageSharing?.needed);
-        setSharingNeeded(sharing);
-        if (!linkedStep || (routeStep === "sharing" && !sharing)) {
-          goTo(sharing ? "sharing" : survey ? "survey" : next);
-        }
+        setAfter({ sharing, survey, next });
+        if (!linkedStep && !sharing) goTo(survey ? "survey" : next);
       })
       .catch(() => {
         if (signal.aborted) return;
-        setAfter({ survey: false, next: "bot" });
+        setAfter({ sharing: false, survey: false, next: "bot" });
         if (!linkedStep) goTo("bot");
       });
     return () => {
@@ -70,7 +65,7 @@ export function OnboardingPage() {
     };
   }, []);
 
-  function goTo(next: "sharing" | "survey" | "model" | "bot") {
+  function goTo(next: "survey" | "model" | "bot") {
     if (next === "bot") setCreatingBot(true);
     navigate(next === "bot" ? "/onboarding" : `/onboarding/${next}`, { replace: true });
   }
@@ -110,7 +105,12 @@ export function OnboardingPage() {
       <AccountMenu signingOut={signingOut} onLogOut={() => void logOut()} />
       <div className="mx-auto w-full max-w-[560px]">
         {step === "sharing" && after ? (
-          <UsageSharingStep onDone={() => goTo(after.survey ? "survey" : after.next)} />
+          <UsageSharingStep
+            onDone={() => {
+              setAfter({ ...after, sharing: false });
+              goTo(after.survey ? "survey" : after.next);
+            }}
+          />
         ) : null}
         {step === "survey" && after ? <SignupSurvey onDone={() => goTo(after.next)} /> : null}
         {step === "model" ? <ModelStep model={model} fieldId={fieldId} /> : null}

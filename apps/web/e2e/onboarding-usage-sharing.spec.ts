@@ -26,7 +26,6 @@ test("a new user chooses data sharing first and finds the choice in Settings", a
   await createAccount(page, `sharing-${Date.now()}@robots.test`, "password12", "Sharing");
 
   await expect(page.getByRole("heading", { name: "Enable data sharing" })).toBeVisible();
-  await expect(page).toHaveURL(/\/onboarding\/sharing$/);
   await expect(page.getByText("Help make RoBots better for everyone")).toBeVisible();
   const toggle = page.getByRole("switch", { name: "Share data" });
   await expect(toggle).not.toBeChecked();
