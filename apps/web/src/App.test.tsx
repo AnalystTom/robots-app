@@ -228,7 +228,7 @@ function Location() {
 }
 
 it.each([
-  ["/app/bot-1?thread=t-1", "/sign-in?next=%2Fapp%2Fbot-1%3Fthread%3Dt-1", "Auth in"],
+  ["/app/bot-1?thread=t-1", "/sign-in", "Auth in"],
   ["/invite/token-1", "/sign-in?next=%2Finvite%2Ftoken-1", "Auth in"],
 ])("sends a signed-out visit to %s through auth with its destination", async (path, auth, page) => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);

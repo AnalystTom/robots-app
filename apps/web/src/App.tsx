@@ -314,10 +314,7 @@ function SessionApp() {
                       <Outlet />
                     </SubscriptionGate>
                   ) : (
-                    <Navigate
-                      to={`/sign-in?next=${encodeURIComponent(pathname + search)}`}
-                      replace
-                    />
+                    <Navigate to="/sign-in" replace />
                   )
                 }
               >

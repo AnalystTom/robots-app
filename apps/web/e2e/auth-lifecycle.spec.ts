@@ -205,10 +205,9 @@ test("logout protects bot deep links and sign-in restores the session", async ({
   await expect(page.getByRole("heading", { name: "Sign in to RoBots" })).toBeVisible();
   await captureScreenshot(page, testInfo, "37-logged-out-returning");
 
-  const backToBot = (url: URL) =>
-    url.pathname.startsWith("/sign-in") && url.searchParams.get("next") === protectedBotPath;
+  const onSignIn = (url: URL) => url.pathname === "/sign-in";
   await page.goto(protectedBotPath);
-  await page.waitForURL(backToBot);
+  await page.waitForURL(onSignIn);
   await expect(page.getByRole("heading", { name: "Sign in to RoBots" })).toBeVisible();
   await expect(page.getByText("Chief", { exact: true })).toHaveCount(0);
   await expect(page.getByText(userName, { exact: true })).toHaveCount(0);
@@ -228,14 +227,15 @@ test("logout protects bot deep links and sign-in restores the session", async ({
       .locator("form")
       .getByText(/invalid email or password|invalid credentials|incorrect password/i),
   ).toBeVisible();
-  await expect(page).toHaveURL(backToBot);
+  await expect(page).toHaveURL(onSignIn);
   await captureScreenshot(page, testInfo, "39-invalid-credentials");
 
   await page.getByPlaceholder("Password").fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await page.waitForURL((url) => url.pathname === protectedBotPath, {
+  await page.waitForURL((url) => url.pathname.startsWith("/app"), {
     timeout: 20_000,
   });
+  await page.goto(protectedBotPath);
   const composer = page.getByRole("combobox", { name: "Message Chief" });
   await expect(composer).toHaveAttribute("name", "chat-message");
   await expect(composer).toHaveAttribute("autocomplete", "off");
