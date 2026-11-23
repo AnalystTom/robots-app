@@ -13,11 +13,14 @@ const needsAttention = (activity: ReturnType<typeof logoAvatarActivity>) =>
   logoAvatarNeedsAttention(botAvatarActivity(bot, activity));
 
 describe("avatar attention", () => {
-  it.each(["waiting_input", "waiting_takeover"])("shows a foreground %s wait", (status) => {
-    expect(needsAttention(logoAvatarActivity({ ...initialLogoAvatarSignals("bot"), status }))).toBe(
-      true,
-    );
-  });
+  it.each(["waiting_input", "waiting_takeover"])(
+    "does not count a foreground %s wait on a drawn robot, which shows no waiting cue",
+    (status) => {
+      expect(
+        needsAttention(logoAvatarActivity({ ...initialLogoAvatarSignals("bot"), status })),
+      ).toBe(false);
+    },
+  );
 
   it.each(["idle", "running", "queued", "completed", "failed", "cancelled"])(
     "does not treat %s as attention",
@@ -67,11 +70,11 @@ describe("avatar attention", () => {
       type: "run.waiting_input",
       payload: {},
     });
-    expect(needsAttention(store.getActivity("bot", "idle"))).toBe(true);
+    expect(needsAttention(store.getActivity("bot", "idle"))).toBe(false);
   });
 
   it("uses the same avatar selection as rendering", () => {
-    expect(usesLogoAvatar(bot)).toBe(true);
-    expect(botAvatarActivity(bot, "waiting")).toBe("waiting");
+    expect(usesLogoAvatar(bot)).toBe(false);
+    expect(botAvatarActivity(bot, "waiting")).toBe("idle");
   });
 });

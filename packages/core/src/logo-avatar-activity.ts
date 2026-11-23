@@ -1,4 +1,5 @@
 import { hasThinkingActivityMarker, parseBotAvatarValue } from "@robots/contracts";
+import { robotLookForIdentity } from "./robot-presets.js";
 import { isBackgroundRunTrigger, isRunWaitingOnUser, isRunWorking } from "./run-state.js";
 
 /** Minimal public stream fields used by web and native activity projections. */
@@ -32,12 +33,12 @@ export function botAvatarActivity(
 }
 
 export function usesLogoAvatar(bot: { avatarSet?: string; color: string }): boolean {
-  const parsed = parseBotAvatarValue(bot.color);
+  const drawn = parseBotAvatarValue(robotLookForIdentity(bot.color, ""));
   return (
     bot.avatarSet === "robots" &&
-    parsed.kind !== "image" &&
-    parsed.kind !== "shape" &&
-    parsed.kind !== "robot"
+    drawn.kind !== "image" &&
+    drawn.kind !== "shape" &&
+    drawn.kind !== "robot"
   );
 }
 

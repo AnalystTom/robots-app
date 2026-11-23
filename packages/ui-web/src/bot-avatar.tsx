@@ -83,7 +83,6 @@ export function parseBotAvatar(
 
 const AVATAR_HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
-/** The plain colour value for an avatar; a robot character gives its backdrop. */
 export function defaultBotAvatarValue(rawColor: string): string {
   const robot = parseRobotCharacter(rawColor);
   if (robot) return ROBOT_COLOUR_FILLS[robot.colour];
