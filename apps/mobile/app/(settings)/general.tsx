@@ -2,7 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import { APP_LOCALE_LABELS } from "@robots/core";
 import * as Notifications from "expo-notifications";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Alert, AppState, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeSegmentedControl } from "../../components/native-segmented-control";
@@ -35,7 +35,7 @@ import {
 import type { MobileMe } from "../../lib/mobile-types";
 import { useThemedStyles } from "../../lib/native";
 import { registerPushToken } from "../../lib/push";
-import { useSave } from "../../lib/query";
+import { createQueuedSave } from "../../lib/queued-save";
 import {
   getCachedRemoteImagesEnabled,
   setRemoteImagesPreference,
@@ -48,9 +48,10 @@ import {
 } from "../../lib/response-streaming";
 import { loadSessionToken } from "../../lib/session";
 import { createSettingsPageStyles } from "../../lib/settings-page-styles";
-import { ACCOUNT_SETTINGS } from "../../lib/settings-target";
 import { useSideInsets } from "../../lib/side-insets";
 import { errorText } from "../../lib/user-error";
+
+let hapticsSaveVersion = 0;
 
 export default function General() {
   const sideInsets = useSideInsets();
@@ -60,6 +61,7 @@ export default function General() {
   const styles = useThemedStyles(createSettingsPageStyles);
   const stacked = useStackedSettings();
   const [me, setMe] = useState<MobileMe | null>(null);
+  const botStyleRequest = useRef(0);
   const appearance = getCachedAppearancePreference();
   const streamReplies = useSyncExternalStore(
     subscribeResponseStreaming,
@@ -80,53 +82,29 @@ export default function General() {
     DEFAULT_LIVE_NOTIFICATION_SETTINGS,
   );
   const [notificationsReady, setNotificationsReady] = useState(Platform.OS !== "android");
+  const notificationQueue = useRef<ReturnType<
+    typeof createQueuedSave<LiveNotificationSettings>
+  > | null>(null);
+  const pushQueue = useRef<ReturnType<typeof createQueuedSave<boolean>> | null>(null);
   const [notificationPermission, setNotificationPermission] = useState<string | null>(null);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
 
-  const haptics = useSave({
-    save: (value: boolean) => setHapticsEnabled(value),
-    onFailed: (_error, value) =>
+  function updateHaptics(value: boolean) {
+    const version = ++hapticsSaveVersion;
+    const isCurrent = () => version === hapticsSaveVersion && getHapticsEnabled() === value;
+    void setHapticsEnabled(value).catch(() => {
+      if (!isCurrent()) return;
       Alert.alert(t`Haptics`, t`Could not save`, [
         { text: t`Cancel`, style: "cancel" },
-        { text: t`Retry`, onPress: () => haptics.run(value) },
-      ]),
-  });
-
-  const liveNotifications = useSave({
-    save: async (settings: LiveNotificationSettings) => {
-      await setLiveNotificationSettings(
-        settings,
-        currentApiBase(),
-        await loadSessionToken(),
-        selectedSpaceId() ?? "",
-      );
-      if (settings.liveConnection && !(await canPostPromotedNotifications())) {
-        await openPromotedNotificationSettings();
-      }
-      await registerPushToken();
-    },
-    onSaved: (_saved, settings) => setNotifications(settings),
-  });
-  const shownNotifications =
-    liveNotifications.pending && liveNotifications.input ? liveNotifications.input : notifications;
-  const liveNotificationsDisabled = !notificationsReady || liveNotifications.pending;
-
-  const botStyle = useSave({
-    save: (botAvatarSet: MobileMe["botAvatarSet"], send) =>
-      send("preferences/update", { botAvatarSet }),
-    onSaved: (next) =>
-      setMe((current) => (current ? { ...current, botAvatarSet: next.botAvatarSet } : next)),
-    onFailed: () => Alert.alert(t`Couldn't update bot style`),
-  });
-
-  const pushSetting = useSave({
-    target: ACCOUNT_SETTINGS,
-    save: (pushNotifications: boolean, send) => send("preferences/update", { pushNotifications }),
-    onSaved: (next) =>
-      setMe((current) =>
-        current ? { ...current, pushNotifications: next.pushNotifications } : next,
-      ),
-    onFailed: () => Alert.alert(t`Push notifications`, t`Could not save`),
-  });
+        {
+          text: t`Retry`,
+          onPress: () => {
+            if (isCurrent()) updateHaptics(value);
+          },
+        },
+      ]);
+    });
+  }
 
   // Read on every visit, so a failed read retries when the page is shown again.
   useFocusEffect(
@@ -134,7 +112,9 @@ export default function General() {
       let active = true;
       void rpc("me")
         .then((next) => {
-          if (active) setMe(next);
+          if (!active) return;
+          setMe(next);
+          pushQueue.current?.reset(next.pushNotifications);
         })
         .catch(() => undefined);
       return () => {
@@ -182,8 +162,63 @@ export default function General() {
     }, []),
   );
 
-  function chooseBotStyle(botAvatarSet: MobileMe["botAvatarSet"] | "") {
-    if (botAvatarSet) botStyle.run(botAvatarSet);
+  function updateNotifications(next: LiveNotificationSettings) {
+    notificationQueue.current ??= createQueuedSave(notifications, {
+      onChange: setNotifications,
+      equals: (a, b) =>
+        a.liveConnection === b.liveConnection &&
+        a.messages === b.messages &&
+        a.scheduledTasks === b.scheduledTasks &&
+        a.needsAttention === b.needsAttention,
+      save: async (settings) => {
+        await setLiveNotificationSettings(
+          settings,
+          currentApiBase(),
+          await loadSessionToken(),
+          selectedSpaceId() ?? "",
+        );
+      },
+      onSaved: async (settings) => {
+        if (settings.liveConnection && !(await canPostPromotedNotifications())) {
+          await openPromotedNotificationSettings();
+        }
+        await registerPushToken();
+      },
+      onError: (cause) => setNotificationError(errorText(cause, t`Could not update notifications`)),
+    });
+    setNotificationError(null);
+    notificationQueue.current.update(next);
+  }
+
+  function updatePushNotifications(pushNotifications: boolean) {
+    pushQueue.current ??= createQueuedSave(Boolean(me?.pushNotifications), {
+      onChange: (value) =>
+        setMe((current) => (current ? { ...current, pushNotifications: value } : current)),
+      save: async (value) => {
+        await rpc("preferences/update", { pushNotifications: value });
+      },
+      onError: () => Alert.alert(t`Push notifications`, t`Could not save`),
+    });
+    pushQueue.current.update(pushNotifications);
+  }
+
+  function updateBotStyle(botAvatarSet: MobileMe["botAvatarSet"] | "") {
+    if (!me || !botAvatarSet) return;
+    const previous = me.botAvatarSet;
+    // Only the latest tap's reply may land, so a slower earlier save can't undo it.
+    const request = ++botStyleRequest.current;
+    setMe((current) => (current ? { ...current, botAvatarSet } : current));
+    rpc("preferences/update", { botAvatarSet })
+      .then((next) => {
+        // Take only the style, so an older snapshot can't undo another edit.
+        if (request !== botStyleRequest.current) return;
+        setMe((current) => (current ? { ...current, botAvatarSet: next.botAvatarSet } : next));
+      })
+      .catch(() => {
+        if (request !== botStyleRequest.current) return;
+        setMe((current) => (current ? { ...current, botAvatarSet: previous } : current));
+        Alert.alert(t`Couldn't update bot style`);
+      });
   }
 
   return (
@@ -212,12 +247,12 @@ export default function General() {
             <SettingsLabel>{t`Bot style`}</SettingsLabel>
             <NativeSegmentedControl
               accessibilityLabel={t`Bot style`}
-              onChange={chooseBotStyle}
+              onChange={updateBotStyle}
               options={[
                 { value: "organic", label: t`Original` },
                 { value: "robots", label: t`RoBots` },
               ]}
-              value={botStyle.pending && botStyle.input ? botStyle.input : (me.botAvatarSet ?? "")}
+              value={me.botAvatarSet ?? ""}
             />
           </View>
         ) : null}
@@ -232,18 +267,12 @@ export default function General() {
             title={t`Language`}
             value={APP_LOCALE_LABELS[locale]}
           />
-          <SettingsSwitch
-            label={t`Haptics`}
-            value={hapticsEnabled}
-            disabled={haptics.pending}
-            onChange={(value) => haptics.run(value)}
-          />
+          <SettingsSwitch label={t`Haptics`} value={hapticsEnabled} onChange={updateHaptics} />
           {me ? (
             <SettingsSwitch
               label={t`Push notifications`}
-              value={pushSetting.pending ? Boolean(pushSetting.input) : me.pushNotifications}
-              disabled={pushSetting.pending}
-              onChange={(checked) => pushSetting.run(checked)}
+              value={me.pushNotifications}
+              onChange={updatePushNotifications}
             />
           ) : null}
         </SettingsGroup>
@@ -260,34 +289,34 @@ export default function General() {
             ) : null}
             <SettingsSwitch
               label={t`Live working status`}
-              value={shownNotifications.liveConnection}
-              disabled={liveNotificationsDisabled}
+              value={notifications.liveConnection}
+              disabled={!notificationsReady}
               onChange={(liveConnection) =>
-                liveNotifications.run({ ...notifications, liveConnection })
+                void updateNotifications({ ...notifications, liveConnection })
               }
             />
             <SettingsSwitch
               label={t`Agent messages`}
               detail={t`Replies and completed work`}
-              value={shownNotifications.messages}
-              disabled={liveNotificationsDisabled}
-              onChange={(messages) => liveNotifications.run({ ...notifications, messages })}
+              value={notifications.messages}
+              disabled={!notificationsReady}
+              onChange={(messages) => void updateNotifications({ ...notifications, messages })}
             />
             <SettingsSwitch
               label={t`Scheduled tasks`}
-              value={shownNotifications.scheduledTasks}
-              disabled={liveNotificationsDisabled}
+              value={notifications.scheduledTasks}
+              disabled={!notificationsReady}
               onChange={(scheduledTasks) =>
-                liveNotifications.run({ ...notifications, scheduledTasks })
+                void updateNotifications({ ...notifications, scheduledTasks })
               }
             />
             <SettingsSwitch
               label={t`Needs attention`}
               detail={t`Questions, approvals, takeover`}
-              value={shownNotifications.needsAttention}
-              disabled={liveNotificationsDisabled}
+              value={notifications.needsAttention}
+              disabled={!notificationsReady}
               onChange={(needsAttention) =>
-                liveNotifications.run({ ...notifications, needsAttention })
+                void updateNotifications({ ...notifications, needsAttention })
               }
             />
             {hasLiveUpdateSettings() ? (
@@ -302,11 +331,7 @@ export default function General() {
               onPress={() => void openLiveNotificationSettings()}
               title={t`Notification settings`}
             />
-            {liveNotifications.error ? (
-              <Text style={styles.error}>
-                {errorText(liveNotifications.error, t`Could not update notifications`)}
-              </Text>
-            ) : null}
+            {notificationError ? <Text style={styles.error}>{notificationError}</Text> : null}
           </SettingsGroup>
         ) : null}
 

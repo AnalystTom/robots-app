@@ -89,6 +89,12 @@ export async function reconcileStuckWork(deps: {
     const candidate = readyStuckRun(run, deps.now);
     return candidate ? [candidate] : [];
   });
+  const pushing = due.length
+    ? await usersPushing(
+        deps.prisma,
+        due.map((run) => run.userId),
+      )
+    : new Set<string>();
   const notices = due.length
     ? await deps.prisma.event.findMany({
         where: {
@@ -110,8 +116,8 @@ export async function reconcileStuckWork(deps: {
       alreadyNotified,
     });
     try {
-      if (action === "notify") await remindStuckRun(deps, run);
-      else if (action === "expire") await expireOne(deps, run);
+      if (action === "notify") await remindStuckRun(deps, run, pushing);
+      else if (action === "expire") await expireOne(deps, run, pushing);
     } catch (error) {
       getLogger().error("stuck work", error);
     }
@@ -196,9 +202,10 @@ async function remindStuckRun(
     now: Date;
   },
   run: StuckCandidate,
+  pushing: ReadonlySet<string>,
 ) {
   if (!deps.notifications || !noticesEnabled(run)) return;
-  if (!(await pushCanDeliver(deps.prisma, deps.notifications, run.userId))) return;
+  if (!(await pushCanDeliver(deps.notifications, run.userId, pushing))) return;
   const claimId = await withTransactionRetry(() =>
     deps.prisma.$transaction(
       (tx) => claimStuckReminder(tx, run, deps.now),
@@ -229,11 +236,11 @@ async function remindStuckRun(
 }
 
 async function pushCanDeliver(
-  prisma: PrismaClient,
   notifications: NotificationProvider,
   userId: string,
+  pushing: ReadonlySet<string>,
 ): Promise<boolean> {
-  if (!(await usersPushing(prisma, [userId])).has(userId)) return false;
+  if (!pushing.has(userId)) return false;
   if (!(notifications instanceof ExpoPushProvider)) return true;
   return notifications.hasPushRecipient(userId);
 }
@@ -319,6 +326,7 @@ async function expireOne(
     now: Date;
   },
   run: StuckCandidate,
+  pushing: ReadonlySet<string>,
 ) {
   const expired = await withTransactionRetry(() =>
     deps.prisma.$transaction(
@@ -349,8 +357,7 @@ async function expireOne(
     threadId: run.threadId,
   };
   publishChatAlert(deps.events, run, message, run.thread.groupId);
-  if (!deps.notifications || !(await usersPushing(deps.prisma, [run.userId])).has(run.userId))
-    return;
+  if (!deps.notifications || !pushing.has(run.userId)) return;
   await sendStuckNotice(deps.notifications, run, message);
 }
 

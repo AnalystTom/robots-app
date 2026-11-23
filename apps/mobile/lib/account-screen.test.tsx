@@ -355,6 +355,7 @@ vi.mock("./organizations", () => ({
 }));
 vi.mock("./push", () => ({ registerPushToken: vi.fn() }));
 vi.mock("./returning-user", () => ({ forgetSignedIn: vi.fn() }));
+vi.mock("./queued-save", () => ({ createQueuedSave: () => ({ save: vi.fn() }) }));
 vi.mock("./remote-images-preference", () => ({
   getCachedRemoteImagesEnabled: () => true,
   setRemoteImagesPreference: vi.fn(),
@@ -447,11 +448,7 @@ it("saves an Original choice even when the saved style is absent", async () => {
   vi.mocked(rpc).mockResolvedValueOnce({ ...account.me, botAvatarSet: "organic" } as never);
   await act(async () => original.click());
   expect(original.getAttribute("aria-pressed")).toBe("true");
-  expect(rpc).toHaveBeenCalledWith(
-    "preferences/update",
-    { botAvatarSet: "organic" },
-    expect.anything(),
-  );
+  expect(rpc).toHaveBeenCalledWith("preferences/update", { botAvatarSet: "organic" });
 });
 
 async function renderAccount(Screen: () => ReactNode = Account) {
@@ -547,21 +544,6 @@ it("shows a device haptics switch that follows and saves the local preference", 
   expect(toggle?.getAttribute("aria-checked")).toBe("false");
 });
 
-it("does not start a second haptics save while the first is still writing", async () => {
-  let finish!: () => void;
-  haptics.save.mockReturnValueOnce(
-    new Promise<void>((resolve) => {
-      finish = resolve;
-    }),
-  );
-  const view = await renderAccount(General);
-  await view.press("Haptics");
-  await view.press("Haptics");
-  expect(haptics.save.mock.calls).toEqual([[false]]);
-  await act(async () => finish());
-  expect(Alert.alert).not.toHaveBeenCalled();
-});
-
 it("requests the cached haptics loader on each settings visit without repeating it on rerenders", async () => {
   const first = await renderAccount(General);
   expect(haptics.load).toHaveBeenCalledOnce();
@@ -604,6 +586,58 @@ it("keeps a failed off choice in memory and offers a native retry of that same c
   expect(haptics.save.mock.calls).toEqual([[false], [false]]);
   expect(toggle?.getAttribute("aria-checked")).toBe("false");
   expect(Alert.alert).toHaveBeenCalledOnce();
+});
+
+it("ignores a failed older toggle even when the latest choice has the same value", async () => {
+  let fail!: (error: Error) => void;
+  haptics.save.mockReturnValueOnce(
+    new Promise<never>((_resolve, reject) => {
+      fail = reject;
+    }),
+  );
+  const view = await renderAccount(General);
+  await view.press("Haptics");
+  await view.press("Haptics");
+  await view.press("Haptics");
+  await act(async () => fail(new Error("old failure")));
+  expect(haptics.save.mock.calls).toEqual([[false], [true], [false]]);
+  expect(haptics.enabled).toBe(false);
+  expect(Alert.alert).not.toHaveBeenCalled();
+});
+
+it("does not let an old retry overwrite a newer preference", async () => {
+  haptics.save.mockRejectedValueOnce(new Error("save failed"));
+  const view = await renderAccount(General);
+  await view.press("Haptics");
+  const retry = vi
+    .mocked(Alert.alert)
+    .mock.lastCall?.[2]?.find((button) => button.text === "Retry");
+  await view.press("Haptics");
+  expect(haptics.enabled).toBe(true);
+  await act(async () => retry?.onPress?.());
+  expect(haptics.save.mock.calls).toEqual([[false], [true]]);
+  expect(haptics.enabled).toBe(true);
+});
+
+it("reports a current failed save and can retry after the account screen closes", async () => {
+  let fail!: (error: Error) => void;
+  haptics.save.mockReturnValueOnce(
+    new Promise<never>((_resolve, reject) => {
+      fail = reject;
+    }),
+  );
+  const view = await renderAccount(General);
+  await view.press("Haptics");
+  await act(async () => root?.unmount());
+  root = undefined;
+  await act(async () => fail(new Error("late failure")));
+  expect(haptics.enabled).toBe(false);
+  expect(Alert.alert).toHaveBeenCalledWith("Haptics", "Could not save", expect.any(Array));
+  const retry = vi
+    .mocked(Alert.alert)
+    .mock.lastCall?.[2]?.find((button) => button.text === "Retry");
+  await act(async () => retry?.onPress?.());
+  expect(haptics.save.mock.calls).toEqual([[false], [false]]);
 });
 
 it("keeps a late failure from an earlier settings visit silent after a newer same-value choice", async () => {

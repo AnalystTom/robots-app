@@ -1,8 +1,10 @@
 package com.robots.notifications
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
 import androidx.test.platform.app.InstrumentationRegistry
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -27,6 +29,10 @@ class ChatGroupTest {
 
   @Before
   fun signedIn() {
+    if (Build.VERSION.SDK_INT >= 33) {
+      InstrumentationRegistry.getInstrumentation().uiAutomation
+        .grantRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
+    }
     manager.cancelAll()
     NotificationStorage(context).token = "test-session"
   }

@@ -69,36 +69,38 @@ export async function listSpaceRuns(
   actor: Actor,
   filter: "active" | "recent",
 ): Promise<RunActivityRow[]> {
-  const account = await prisma.user.findUniqueOrThrow({
-    where: { id: actor.userId },
-    select: { pushNotifications: true },
-  });
-  const rows = await prisma.run.findMany({
-    where:
-      filter === "active"
-        ? {
-            spaceId: actor.spaceId,
-            bot: { archivedAt: null },
-            trigger: { notIn: [...ACTIVITY_HIDDEN_TRIGGERS] },
-            status: { in: [...ACTIVE_RUN_STATUSES] },
-          }
-        : { spaceId: actor.spaceId, id: { in: await latestFinishedRunPerChat(prisma, actor) } },
-    include: {
-      bot: { select: { name: true, archivedAt: true, notifyOnFinish: true } },
-      task: { select: { prompt: true } },
-      sourceMessage: { select: { blocks: true } },
-      thread: {
-        select: {
-          groupId: true,
-          group: { select: { name: true } },
+  const [account, rows] = await Promise.all([
+    prisma.user.findUniqueOrThrow({
+      where: { id: actor.userId },
+      select: { pushNotifications: true },
+    }),
+    prisma.run.findMany({
+      where:
+        filter === "active"
+          ? {
+              spaceId: actor.spaceId,
+              bot: { archivedAt: null },
+              trigger: { notIn: [...ACTIVITY_HIDDEN_TRIGGERS] },
+              status: { in: [...ACTIVE_RUN_STATUSES] },
+            }
+          : { spaceId: actor.spaceId, id: { in: await latestFinishedRunPerChat(prisma, actor) } },
+      include: {
+        bot: { select: { name: true, archivedAt: true, notifyOnFinish: true } },
+        task: { select: { prompt: true } },
+        sourceMessage: { select: { blocks: true } },
+        thread: {
+          select: {
+            groupId: true,
+            group: { select: { name: true } },
+          },
         },
       },
-    },
-    orderBy:
-      filter === "active"
-        ? [{ updatedAt: "desc" }, { id: "desc" }]
-        : [{ completedAt: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
-  });
+      orderBy:
+        filter === "active"
+          ? [{ updatedAt: "desc" }, { id: "desc" }]
+          : [{ completedAt: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
+    }),
+  ]);
 
   return rows.map((row) => ({
     runId: row.id,

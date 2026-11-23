@@ -589,6 +589,7 @@ describe("reconcileStuckWork", () => {
           return paged ? [second] : [first];
         }),
       },
+      user: { findMany: vi.fn(async () => []) },
       event: {
         findMany: vi.fn(async () => [
           {
