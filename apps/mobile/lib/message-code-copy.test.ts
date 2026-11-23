@@ -11,10 +11,17 @@ const mocks = vi.hoisted(() => ({
   actionProps: undefined as MessageActionProps | undefined,
 }));
 
+vi.mock("@react-native-vector-icons/ionicons", () => ({ default: () => null }));
+vi.mock("@react-native-vector-icons/material-design-icons", () => ({
+  MaterialDesignIcons: () => null,
+}));
+vi.mock("expo-symbols", () => ({ SymbolView: () => null }));
 vi.mock("react-native", () => ({
   ActionSheetIOS: {},
   Alert: { alert: vi.fn() },
   Platform: { OS: "ios", select: (options: { ios?: unknown }) => options.ios },
+  Pressable: "button",
+  Text: "span",
   View: "div",
 }));
 vi.mock("react-native-reanimated", () => ({
