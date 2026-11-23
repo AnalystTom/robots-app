@@ -151,7 +151,7 @@ describe("reconcileStuckWork", () => {
   it("sends no stuck push while the account's pushes are off, and no reminder is stamped", async () => {
     const run = candidate("waiting_input", 5);
     const stamps: Array<{ runId: string | null; payload: unknown }> = [];
-    const prisma = noticePrisma(run, stamps, []);
+    const prisma = noticePrisma(run, stamps, [run.userId]);
     const { jobs } = publisher();
     const { provider, send } = notifications();
 
@@ -511,6 +511,30 @@ describe("reconcileStuckWork", () => {
     );
   });
 
+  it("expires a takeover in the chat but sends no stuck push while the account's pushes are off", async () => {
+    const run = candidate("waiting_takeover", 0.5);
+    const client = expireClient(run, { pushOff: [run.userId] });
+    const { provider, send } = notifications();
+    const publishChatAlert = vi.fn(async () => undefined);
+    const { jobs } = publisher();
+
+    await reconcileStuckWork({
+      prisma: client as unknown as PrismaClient,
+      jobs,
+      events: { notify: vi.fn(async () => undefined), publishChatAlert } as unknown as ThreadEvents,
+      notifications: provider,
+      now,
+      batchSize: 100,
+    });
+
+    expect(client.$transaction).toHaveBeenCalled();
+    expect(publishChatAlert).toHaveBeenCalledWith(
+      run.userId,
+      expect.objectContaining({ kind: "failure" }),
+    );
+    expect(send).not.toHaveBeenCalled();
+  });
+
   it("asks only for takeovers past half an hour and other work past the reminder age", async () => {
     const findMany = vi.fn(async () => []);
     const prisma = { run: { findMany } } as unknown as PrismaClient;
@@ -667,7 +691,7 @@ function stampMatchesDelete(stamp: NoticeStamp, where: NoticeDeleteWhere | undef
 function noticePrisma(
   run: ReturnType<typeof candidate>,
   stamps: NoticeStamp[],
-  pushing: string[] = [run.userId],
+  pushOff: string[] = [],
 ) {
   let nextId = 0;
   const prisma = {
@@ -680,8 +704,11 @@ function noticePrisma(
       })),
     },
     user: {
-      findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
-        where.id.in.filter((id) => pushing.includes(id)).map((id) => ({ id })),
+      findMany: vi.fn(
+        async ({ where }: { where: { id: { in: string[] }; pushNotifications?: boolean } }) =>
+          where.id.in
+            .filter((id) => !(where.pushNotifications && pushOff.includes(id)))
+            .map((id) => ({ id })),
       ),
     },
     event: {
@@ -720,12 +747,18 @@ function noticePrisma(
   return prisma as unknown as PrismaClient & { $transaction: ReturnType<typeof vi.fn> };
 }
 
-function expireClient(run: ReturnType<typeof candidate>, options?: { cancelled?: number }) {
+function expireClient(
+  run: ReturnType<typeof candidate>,
+  options?: { cancelled?: number; pushOff?: string[] },
+) {
   const client = {
     externalEffect: { deleteMany: vi.fn(async () => ({ count: 0 })) },
     user: {
-      findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
-        where.id.in.map((id) => ({ id })),
+      findMany: vi.fn(
+        async ({ where }: { where: { id: { in: string[] }; pushNotifications?: boolean } }) =>
+          where.id.in
+            .filter((id) => !(where.pushNotifications && options?.pushOff?.includes(id)))
+            .map((id) => ({ id })),
       ),
     },
     run: {
