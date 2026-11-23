@@ -1370,9 +1370,7 @@ describe("thread composer isolation", () => {
     expect(capsules).toHaveLength(1);
     const capsule = capsules[0]!;
     expect(capsule.querySelector("input")).not.toBeNull();
-    for (const label of ["Call"]) {
-      expect(capsule.querySelector(`[aria-label="${label}"]`)).not.toBeNull();
-    }
+    expect(capsule.querySelector('[aria-label="Call"]')).not.toBeNull();
     type("Hello");
     expect(capsule.querySelector('button[aria-label="Send"]')).not.toBeNull();
     expect(capsule.querySelector('button[aria-label="Call"]')).toBeNull();

@@ -4,7 +4,7 @@ import { displayName as safeDisplayName } from "@robots/core";
 import { useRouter } from "expo-router";
 import { useSyncExternalStore } from "react";
 import { Pressable, Text, View } from "react-native";
-import { botModelLabel } from "../lib/bot-model-label";
+import { useBotModelLabel } from "../lib/bot-model-label";
 import type { ChatTitleRoute } from "../lib/chat-settings-route";
 import { chatTitleRoute } from "../lib/chat-settings-route";
 import type { MobileBot, MobileGroup } from "../lib/mobile-types";
@@ -96,8 +96,9 @@ export function ChatHeaderTitle({
   const members = inGroup ? (title.members ?? inboxGroup?.members) : undefined;
   const label = safeDisplayName(title.name, inGroup ? t`Group` : t`Bot`) || t`Thread`;
   const opens = title.opens;
-  const modelId = title.bot && "modelId" in title.bot ? title.bot.modelId : undefined;
-  const subtitle = !inGroup && title.bot ? botModelLabel(modelId) : undefined;
+  const modelBot = title.bot && "modelId" in title.bot ? title.bot : undefined;
+  const modelLabel = useBotModelLabel(modelBot);
+  const subtitle = !inGroup && title.bot ? modelLabel : undefined;
   return (
     <Pressable
       accessibilityRole="button"

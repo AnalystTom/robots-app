@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+
+import { notifyManager } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { act, createElement } from "react";
 import type { Root } from "react-dom/client";
@@ -11,6 +13,10 @@ import type { MobileBot } from "./mobile-types";
 import { setSearchInbox } from "./search-inbox";
 
 const push = vi.hoisted(() => vi.fn());
+const mocks = vi.hoisted(() => ({
+  catalog: [] as { provider: string; id: string; label: string }[],
+}));
+notifyManager.setScheduler((callback) => callback());
 vi.mock("react-native", () => ({
   Pressable: ({
     children,
@@ -56,7 +62,15 @@ vi.mock("./native", () => ({ useThemedStyles: () => ({}) }));
 vi.mock("./api-server", () => ({}));
 vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
-vi.mock("./api", () => ({ currentApiBase: () => "http://api.test" }));
+vi.mock("./api", () => ({
+  currentApiBase: () => "http://api.test",
+  captureApiRequestContext: async () => ({ headers: {} }),
+  selectedSpaceId: () => "space-1",
+  rpc: async (procedure: string) => {
+    if (procedure === "models/list") return mocks.catalog;
+    throw new Error(`unexpected rpc ${procedure}`);
+  },
+}));
 vi.mock("./session", () => ({
   currentSessionGeneration: () => 1,
   subscribeSessionGeneration: () => () => undefined,
@@ -80,6 +94,7 @@ let container: HTMLDivElement;
 beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   push.mockClear();
+  mocks.catalog = [];
   setSearchInbox([]);
   container = document.createElement("div");
   root = createRoot(container);
@@ -112,13 +127,16 @@ it("draws the inbox's bot from the route alone, before the chat publishes anythi
   expect(button().getAttribute("aria-label")).toBe("Profile");
 });
 
-it("shows the chosen model under the name, or Auto without one", () => {
-  setSearchInbox(inbox([{ ...helper, modelId: "model-x" }]));
+it("shows the chosen model's catalog name under the name, the raw id until it loads", async () => {
+  mocks.catalog = [{ provider: "openrouter", id: "model-x", label: "Model X" }];
+  setSearchInbox(inbox([{ ...helper, modelProvider: "openrouter", modelId: "model-x" }]));
   render({ botId: "bot-1" });
-  expect(button().textContent).toContain("model-x");
-  act(() => root.unmount());
-  container = document.createElement("div");
-  root = createRoot(container);
+  expect(button().textContent).toBe("Helpermodel-x");
+  await act(async () => {});
+  expect(button().textContent).toBe("HelperModel X");
+});
+
+it("shows Auto under the name for a bot without a pinned model", () => {
   setSearchInbox(inbox([helper]));
   render({ botId: "bot-1" });
   expect(button().textContent).toBe("HelperAuto");

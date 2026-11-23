@@ -25,7 +25,7 @@ import { rpc } from "../../lib/api";
 import { useAppForeground } from "../../lib/app-foreground";
 import { mobileTokens } from "../../lib/appearance";
 import type { MobileArtifactTarget } from "../../lib/artifact-open";
-import { botModelLabel } from "../../lib/bot-model-label";
+import { useBotModelLabel } from "../../lib/bot-model-label";
 import { CallKeyboardContext } from "../../lib/call-keyboard-context";
 import { useCallSession } from "../../lib/call-session";
 import { composerDraftScope } from "../../lib/composer-draft";
@@ -265,6 +265,7 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
     ],
   );
   const currentBot = botId ? mentionBots.find((bot) => bot.id === botId) : undefined;
+  const currentBotModelLabel = useBotModelLabel(currentBot);
   // Until the chat's own roster arrives, the bot as the inbox last loaded it.
   const inboxBot = useInboxBot(botId);
   const titleBot = currentBot ?? inboxBot;
@@ -697,7 +698,7 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
               model={
                 botId && currentBot
                   ? {
-                      label: botModelLabel(currentBot.modelId),
+                      label: currentBotModelLabel,
                       onPress: () =>
                         router.push({
                           pathname: "/bot-settings",
