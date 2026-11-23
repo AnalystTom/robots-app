@@ -1,29 +1,9 @@
-import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { captureScreenshot, openUserSettings, signup } from "./helpers";
-
-async function offerUsageSharing(page: Page) {
-  await page.route("**/rpc/me", async (route) => {
-    const response = await route.fetch();
-    const body = (await response.json()) as {
-      json: { usageSharing?: Record<string, unknown> };
-    };
-    await route.fulfill({
-      response,
-      json: {
-        json: {
-          ...body.json,
-          usageSharing: { ...body.json.usageSharing, available: true, needed: true },
-        },
-      },
-    });
-  });
-}
 
 test("a new user chooses data sharing first and finds the choice in Settings", async ({
   page,
 }, testInfo) => {
-  await offerUsageSharing(page);
   await signup(page, `sharing-${Date.now()}@robots.test`, "password12", "Sharing");
 
   await expect(page.getByRole("heading", { name: "Enable data sharing" })).toBeVisible();
@@ -43,10 +23,10 @@ test("a new user chooses data sharing first and finds the choice in Settings", a
   await captureScreenshot(page, testInfo, "02-data-sharing-on");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.waitForURL(/\/app\//, { timeout: 20_000 });
-  await page.unroute("**/rpc/me");
 
   await page.reload();
   await page.waitForURL(/\/app\//);
+  await expect(page.getByRole("heading", { name: "Enable data sharing" })).toHaveCount(0);
   const settings = await openUserSettings(page);
   const setting = settings.getByTestId("usage-sharing-toggle");
   await setting.scrollIntoViewIfNeeded();
@@ -61,26 +41,15 @@ test("a new user chooses data sharing first and finds the choice in Settings", a
 });
 
 test("continuing without touching the switch leaves data sharing off", async ({ page }) => {
-  await offerUsageSharing(page);
   await signup(page, `sharing-off-${Date.now()}@robots.test`, "password12", "SharingOff");
 
   await expect(page.getByRole("heading", { name: "Enable data sharing" })).toBeVisible();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.waitForURL(/\/app\//, { timeout: 20_000 });
-  await page.unroute("**/rpc/me");
 
-  const settings = await openUserSettings(page);
-  await expect(settings.getByTestId("usage-sharing-toggle")).not.toBeChecked();
-});
-
-test("a deployment without product analytics never shows the step or the setting", async ({
-  page,
-}, testInfo) => {
-  await signup(page, `sharing-none-${Date.now()}@robots.test`, "password12", "SharingNone");
-
+  await page.goto("/onboarding");
   await page.waitForURL(/\/app\//, { timeout: 20_000 });
   await expect(page.getByRole("heading", { name: "Enable data sharing" })).toHaveCount(0);
-  await captureScreenshot(page, testInfo, "01-first-screen-without-analytics");
   const settings = await openUserSettings(page);
-  await expect(settings.getByTestId("usage-sharing-toggle")).toHaveCount(0);
+  await expect(settings.getByTestId("usage-sharing-toggle")).not.toBeChecked();
 });

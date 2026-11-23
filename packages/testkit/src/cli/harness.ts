@@ -99,6 +99,7 @@ async function main() {
     }
     // Playwright/E2E force the offline cloud-agent emulator; clear Cursor keys so cards never hit a live VM.
     process.env.CLOUD_AGENT_PROVIDER = "emulator";
+    process.env.ANALYTICS_PROVIDER = "emulator";
     delete process.env.CURSOR_API_KEY;
     process.env.COMPOSIO_API_KEY = "";
     process.env.BETTER_AUTH_SECRET = "test-secret-test-secret-32chars!";

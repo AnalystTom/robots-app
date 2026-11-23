@@ -76,4 +76,18 @@ describePostgres("product analytics gated by usage sharing (PostgreSQL)", () => 
     expect(user).toEqual({ usageSharing: false, usageSharingAnsweredAt: null });
   });
 
+  it("records the answer with the choice it saves", async () => {
+    const answeredAt = new Date("2026-11-20T10:00:00Z");
+    await asSystem(prisma).user.update({
+      where: { id: silent },
+      data: { usageSharing: true, usageSharingAnsweredAt: answeredAt },
+    });
+
+    const user = await asSystem(prisma).user.findUniqueOrThrow({
+      where: { id: silent },
+      select: { usageSharing: true, usageSharingAnsweredAt: true },
+    });
+    expect(user).toEqual({ usageSharing: true, usageSharingAnsweredAt: answeredAt });
+    expect(await asSystem(prisma).bot.count({ where: { userId: silent } })).toBe(0);
+  });
 });
