@@ -49,6 +49,7 @@ import {
   AnswerTooLongError,
   configureProviderTransactionPool,
   IsolationError,
+  onlyWhereUsageSharingIsOn,
   Prisma,
   runProviderTransaction,
 } from "@robots/db";
@@ -592,6 +593,30 @@ describe("account preferences", () => {
       usageSharing: { available: true, enabled: false, needed: false },
     });
   });
+
+  it.each([{}, { timezone: "Europe/London" }])(
+    "stops forwarding analytics at once when a save turns sharing off (%o)",
+    async (extra) => {
+      const setup = preferencesDeps("organic");
+      const sink = { capture: vi.fn(), flush: vi.fn(async () => undefined) };
+      const analytics = onlyWhereUsageSharingIsOn(sink, setup.deps.prisma);
+      setup.deps.analytics = analytics;
+      const client = createRouterClient(createRouter(setup.deps), {
+        context: { actor: setup.actor } as never,
+      });
+      const screen = { screen: "chat", surface: "web" } as const;
+
+      await updatePreferences(setup, { usageSharing: true, ...extra });
+      await client.analytics.screen(screen);
+      await analytics.flush();
+      expect(sink.capture).toHaveBeenCalledTimes(1);
+
+      await updatePreferences(setup, { usageSharing: false, ...extra });
+      await client.analytics.screen(screen);
+      await analytics.flush();
+      expect(sink.capture).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it.each([null, "Europe/London"])(
     "adopts the browser timezone only while the saved value is null (%s)",
