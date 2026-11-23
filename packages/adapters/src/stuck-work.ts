@@ -20,7 +20,7 @@ import {
 import { getLogger } from "@robots/logging";
 import { ExpoPushProvider } from "./expo-push.js";
 import { notificationIdentity } from "./notification-identity.js";
-import { publishChatAlert } from "./run-notifications.js";
+import { publishChatAlert, usersPushing } from "./run-notifications.js";
 import { wakeRun } from "./wake-run.js";
 
 type StuckCursor = { at: Date; id: string };
@@ -38,19 +38,8 @@ type StuckCandidate = {
   thread: { groupId: string | null };
 };
 
-/**
- * How long a pending reminder claim counts as in flight. Longer than the Expo
- * push timeout so a live send is not treated as abandoned, and short enough
- * that a worker which stops before Expo accepts the push is retried.
- */
 export const STUCK_NOTICE_CLAIM_TTL_MS = 2 * 60 * 1000;
 
-/**
- * Remind, then cancel, queued runs and human waits that have been sitting still. The notice
- * stamp is keyed to this episode's updatedAt, so answering or reclaiming the run can remind
- * again later. A pending claim becomes delivered only after the push is accepted and is removed
- * when the push fails, so a crash or a dropped token can still remind.
- */
 export async function reconcileStuckWork(deps: {
   prisma: PrismaClient;
   jobs: JobPublisher;
@@ -174,7 +163,6 @@ function stuckNoticePayload(payload: unknown): StuckNoticePayload | null {
   return record;
 }
 
-/** A stamp counts as delivered once the push was accepted. Pending claims do not. */
 function noticeIsDelivered(payload: unknown, updatedAt: Date): boolean {
   const record = stuckNoticePayload(payload);
   if (!record || record.updatedAt !== updatedAt.toISOString()) return false;
@@ -209,10 +197,8 @@ async function remindStuckRun(
   },
   run: StuckCandidate,
 ) {
-  // A skipped push (notices off, no provider, or no push token yet) stays unmarked
-  // so a later sweep can still remind during this same wait.
   if (!deps.notifications || !noticesEnabled(run)) return;
-  if (!(await pushCanDeliver(deps.notifications, run.userId))) return;
+  if (!(await pushCanDeliver(deps.prisma, deps.notifications, run.userId))) return;
   const claimId = await withTransactionRetry(() =>
     deps.prisma.$transaction(
       (tx) => claimStuckReminder(tx, run, deps.now),
@@ -230,7 +216,6 @@ async function remindStuckRun(
   };
   const delivery = await sendStuckNotice(deps.notifications, run, message);
   if (delivery === "delivered") {
-    // After the push, so a failed push that is retried does not alert open apps twice.
     publishChatAlert(deps.events, run, message, run.thread.groupId);
     await withTransactionRetry(() =>
       deps.prisma.$transaction(
@@ -244,9 +229,11 @@ async function remindStuckRun(
 }
 
 async function pushCanDeliver(
+  prisma: PrismaClient,
   notifications: NotificationProvider,
   userId: string,
 ): Promise<boolean> {
+  if (!(await usersPushing(prisma, [userId])).has(userId)) return false;
   if (!(notifications instanceof ExpoPushProvider)) return true;
   return notifications.hasPushRecipient(userId);
 }
@@ -362,7 +349,9 @@ async function expireOne(
     threadId: run.threadId,
   };
   publishChatAlert(deps.events, run, message, run.thread.groupId);
-  if (deps.notifications) await sendStuckNotice(deps.notifications, run, message);
+  if (!deps.notifications || !(await usersPushing(deps.prisma, [run.userId])).has(run.userId))
+    return;
+  await sendStuckNotice(deps.notifications, run, message);
 }
 
 type StuckNoticeDelivery = "delivered" | "undeliverable" | "failed";

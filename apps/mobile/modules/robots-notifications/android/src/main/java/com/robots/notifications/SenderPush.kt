@@ -17,27 +17,15 @@ import android.util.Base64
 import android.util.Log
 import org.json.JSONObject
 
-/** What the messaging service does with a message push that is not a call. */
 internal enum class PushDisposition { EXPO, DROP, POST }
 
-/**
- * Builds that register sender support get message pushes as data only, because Expo's
- * notification messages bypass app code in the background. Anything without that copy is
- * left to Expo.
- */
 internal object SenderPush {
   private const val MAX_AVATAR_CHARS = 1400
   private const val MAX_AVATAR_PIXELS = 96
   private const val SILENT_GROUP = "robots.silent"
 
-  /** Its own ID per thread, as Expo's had, so the poller's fallback post never replaces it. */
   fun notificationId(threadId: String) = "push:$threadId".hashCode()
 
-  /**
-   * Decides a message push without Android calls, so the policy stays unit-testable. A RoBots
-   * push with no stored session belongs to an account that signed out or left for another
-   * server; it is dropped here, because handing it back to Expo would still show it.
-   */
   fun disposition(
     data: JSONObject,
     hasSession: () -> Boolean,
@@ -49,7 +37,6 @@ internal object SenderPush {
     if (data.optString("threadId").isBlank()) return PushDisposition.EXPO
     if (!hasSession()) return PushDisposition.DROP
     if (openThread()) return PushDisposition.DROP
-    // Matches the app's foreground handler: finished work is already on screen.
     if (data.optString("kind") == "completion" && foreground()) return PushDisposition.DROP
     return PushDisposition.POST
   }
@@ -84,13 +71,13 @@ internal object SenderPush {
     foreground: Boolean,
   ) {
     val body = data.optString("notificationBody")
-    // Like the app's foreground handler, a push that arrives while the app is open stays quiet.
     val channel = when {
       foreground && Build.VERSION.SDK_INT < 31 -> Channels.LIVE
       data.optString("kind") in setOf("help", "takeover", "failure") -> Channels.ATTENTION
       else -> Channels.MESSAGES
     }
     createRobotsChannels(context)
+    val summarized = foreground && Build.VERSION.SDK_INT >= 31
     @Suppress("DEPRECATION")
     val builder = (if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, channel) else Notification.Builder(context))
       .setSmallIcon(R.drawable.ic_robots_notification)
@@ -101,10 +88,8 @@ internal object SenderPush {
       .setAutoCancel(true)
       .setCategory(Notification.CATEGORY_MESSAGE)
       .apply { if (data.has("notificationBadge")) setNumber(data.optInt("notificationBadge")) }
-      // Notification.Builder has no setSilent; this is what NotificationCompat's setSilent does:
-      // a child of a group that alerts only for its summary posts without sound or heads-up.
       .apply {
-        if (foreground && Build.VERSION.SDK_INT >= 31) {
+        if (summarized) {
           setGroup(SILENT_GROUP)
           setGroupAlertBehavior(Notification.GROUP_ALERT_SUMMARY)
         } else {
@@ -120,7 +105,7 @@ internal object SenderPush {
     runCatching { addSender(context, builder, data, title, body) }
       .onFailure { Log.w("RobotsSenderPush", "Posting without the sender", it) }
     context.getSystemService(NotificationManager::class.java).notify(notificationId(threadId), builder.build())
-    if (!(foreground && Build.VERSION.SDK_INT >= 31)) ChatGroup.postSummary(context, channel)
+    if (!summarized) ChatGroup.postSummary(context, channel)
   }
 
   private fun addSender(context: Context, builder: Notification.Builder, data: JSONObject, title: String, body: String) {
@@ -135,7 +120,6 @@ internal object SenderPush {
       .apply { portrait?.let { setIcon(Icon.createWithBitmap(it)) } }
       .build()
     val user = Person.Builder().setName(context.applicationInfo.loadLabel(context.packageManager)).build()
-    // The title says why it alerted ("… failed"), so it stays as the heading above the sender.
     val style = Notification.MessagingStyle(user).addMessage(body, System.currentTimeMillis(), person)
       .setConversationTitle(title).setGroupConversation(true)
     builder.setStyle(style)

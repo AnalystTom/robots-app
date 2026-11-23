@@ -127,7 +127,6 @@ describe("reconcileStuckWork", () => {
         },
       }),
     ]);
-    // The claim and the delivered stamp lock the thread row behind snapshot reads.
     expect(prisma.$transaction.mock.calls.map(([, options]) => options)).toEqual([budget, budget]);
   });
 
@@ -146,6 +145,20 @@ describe("reconcileStuckWork", () => {
     await reconcileStuckWork({ prisma, jobs, notifications: provider, now, batchSize: 100 });
 
     expect(send).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("sends no stuck push while the account's pushes are off, and no reminder is stamped", async () => {
+    const run = candidate("waiting_input", 5);
+    const stamps: Array<{ runId: string | null; payload: unknown }> = [];
+    const prisma = noticePrisma(run, stamps, []);
+    const { jobs } = publisher();
+    const { provider, send } = notifications();
+
+    await reconcileStuckWork({ prisma, jobs, notifications: provider, now, batchSize: 100 });
+
+    expect(send).not.toHaveBeenCalled();
+    expect(stamps).toHaveLength(0);
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
@@ -651,7 +664,11 @@ function stampMatchesDelete(stamp: NoticeStamp, where: NoticeDeleteWhere | undef
   });
 }
 
-function noticePrisma(run: ReturnType<typeof candidate>, stamps: NoticeStamp[]) {
+function noticePrisma(
+  run: ReturnType<typeof candidate>,
+  stamps: NoticeStamp[],
+  pushing: string[] = [run.userId],
+) {
   let nextId = 0;
   const prisma = {
     run: {
@@ -661,6 +678,11 @@ function noticePrisma(run: ReturnType<typeof candidate>, stamps: NoticeStamp[]) 
         updatedAt: run.updatedAt,
         startedAt: null,
       })),
+    },
+    user: {
+      findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
+        where.id.in.filter((id) => pushing.includes(id)).map((id) => ({ id })),
+      ),
     },
     event: {
       findMany: vi.fn(async () => stamps.map((stamp) => stamp)),
@@ -701,6 +723,11 @@ function noticePrisma(run: ReturnType<typeof candidate>, stamps: NoticeStamp[]) 
 function expireClient(run: ReturnType<typeof candidate>, options?: { cancelled?: number }) {
   const client = {
     externalEffect: { deleteMany: vi.fn(async () => ({ count: 0 })) },
+    user: {
+      findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
+        where.id.in.map((id) => ({ id })),
+      ),
+    },
     run: {
       findMany: vi.fn(async () => [run]),
       updateMany: vi.fn(async () => ({ count: options?.cancelled ?? 1 })),
