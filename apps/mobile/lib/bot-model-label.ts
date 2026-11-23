@@ -1,4 +1,5 @@
 import { t } from "@lingui/core/macro";
+import { canonicalPiProviderId } from "@robots/contracts";
 import { resolveSelectableModelId } from "@robots/core";
 import { useQuery } from "@tanstack/react-query";
 import type { MobileBot } from "./mobile-types";
@@ -14,10 +15,14 @@ export function useBotModelLabel(bot: ModelledBot | undefined): string {
       queryClient,
     ).data ?? [];
   if (!modelId) return t`Auto`;
-  const provider = bot?.modelProvider ?? "";
+  const provider = canonicalPiProviderId(bot?.modelProvider ?? "");
   const resolvedId = resolveSelectableModelId(catalog, provider, modelId);
   return (
-    catalog.find((entry) => entry.provider === provider && entry.id === resolvedId)?.label ??
-    modelId
+    catalog.find(
+      (entry) =>
+        !entry.placeholder &&
+        canonicalPiProviderId(entry.provider) === provider &&
+        entry.id === resolvedId,
+    )?.label ?? modelId
   );
 }

@@ -136,6 +136,14 @@ it("shows the chosen model's catalog name under the name, the raw id until it lo
   expect(button().textContent).toBe("HelperModel X");
 });
 
+it("names a pinned model by its catalog entry under a provider alias", async () => {
+  mocks.catalog = [{ provider: "azure", id: "gpt-x", label: "Azure GPT" }];
+  setSearchInbox(inbox([{ ...helper, modelProvider: "azure-openai-responses", modelId: "gpt-x" }]));
+  render({ botId: "bot-1" });
+  await act(async () => {});
+  expect(button().textContent).toBe("HelperAzure GPT");
+});
+
 it("shows Auto under the name for a bot without a pinned model", () => {
   setSearchInbox(inbox([helper]));
   render({ botId: "bot-1" });
