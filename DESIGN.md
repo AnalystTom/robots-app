@@ -18,7 +18,7 @@ Names are the existing `@robots/ui-tokens` names, plus NEW names. The NEW slots 
 | border | #E3DBCA | #22323A | hairlines |
 | input | #D6CCB7 | #2D404A | input outline |
 | primary / primary-foreground | #14181B / #F7F3EA | #F2EEE6 / #0D1416 | filled button, user bubble |
-| brand (NEW) | #15788A | #3AA6B7 | the one accent: focus ring, selected row dot, links on marketing |
+| brand (NEW) | #15788A | #3AA6B7 | the one accent: focus ring, selected row dot, large text and icons |
 | brand-soft (NEW) | #D6ECEE | #12343B | selected row fill, info chip |
 | brand-ink (NEW) | #0F6575 | #6DCAD7 | link text on paper, the only brand-coloured body text |
 | accent | ink at 6% | ink at 10% | hover fill (unchanged meaning; do not use for brand) |
@@ -37,7 +37,7 @@ Rules: surfaces are opaque; text and hover are ink at an opacity. Bot colours co
 
 ## Spacing, radius, shadows
 - Spacing: 4, 8, 12, 16, 24, 32, 48. No other values.
-- Radius ladder: control 10, card 16, sheet 20, pill 999 (avatars, floating buttons, chips only). Replaces the 8 values in use (`rounded-sm/md/lg/xl/2xl/full`, `[14px]`, `[min(...)]`).
+- Radius ladder: control 10, card 16, sheet 20, pill 999 (avatars, floating buttons, floating buttons, chips only). Replaces the 8 values in use (`rounded-sm/md/lg/xl/2xl/full`, `[14px]`, `[min(...)]`).
 - Shadows: `shadow-card` on cards that float over paper; none inside lists, none in dark. Overlays use `overlay`.
 
 ## Layout and breakpoints

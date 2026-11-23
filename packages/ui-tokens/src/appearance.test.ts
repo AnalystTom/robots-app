@@ -219,14 +219,25 @@ describe("tokens.css", () => {
     expect(onDisk).toBe(renderTokensCss());
   });
 
-  it("renders the Paper & Ink brand and radius ladder", () => {
+  it("renders the Paper & Ink brand, shadow and radius ladder per theme", () => {
     const css = renderTokensCss();
-    expect(css).toContain("--brand: #15788a;");
-    expect(css).toContain("--brand: #3aa6b7;");
-    expect(css).toContain("--radius-ctl: 10px;");
-    expect(css).toContain("--radius-card: 16px;");
-    expect(css).toContain("--radius-sheet: 20px;");
-    expect(css).toContain("--radius-pill: 999px;");
+    const lightStart = css.indexOf('[data-theme="light"]');
+    const darkBlock = css.slice(0, lightStart);
+    const lightBlock = css.slice(lightStart);
+    const radii = [
+      "--radius-ctl: 10px;",
+      "--radius-card: 16px;",
+      "--radius-sheet: 20px;",
+      "--radius-pill: 999px;",
+    ];
+    for (const radius of radii) {
+      expect(darkBlock).toContain(radius);
+      expect(lightBlock).toContain(radius);
+    }
+    expect(darkBlock).toContain("--brand: #3aa6b7;");
+    expect(darkBlock).toContain("--shadow-card: none;");
+    expect(lightBlock).toContain("--brand: #15788a;");
+    expect(lightBlock).toContain("--shadow-card: 0 1px 2px #2a20100d, 0 12px 32px -12px #2a201029;");
   });
 
   it("scopes light and dark under data-theme", () => {
