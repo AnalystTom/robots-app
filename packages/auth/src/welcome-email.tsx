@@ -28,7 +28,7 @@ export function welcomeEmail(
     <>
       <Text>{greeting(say, user.name)}</Text>
       <Text style={stepStyle}>
-        <strong>{say("Get the apps")}</strong>
+        <strong>1. {say("Get the apps")}</strong>
       </Text>
       <Text style={{ marginTop: 0 }}>
         {withNodes(
@@ -64,5 +64,6 @@ export function welcomeEmail(
       <Text>The RoBots team</Text>
     </>,
     unsubscribeUrl,
+    { src: "https://tryrobots.app/og.png", alt: "RoBots" },
   );
 }

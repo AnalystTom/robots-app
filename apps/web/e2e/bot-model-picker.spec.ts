@@ -33,7 +33,7 @@ test("a new bot's Space default names the connected model it runs", async ({ pag
   await createNamedBot(page, "Scout");
   await openBotPanelTab(page, "Advanced");
   const model = page.getByTestId("bot-settings").locator('[id$="-model"]');
-  await expect(model).toContainText("Space default (Claude Haiku 5.5)");
+  await expect(model).toContainText("Space default · Claude Haiku 5.5");
   await captureScreenshot(page, testInfo, "space-default-resolved-model");
 });
 

@@ -47,7 +47,7 @@ test("an owner invites someone by link and both see the space's members", async 
 
   const invitePath = new URL(inviteUrl).pathname;
   await inviteePage.goto(invitePath);
-  await expect(inviteePage).toHaveURL(/\/sign-up\?next=%2Finvite%2F/);
+  await expect(inviteePage).toHaveURL(/\/sign-in\?next=%2Finvite%2F/);
 
   await signup(inviteePage, `share-invitee-${stamp}@robots.test`, "password12", "Bob Invitee");
   await completeOnboarding(inviteePage);

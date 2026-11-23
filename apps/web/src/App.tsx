@@ -297,7 +297,7 @@ function SessionApp() {
                   user ? (
                     <InvitePage />
                   ) : (
-                    <Navigate to={`/sign-up?next=${encodeURIComponent(pathname)}`} replace />
+                    <Navigate to={`/sign-in?next=${encodeURIComponent(pathname)}`} replace />
                   )
                 }
               />
