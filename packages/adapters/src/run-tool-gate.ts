@@ -28,7 +28,7 @@ import {
   toolRequiresApproval,
   toolRequiresExplicitApproval,
 } from "@robots/core";
-import { normalizedHttpUrl, urlSite } from "@robots/core/egress";
+import { isRiskyFetchTarget, normalizedHttpUrl, urlSite } from "@robots/core/egress";
 import { approvalEffectKey, toolEffectIdempotencyKey } from "@robots/core/node/approval-effect-key";
 import type { AuditEventInput } from "@robots/db";
 import { recordAuditEvent, runSecretKind } from "@robots/db";
@@ -48,7 +48,6 @@ import {
   resolveAutoReviewChecker,
 } from "./auto-review.js";
 import { reviewWithBackups } from "./auto-review-backups.js";
-import { ROBOTS_DOCS_URLS } from "./builtin-skills.js";
 import type { ExecutorDeps } from "./executor-deps.js";
 import { CATALOG_LOAD, CATALOG_SEARCH } from "./lazy-tool-catalog.js";
 import { findConnectedModelCredential } from "./model-selection.js";
@@ -227,13 +226,15 @@ export async function gateToolCall(
     connectorKind,
     connectorProviders,
   );
+  const riskyTarget = fetchUrl !== undefined && isRiskyFetchTarget(fetchUrl);
   const siteGate =
     fetchUrl && fetchSite
       ? outboundSiteGate({
           site: fetchSite,
+          risky: riskyTarget,
           trusted:
+            name === "web_fetch" ||
             ctx.trust.searchResultUrls.has(fetchUrl) ||
-            (name === "web_fetch" && ROBOTS_DOCS_URLS.includes(fetchUrl)) ||
             (await ctx.trust.loadTrustedSites()).has(fetchSite),
           rules: await ctx.trust.loadApprovalRules(),
         })
@@ -446,6 +447,7 @@ export async function gateToolCall(
   const applied =
     READ_ONLY_AGENT_TOOLS.has(name) &&
     siteGate !== "new" &&
+    !needsApprovalEarly &&
     nextApprovedTool !== name &&
     !approvedEffectKey
       ? undefined
@@ -593,7 +595,7 @@ export async function gateToolCall(
     reviewReason,
     summary: request.fleetSummary,
     batch: connectorTool?.batch,
-    onceOnly: asksEveryTime,
+    onceOnly: asksEveryTime || riskyTarget,
   };
 
   if (applied?.duplicate) {

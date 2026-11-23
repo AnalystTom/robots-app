@@ -200,7 +200,7 @@ describe("Parallel through the ordinary bot caller", () => {
               type: "tool",
               id: "fetch",
               name: "web_fetch",
-              arguments: { url: "https://example.test/page", maxChars: 100 },
+              arguments: { url: "https://example.com/page", maxChars: 100 },
             },
           },
           {
@@ -231,7 +231,7 @@ describe("Parallel through the ordinary bot caller", () => {
         const data = {
           results: [
             {
-              url: "https://example.test/page",
+              url: "https://example.com/page",
               title: "Source",
               excerpts: ["Useful evidence"],
               full_content: "Page text ".repeat(120_000),

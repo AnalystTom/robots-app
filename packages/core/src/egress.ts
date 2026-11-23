@@ -1,3 +1,9 @@
+import {
+  ipVersion,
+  isCloudMetadataHost,
+  isInternalHostname,
+  isNonPublicAddress,
+} from "@robots/contracts";
 import { parse } from "tldts";
 
 /**
@@ -73,6 +79,69 @@ export function sitesInText(text: string): Set<string> {
     if ((parsed.isIcann || parsed.isPrivate) && parsed.domain) sites.add(parsed.domain);
   }
   return sites;
+}
+
+const DOWNLOAD_EXTENSIONS = new Set([
+  "apk",
+  "appimage",
+  "appx",
+  "bat",
+  "bin",
+  "cmd",
+  "com",
+  "cpl",
+  "deb",
+  "dll",
+  "dmg",
+  "dylib",
+  "elf",
+  "exe",
+  "hta",
+  "jar",
+  "jnlp",
+  "lnk",
+  "msi",
+  "msix",
+  "pif",
+  "pkg",
+  "ps1",
+  "reg",
+  "rpm",
+  "run",
+  "scr",
+  "sh",
+  "so",
+  "vbs",
+  "wsf",
+  "wsh",
+]);
+
+export function isRiskyFetchTarget(input: string): boolean {
+  const url = httpUrl(input);
+  if (!url) return true;
+  if (url.username || url.password) return true;
+  if (isDownloadPath(url.pathname)) return true;
+  const host = normalizedHost(url.hostname);
+  if (!host) return true;
+  if (ipVersion(host) !== 0) return isNonPublicAddress(host);
+  if (isInternalHostname(host) || isCloudMetadataHost(host)) return true;
+  const parsed = parse(host, { allowPrivateDomains: true, validateHostname: false });
+  return !parsed.domain || !(parsed.isIcann || parsed.isPrivate);
+}
+
+function isDownloadPath(pathname: string): boolean {
+  const segment = pathname
+    .slice(pathname.lastIndexOf("/") + 1)
+    .replace(/%([0-9a-f]{2})/gi, (_, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)));
+  return [segment, segment.replace(/[;\0].*$/, "")].some((name) =>
+    DOWNLOAD_EXTENSIONS.has(extensionOf(name)),
+  );
+}
+
+function extensionOf(name: string): string {
+  const trimmed = name.replace(/[\s.]+$/, "");
+  const dot = trimmed.lastIndexOf(".");
+  return dot < 0 ? "" : trimmed.slice(dot + 1).toLowerCase();
 }
 
 function httpUrl(input: string): URL | undefined {
