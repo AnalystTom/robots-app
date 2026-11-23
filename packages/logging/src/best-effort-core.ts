@@ -1,14 +1,14 @@
-export type BestEffortWarn = (label: string, error: unknown) => void;
+export type BestEffortSink = (message: string, error: unknown) => void;
 
 export async function settleBestEffort<T>(
   label: string,
   attempt: PromiseLike<T> | undefined,
-  warn: BestEffortWarn,
+  sink: BestEffortSink,
 ): Promise<T | undefined> {
   try {
     return await attempt;
   } catch (error) {
-    if (!isAbort(error)) warn(label, error);
+    if (!isAbort(error)) sink(`best effort failed: ${label}`, error);
     return undefined;
   }
 }
