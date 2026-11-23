@@ -2,8 +2,8 @@ import { useLingui } from "@lingui/react/macro";
 import { AI_PRIVACY_URL } from "@robots/contracts";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
-import appIcon from "../../assets/icon.png";
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppMark } from "../../components/app-mark";
 import { NativeActionButton } from "../../components/native-action-button";
 import {
   SettingsGroup,
@@ -48,7 +48,7 @@ export default function UsageSharingStep() {
       contentInsetAdjustmentBehavior="automatic"
     >
       <View style={styles.header}>
-        <Image source={appIcon} style={styles.logo} accessibilityIgnoresInvertColors />
+        <AppMark />
         <Text style={styles.subtitle}>{t`Help make RoBots better for everyone`}</Text>
       </View>
       <SettingsGroup
@@ -91,7 +91,6 @@ function createStyles() {
     content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, gap: 28 },
     compactContent: { paddingHorizontal: 8 },
     header: { alignItems: "center", gap: 12 },
-    logo: { width: 74, height: 74, borderRadius: 17 },
     subtitle: { color: native.secondaryLabel, fontSize: 17, textAlign: "center" },
   });
 }
