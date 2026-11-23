@@ -355,8 +355,8 @@ function Study() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <BotAvatar color={portrait} avatarSet="robots" size={38} />
-          <BotAvatar color="#8B5CF6::shape_3" avatarSet="robots" size={38} />
+          <BotAvatar color={portrait} size={38} />
+          <BotAvatar color="#8B5CF6::shape_3" size={38} />
           <span className="text-caption text-muted-foreground">
             Custom avatars
             <br />
@@ -552,13 +552,7 @@ function SeededFleet() {
                 key={bot.id}
                 className="flex h-11 items-center gap-3 rounded-lg bg-card px-3"
               >
-                <BotAvatar
-                  color={bot.color}
-                  identity={bot.id}
-                  avatarSet="robots"
-                  status="running"
-                  size={32}
-                />
+                <BotAvatar color={bot.color} identity={bot.id} status="running" size={32} />
                 <span className="text-label">{bot.id}</span>
                 <span className="text-caption text-muted-foreground">{bot.color}</span>
               </article>
@@ -570,7 +564,6 @@ function SeededFleet() {
                 <BotAvatar
                   color={bot.color}
                   identity={bot.id}
-                  avatarSet="robots"
                   activity={activity}
                   size={88}
                   className="mx-auto"
@@ -583,7 +576,6 @@ function SeededFleet() {
                       <BotAvatar
                         color={bot.color}
                         identity={bot.id}
-                        avatarSet="robots"
                         activity={activity}
                         size={size}
                       />
