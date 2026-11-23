@@ -23,6 +23,14 @@ export function rememberUsageSharing(userId: string, usageSharing: boolean): voi
 }
 
 export function onlyWhereUsageSharingIsOn(
+  analytics: ProductAnalytics,
+  prisma: PrismaClient,
+): ProductAnalytics;
+export function onlyWhereUsageSharingIsOn(
+  analytics: ProductAnalytics | undefined,
+  prisma: PrismaClient,
+): ProductAnalytics | undefined;
+export function onlyWhereUsageSharingIsOn(
   analytics: ProductAnalytics | undefined,
   prisma: PrismaClient,
 ): ProductAnalytics | undefined {
