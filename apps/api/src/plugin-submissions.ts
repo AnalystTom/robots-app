@@ -231,7 +231,6 @@ export function pluginSubmissionRoutes(
     return c.redirect(integrationPageUrl(row.claim), 303);
   });
 
-  // The marketing site reads this when it builds; a few minutes of staleness is fine.
   app.get(INTEGRATION_CLAIMS_PATH, async (c) =>
     c.json({ claims: await approvedIntegrationClaims(deps.prisma) }, 200, {
       "cache-control": "public, max-age=300",

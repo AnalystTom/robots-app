@@ -129,8 +129,6 @@ capability config, fixtures, logs, or snapshots; use the encrypted secret store 
 
 ## Contact
 
-| Address                                           | Use for                                               |
-| ------------------------------------------------- | ----------------------------------------------------- |
-| [hello@tryrobots.app](mailto:hello@tryrobots.app) | Vulnerabilities only — see [SECURITY.md](SECURITY.md) |
-| [hello@tryrobots.app](mailto:hello@tryrobots.app) | User and support questions                            |
-| [hello@tryrobots.app](mailto:hello@tryrobots.app) | Maintainer                                            |
+| Address                                           | Use for                                                                                              |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [hello@tryrobots.app](mailto:hello@tryrobots.app) | Vulnerabilities (see [SECURITY.md](SECURITY.md)), user and support questions, and maintainer contact |

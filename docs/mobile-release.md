@@ -10,7 +10,7 @@ your own branded build, use your own Expo and store accounts.
 
 When a RoBots store listing goes live, add its URL to `MOBILE_APP_LINKS` in
 `packages/contracts/src/mobile-app-links.ts`. Until a platform has a URL there, the
-web app, the marketing site, and the welcome email leave that store out.
+web app, the marketing site (Robots-site repo), and the welcome email leave that store out.
 
 ## Configure a build
 
