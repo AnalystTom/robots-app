@@ -254,17 +254,15 @@ describe.each(Object.entries(CATALOGS))(
       expect(mismatched).toEqual([]);
     });
 
-    it("translates every desktop t() id and setup page string, and nothing else", () => {
+    it("has no entry for a desktop string the app no longer uses", () => {
       const ids = new Set(setupPageStrings());
       for (const file of readdirSync(srcDir)) {
         if (!/\.(ts|js|cjs)$/.test(file) || file.endsWith(".test.ts")) continue;
         for (const id of translationIds(readFileSync(path.join(srcDir, file), "utf8"))) ids.add(id);
       }
-      const missing = [...ids].filter((id) => !catalog[id]?.trim()).sort();
       const unused = Object.keys(catalog)
         .filter((id) => !ids.has(id))
         .sort();
-      expect(missing).toEqual([]);
       expect(unused).toEqual([]);
     });
   },

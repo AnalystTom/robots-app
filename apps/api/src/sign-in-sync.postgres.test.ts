@@ -4,7 +4,7 @@ import type { PageBrowserCommand, PageBrowserResult } from "@robots/adapter-kit"
 import { EncryptedSecretStore, importBrowserSessions } from "@robots/adapters";
 import type { Actor, SiteSession } from "@robots/contracts";
 import type { PrismaClient } from "@robots/db";
-import { asSystem, createDb } from "@robots/db";
+import { asSystem, createDb, runAsTenant } from "@robots/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { RouterDeps } from "./router.js";
 import { createRouter } from "./router.js";
@@ -145,10 +145,12 @@ describePostgres("a sign-in item's bot changes reach the browser (PostgreSQL)", 
       secrets,
       sandbox,
     } as unknown as RouterDeps);
-    await importBrowserSessions(
-      { prisma: db.prisma, secretStore: secrets },
-      { userId: owner, spaceId: owner },
-      { source: "Thomas in Chrome", botIds: [botA], sessions: [session()] },
+    await runAsTenant({ spaceId: owner, userId: owner }, () =>
+      importBrowserSessions(
+        { prisma: db.prisma, secretStore: secrets },
+        { userId: owner, spaceId: owner },
+        { source: "Thomas in Chrome", botIds: [botA], sessions: [session()] },
+      ),
     );
   });
 
