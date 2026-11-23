@@ -1,6 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import type { Bot, CreateBotInput } from "@robots/contracts";
-import { PRIMARY_BOT_SPAWN_KEY, robotCharacterValue } from "@robots/contracts";
+import { PRIMARY_BOT_SPAWN_KEY } from "@robots/contracts";
+import { randomRobotPreset, robotPresetValue } from "@robots/core";
 import { BotAvatar } from "@robots/ui-web";
 import { Plus, Star } from "lucide-react";
 
@@ -28,13 +29,7 @@ export function primaryBotCreateInput(name: string): CreateBotInput {
     notifyOnFinish: true,
     fleetManagement: true,
     spawnKey: PRIMARY_BOT_SPAWN_KEY,
-    color: robotCharacterValue({
-      colour: "teal",
-      headwear: "antenna",
-      face: "happy",
-      outfit: "tuxedo",
-      extra: "none",
-    }),
+    color: robotPresetValue(randomRobotPreset()),
   };
 }
 
