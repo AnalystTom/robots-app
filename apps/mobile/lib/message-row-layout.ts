@@ -11,10 +11,12 @@ export function messageRowLayout(
     activityBotId,
     inGroup,
     columnWidth,
+    plainBotText = false,
   }: {
     activityBotId?: string;
     inGroup: boolean;
     columnWidth: number;
+    plainBotText?: boolean;
   },
 ) {
   const wideAsk = blocks.some(isSecretAskBlock);
@@ -33,15 +35,16 @@ export function messageRowLayout(
         !block.settingsUpdate),
   );
   const gutter = activityBotId ? (inGroup ? 28 : 36) : 0;
+  const fullText = plainBotText && !activityBotId;
   return {
-    width: full ? "100%" : fillsBubble && !activityBotId ? "90%" : undefined,
-    maxWidth: full ? "100%" : activityBotId ? undefined : "90%",
-    menuFullWidth: wideAsk || fillsBubble,
+    width: full || fullText ? "100%" : fillsBubble && !activityBotId ? "90%" : undefined,
+    maxWidth: full || fullText ? "100%" : activityBotId ? undefined : "90%",
+    menuFullWidth: wideAsk || fillsBubble || fullText,
     menuMaxWidth: wideAsk
       ? columnWidth - COLUMN_PADDING - gutter
       : isCenteredAgentEvent(blocks)
         ? columnWidth - COLUMN_PADDING
-        : activityBotId
+        : activityBotId || fullText
           ? columnWidth - COLUMN_PADDING - gutter
           : (columnWidth - COLUMN_PADDING) * 0.9,
   } as const;

@@ -250,9 +250,11 @@ const props: Omit<ComponentProps<typeof ThreadComposer>, "ref"> = {
   botId: "bot-1",
   onCall: false,
   sending: false,
-  styles: { circleButton: {}, composerFill: {} },
+  styles: { composerFill: {} },
   attachActions: [],
   attachFrom: vi.fn(),
+  attachmentStrip: null,
+  model: null,
   send: vi.fn(async () => {}),
   startVoiceCall: vi.fn(async () => {}),
   onSlashAction: vi.fn(),
@@ -1363,31 +1365,23 @@ describe("thread composer isolation", () => {
     },
   );
 
-  it("insets the call and send pills equally from the capsule's bottom and trailing edges", () => {
-    const style = (element: Element) => JSON.parse((element as HTMLElement).dataset.style!);
-    for (const label of ["Call", "Send"]) {
-      if (label === "Send") type("Hello");
-      const button = container.querySelector(`button[aria-label="${label}"]`)!;
-      const pill = style(button.querySelector("[data-glass]")!);
-      const capsule = style(button.closest('[data-glass="roundedRectangle"]')!);
-      const inset = (capsule.minHeight - pill.height) / 2;
-      expect(style(button).marginBottom).toBe(inset);
-      expect(capsule.paddingEnd).toBe(inset);
-    }
+  it("holds the field, attach and call or send in one rounded container", () => {
+    const capsules = container.querySelectorAll('[data-glass="roundedRectangle"]');
+    expect(capsules).toHaveLength(1);
+    const capsule = capsules[0]!;
+    expect(capsule.querySelector("input")).not.toBeNull();
+    expect(capsule.querySelector('[aria-label="Call"]')).not.toBeNull();
+    type("Hello");
+    expect(capsule.querySelector('button[aria-label="Send"]')).not.toBeNull();
+    expect(capsule.querySelector('button[aria-label="Call"]')).toBeNull();
   });
 
-  it("keeps right-to-left text clear of the call and send pills", () => {
-    const style = (element: Element) => JSON.parse((element as HTMLElement).dataset.style!);
-    // Right-to-left text runs up to the field's trailing edge, right next to the pill.
-    for (const [label, draft] of [
-      ["Call", ""],
-      ["Send", "אבג"],
-      ["Send", "مرحبا\nبالعالم"],
-    ] as const) {
-      type(draft);
-      const button = container.querySelector(`button[aria-label="${label}"]`)!;
-      const capsule = style(button.closest('[data-glass="roundedRectangle"]')!);
-      expect(capsule.gap).toBe(capsule.paddingEnd);
-    }
+  it("shows the model chip inside the container and opens the picker from it", () => {
+    const onPress = vi.fn();
+    act(() => root.render(<ThreadHarness model={{ label: "Auto", onPress }} />));
+    const chip = container.querySelector('button[aria-label="Auto"]')!;
+    expect(container.querySelector('[data-glass="roundedRectangle"]')!.contains(chip)).toBe(true);
+    act(() => (chip as HTMLElement).click());
+    expect(onPress).toHaveBeenCalledOnce();
   });
 });

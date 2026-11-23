@@ -61,44 +61,48 @@ export function InboxHeader({
         </HeaderButton>
       </GlassSurface>
       {title}
-      <GlassSurface style={styles.headerActions} fallbackStyle={styles.headerFill}>
-        <HeaderButton
-          accessibilityLabel={t`Activity`}
-          active={activityMode}
-          accent
-          onPress={toggleActivityMode}
-        >
-          <NativeSymbol
-            ios={activityMode ? "bell.fill" : "bell"}
-            android={activityMode ? "notifications" : "notifications-outline"}
-            size={17}
-            color={activityMode ? tokens.primaryForeground : tokens.foreground}
-          />
-        </HeaderButton>
-        <HeaderButton
-          testID="home-search-button"
-          accessibilityLabel={t`Search`}
-          onPress={() => router.push("/search")}
-        >
-          <NativeSymbol ios="magnifyingglass" android="search" size={17} />
-        </HeaderButton>
-        <MenuView
-          actions={createMenuActions(Platform.OS)}
-          {...(Platform.OS === "android" ? { style: { marginBottom: -CREATE_MENU_GAP } } : {})}
-          colorScheme={appearance}
-          onPressAction={({ nativeEvent }) => {
-            if (isCreateAction(nativeEvent.event)) runCreateAction(nativeEvent.event);
-          }}
-        >
-          <View
-            accessibilityLabel={t`Create`}
-            accessibilityRole="button"
-            style={[styles.headerButton, Platform.OS === "android" && styles.createMenuAnchor]}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <GlassSurface style={styles.headerActions} fallbackStyle={styles.headerFill}>
+          <HeaderButton
+            accessibilityLabel={t`Activity`}
+            active={activityMode}
+            accent
+            onPress={toggleActivityMode}
           >
-            <NativeSymbol ios="plus" android="add" size={18} />
-          </View>
-        </MenuView>
-      </GlassSurface>
+            <NativeSymbol
+              ios={activityMode ? "bell.fill" : "bell"}
+              android={activityMode ? "notifications" : "notifications-outline"}
+              size={17}
+              color={activityMode ? tokens.primaryForeground : tokens.foreground}
+            />
+          </HeaderButton>
+          <HeaderButton
+            testID="home-search-button"
+            accessibilityLabel={t`Search`}
+            onPress={() => router.push("/search")}
+          >
+            <NativeSymbol ios="magnifyingglass" android="search" size={17} />
+          </HeaderButton>
+        </GlassSurface>
+        <GlassSurface shape="circle" style={styles.headerCircle} fallbackStyle={styles.headerFill}>
+          <MenuView
+            actions={createMenuActions(Platform.OS)}
+            {...(Platform.OS === "android" ? { style: { marginBottom: -CREATE_MENU_GAP } } : {})}
+            colorScheme={appearance}
+            onPressAction={({ nativeEvent }) => {
+              if (isCreateAction(nativeEvent.event)) runCreateAction(nativeEvent.event);
+            }}
+          >
+            <View
+              accessibilityLabel={t`Create`}
+              accessibilityRole="button"
+              style={[styles.headerButton, Platform.OS === "android" && styles.createMenuAnchor]}
+            >
+              <NativeSymbol ios="plus" android="add" size={18} />
+            </View>
+          </MenuView>
+        </GlassSurface>
+      </View>
     </View>
   );
 }

@@ -32,6 +32,19 @@ pnpm --filter @robots/mobile test:e2e -- \
 
 `clearState` resets the app's local session and endpoint data; it does not delete server-side bots.
 
+### Chat UI flow (opt-in)
+
+`.maestro/chat-ui.yaml` checks the redesigned chat screen: empty state, suggested prompts, sending a
+prompt, and the conversation view with the keyboard open. Run it with `maestro test .maestro/chat-ui.yaml`
+and the same `-e` inputs as above, plus:
+
+- `ROBOTS_SCREENSHOT_EMAIL` and `ROBOTS_SCREENSHOT_PASSWORD`: the disposable account used by the sign-in helper.
+- `ROBOTS_MOBILE_API_URL`: the API URL the app is built against.
+- `ROBOTS_CHAT_EMPTY_BOT_ID`: a bot with no messages.
+- `ROBOTS_SCREENSHOT_BOT_ID`: a bot with a conversation.
+
+Copy both bot ids from the `botId` query parameter of the bot's chat link (`robots:///thread?botId=…`).
+
 ## Screenshot catalog
 
 Run **Actions → mobile Android screenshots → Run workflow** to build the app, seed an isolated fake

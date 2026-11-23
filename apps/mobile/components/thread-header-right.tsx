@@ -1,7 +1,7 @@
 import { t } from "@lingui/core/macro";
 import type { NativeStackNavigationOptions } from "expo-router";
 import { router } from "expo-router";
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
 import { iosAtLeast } from "../lib/native-controls";
 import { NativeSymbol } from "./native-symbol";
 
@@ -21,46 +21,70 @@ export function threadHeaderRight({
   color,
   onGroupSettings,
   onInvite,
+  onNewChat,
 }: {
   inGroup: boolean;
   readOnly: boolean;
   color: string;
   onGroupSettings: () => void;
-  /** Opens the invite sheet; absent when the account cannot invite. */
   onInvite?: () => void;
+  onNewChat?: () => void;
 }): NativeStackNavigationOptions {
-  const label = inGroup ? t`Group settings` : t`Invite a friend`;
-  const onPress = inGroup ? onGroupSettings : onInvite;
-  // Undefined, not an empty list, so an older iOS header keeps a Restore button set elsewhere.
-  if (readOnly || !onPress) return { headerRight: undefined, unstable_headerRightItems: undefined };
+  const settingsLabel = inGroup ? t`Group settings` : t`Invite a friend`;
+  const settingsPress = inGroup ? onGroupSettings : onInvite;
+  const newChatPress = inGroup ? undefined : onNewChat;
+  const items = [
+    ...(newChatPress
+      ? [
+          {
+            label: t`New bot`,
+            sf: "square.and.pencil" as const,
+            android: "create-outline" as const,
+            onPress: newChatPress,
+          },
+        ]
+      : []),
+    ...(settingsPress
+      ? [
+          {
+            label: settingsLabel,
+            sf: inGroup ? ("gearshape" as const) : ("gift" as const),
+            android: inGroup ? ("settings-outline" as const) : ("gift-outline" as const),
+            onPress: settingsPress,
+          },
+        ]
+      : []),
+  ];
+  if (readOnly || !items.length) {
+    return { headerRight: undefined, unstable_headerRightItems: undefined };
+  }
   return {
     ...(iosAtLeast(26)
       ? {
-          unstable_headerRightItems: () => [
-            {
+          unstable_headerRightItems: () =>
+            items.map((item) => ({
               type: "button" as const,
-              label,
-              accessibilityLabel: label,
-              icon: { type: "sfSymbol" as const, name: inGroup ? "gearshape" : "gift" },
-              onPress,
-            },
-          ],
+              label: item.label,
+              accessibilityLabel: item.label,
+              icon: { type: "sfSymbol" as const, name: item.sf },
+              onPress: item.onPress,
+            })),
         }
       : { unstable_headerRightItems: undefined }),
     headerRight: () => (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        hitSlop={8}
-        onPress={onPress}
-      >
-        <NativeSymbol
-          ios={inGroup ? "gearshape" : "gift"}
-          android={inGroup ? "settings-outline" : "gift-outline"}
-          size={21}
-          color={color}
-        />
-      </Pressable>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+        {items.map((item) => (
+          <Pressable
+            key={item.label}
+            accessibilityRole="button"
+            accessibilityLabel={item.label}
+            hitSlop={8}
+            onPress={item.onPress}
+          >
+            <NativeSymbol ios={item.sf} android={item.android} size={21} color={color} />
+          </Pressable>
+        ))}
+      </View>
     ),
   };
 }

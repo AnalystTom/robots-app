@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+
+import { notifyManager } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { act, createElement } from "react";
 import type { Root } from "react-dom/client";
@@ -8,9 +10,14 @@ import type { ChatTitle } from "../components/chat-header-title";
 import { ChatHeaderTitle, publishChatTitle } from "../components/chat-header-title";
 import type { InboxSpace } from "./inbox-spaces";
 import type { MobileBot } from "./mobile-types";
+import { queryClient } from "./query";
 import { setSearchInbox } from "./search-inbox";
 
 const push = vi.hoisted(() => vi.fn());
+const mocks = vi.hoisted(() => ({
+  catalog: [] as { provider: string; id: string; label: string }[],
+}));
+notifyManager.setScheduler((callback) => callback());
 vi.mock("react-native", () => ({
   Pressable: ({
     children,
@@ -28,6 +35,8 @@ vi.mock("react-native", () => ({
       { type: "button", disabled, "aria-label": accessibilityLabel, onClick: onPress },
       children,
     ),
+  Text: ({ children }: { children?: ReactNode }) => createElement("span", null, children),
+  View: ({ children }: { children?: ReactNode }) => createElement("div", null, children),
 }));
 vi.mock("expo-router", () => ({ useRouter: () => ({ push }) }));
 vi.mock("../components/glass-surface", () => ({
@@ -54,7 +63,15 @@ vi.mock("./native", () => ({ useThemedStyles: () => ({}) }));
 vi.mock("./api-server", () => ({}));
 vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
-vi.mock("./api", () => ({ currentApiBase: () => "http://api.test" }));
+vi.mock("./api", () => ({
+  currentApiBase: () => "http://api.test",
+  captureApiRequestContext: async () => ({ headers: {} }),
+  selectedSpaceId: () => "space-1",
+  rpc: async (procedure: string) => {
+    if (procedure === "models/list") return mocks.catalog;
+    throw new Error(`unexpected rpc ${procedure}`);
+  },
+}));
 vi.mock("./session", () => ({
   currentSessionGeneration: () => 1,
   subscribeSessionGeneration: () => () => undefined,
@@ -78,6 +95,8 @@ let container: HTMLDivElement;
 beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   push.mockClear();
+  queryClient.clear();
+  mocks.catalog = [];
   setSearchInbox([]);
   container = document.createElement("div");
   root = createRoot(container);
@@ -108,6 +127,29 @@ it("draws the inbox's bot from the route alone, before the chat publishes anythi
   expect(name()?.textContent).toBe("Helper");
   expect(name()?.getAttribute("data-placeholder")).toBe("false");
   expect(button().getAttribute("aria-label")).toBe("Profile");
+});
+
+it("shows the chosen model's catalog name under the name, the raw id until it loads", async () => {
+  mocks.catalog = [{ provider: "openrouter", id: "model-x", label: "Model X" }];
+  setSearchInbox(inbox([{ ...helper, modelProvider: "openrouter", modelId: "model-x" }]));
+  render({ botId: "bot-1" });
+  expect(button().textContent).toBe("Helpermodel-x");
+  await act(async () => {});
+  expect(button().textContent).toBe("HelperModel X");
+});
+
+it("names a pinned model by its catalog entry under a provider alias", async () => {
+  mocks.catalog = [{ provider: "azure", id: "gpt-x", label: "Azure GPT" }];
+  setSearchInbox(inbox([{ ...helper, modelProvider: "azure-openai-responses", modelId: "gpt-x" }]));
+  render({ botId: "bot-1" });
+  await act(async () => {});
+  expect(button().textContent).toBe("HelperAzure GPT");
+});
+
+it("shows Auto under the name for a bot without a pinned model", () => {
+  setSearchInbox(inbox([helper]));
+  render({ botId: "bot-1" });
+  expect(button().textContent).toBe("HelperAuto");
 });
 
 it("reserves the avatar for an unknown bot and marks a missing name as a placeholder", () => {

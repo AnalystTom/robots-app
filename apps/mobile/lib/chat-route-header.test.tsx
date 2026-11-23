@@ -40,7 +40,10 @@ it("declares a bot chat's title and its invite gift when the screen is created",
   expect(options.headerTitle).toBeTypeOf("function");
   expect(options.headerTitleAlign).toBe("center");
   expect(options.headerTransparent).toBe(true);
-  const [item] = rightItems(options);
+  const [newBot, item] = rightItems(options);
+  expect(newBot).toMatchObject({ icon: { type: "sfSymbol", name: "square.and.pencil" } });
+  (newBot as { onPress: () => void }).onPress();
+  expect(push).toHaveBeenCalledWith("/new-bot");
   expect(item).toMatchObject({ type: "button", icon: { type: "sfSymbol", name: "gift" } });
   (item as { onPress: () => void }).onPress();
   expect(push).toHaveBeenCalledWith("/invite");
@@ -48,10 +51,10 @@ it("declares a bot chat's title and its invite gift when the screen is created",
   expect(options.headerBackVisible).toBe(true);
 });
 
-it("leaves a bot chat's right side empty when the account cannot invite", () => {
+it("offers only the new bot action when the account cannot invite", () => {
   const options = header({ botId: "bot-1", name: "Helper" });
-  expect(rightItems(options)).toEqual([]);
-  expect(options.headerRight).toBeUndefined();
+  expect(rightItems(options)).toHaveLength(1);
+  expect(options.headerRight).toBeTypeOf("function");
 });
 
 it("declares a group chat's settings button, which opens the group's settings", () => {

@@ -863,10 +863,14 @@ function MessageTextCard({
         flexShrink: 1,
         minWidth: 0,
         maxWidth: "100%",
-        backgroundColor: outgoing ? tokens.chatUser : tokens.muted,
-        paddingHorizontal: 14,
-        paddingVertical: 9,
-        borderRadius: 20,
+        ...(message.role === "bot"
+          ? { width: "100%", paddingVertical: 2 }
+          : {
+              backgroundColor: outgoing ? tokens.chatUser : tokens.muted,
+              paddingHorizontal: 14,
+              paddingVertical: 9,
+              borderRadius: 20,
+            }),
       }}
     >
       {speaker ? (
