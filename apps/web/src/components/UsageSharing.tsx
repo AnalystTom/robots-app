@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { AI_PRIVACY_URL, BOT_COLOR_LIST } from "@robots/contracts";
-import { Button, Label, LogoAvatar, Switch } from "@robots/ui-web";
+import { AI_PRIVACY_URL } from "@robots/contracts";
+import { Button, Label, Switch } from "@robots/ui-web";
 import { useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { useSave, useSpaceQueries } from "../lib/query";
@@ -30,11 +30,7 @@ export function UsageSharingStep({ onDone }: { onDone: () => void }) {
         save.run(shared);
       }}
     >
-      <LogoAvatar
-        size={74}
-        avatarValue={BOT_COLOR_LIST.find((color) => color.id === "orange")?.hex}
-        motion={false}
-      />
+      <img src="/icon-192.png" alt="" width={74} height={74} className="rounded-[22%]" />
       <h1 className="mt-7 text-balance text-center text-display font-medium tracking-tight text-foreground">
         <Trans>Enable data sharing</Trans>
       </h1>

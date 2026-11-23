@@ -1,9 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
-import { AI_PRIVACY_URL, BOT_COLOR_LIST } from "@robots/contracts";
+import { AI_PRIVACY_URL } from "@robots/contracts";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
-import { LogoAvatar } from "../../components/logo-avatar";
+import { Alert, Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import appIcon from "../../assets/icon.png";
 import { NativeActionButton } from "../../components/native-action-button";
 import {
   SettingsGroup,
@@ -16,8 +16,6 @@ import { closeSettingsSheet } from "../../lib/settings-sheet";
 import { useSideInsets } from "../../lib/side-insets";
 import { useUsageSharing } from "../../lib/usage-sharing";
 import { errorText } from "../../lib/user-error";
-
-const orangeHex = BOT_COLOR_LIST.find((color) => color.id === "orange")?.hex ?? "";
 
 export default function UsageSharingStep() {
   const { t } = useLingui();
@@ -50,7 +48,7 @@ export default function UsageSharingStep() {
       contentInsetAdjustmentBehavior="automatic"
     >
       <View style={styles.header}>
-        <LogoAvatar color={orangeHex} size={74} activity="idle" motion="static" />
+        <Image source={appIcon} style={styles.logo} accessibilityIgnoresInvertColors />
         <Text style={styles.subtitle}>{t`Help make RoBots better for everyone`}</Text>
       </View>
       <SettingsGroup
@@ -93,6 +91,7 @@ function createStyles() {
     content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, gap: 28 },
     compactContent: { paddingHorizontal: 8 },
     header: { alignItems: "center", gap: 12 },
+    logo: { width: 74, height: 74, borderRadius: 17 },
     subtitle: { color: native.secondaryLabel, fontSize: 17, textAlign: "center" },
   });
 }
