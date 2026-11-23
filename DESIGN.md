@@ -49,7 +49,7 @@ Sidebar 260 / thread max 720 / side panel resizable. Breakpoints 640 (phone), 10
 - Card: card fill, 1px border, radius card, padding 16. Approval card: header with chip (Allow / Ask / Deny in mono caps), one-line summary, then Allow, Deny, Always allow.
 - Nav / sidebar: sidebar fill, bot rows 36 high, selected = brand-soft fill, unread = small brand pill.
 - Modal / sheet: dialog fill, radius sheet, overlay; mobile uses native sheets.
-- Chat: user bubble primary; bot bubble card with border; bot avatar 26 radius 8; thread max 720; composer pinned.
+- Chat: user bubble primary; bot bubble card with border; bot avatar 26 radius control (10); thread max 720; composer pinned.
 - Lists: 36 rows, hover accent, selected brand-soft.
 - Mobile: native controls first (Expo UI, native sheets, menus, pickers); custom surfaces use StyleSheet with these tokens via `apps/mobile/lib/appearance`.
 

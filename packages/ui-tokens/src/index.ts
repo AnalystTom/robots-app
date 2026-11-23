@@ -73,7 +73,6 @@ export type ColorTokens = {
   pageTileEdge: string;
   pageTileLine: string;
   brand: string;
-  brandForeground: string;
   brandSoft: string;
   brandInk: string;
   successSoft: string;
@@ -132,7 +131,6 @@ export const darkTokens = {
   pageTileEdge: "#414141",
   pageTileLine: "#626262",
   brand: "#3AA6B7",
-  brandForeground: "#06181C",
   brandSoft: "#12343B",
   brandInk: "#6DCAD7",
   successSoft: "#173A2A",
@@ -191,7 +189,6 @@ export const lightTokens = {
   pageTileEdge: "#DADADD",
   pageTileLine: "#A1A1A6",
   brand: "#15788A",
-  brandForeground: "#FFFFFF",
   brandSoft: "#D6ECEE",
   brandInk: "#0F6575",
   successSoft: "#DFF1E6",
@@ -204,7 +201,6 @@ export type WebColorTokens = ColorTokens & {
   primaryHover: string;
   primaryDisabled: string;
   shadowCard: string;
-  shadowFloat: string;
 };
 
 /**
@@ -253,8 +249,7 @@ export const webDarkOverrides = {
   overlay: "#000000B2",
   scrollbar: "#F5F5F538",
   scrollbarHover: "#F5F5F580",
-  shadowCard: "0 1px 2px #0006, 0 12px 32px -12px #0009",
-  shadowFloat: "0 2px 4px #0005, 0 40px 80px -24px #000c",
+  shadowCard: "none",
 } as const satisfies Partial<WebColorTokens>;
 
 export const webLightOverrides = {
@@ -295,7 +290,6 @@ export const webLightOverrides = {
   scrollbar: "#1C1C1C3D",
   scrollbarHover: "#1C1C1C85",
   shadowCard: "0 1px 2px #2a20100d, 0 12px 32px -12px #2a201029",
-  shadowFloat: "0 2px 4px #0b2a3014, 0 40px 80px -24px #0b2a3059",
 } as const satisfies Partial<WebColorTokens>;
 
 export const webDarkTokens: WebColorTokens = { ...darkTokens, ...webDarkOverrides };
