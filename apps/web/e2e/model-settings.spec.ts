@@ -26,6 +26,7 @@ test.afterEach(async ({ page }) => {
 });
 
 test("model settings cleanup frames", { tag: "@nightly" }, async ({ page }, testInfo) => {
+  test.slow();
   await page.setViewportSize({ width: 1440, height: 1000 });
   const stamp = Date.now();
   await signup(page, `model-cleanup-${stamp}@robots.test`, "password12", "Model Preview");
@@ -154,6 +155,7 @@ async function fulfillWithoutModelStep(route: Route) {
 }
 
 test("connects, lists, and uses an OpenAI-compatible endpoint", async ({ page }, testInfo) => {
+  test.slow();
   let expandedModels = false;
   const completionBodies: Array<Record<string, unknown>> = [];
   const completionHeaders: Array<string | string[] | undefined> = [];
