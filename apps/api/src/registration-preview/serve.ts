@@ -5,10 +5,10 @@ import { serve } from "@hono/node-server";
 import { createWorkspaceTestBilling } from "@robots/adapters/workspace-test-billing";
 import { organizationForMember, runAsTenant } from "@robots/db";
 import { createApp } from "../app.js";
-import { BILLING_WEBHOOK_PATH } from "../billing-webhook.js";
 import { loadEnv } from "../env.js";
 import { checkoutPage, localArchive, localPage, registrationPath, setupPage } from "./pages.js";
 import { hostingPrice, RegistrationTestBilling } from "./provider.js";
+import { workspaceAccess } from "./workspace-access.js";
 
 const env = loadEnv();
 const mode = process.env.ROBOTS_REGISTRATION_MODE;
@@ -41,37 +41,14 @@ const provider =
     hostingPrice,
   ));
 const { app, prisma, stop } = await createApp({ ...env, billing: provider });
-const accountRoutes = new Set([
-  "/api/auth/capabilities",
-  "/api/auth/get-session",
-  "/api/auth/sign-up/email",
-  "/api/auth/sign-in/email",
-  "/api/auth/sign-out",
-  "/rpc/me",
-  "/rpc/billing/status",
-  "/rpc/billing/refresh",
-  "/rpc/billing/checkout",
-  "/rpc/billing/portal",
-  "/api/v1/billing/return",
-  "/health",
-  "/ready",
-]);
-
-function rpc(request: Request, path: string) {
-  const headers = new Headers({ "content-type": "application/json", origin });
-  for (const key of ["cookie", "authorization", "x-robots-space-id"]) {
-    const value = request.headers.get(key);
-    if (value) headers.set(key, value);
-  }
-  return app.request(`/rpc/${path}`, { method: "POST", headers, body: '{"json":{}}' });
-}
+const access = workspaceAccess(app, origin, sandbox);
 
 async function checkout(request: Request, token: string, provider: RegistrationTestBilling) {
   if (request.method !== "GET" && request.method !== "POST")
     return new Response(null, { status: 405 });
   if (request.method === "POST" && request.headers.get("origin") !== origin)
     return new Response(null, { status: 403 });
-  const me = await rpc(request, "me");
+  const me = await access.rpc(request, "me");
   if (!me.ok) return new Response(null, { status: 401 });
   const { json: actor } = await me.json();
   const org = await runAsTenant(actor, () => organizationForMember(prisma, actor));
@@ -91,7 +68,7 @@ async function checkout(request: Request, token: string, provider: RegistrationT
     !provider.finish(org.organizationId, token, action)
   )
     return new Response(null, { status: 409 });
-  const synced = await rpc(request, "billing/refresh");
+  const synced = await access.rpc(request, "billing/refresh");
   if (!synced.ok) return synced;
   return Response.redirect(`${origin}/api/v1/billing/return`, 303);
 }
@@ -119,14 +96,7 @@ async function handle(request: Request) {
   }
   const token = /^\/api\/registration\/checkout\/([a-f0-9-]{36})$/.exec(pathname)?.[1];
   if (token && simulator) return checkout(request, token, simulator);
-  if (sandbox && pathname === BILLING_WEBHOOK_PATH && request.method === "POST")
-    return app.fetch(request);
-  if (accountRoutes.has(pathname)) return app.fetch(request);
-  const status = await rpc(request, "billing/status");
-  if (!status.ok) return status;
-  if ((await status.json()).json?.access !== true)
-    return Response.json({ error: "A hosted subscription is required" }, { status: 402 });
-  return app.fetch(request);
+  return access.fetch(request);
 }
 
 const server = serve({ hostname: env.apiHost, port: env.port, fetch: handle });

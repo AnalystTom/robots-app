@@ -83,3 +83,7 @@ The `stripe-test` profile runs a separate database and Docker project on localho
 2. Forward sandbox events with Stripe CLI using `stripe listen --forward-to http://localhost:5195/api/v1/billing/webhook`. Use that listener's signing secret for this run.
 3. Inject the sandbox key, signing secret and price ID as `ROBOTS_STRIPE_TEST_SECRET_KEY`, `ROBOTS_STRIPE_TEST_WEBHOOK_SECRET` and `ROBOTS_STRIPE_TEST_PRICE_ID`. Run `bash infra/registration/start-preview.sh stripe-test`. The API checks the price and currency with Stripe before accepting traffic.
 4. Open [private test registration](http://localhost:5195/api/registration), create a test account, choose Subscribe, and complete Stripe Checkout with a sandbox card. Check workspace access, cancellation in the sandbox customer portal, and loss of access when the paid period ends.
+
+## Cloudflare hosted staging
+
+The private Cloudflare deployment uses the same US$20 workspace plan and access checks as the Stripe test profile. A tester signs in through Cloudflare Access before registering. [Staging deployment and checkout verification](cloudflare/README.md)

@@ -1,0 +1,17 @@
+{
+  "name": "robots-hosted-stripe-test",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test access.integration.test.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "0.3.7",
+    "jose": "6.2.8"
+  },
+  "devDependencies": {
+    "wrangler": "4.165.0"
+  }
+}

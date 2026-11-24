@@ -1,0 +1,17 @@
+{
+  "name": "robots-hosted-stripe-test",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-20",
+  "workers_dev": false,
+  "keep_vars": true,
+  "preview_urls": false,
+  "routes": [{ "pattern": "hosted-test.tryrobots.app", "custom_domain": true }],
+  "containers": [{
+    "class_name": "HostedWorkspace",
+    "image": "./Dockerfile",
+    "max_instances": 1,
+    "instance_type": "standard-1"
+  }],
+  "durable_objects": {"bindings": [{"name": "WORKSPACE", "class_name": "HostedWorkspace"}]},
+  "migrations": [{"tag": "v1", "new_sqlite_classes": ["HostedWorkspace"]}]
+}

@@ -21,14 +21,24 @@ function rpc(request: APIRequestContext, origin: string, path: string, json = {}
 
 async function signup(page: Page) {
   const user = account();
-  await signupThroughForm(page, user.email, user.password, "Test account");
+  const [signupResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        new URL(response.url()).pathname === "/api/auth/sign-up/email",
+    ),
+    signupThroughForm(page, user.email, user.password, "Test account"),
+  ]);
+  expect(signupResponse.ok()).toBe(true);
   await expect(page).toHaveURL(/\/(onboarding|app)/);
   return user;
 }
 
 async function signIn(page: Page, user: ReturnType<typeof account>) {
+  const fromHostedWorkspace = new URL(page.url()).origin === hosted;
+  await page.goto("about:blank");
   await page.context().clearCookies();
-  if (new URL(page.url()).origin === hosted) {
+  if (fromHostedWorkspace) {
     await page.goto(setup);
     await page.getByRole("link", { name: "Sign in", exact: true }).click();
   } else {
@@ -37,7 +47,15 @@ async function signIn(page: Page, user: ReturnType<typeof account>) {
   await openEmailSignIn(page);
   await page.getByLabel("Email", { exact: true }).fill(user.email);
   await page.getByLabel("Password", { exact: true }).fill(user.password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  const [signInResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        new URL(response.url()).pathname === "/api/auth/sign-in/email",
+    ),
+    page.getByRole("button", { name: "Sign in", exact: true }).click(),
+  ]);
+  expect(signInResponse.ok()).toBe(true);
   await expect(page).toHaveURL(/\/(onboarding|app)/);
 }
 
