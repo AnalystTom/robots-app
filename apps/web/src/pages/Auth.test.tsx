@@ -183,6 +183,28 @@ it.each(["in", "up"] as const)("offers providers before the email form on %s", a
   expect(button("Continue with Example")).toBeDefined();
 });
 
+it("signs up only through providers when email signup is off, and keeps email sign-in", async () => {
+  vi.mocked(fetchAuthCapabilities).mockResolvedValue({
+    ...capabilities,
+    passwordAuth: true,
+    emailSignup: false,
+  });
+  await render("up", "/sign-up/email");
+  expect(button("Continue with Example")).toBeDefined();
+  expect(button("Continue with email")).toBeUndefined();
+  expect(button("Back")).toBeUndefined();
+  expect(host.querySelector('input[name="email"]')).toBeNull();
+  expect(host.querySelector('input[name="password"]')).toBeNull();
+  expect(host.textContent).toContain("Already have an account?");
+
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await render("in");
+  await act(async () => button("Continue with email").click());
+  expect(host.querySelector('input[name="email"]')).not.toBeNull();
+  expect(host.querySelector('input[name="password"]')).not.toBeNull();
+});
+
 it("shows a configured provider beside the password form and hides the rest", async () => {
   const mark = { viewBox: "0 0 24 24", paths: [{ d: "M1 1h2v2H1z" }] };
   vi.mocked(fetchAuthCapabilities).mockResolvedValue({

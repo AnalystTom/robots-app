@@ -11,6 +11,7 @@ import path from "node:path";
 import type { DesktopLocalStackPhase, DesktopLocalStackState } from "@robots/contracts";
 import type { RunDocker } from "./docker-cli.js";
 import { t } from "./i18n.js";
+import type { NetworkEnv } from "./local-stack.js";
 import {
   allocateLoopbackPort,
   defaultSleep,
@@ -267,6 +268,8 @@ export interface NativeStackDeps {
   portFree?: (port: number) => Promise<boolean>;
   allocatePort?: () => Promise<number>;
   healthTimeoutMs?: number;
+  /** What opening the stack to other devices adds to its environment. */
+  networkEnv?: NetworkEnv;
   installers?: Partial<{
     server: (
       deps: RuntimeDeps,
@@ -577,12 +580,23 @@ export class NativeStackController extends StackLifecycle {
     if (chosenWeb !== webPort) this.currentWebUrl = `http://127.0.0.1:${chosenWeb}`;
     await writePrivateFile(this.dir(STACK_WEB_URL_FILE), this.currentWebUrl);
 
+    const network =
+      this.deps.networkEnv?.({
+        port: String(chosenWeb),
+        existing: {
+          origins: stackEnv.get("ROBOTS_EXTRA_AUTH_ORIGINS"),
+          hosts: stackEnv.get("ROBOTS_ALLOWED_HOSTS"),
+        },
+      }) ?? {};
     const computerImage = `${stackEnv.get("ROBOTS_COMPUTER_IMAGE") || COMPUTER_IMAGE}:${this.deps.imageTag}`;
     const appEnv = this.appEnv(stackEnv, {
       DATABASE_URL: databaseUrl,
       LOCAL_VM_CLI: runtime.cli,
       LOCAL_VM_COMPUTER_IMAGE: computerImage,
       ROBOTS_DESKTOP_STACK_TOKEN: stackToken,
+      ...(network.ROBOTS_EXTRA_AUTH_ORIGINS
+        ? { ROBOTS_EXTRA_AUTH_ORIGINS: network.ROBOTS_EXTRA_AUTH_ORIGINS }
+        : {}),
     });
     const entry = (name: keyof ServerManifest["entrypoints"]) =>
       path.join(server.dir, server.manifest.entrypoints[name]);
@@ -615,8 +629,14 @@ export class NativeStackController extends StackLifecycle {
       ),
       API_PROXY_TARGET: `http://127.0.0.1:${ports.api}`,
       SCREEN_PROXY_SECRET: stackEnv.get("SCREEN_PROXY_SECRET") ?? "",
-      WEB_HOST: "127.0.0.1",
+      WEB_HOST: network.ROBOTS_WEB_BIND ?? "127.0.0.1",
       WEB_PORT: String(chosenWeb),
+      ...(network.ROBOTS_ALLOWED_HOSTS
+        ? { ROBOTS_ALLOWED_HOSTS: network.ROBOTS_ALLOWED_HOSTS }
+        : {}),
+      ...(network.ROBOTS_WEB_PRIVATE_PEERS_ONLY
+        ? { ROBOTS_WEB_PRIVATE_PEERS_ONLY: network.ROBOTS_WEB_PRIVATE_PEERS_ONLY }
+        : {}),
       ROBOTS_DESKTOP_STACK_TOKEN: stackToken,
       ROBOTS_IMAGE_TAG: this.deps.imageTag,
     });

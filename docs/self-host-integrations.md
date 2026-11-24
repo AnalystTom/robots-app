@@ -69,6 +69,21 @@ credentials and survives **Disconnect**; switching to a different client drops t
 On first use the client is bound to the authorization server the MCP server pointed to, and RoBots
 refuses to send it anywhere else afterwards. Replacing the client clears the binding.
 
+Google's MCP servers (Gmail, Calendar, Drive) only accept such a client. To let every user connect
+them with a plain **Connect OAuth**, create one OAuth client of type **Web application** in the
+Google Cloud console, add the same redirect URI, and set it on the API and worker:
+
+```env
+GOOGLE_MCP_OAUTH_CLIENT_ID=replace-with-client-id
+GOOGLE_MCP_OAUTH_CLIENT_SECRET=replace-with-client-secret
+```
+
+Set both or neither. RoBots uses this client only for remote servers whose authorization server is
+`https://accounts.google.com`, asks Google for offline access so the grant can be refreshed, and
+never stores it with a server or shows its secret. A client entered under **Advanced** still takes
+precedence. These are separate from `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, which turn on Sign
+in with Google.
+
 Stdio MCP servers can use OAuth too. They do not authorize themselves (the MCP spec has them
 read credentials from the environment), so RoBots runs the flow for them. They are off unless
 the API and worker have `MCP_STDIO_ENABLED=true` and the command is listed in
@@ -147,7 +162,8 @@ base URL; RoBots appends `api/search`.
 
 Messaging adapters are optional. Configure credentials for the platforms you need; users link
 their own bots from **Settings → Messaging**. See [Chat apps](./messaging-apps.md) for the supported
-direct-message and group flows. Teams, WhatsApp, Feishu/Lark, and Photon are direct-message only.
+direct-message and group flows. Teams, WhatsApp, Feishu/Lark, Photon, and Discord are
+direct-message only.
 Slack channels use workspace installations; Telegram and iMessage through Sendblue use personal
 group linking.
 
@@ -159,6 +175,7 @@ Webhooks arrive at `/api/v1/messaging/webhook/<provider>`.
 | iMessage and SMS (Sendblue) | `SENDBLUE_API_KEY_ID`, `SENDBLUE_API_SECRET`, `SENDBLUE_SIGNING_SECRET`, `SENDBLUE_PHONE_NUMBER`                                                                                                   |
 | WhatsApp Business Cloud     | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`                                                                                                |
 | Telegram                    | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET_TOKEN`                                                                                                                                              |
+| Discord                     | `DISCORD_BOT_TOKEN`, `DISCORD_APPLICATION_ID`                                                                                                                                                      |
 | iMessage (Photon)           | `PHOTON_PROJECT_ID`, `PHOTON_PROJECT_SECRET`; `PHOTON_WEBHOOK_SECRET` to receive by webhook instead of the stream; more projects as `PHOTON_PROJECT_ID_<NAME>` plus `PHOTON_PROJECT_SECRET_<NAME>` |
 | Feishu/Lark                 | `LARK_APP_ID`, `LARK_APP_SECRET`, `LARK_VERIFICATION_TOKEN`; `LARK_ENCRYPT_KEY` when event encryption is on; `LARK_DOMAIN` (`feishu`, the default, or `lark`)                                      |
 | Microsoft Teams             | `TEAMS_APP_ID`, `TEAMS_APP_PASSWORD`, `TEAMS_APP_TENANT_ID` (single-tenant, direct messages only)                                                                                                  |
@@ -175,6 +192,41 @@ bot, and the per-room listening settings belong to Slack team conversations only
 run `/setprivacy` on the bot and choose **Disable** (or make it a group admin), or the bot only
 receives group messages that mention it. Broadcast channel posts never start runs. Multiple bots
 can run side by side, allowing one person to link a different RoBots bot through each.
+
+### Discord
+
+Discord delivers direct messages over its Gateway, a connection the API process opens and keeps
+open, so Discord needs no public URL or webhook. The worker only sends replies.
+
+1. Open the [Discord developer portal](https://discord.com/developers/applications), choose
+   **New Application**, name it (people see this name), and create it.
+2. On **General Information**, copy the **Application ID** into `DISCORD_APPLICATION_ID`.
+3. On **Bot**, choose **Reset Token** and copy the token into `DISCORD_BOT_TOKEN`. Discord shows
+   it once; reset it again if it is lost or leaked.
+4. Still on **Bot**, under **Privileged Gateway Intents**, turn on **Message Content Intent** and
+   save. Without it Discord refuses the connection and the API logs
+   `Discord refused the gateway connection`.
+5. Turn off **Public Bot** on the same page unless anyone should be able to add the bot to their
+   own server.
+6. Invite the bot to a server your users are in. Discord only lets people message a bot they
+   share a server with. Open this URL with your Application ID, pick the server, and authorize:
+
+   ```text
+   https://discord.com/oauth2/authorize?client_id=<DISCORD_APPLICATION_ID>&scope=bot&permissions=0
+   ```
+
+   The only scope needed is `bot`. Direct messages need no server permissions, so `permissions=0`
+   is enough; the bot ignores server channels.
+7. Set both settings on the API and worker and restart them. The API refuses to start when only
+   one is set, when the Application ID is not numeric, or when the token is not shaped like a bot
+   token, and names the setting to fix. Discord rejecting the token at connection time is logged as
+   `Discord rejected DISCORD_BOT_TOKEN`.
+8. Each person picks a bot under **Settings → Messaging**, chooses **Discord**, opens a direct
+   message with the bot in Discord, and sends the code.
+
+Replies longer than Discord's 2,000-character limit are split into several messages, keeping code
+blocks whole where they fit. Images and files people send are stored in the bot's chat; files the
+bot sends are uploaded up to Discord's 10 MB limit. The bot shows typing while it works.
 
 ### iMessage through Photon
 

@@ -1,11 +1,10 @@
-import { ph, t } from "@lingui/core/macro";
+import { t } from "@lingui/core/macro";
 import type { AiDataUse, AiRecipient } from "@robots/contracts";
 import { AI_PRIVACY_URL } from "@robots/contracts";
-import { Alert, AppState, Linking } from "react-native";
+import { useSyncExternalStore } from "react";
+import { BackHandler, Platform } from "react-native";
+import { registerSessionDiskCache } from "./session";
 
-export const FOREGROUND_FALLBACK_MS = 400;
-
-/** What a provider receives for one use of AI data. */
 export function aiDataDisclosure(use: AiDataUse): string {
   switch (use) {
     case "model":
@@ -17,129 +16,112 @@ export function aiDataDisclosure(use: AiDataUse): string {
   }
 }
 
+export type AiConsentRequest = {
+  recipients: AiRecipient[];
+  privacyUrl: string;
+  denied: boolean;
+};
+
+type ConsentGrant = () => Promise<unknown>;
+type QueuedRequest = {
+  recipients: AiRecipient[];
+  privacyUrl: string;
+  grant: ConsentGrant;
+  decide(allowed: boolean): void;
+};
+type BlockedRequest = Omit<QueuedRequest, "decide">;
+
+let queue: QueuedRequest[] = [];
+let blocked: BlockedRequest | null = null;
+let snapshot: AiConsentRequest | null = null;
+let session = 0;
+const listeners = new Set<() => void>();
+
+function publish(next: QueuedRequest[], nextBlocked: BlockedRequest | null = blocked) {
+  queue = next;
+  blocked = nextBlocked;
+  const shown = blocked ?? queue[0];
+  snapshot = shown
+    ? { recipients: shown.recipients, privacyUrl: shown.privacyUrl, denied: blocked !== null }
+    : null;
+  for (const listener of listeners) listener();
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function currentRequest(): AiConsentRequest | null {
+  return snapshot;
+}
+
 export function promptAiConsent(
-  recipient: AiRecipient,
+  recipients: AiRecipient[],
   privacyUrl = AI_PRIVACY_URL,
+  grant: ConsentGrant,
 ): Promise<boolean> {
-  return new Promise((resolve) => {
-    let settled = false;
-    let dialogOpen = false;
-    let waitingForPrivacyReturn = false;
-    let leftForeground = false;
-    let privacyAttempt = 0;
-    let scheduledShow: ReturnType<typeof setTimeout> | undefined;
-    let foregroundFallback: ReturnType<typeof setTimeout> | undefined;
-
-    const cancelForegroundFallback = () => {
-      if (foregroundFallback === undefined) return;
-      clearTimeout(foregroundFallback);
-      foregroundFallback = undefined;
-    };
-
-    const isCurrentPrivacyAttempt = (attempt: number) =>
-      attempt === privacyAttempt && !settled && waitingForPrivacyReturn;
-
-    const stillInForeground = () => !leftForeground && AppState.currentState === "active";
-
-    const subscription = AppState.addEventListener("change", (state) => {
-      if (state !== "active") {
-        if (!waitingForPrivacyReturn) return;
-        leftForeground = true;
-        cancelForegroundFallback();
-        return;
-      }
-      if (!waitingForPrivacyReturn || settled) return;
-      cancelForegroundFallback();
-      waitingForPrivacyReturn = false;
-      showWhenReady();
-    });
-
-    const cleanup = () => {
-      subscription.remove();
-      if (scheduledShow !== undefined) clearTimeout(scheduledShow);
-      cancelForegroundFallback();
-    };
-
-    const finish = (allowed: boolean) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      resolve(allowed);
-    };
-
-    const scheduleShow = () => {
-      if (settled || waitingForPrivacyReturn || scheduledShow !== undefined) return;
-      scheduledShow = setTimeout(() => {
-        scheduledShow = undefined;
-        show();
-      }, 0);
-    };
-
-    const showWhenReady = () => {
-      if (settled || waitingForPrivacyReturn || dialogOpen) return;
-      scheduleShow();
-    };
-
-    const show = () => {
-      if (settled || waitingForPrivacyReturn || dialogOpen) return;
-      dialogOpen = true;
-      let privacyPolicyPressed = false;
-      Alert.alert(
-        t`Share data with ${ph({ name: recipient.name })}?`,
-        [
-          recipient.detail,
-          aiDataDisclosure(recipient.use),
-          t`You can turn this off in Account → AI data sharing.`,
-        ]
-          .filter(Boolean)
-          .join("\n\n"),
-        [
-          { text: t`Not now`, style: "cancel", onPress: () => finish(false) },
-          {
-            text: t`Privacy policy`,
-            onPress: () => {
-              // The button callback is the deterministic lifecycle point on both platforms.
-              // RN only maps onDismiss on Android, and Android consumes a button callback
-              // instead of sending a second dismissed action.
-              privacyPolicyPressed = true;
-              dialogOpen = false;
-              cancelForegroundFallback();
-              const attempt = ++privacyAttempt;
-              leftForeground = AppState.currentState !== "active";
-              waitingForPrivacyReturn = true;
-              foregroundFallback = setTimeout(() => {
-                foregroundFallback = undefined;
-                if (!isCurrentPrivacyAttempt(attempt) || !stillInForeground()) return;
-                waitingForPrivacyReturn = false;
-                show();
-              }, FOREGROUND_FALLBACK_MS);
-              void Linking.openURL(privacyUrl).then(
-                () => {
-                  if (attempt !== privacyAttempt || settled) return;
-                },
-                () => {
-                  if (!isCurrentPrivacyAttempt(attempt)) return;
-                  cancelForegroundFallback();
-                  waitingForPrivacyReturn = false;
-                  showWhenReady();
-                },
-              );
-            },
-          },
-          { text: t`Allow`, onPress: () => finish(true) },
-        ],
-        {
-          cancelable: true,
-          onDismiss: () => {
-            if (privacyPolicyPressed) return;
-            dialogOpen = false;
-            if (settled) return;
-            finish(false);
-          },
-        },
-      );
-    };
-
-    show();
+  return new Promise((decide) => {
+    if (blocked) {
+      decide(false);
+      return;
+    }
+    publish([...queue, { recipients, privacyUrl, grant, decide }]);
   });
+}
+
+export function useAiConsentRequest(): AiConsentRequest | null {
+  return useSyncExternalStore(subscribe, currentRequest, currentRequest);
+}
+
+export function approveAiConsent() {
+  const [shown, ...rest] = queue;
+  if (!shown) return;
+  publish(rest);
+  shown.decide(true);
+}
+
+export function denyAiConsent() {
+  const [shown, ...rest] = queue;
+  if (!shown) return;
+  if (Platform.OS === "android") {
+    BackHandler.exitApp();
+    return;
+  }
+  publish([], { recipients: shown.recipients, privacyUrl: shown.privacyUrl, grant: shown.grant });
+  shown.decide(false);
+  for (const request of rest) request.decide(false);
+}
+
+function clearAiConsentRequests() {
+  session += 1;
+  const waiting = queue;
+  publish([], null);
+  for (const request of waiting) request.decide(false);
+}
+
+registerSessionDiskCache(clearAiConsentRequests);
+
+export function reviewAiConsentAgain() {
+  if (!blocked) return;
+  const review = blocked;
+  const started = session;
+  publish(
+    [
+      {
+        recipients: review.recipients,
+        privacyUrl: review.privacyUrl,
+        grant: review.grant,
+        decide: (allowed) => {
+          if (!allowed) return;
+          review.grant().catch(() => {
+            if (started === session) publish([], review);
+          });
+        },
+      },
+    ],
+    null,
+  );
 }

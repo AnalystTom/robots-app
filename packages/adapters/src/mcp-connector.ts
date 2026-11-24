@@ -9,6 +9,7 @@ import {
   TemporarilyUnavailableError,
   TooManyRequestsError,
 } from "@modelcontextprotocol/sdk/server/auth/errors.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import type {
   AdapterContext,
@@ -19,7 +20,7 @@ import type {
   SecretStore,
 } from "@robots/adapter-kit";
 import { SecretStoreUnavailableError } from "@robots/adapter-kit";
-import type { McpOAuthEnvField } from "@robots/contracts";
+import type { ConnectionTool, McpOAuthEnvField } from "@robots/contracts";
 import {
   isLocalhostOrLoopbackIp,
   mcpOAuthEnvReferences,
@@ -240,6 +241,8 @@ const UNAVAILABLE_TOOL = "__robots_unavailable";
 /** Skip rewriting an unchanged health observation more often than this. */
 const HEALTH_REWRITE_MS = 60_000;
 
+export type McpServerProbe = McpServerHealthUpdate & { tools: ConnectionTool[] };
+
 export type McpConnectorOptions = {
   stdioEnabled?: boolean;
   allowedCommands?: string[];
@@ -390,7 +393,7 @@ async function closeEntry(entry: { session: McpSession; credentialDir?: string }
 export class McpConnector implements ConnectorProvider {
   private readonly sessions = new Map<string, SessionEntry>();
   private readonly connecting = new Map<string, PendingSession>();
-  private readonly probes = new Map<string, Promise<McpServerHealthUpdate>>();
+  private readonly probes = new Map<string, Promise<McpServerProbe>>();
   /** Last discovery failure per session key, returned by the unavailable stand-in tool. */
   private readonly unavailable = new Map<string, string>();
   private readonly healthWrites = new Map<string, { value: string; at: number }>();
@@ -422,6 +425,11 @@ export class McpConnector implements ConnectorProvider {
         for (const entry of this.connecting.values())
           if (entry.ref === ref) entry.invalidated = true;
       }) ?? (() => {});
+  }
+
+  private materialSecrets(material: OAuthMaterial | undefined): string[] {
+    if (!material) return [];
+    return this.oauth ? this.oauth.secretsIn(material) : oauthMaterialSecrets(material);
   }
 
   describe() {
@@ -551,7 +559,7 @@ export class McpConnector implements ConnectorProvider {
           // same reason execute() captures it before callTool.
           const material = (entry ?? this.sessions.get(key))?.material;
           const secrets = [
-            ...(material ? oauthMaterialSecrets(material) : []),
+            ...this.materialSecrets(material),
             ...((entry ?? this.sessions.get(key))?.launchSecrets ?? []),
           ];
           const reason = this.installing.has(key)
@@ -706,7 +714,7 @@ export class McpConnector implements ConnectorProvider {
     }
     // Capture material before callTool so a concurrent eviction/replace cannot
     // drop this call's OAuth secrets from model-visible redaction. Recompute via
-    // oauthMaterialSecrets(material) so in-place token refresh stays covered.
+    // materialSecrets(material) so in-place token refresh stays covered.
     let material: OAuthMaterial | undefined;
     let launchSecrets: string[] = [];
     const sessionKey = this.sessionKey(assignment.server, context);
@@ -719,7 +727,7 @@ export class McpConnector implements ConnectorProvider {
         launchSecrets = this.sessions.get(sessionKey)?.launchSecrets ?? [];
         return session.callTool(toolName, call.args, { signal: context.signal });
       });
-      const secrets = [...(material ? oauthMaterialSecrets(material) : []), ...launchSecrets];
+      const secrets = [...this.materialSecrets(material), ...launchSecrets];
       yield { type: "result", data: redactConnectorPayload(result, secrets) };
       const app = await readMcpApp(
         assignment.server.name,
@@ -733,7 +741,7 @@ export class McpConnector implements ConnectorProvider {
       );
       if (app) yield { type: "app", app };
     } catch (error) {
-      const secrets = [...(material ? oauthMaterialSecrets(material) : []), ...launchSecrets];
+      const secrets = [...this.materialSecrets(material), ...launchSecrets];
       // Drop a broken, hung or unauthorized connection, so the next call reconnects. A
       // cancelled run or the server's own error leaves a stdio process and the server's
       // session state in place. A session another call already replaced stays replaced:
@@ -744,16 +752,10 @@ export class McpConnector implements ConnectorProvider {
     }
   }
 
-  /**
-   * Launch (or reuse) a server once and list its tools, for the settings "Test connection"
-   * and the check after a save. A live session in this process is reused; otherwise an
-   * isolated session is started and stopped again. Concurrent probes of one server share a
-   * result. The outcome is recorded as the server's health and returned.
-   */
   probe(
     server: McpServer,
     context: { spaceId: string; userId: string; signal?: AbortSignal },
-  ): Promise<McpServerHealthUpdate> {
+  ): Promise<McpServerProbe> {
     const timeoutMs =
       (this.options.installTimeoutMs ?? DEFAULT_MCP_INSTALL_TIMEOUT_MS) +
       (this.options.startupTimeoutMs ?? DEFAULT_MCP_STDIO_STARTUP_TIMEOUT_MS) +
@@ -780,45 +782,49 @@ export class McpConnector implements ConnectorProvider {
     server: McpServer,
     context: AdapterContext,
     key: string,
-  ): Promise<McpServerHealthUpdate> {
+  ): Promise<McpServerProbe> {
     let secrets: string[] = [];
     let update: McpServerHealthUpdate;
-    // A process this one already runs (or is starting) answers; never launch a second.
+    let tools: McpServerProbe["tools"] = [];
     const shared =
       this.sessions.get(key)?.revision === server.revision ||
       this.connecting.get(key)?.revision === server.revision;
     try {
-      let toolCount: number;
+      let listed: Tool[];
       if (shared) {
-        toolCount = (
+        listed = (
           await this.withSession(server, context, (session) => {
             const material = this.sessions.get(key)?.material;
             secrets = [
-              ...(material ? oauthMaterialSecrets(material) : []),
+              ...this.materialSecrets(material),
               ...(this.sessions.get(key)?.launchSecrets ?? []),
             ];
             return session.listTools({ signal: context.signal });
           })
-        ).tools.length;
+        ).tools;
       } else {
         const connected = await this.connectSession(server, context, () => undefined);
-        secrets = [...oauthMaterialSecrets(connected.material), ...(connected.launchSecrets ?? [])];
+        secrets = [...this.materialSecrets(connected.material), ...(connected.launchSecrets ?? [])];
         try {
-          toolCount = (await connected.session.listTools({ signal: context.signal })).tools.length;
+          listed = (await connected.session.listTools({ signal: context.signal })).tools;
         } finally {
           await closeEntry(connected).catch(() => undefined);
         }
       }
       this.unavailable.delete(key);
       this.discoveryBackoff.delete(key);
-      update = { status: "ok", message: null, toolCount };
+      update = { status: "ok", message: null, toolCount: listed.length };
+      tools = listed.map((tool) => ({
+        name: tool.name,
+        description: tool.description ?? tool.title ?? tool.name,
+        readOnly: mcpToolFields(tool).readOnly,
+      }));
     } catch (error) {
-      // Like discovery: a shared session that cannot list its tools is dropped.
       if (shared) await this.evict(key).catch(() => undefined);
       update = { status: "error", message: sanitizeConnectorError(error, secrets) };
     }
     await this.recordHealth(server.id, update, { force: true, revision: server.revision });
-    return update;
+    return { ...update, tools };
   }
 
   /**
@@ -1322,7 +1328,7 @@ export class McpConnector implements ConnectorProvider {
       if (!material) throw error;
       if (error instanceof McpReauthorizationRequiredError) throw error;
       throw new McpConnectFailure(
-        sanitizeConnectorError(error, [...oauthMaterialSecrets(material), ...launchSecrets]),
+        sanitizeConnectorError(error, [...this.materialSecrets(material), ...launchSecrets]),
         isRejectedTokenError(error) ? "reconnect" : expectedFailure(error),
       );
     }

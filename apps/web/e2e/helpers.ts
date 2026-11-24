@@ -64,6 +64,16 @@ export async function completeOnboarding(page: Page, testInfo?: TestInfo) {
  * the page the form would land on. Passing testInfo goes through the form to
  * capture it; tests of the form itself use signupThroughForm.
  */
+async function startWithExpandedSidebar(page: Page) {
+  await page.addInitScript(() => {
+    const read = Storage.prototype.getItem;
+    Storage.prototype.getItem = function getItem(key: string) {
+      const stored = read.call(this, key);
+      return stored === null && key.startsWith("robots:bots-sidebar-collapsed:") ? "0" : stored;
+    };
+  });
+}
+
 export async function signup(
   page: Page,
   email: string,
@@ -71,6 +81,7 @@ export async function signup(
   name: string,
   testInfo?: TestInfo,
 ) {
+  await startWithExpandedSidebar(page);
   if (testInfo) return signupThroughForm(page, email, password, name, testInfo);
   const baseURL = test.info().project.use.baseURL;
   if (!baseURL) throw new Error("signup needs a baseURL");
@@ -100,6 +111,7 @@ export async function signupThroughForm(
   name: string,
   testInfo?: TestInfo,
 ) {
+  await startWithExpandedSidebar(page);
   await page.goto("/sign-up");
   await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
   await openEmailSignIn(page);

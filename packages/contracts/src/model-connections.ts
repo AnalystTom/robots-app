@@ -385,7 +385,11 @@ export type ModelOAuthBegin = z.infer<typeof ModelOAuthBeginSchema>;
 export const CompatibleEndpointPresetSchema = z.object({ name: z.string(), baseUrl: z.string() });
 export type CompatibleEndpointPreset = z.infer<typeof CompatibleEndpointPresetSchema>;
 
+export const ModelTierSchema = z.enum(["lite", "auto", "pro"]);
+export type ModelTier = z.infer<typeof ModelTierSchema>;
+
 export const ModelCatalogEntrySchema = z.object({
+  tier: ModelTierSchema.optional(),
   /** Omitted by older servers and ordinary chat connections. */
   protocol: z.enum(["chat", "decisions"]).optional(),
   /** Preselected for a new connection when there is no saved model choice. */

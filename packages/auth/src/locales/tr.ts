@@ -24,8 +24,6 @@ export const TR_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "Siz olduğunuzu onaylamak için bu kodu RoBots’ya girin:",
   "Welcome to RoBots": "RoBots’ya hoş geldiniz",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "RoBots'ya hoş geldiniz. RoBots'dan en çok verimi alanlar üç şey yapıyor:",
   "Get the apps": "Uygulamaları indirin",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots {platforms} üzerinde çalışır; böylece botlarınız size her yerde ulaşabilir.",

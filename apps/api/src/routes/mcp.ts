@@ -93,7 +93,6 @@ export function mcpRoutes(ctx: RouterContext) {
               insertMcpServer(tx, context.actor, input, stored, { everywhere: true }),
             )
             .catch((error: unknown) => {
-              // The slug comes from the name, so this is a second server with the same name.
               if (isUniqueViolation(error)) {
                 throw new ORPCError("CONFLICT", {
                   message: "An MCP server with that name already exists.",
@@ -131,9 +130,7 @@ export function mcpRoutes(ctx: RouterContext) {
                 );
                 if (value && typeof value === "object" && !Array.isArray(value))
                   existingMaterial = value as Record<string, unknown>;
-              } catch {
-                /* Existing malformed secrets are replaced only when new credentials are supplied. */
-              }
+              } catch {}
             }
             const config =
               "config" in input
@@ -194,8 +191,6 @@ export function mcpRoutes(ctx: RouterContext) {
               stored ?? undefined,
               () =>
                 deps.prisma.$transaction(async (tx) => {
-                  // A rename claims a name; availability changes take that lock before the secret,
-                  // so this takes it first too and the two can never wait on each other.
                   if (config.slug !== existing.slug)
                     await lockOwner(tx, context.actor.userId, "names:mcpServer");
                   await lockMcpOAuthMaterial(tx, input.id);
@@ -257,7 +252,6 @@ export function mcpRoutes(ctx: RouterContext) {
                       env: ("env" in config
                         ? Object.fromEntries(Object.keys(config.env).map((key) => [key, true]))
                         : {}) as Prisma.InputJsonValue,
-                      // Omitted files are kept in the material, so the keys follow it.
                       ...(update.action === "store"
                         ? {
                             files: Object.fromEntries(
@@ -271,7 +265,6 @@ export function mcpRoutes(ctx: RouterContext) {
                       enabled: config.enabled,
                       verbatimResults: config.verbatimResults,
                       revision: { increment: 1 },
-                      // The old verdict is about the old config.
                       healthStatus: "unknown",
                       healthMessage: null,
                       healthToolCount: null,
@@ -322,6 +315,21 @@ export function mcpRoutes(ctx: RouterContext) {
           if (!fresh) throw new IsolationError();
           return mcpServerDto(fresh, oauth);
         }),
+        tools: authed.mcp.servers.tools.handler(async ({ context, input }) => {
+          const server = await deps.prisma.mcpServer.findFirst({
+            where: { id: input.id, ...availableInSpace(context.actor) },
+          });
+          if (!server) throw new IsolationError();
+          if (!deps.mcp || !server.enabled) return [];
+          const oauth = await mcpOAuth.summaryFor(server, context.actor);
+          if (await mcpAwaitsOAuth(server, context.actor, oauth)) return [];
+          const probe = await deps.mcp.probe(server, {
+            spaceId: context.actor.spaceId,
+            userId: context.actor.userId,
+            signal: context.signal,
+          });
+          return probe.tools;
+        }),
         agents: authed.mcp.servers.agents.handler(async ({ context, input }) => {
           const owner = { spaceId: context.actor.spaceId, userId: context.actor.userId };
           const { server, assignments, seqs } = await deps.prisma.$transaction(async (tx) => {
@@ -336,7 +344,6 @@ export function mcpRoutes(ctx: RouterContext) {
               include: { availableIn: AVAILABILITY_SELECT },
             });
             let seqs: Array<{ threadId: string; seq: number }> = [];
-            // Under allBots the assignments stay as they were, so choosing agents again restores them.
             if (!input.allBots) {
               const botIds = [...new Set(input.botIds)];
               const bots = await tx.bot.findMany({
@@ -393,8 +400,6 @@ export function mcpRoutes(ctx: RouterContext) {
             select: { id: true, secretId: true },
           });
           if (!server) throw new IsolationError();
-          // Assignments cascade; the encrypted credential must go with the server.
-          // Cards are closed first, including ones that were never assigned.
           const seqs = await deps.prisma.$transaction((tx) =>
             removeMcpServerInTransaction(tx, context.actor, server),
           );
@@ -402,7 +407,6 @@ export function mcpRoutes(ctx: RouterContext) {
           return { ok: true as const };
         }),
       },
-      // Any bot in the space can use the member's own servers; servers and assignments stay personal.
       assignments: {
         all: authed.mcp.assignments.all.handler(async ({ context }) => {
           const rows = await deps.prisma.botMcpServer.findMany({
@@ -496,9 +500,6 @@ export function mcpRoutes(ctx: RouterContext) {
           return mcpAssignmentDto(row.assignment);
         }),
         dismiss: authed.mcp.assignments.dismiss.handler(async ({ context, input }) => {
-          // Not now resolves the card only. Assignments are never touched
-          // here: a stale card must not delete a live connection, and server
-          // removal belongs to the MCP settings surface.
           await resolveMcpApprovalCards(onboardingDeps, context.actor, {
             botId: input.botId,
             serverId: input.serverId,
@@ -585,7 +586,6 @@ export function mcpRoutes(ctx: RouterContext) {
         begin: authed.mcp.oauth.begin.handler(async ({ context, input }) => {
           try {
             const expectedRedirect = new URL("/mcp/oauth/callback", deps.env.webOrigin).toString();
-            // Native clients omit the redirect; the registered web callback is always used.
             if (input.redirectUri && new URL(input.redirectUri).toString() !== expectedRedirect) {
               throw new ORPCError(MCP_OAUTH_REDIRECT_MISMATCH, {
                 status: 400,
@@ -621,15 +621,12 @@ export function mcpRoutes(ctx: RouterContext) {
               spaceId: context.actor.spaceId,
               userId: context.actor.userId,
             });
-            // A check from before the sign-in would otherwise still read as failing. Only this
-            // sign-in's revision: an edit since then has its own health and its own check.
             await recordMcpServerHealth(
               deps.prisma,
               serverId,
               { status: "unknown", message: null },
               revision,
             );
-            // The account is connected now: check the server so it shows ok/error.
             void (async () => {
               const server = await deps.prisma.mcpServer.findFirst({
                 where: { id: serverId, revision, ...availableInSpace(context.actor) },
@@ -654,8 +651,6 @@ export function mcpRoutes(ctx: RouterContext) {
             spaceId: context.actor.spaceId,
             userId: context.actor.userId,
           });
-          // A health check from before the disconnect would otherwise still read as connected.
-          // Only this disconnect's revision: a sign-in since then has its own health.
           if (revision !== undefined)
             await recordMcpServerHealth(
               deps.prisma,

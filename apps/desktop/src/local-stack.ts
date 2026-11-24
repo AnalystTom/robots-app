@@ -364,7 +364,18 @@ export interface LocalStackDeps {
   onReuseConfirmed?: () => void;
   sleep?: (ms: number, signal: AbortSignal) => Promise<void>;
   healthTimeoutMs?: number;
+  /** What opening the stack to other devices adds to its environment; see `network-access.ts`. */
+  networkEnv?: NetworkEnv;
 }
+
+/**
+ * The environment that opens the stack to other devices, for the web port it runs on. `existing`
+ * holds what the stack's `.env` already trusts, which the result keeps.
+ */
+export type NetworkEnv = (input: {
+  port: string;
+  existing: { origins?: string; hosts?: string };
+}) => Record<string, string>;
 
 /** What the app needs from whichever controller runs This computer. */
 export interface StackController {
@@ -511,6 +522,8 @@ export class LocalStackController extends StackLifecycle {
   /** True once `compose up` may have left containers running, or a launch probe confirmed
    * a reusable stack; retries and failures keep it, and only a successful stop clears it. */
   private managedStackMayRun = false;
+  /** The stack's `.env`, read at each start, so opening it to the network keeps what it lists. */
+  private envFile = new Map<string, string>();
   /** Bumped when a stop succeeds, where the running flag clears; a probe started before
    * that success cannot record reuse afterwards, and a failed stop keeps the stack a candidate. */
   private stopGeneration = 0;
@@ -534,11 +547,12 @@ export class LocalStackController extends StackLifecycle {
     // A successful stop during either file read invalidates the probe result.
     const stopGeneration = this.stopGeneration;
     if (this.stopInFlight()) return false;
-    if (
-      this.deps.hostComputer &&
-      (await readPrivateFile(path.join(this.deps.stackDir, STACK_HOST_CONFIG_FILE), 256)) !==
-        this.hostConfigIdentity()
-    )
+    const recorded = await readPrivateFile(
+      path.join(this.deps.stackDir, STACK_HOST_CONFIG_FILE),
+      256,
+    );
+    // A stack started for another computer link or network mode must be started again.
+    if ((recorded !== null || this.recordsConfig()) && recorded !== this.hostConfigIdentity())
       return false;
     const token = await readStackToken(this.deps.stackDir);
     if (token === null) return false;
@@ -673,6 +687,9 @@ export class LocalStackController extends StackLifecycle {
     );
     const template = await readFile(path.join(this.deps.resourceDir, STACK_ENV_TEMPLATE), "utf8");
     await ensureStackEnv(this.deps.stackDir, template, this.deps.randomHex);
+    this.envFile = parseStackEnv(
+      (await readPrivateFile(path.join(this.deps.stackDir, STACK_ENV_FILE), 1024 * 1024)) ?? "",
+    );
     const stackToken = await ensureStackToken(this.deps.stackDir, this.deps.randomHex);
     this.currentStackToken = stackToken;
 
@@ -728,7 +745,7 @@ export class LocalStackController extends StackLifecycle {
     const deadline = Date.now() + (this.deps.healthTimeoutMs ?? STACK_HEALTH_TIMEOUT_MS);
     while (!signal.aborted) {
       if ((await this.deps.probe(this.currentWebUrl, signal, stackToken)) === this.deps.imageTag) {
-        if (this.deps.hostComputer)
+        if (this.recordsConfig())
           await writePrivateFile(
             path.join(this.deps.stackDir, STACK_HOST_CONFIG_FILE),
             this.hostConfigIdentity(),
@@ -769,8 +786,30 @@ export class LocalStackController extends StackLifecycle {
     return !interrupted(signal, inspected) && inspected.code === 0;
   }
 
+  /** Whether the running stack depends on settings beyond its image, recorded beside it. */
+  private recordsConfig(): boolean {
+    return Boolean(this.deps.hostComputer) || Object.keys(this.networkEnv()).length > 0;
+  }
+
+  private networkEnv(): Record<string, string> {
+    return (
+      this.deps.networkEnv?.({
+        port: new URL(this.currentWebUrl).port || "80",
+        existing: {
+          origins: this.envFile.get("ROBOTS_EXTRA_AUTH_ORIGINS"),
+          hosts: this.envFile.get("ROBOTS_ALLOWED_HOSTS"),
+        },
+      }) ?? {}
+    );
+  }
+
   private hostConfigIdentity() {
-    return createHash("sha256").update(JSON.stringify(this.deps.hostComputer)).digest("hex");
+    const network = this.networkEnv();
+    // Without network settings the identity is the one earlier releases recorded.
+    const config = Object.keys(network).length
+      ? { hostComputer: this.deps.hostComputer, network }
+      : this.deps.hostComputer;
+    return createHash("sha256").update(JSON.stringify(config)).digest("hex");
   }
 
   private docker(binary: string, args: string[], timeoutMs: number, signal?: AbortSignal) {
@@ -800,6 +839,7 @@ export class LocalStackController extends StackLifecycle {
         BETTER_AUTH_URL: this.currentWebUrl,
         WEB_ORIGIN: this.currentWebUrl,
         API_URL: this.currentWebUrl,
+        ...this.networkEnv(),
         COMPOSE_PROGRESS: "plain",
       }),
       timeoutMs,

@@ -9,6 +9,9 @@ const SPACE_CHANGE_PROCEDURES: Record<string, readonly SpaceChangeKind[]> = {
   "routines.create": ["routines"],
   "routines.update": ["routines"],
   "routines.remove": ["routines"],
+  "memory.update": ["memory"],
+  "memory.remove": ["memory"],
+  "docs.create": ["memory"],
   "routines.testRun": ["runs"],
   // These can queue a run.
   "threads.sendWithRoutines": ["runs"],
@@ -16,9 +19,10 @@ const SPACE_CHANGE_PROCEDURES: Record<string, readonly SpaceChangeKind[]> = {
   "threads.endCall": ["runs"],
   "threads.followUp": ["runs"],
   "skills.testRun": ["runs"],
-  // Activity leaves out archived bots.
-  "bots.restore": ["runs", "routines"],
-  "bots.remove": ["runs", "routines"],
+  // Activity and the Email page leave out archived bots.
+  "bots.restore": ["runs", "routines", "email"],
+  "bots.remove": ["runs", "routines", "email"],
+  "bots.claimEmailAddress": ["email"],
 };
 
 export function spaceChangesFor(path: readonly string[]): readonly SpaceChangeKind[] {

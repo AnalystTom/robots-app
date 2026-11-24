@@ -1,10 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type {
-  ConnectionCatalogItem,
-  McpServer,
-  McpServerConnection,
-  PluginMarketplaceEntry,
-} from "@robots/contracts";
+import type { ConnectionCatalogItem, McpServer, McpServerConnection } from "@robots/contracts";
 import { mcpServerConnection } from "@robots/contracts";
 import { catalogItemKey } from "@robots/core";
 import { Button, SectionHeading } from "@robots/ui-web";
@@ -73,7 +68,6 @@ export function ConnectionStatus({ server }: { server: McpServer }) {
   );
 }
 
-/** A sub-view's heading with its back button. */
 export function ViewTitle({ title, onBack }: { title: ReactNode; onBack: () => void }) {
   const { t } = useLingui();
   return (
@@ -95,16 +89,12 @@ export function ViewTitle({ title, onBack }: { title: ReactNode; onBack: () => v
   );
 }
 
-/** What every catalog tile needs to read and act on its app. */
 export type TileContext = {
   connections: PluginConnections;
-  /** Managed apps whose brand also has a plugin, keyed by catalog item. */
-  pluginForApp: Map<string, PluginMarketplaceEntry>;
   onOpenApp: (item: ConnectionCatalogItem) => void;
   onOpenDetail: (item: ConnectionCatalogItem) => void;
 };
 
-/** An app in the catalog with its Add or Added button; a connected app opens its page. */
 export function CatalogTile({
   item,
   label,
@@ -118,32 +108,20 @@ export function CatalogTile({
   tileTestId?: boolean;
   context: TileContext;
 }) {
-  const { connections, pluginForApp, onOpenApp } = context;
+  const { connections, onOpenApp } = context;
   const connected = connections.itemConnected(item);
-  const openable = connected || pluginForApp.has(catalogItemKey(item));
   const tileTestId = tileTestIdOption !== false && connected;
-  const icon = <ConnectorIcon name={label} logo={logo} />;
-  const title = (
-    <div className="min-w-0 flex-1 text-start">
-      <div className="truncate text-body-lg font-medium text-foreground">{label}</div>
-    </div>
-  );
   return (
     <div
       data-testid={tileTestId ? `connection-tile-${item.slug.toLowerCase()}` : undefined}
-      className={`${ROW_SHELL}${openable ? ` ${ROW_HOVER}` : ""}`}
+      className={`${ROW_SHELL} ${ROW_HOVER}`}
     >
-      {openable ? (
-        <button type="button" className={ROW_BUTTON} onClick={() => onOpenApp(item)}>
-          {icon}
-          {title}
-        </button>
-      ) : (
-        <>
-          {icon}
-          {title}
-        </>
-      )}
+      <button type="button" className={ROW_BUTTON} onClick={() => onOpenApp(item)}>
+        <ConnectorIcon name={label} logo={logo} />
+        <div className="min-w-0 flex-1 text-start">
+          <div className="truncate text-body-lg font-medium text-foreground">{label}</div>
+        </div>
+      </button>
       <CatalogActions item={item} context={context} />
     </div>
   );

@@ -17,7 +17,6 @@ COPY --chmod=755 apps/desktop/package.json apps/desktop/
 COPY --chmod=755 apps/mobile/package.json apps/mobile/
 COPY --chmod=755 apps/web/package.json apps/web/
 COPY --chmod=755 apps/worker/package.json apps/worker/
-COPY --chmod=755 apps/www/package.json apps/www/
 COPY --chmod=755 packages/adapter-kit/package.json packages/adapter-kit/
 COPY --chmod=755 packages/adapters/package.json packages/adapters/
 COPY --chmod=755 packages/auth/package.json packages/auth/
@@ -45,8 +44,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lo
 
 FROM manifests AS build
 # Only what the image runs (api, worker, web, supervisor) and the root build tools, with
-# native binaries for this image's platform alone. Mobile, desktop and the marketing site
-# never run here.
+# native binaries for this image's platform alone. Mobile and desktop never run here.
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile \
   --store-dir=/pnpm/store --cpu=current --os=current \
   --filter=. --filter="@robots/api..." --filter="@robots/worker..." \
@@ -59,7 +57,7 @@ RUN pnpm --filter @robots/api --filter @robots/worker build
 RUN ROBOTS_ALLOW_DEV_SECRETS=1 pnpm --filter @robots/web build
 # Build and test tooling stays here; the runtime takes its dependencies from the deps stage.
 RUN find . -name node_modules -type d -prune -exec rm -rf {} + \
-  && rm -rf apps/desktop apps/mobile apps/www docs examples
+  && rm -rf apps/desktop apps/mobile docs examples
 
 FROM node:24.22.2-bookworm-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9
 COPY infra/sandboxes/computer/apt-security.sh /tmp/apt-security.sh

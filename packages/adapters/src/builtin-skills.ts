@@ -1,7 +1,7 @@
 import { buildSkillMd } from "@robots/core";
 
 const ROBOTS_DOCS: ReadonlyArray<readonly [topics: string, url: string]> = [
-  ["Getting started, first bot, what RoBots does", "https://tryrobots.app/docs.md"],
+  ["Getting started, first bot, what RoBots does", "https://tryrobots.app/docs/getting-started.md"],
   [
     "Creating bots, chatting, bot settings, sidebar, search",
     "https://tryrobots.app/docs/bots-and-chats.md",

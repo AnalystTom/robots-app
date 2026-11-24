@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { RPCHandler } from "@orpc/server/fetch";
 import type { Actor } from "@robots/contracts";
+import { OPENAI_COMPATIBLE_PROVIDER_ID } from "@robots/contracts";
 import { MODEL_REQUIRED_SEND_ERROR } from "@robots/core";
 import type { PrismaClient } from "@robots/db";
 import {
@@ -10,10 +11,12 @@ import {
   createThreadMessage,
   provisionMessagingIdentity,
   runAsSystem,
+  runAsTenant,
 } from "@robots/db";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RouterDeps } from "./router.js";
 import { createRouter } from "./router.js";
+import { modelSetup } from "./routes/shared.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const enabled = process.env.VERIFY_DATABASE === "1" && Boolean(databaseUrl);
@@ -25,6 +28,7 @@ describe.skipIf(!enabled)("send model gate with a bot's own model (PostgreSQL)",
   let actor: Actor;
   let botId: string;
   let call: (path: string, input: Record<string, unknown>) => Promise<Response>;
+  let deps: RouterDeps;
   const enqueue = vi.fn().mockResolvedValue(undefined);
 
   beforeAll(() => {
@@ -47,11 +51,10 @@ describe.skipIf(!enabled)("send model gate with a bot's own model (PostgreSQL)",
     );
     botId = identity.botId;
     actor = { spaceId: identity.spaceId, userId: identity.userId } as Actor;
-    // A working connection, but no main model and no deployment model.
     await system.userModelCredential.create({
       data: { userId: actor.userId, provider: "openrouter", label: "Key", secretId: "fixture" },
     });
-    const deps = {
+    deps = {
       prisma,
       events: createThreadEvents(prisma),
       jobs: { enqueue, cancel: vi.fn(), close: async () => undefined },
@@ -97,7 +100,6 @@ describe.skipIf(!enabled)("send model gate with a bot's own model (PostgreSQL)",
   };
   const userMessages = (threadId: string) =>
     system.message.count({ where: { threadId, role: "user" } });
-  /** Reacts 👍 to a fresh reply from `author` and returns the runs the reaction started. */
   const react = async (target: Record<string, string>, threadId: string, author: string) => {
     await system.run.updateMany({ where: { threadId }, data: { status: "completed" } });
     const reply = await createThreadMessage(system, {
@@ -116,35 +118,55 @@ describe.skipIf(!enabled)("send model gate with a bot's own model (PostgreSQL)",
     return ((await response.json()) as { json: { runIds: string[] } }).json.runIds;
   };
 
+  it("runs a new bot on a connected model when no main model was chosen", async () => {
+    const thread = await system.thread.findFirstOrThrow({ where: { botId } });
+    const accepted = await send({ botId, text: "follows the space default" });
+    expect(accepted.status).toBe(200);
+    expect(enqueue).toHaveBeenCalled();
+    const run = await system.run.findFirstOrThrow({ where: { threadId: thread.id } });
+    expect(run.modelPinned).toBe(false);
+    expect(await userMessages(thread.id)).toBe(1);
+  });
+
+  it("prefers the connection's own saved model over its provider's recommended one", async () => {
+    const credential = await system.userModelCredential.findFirstOrThrow({
+      where: { userId: actor.userId },
+    });
+    await system.userModelPreference.create({
+      data: { userId: actor.userId, credentialId: credential.id, modelId: "openai/gpt-4o" },
+    });
+    const setup = await runAsTenant(actor, () => modelSetup(deps, actor));
+    expect(setup).toMatchObject({
+      needsModel: false,
+      model: { provider: "openrouter", modelId: "openai/gpt-4o", credentialId: credential.id },
+    });
+  });
+
   it("starts a bot's turn on its own connected model, and refuses one without it", async () => {
     const thread = await system.thread.findFirstOrThrow({ where: { botId } });
-    // A bot that follows the main model is still refused.
-    await expectRefused(await send({ botId, text: "follows main" }));
-
     await useModel(botId, "openrouter");
     const accepted = await send({ botId, text: "own model" });
     expect(accepted.status).toBe(200);
     expect(enqueue).toHaveBeenCalled();
     expect(await userMessages(thread.id)).toBe(1);
-    // A reaction to its reply starts a turn too.
     expect(await react({ botId }, thread.id, botId)).toHaveLength(1);
 
-    // A provider without a model follows the main model.
-    await system.bot.update({ where: { id: botId }, data: { modelId: null } });
-    await expectRefused(await send({ botId, text: "no model id" }));
-    expect(await react({ botId }, thread.id, botId)).toEqual([]);
-    // Its model is set, but no connection serves that provider.
     await useModel(botId, "anthropic");
-    await expectRefused(await send({ botId, text: "no connection" }));
-    // The connection is gone.
+    expect((await send({ botId, text: "unconnected provider runs on the default" })).status).toBe(
+      200,
+    );
+    await system.run.updateMany({ where: { threadId: thread.id }, data: { status: "completed" } });
     await useModel(botId, "openrouter");
     await system.userModelCredential.deleteMany({ where: { userId: actor.userId } });
     await expectRefused(await send({ botId, text: "disconnected" }));
-    // The accepted send and the two reactions; no refused send was saved.
-    expect(await userMessages(thread.id)).toBe(3);
+    await system.bot.update({ where: { id: botId }, data: { modelId: null } });
+    await expectRefused(await send({ botId, text: "nothing connected" }));
+    expect(await react({ botId }, thread.id, botId)).toEqual([]);
+    expect(await userMessages(thread.id)).toBe(4);
   });
 
   it("lets a bare stop end active work without a model, and refuses it when idle", async () => {
+    await system.userModelCredential.deleteMany({ where: { userId: actor.userId } });
     const thread = await system.thread.findFirstOrThrow({ where: { botId } });
     await expectRefused(await send({ botId, text: "stop" }));
     const work = { spaceId: actor.spaceId, botId, threadId: thread.id, userId: actor.userId };
@@ -162,10 +184,23 @@ describe.skipIf(!enabled)("send model gate with a bot's own model (PostgreSQL)",
   });
 
   it("lets a group send through only when every bot it wakes runs its own model", async () => {
-    await system.bot.update({ where: { id: botId }, data: { name: "Alpha" } });
-    await useModel(botId, "openrouter");
+    await system.userModelCredential.updateMany({
+      where: { userId: actor.userId },
+      data: { provider: OPENAI_COMPATIBLE_PROVIDER_ID },
+    });
+    await system.bot.update({
+      where: { id: botId },
+      data: { name: "Alpha", modelProvider: OPENAI_COMPATIBLE_PROVIDER_ID, modelId: "local-model" },
+    });
     const beta = await system.bot.create({
-      data: { spaceId: actor.spaceId, userId: actor.userId, name: "Beta", color: "primary" },
+      data: {
+        spaceId: actor.spaceId,
+        userId: actor.userId,
+        name: "Beta",
+        color: "primary",
+        modelProvider: "anthropic",
+        modelId: "claude-unconnected",
+      },
     });
     const group = await system.chatGroup.create({
       data: {
@@ -183,17 +218,13 @@ describe.skipIf(!enabled)("send model gate with a bot's own model (PostgreSQL)",
     await expectRefused(await send({ groupId: group.id, text: "@everyone hello" }));
     const stop = () =>
       send({ groupId: group.id, text: "stop", mentions: [{ kind: "bot", id: beta.id }] });
-    // A "stop" while Alpha works needs no model: it stops that work.
     expect((await stop()).status).toBe(200);
-    // With nothing left working it is no stop, so a bot without a model still refuses it.
     await expectRefused(await stop());
     await expectRefused(
       await send({ groupId: group.id, text: "hello", mentions: [{ kind: "bot", id: beta.id }] }),
     );
-    // A message that names nobody wakes every member, Beta included.
     await expectRefused(await send({ groupId: group.id, text: "hello" }));
     expect(await userMessages(group.thread!.id)).toBe(2);
-    // A reply to a member's message wakes that member alone.
     const reply = (author: string) =>
       createThreadMessage(system, {
         threadId: group.thread!.id,
@@ -210,7 +241,6 @@ describe.skipIf(!enabled)("send model gate with a bot's own model (PostgreSQL)",
       await send({ groupId: group.id, text: "blue", replyToMessageId: betaReply.id }),
     );
     expect(await userMessages(group.thread!.id)).toBe(3);
-    // A reaction wakes the bot that wrote the message.
     expect(await react({ groupId: group.id }, group.thread!.id, beta.id)).toEqual([]);
     expect(await react({ groupId: group.id }, group.thread!.id, botId)).toHaveLength(1);
   });

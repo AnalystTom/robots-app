@@ -206,4 +206,7 @@ export const ZH_CN_MESSAGES: Record<string, string> = {
   "Waiting for Docker…": "正在等待 Docker…",
   "Docker is installed but not running. Start the Docker service to continue.":
     "Docker 已安装但未运行。请启动 Docker 服务以继续。",
+  "Let other devices open RoBots?": "允许其他设备打开 RoBots？",
+  "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.":
+    "你网络中的设备将可以通过 {address} 访问这台电脑上的 RoBots。每台设备仍需登录或配对。",
 };

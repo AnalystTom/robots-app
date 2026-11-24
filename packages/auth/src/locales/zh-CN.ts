@@ -22,8 +22,6 @@ export const ZH_CN_MESSAGES: Record<string, string> = {
   "Your RoBots confirmation code": "你的 RoBots 确认码",
   "Enter this code in RoBots to confirm it's you:": "在 RoBots 中输入此验证码以确认是你本人：",
   "Welcome to RoBots": "欢迎使用 RoBots",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "欢迎使用 RoBots。用得最好的人都会做三件事：",
   "Get the apps": "下载应用",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots 支持 {platforms}，让你的机器人随时随地都能联系到你。",

@@ -9,7 +9,9 @@ export function analyticsScreen(pathname: string): AnalyticsScreen | undefined {
     ["/artifacts", "/artifact", "/image"].includes(pathname)
   )
     return "artifacts";
-  if (pathname === "/app/board") return "board";
+  if (pathname === "/app/board" || pathname === "/app/tasks") return "board";
+  // Workspace pages have no screen name yet; they must not count as chats.
+  if (["/app/today", "/app/email", "/app/docs"].includes(pathname)) return undefined;
   if (/^\/app\/(?:g\/)?[^/]+$/.test(pathname) || ["/thread", "/group-thread"].includes(pathname))
     return "chat";
   if (pathname === "/computer") return "computer";

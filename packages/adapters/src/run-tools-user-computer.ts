@@ -35,16 +35,11 @@ export {
   userComputerAppName,
 };
 
-/** Whether the run's owner has their desktop connected, or could connect one. */
 export type UserComputerState = "connected" | "offline" | undefined;
 
 const USER_COMPUTER_UNAVAILABLE =
   'The user\'s computer is not connected. If the task needs it, ask them to open the RoBots desktop app and turn on "Let bots use this computer" in its settings.';
 
-/**
- * Whose own computer this run may reach: the person whose message started it, when they own the
- * bot. Routines, webhooks, channels, other bots and other people's messages reach no one's.
- */
 export function userComputerOwner(input: {
   trigger: string;
   sourceRole: string | undefined;
@@ -57,13 +52,6 @@ export function userComputerOwner(input: {
   return input.runUserId === input.botUserId ? input.runUserId : undefined;
 }
 
-/**
- * The user's own computer always asks a person first, in every approval mode and whatever the
- * rules allow, until they choose "Allow in this space"; a block still refuses it. These tools run
- * only in the user's own runs (see userComputerOwner), so any effect of them past "intended" in
- * this space traces back to that approval. Removing every paired computer ends it, so pairing again
- * asks again. Screen control is approved per app.
- */
 export async function userComputerGate(
   ctx: RunContext,
   blocked: boolean,
@@ -89,7 +77,6 @@ export async function userComputerGate(
   }
   const app = userComputerAppName(args.app).toLowerCase();
   if (!app) return "ask";
-  // Every screen action records an effect, so page through them rather than cap the search.
   let cursor: string | undefined;
   for (;;) {
     const page = await deps.prisma.externalEffect.findMany({
@@ -114,7 +101,6 @@ export async function userComputerGate(
 
 const SCREEN_APPROVAL_PAGE = 200;
 
-/** The working directory on the user's computer: their home or a folder inside it. */
 export function userComputerCwd(environment: HostComputerEnvironment, cwd: unknown): string {
   const paths = environment.platform === "win32" ? path.win32 : path.posix;
   const requested = typeof cwd === "string" ? cwd.trim() : "";
@@ -129,19 +115,20 @@ export function userComputerCwd(environment: HostComputerEnvironment, cwd: unkno
   return resolved;
 }
 
-async function lastValue<T>(values: AsyncIterable<T>): Promise<T> {
+export async function lastValue<T>(values: AsyncIterable<T>): Promise<T> {
   let result: { value: T } | undefined;
   for await (const value of values) result = { value };
   if (!result) throw new Error("no response");
   return result.value;
 }
 
-/** Checked again at execution: the desktop can disconnect or be revoked after the offer. */
-async function connectedUserComputer(ctx: RunContext) {
+export async function connectedUserComputer(ctx: RunContext) {
   const owner = ctx.source.userComputerOwner;
   const devices = ctx.deps.userDevices;
   const device = owner && devices ? await devices.connected(owner).catch(() => null) : null;
-  return owner && devices && device ? { owner, devices, deviceId: device.deviceId } : undefined;
+  return owner && devices && device
+    ? { owner, devices, deviceId: device.deviceId, platform: device.platform }
+    : undefined;
 }
 
 export async function userComputerShell(ctx: RunContext, call: ToolCall) {
@@ -152,7 +139,6 @@ export async function userComputerShell(ctx: RunContext, call: ToolCall) {
   const { signal } = ctx.context;
   const command = String(call.args.command ?? "");
   try {
-    // The device only executes for a provisioned bot; provisioning is idempotent.
     await lastValue(
       devices.request(owner, { method: "provision", botId: bot.id, runId }, signal, deviceId),
     );
@@ -226,7 +212,6 @@ type ScreenRequest =
   | { method: "screenObserve"; app: string; query?: string }
   | { method: "screenAct"; app: string; actions: HostScreenAction[] };
 
-/** The device gets the app name the approval card showed, never the raw argument. */
 async function userComputerScreen(ctx: RunContext, call: ToolCall, request: ScreenRequest) {
   if (!request.app) return call.finish({ error: "app must name an app on the user's computer." });
   const connected = await connectedUserComputer(ctx);
@@ -264,7 +249,6 @@ async function userComputerScreen(ctx: RunContext, call: ToolCall, request: Scre
   }
 }
 
-/** Only the window's name and size are stored; the rows and screenshot reach the model alone. */
 function screenToolResult(
   ctx: RunContext,
   observation: HostScreenObservation,

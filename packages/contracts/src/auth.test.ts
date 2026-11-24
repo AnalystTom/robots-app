@@ -57,6 +57,12 @@ it("treats email code sign-in as an optional boolean capability", () => {
   expect(authCapabilitiesSchema.safeParse({ ...base, emailCode: "true" }).success).toBe(false);
 });
 
+it("treats email signup as an optional boolean capability", () => {
+  const base = { passwordAuth: true, passwordReset: true, resetUrl: null, sso: null };
+  expect(authCapabilitiesSchema.parse(base).emailSignup).toBeUndefined();
+  expect(authCapabilitiesSchema.parse({ ...base, emailSignup: false }).emailSignup).toBe(false);
+});
+
 it("only accepts complete legacy capabilities without partial SSO fields", () => {
   expect(
     legacyAuthCapabilitiesSchema.parse({ passwordReset: false, resetUrl: null, billing: true }),

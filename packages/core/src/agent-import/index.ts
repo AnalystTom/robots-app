@@ -8,8 +8,10 @@ import {
   AGENT_IMPORT_MAX_FILE_LENGTH,
   AGENT_IMPORT_MAX_FILES,
   AGENT_IMPORT_MAX_TOTAL_LENGTH,
+  BOT_PACKAGE_PATH,
   GROK_BOT_EXPORT_PATH,
 } from "@robots/contracts";
+import { BotPackageError, importBotPackage } from "../bot-package.js";
 import { AgentImportArchiveError } from "./archive.js";
 import {
   AGENT_IMPORT_CONFIG_FILES,
@@ -34,6 +36,7 @@ import {
   OPENCLAW_RUNTIME_FILES,
   parseOpenClaw,
 } from "./openclaw.js";
+import { parseRobotsPackage } from "./robots-package.js";
 import type { AgentImportParse, SkillFiles } from "./shared.js";
 import { freeName, isPrivatePath, isSkillPath, renameSkillMd } from "./shared.js";
 
@@ -56,7 +59,7 @@ export {
   readAgentImportConfig,
   stripAgentImportSecrets,
 } from "./config.js";
-export { looksLikeCredential } from "./credentials.js";
+export { looksLikeCredential, REDACTED_CREDENTIAL, redactCredentials } from "./credentials.js";
 export { AGENT_IMPORT_PROMPT } from "./document.js";
 export type { GrokBot, GrokBotExportErrorCode } from "./grok-bot.js";
 export {
@@ -83,18 +86,15 @@ const WORKSPACE_FILES = new Set<string>([
   ...HERMES_INSTRUCTION_FILES.map(([path]) => path),
   ...HERMES_MEMORY_FILES.map(([source]) => source),
 ]);
-/** A path starting with one of these has no upload root. */
 const SOURCE_FOLDERS = new Set(["skills", "memory", "memories", ".agents"]);
 const WORKSPACE_FOLDER = /^workspace(?:-[^/]+)?$/;
 
-/** Clients send only these paths, so unrelated files stay on the device. */
 export function isAgentImportCandidate(path: string): boolean {
   if (AGENT_IMPORT_CONFIG_FILES.has(path)) return true;
   if (isPrivatePath(path)) return false;
   return WORKSPACE_FILES.has(path) || isOpenClawDailyMemory(path) || isSkillPath(path);
 }
 
-/** Files only an OpenClaw or Hermes agent keeps (AGENTS.md alone is common in projects). */
 const AGENT_SIGNATURES = new Set([
   "openclaw.json",
   "SOUL.md",
@@ -103,7 +103,6 @@ const AGENT_SIGNATURES = new Set([
   ".hermes.md",
 ]);
 
-/** Decides from names alone, before anything is read or sent. */
 export function isAgentHome(paths: readonly string[]): boolean {
   if (paths.some((path) => path.startsWith(".openclaw/") || path.startsWith(".hermes/"))) {
     return true;
@@ -117,15 +116,6 @@ export function isAgentHome(paths: readonly string[]): boolean {
   );
 }
 
-/**
- * Maps upload paths to their path in the agent's workspace or home. Clients and the server
- * apply the same choice.
- *
- * Choosing the OpenClaw home (`~/.openclaw`) uses its `workspace/` folder (or the only
- * `workspace-<id>` folder when there is no `workspace/`) plus the managed skills in
- * `skills/` and the settings files at the home's root; workspace skills win over managed
- * ones with the same path, as in OpenClaw.
- */
 export function agentImportFolder(
   paths: readonly string[],
   options: { bundledSkills?: ReadonlySet<string> } = {},
@@ -133,7 +123,6 @@ export function agentImportFolder(
   root: string;
   files: Map<string, string>;
 } {
-  // Hermes' own skills (named in skills/.bundled_manifest) are never read or sent.
   const bundled = options.bundledSkills;
   const candidate = (path: string) =>
     isAgentImportCandidate(path) && !(bundled && isBundledSkill(path, bundled));
@@ -184,7 +173,6 @@ export function agentImportFolder(
   return { root: workspace, files };
 }
 
-/** Names only: those files are not imported, but show what a skill would be missing. */
 export function agentImportSkillFiles(
   paths: readonly string[],
   used: ReadonlyMap<string, string>,
@@ -202,12 +190,11 @@ export function agentImportSkillFiles(
   return out;
 }
 
-/** Applies the same secret stripping the browser applies before sending. */
 export function readAgentImportFolder(
   files: AgentImportFile[],
   options: { includeSecrets: boolean },
 ): {
-  source: Exclude<AgentImportSource, "document" | "template" | "grok_bot">;
+  source: Exclude<AgentImportSource, "document" | "template" | "grok_bot" | "robots_package">;
   root: string;
   files: Map<string, string>;
 } | null {
@@ -236,10 +223,6 @@ function chooseFolder(paths: readonly string[], read: (path: string) => string) 
   return agentImportFolder(paths, { bundledSkills: bundledSkillNames(read(manifest)) });
 }
 
-/**
- * The client's read of a folder or backup, matching the server's choice. Sizes are checked
- * before anything is read, and bundled skills and secret files are never read without need.
- */
 export async function chooseAgentImportFiles(
   paths: readonly string[],
   read: (path: string) => Promise<string> | string,
@@ -271,7 +254,6 @@ function checkSizes(paths: readonly string[], size?: (path: string) => number | 
   if (paths.length > AGENT_IMPORT_MAX_FILES) throw new AgentImportArchiveError("too_large");
   let total = 0;
   for (const path of paths) {
-    // A character takes at least one byte, so a byte size bounds the text the server checks.
     const bytes = size?.(path) ?? 0;
     if (bytes > AGENT_IMPORT_MAX_FILE_LENGTH * 4) throw new AgentImportArchiveError("too_large");
     total += bytes;
@@ -293,15 +275,19 @@ export function agentImportUpload(
   });
 }
 
-/**
- * Imported text is data: nothing here follows it. Settings (model, MCP servers, scheduled
- * jobs, API keys) are added by the server.
- */
 export function parseAgentImport(
   files: AgentImportFile[],
   skillFiles: SkillFiles = {},
 ): AgentImportPlan | { error: string } {
   const only = files.length === 1 ? files[0] : undefined;
+  if (only?.path === BOT_PACKAGE_PATH) {
+    try {
+      return plan("robots_package", parseRobotsPackage(importBotPackage(only.content)));
+    } catch (error) {
+      if (error instanceof BotPackageError) return { error: error.message };
+      throw error;
+    }
+  }
   if (only?.path === GROK_BOT_EXPORT_PATH) {
     let bots: GrokBot[];
     try {
@@ -309,7 +295,6 @@ export function parseAgentImport(
     } catch {
       return { error: AGENT_IMPORT_NOT_FOUND };
     }
-    // The client sends only the Bot the user picked.
     const [bot] = bots;
     if (!bot || bots.length !== 1) return { error: AGENT_IMPORT_NOT_FOUND };
     const parsed = parseGrokBot(bot);
@@ -323,8 +308,6 @@ export function parseAgentImport(
       return { error: AGENT_IMPORT_NOT_FOUND };
     return plan("grok_bot", parsed);
   }
-  // A known agent file (SOUL.md, MEMORY.md, memories/…) is read as one even when its text
-  // has the document's headings; only another file or the pasted reply is a document.
   if (only && !isKnownAgentFile(only.path) && isAgentDocument(only.content)) {
     return plan("document", parseAgentDocument(only.content));
   }
@@ -350,7 +333,6 @@ function isKnownAgentFile(path: string): boolean {
 }
 
 function plan(source: AgentImportSource, parsed: AgentImportParse): AgentImportPlan {
-  // Key-looking text is flagged, never changed.
   const flag = <T extends { content: string; title: string; description?: string }>(item: T) =>
     [item.content, item.title, item.description ?? ""].some(looksLikeCredential)
       ? { ...item, containsKey: true }
@@ -374,7 +356,7 @@ function plan(source: AgentImportSource, parsed: AgentImportParse): AgentImportP
 function detectSource(
   paths: Set<string>,
   root: string,
-): Exclude<AgentImportSource, "document" | "template" | "grok_bot"> | null {
+): Exclude<AgentImportSource, "document" | "template" | "grok_bot" | "robots_package"> | null {
   const has = (path: string) => paths.has(path);
   if (
     root === ".hermes" ||
@@ -393,10 +375,6 @@ export const IMPORTED_INSTRUCTION_HEADINGS = {
   working: "Working instructions",
 } as const;
 
-/**
- * Persona first, then working instructions, each under a heading only when both exist. A
- * title naming the file (`# SOUL.md - Who You Are`) is dropped: the bot has no such file.
- */
 export function combineImportedInstructions(
   items: readonly Pick<AgentImportInstruction, "title" | "content" | "role">[],
 ): string {
@@ -433,10 +411,6 @@ function withoutFileTitle(file: string, content: string): string {
   return text;
 }
 
-/**
- * Never overwrite: taken space memory paths and skill names (case-insensitive) get the first
- * free `-2`, `-3`, ... suffix. Bot memory keeps its paths.
- */
 export function resolveAgentImportNames(
   plan: AgentImportPlan,
   taken: { spaceMemoryPaths: readonly string[]; skillNames: readonly string[] },

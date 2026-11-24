@@ -64,6 +64,7 @@ import { useThreadSync } from "../../lib/thread-sync";
 import { useThreadTranscript } from "../../lib/thread-transcript";
 import { useAutoSpeakReply, useSpeakMessages, useThreadVoiceCall } from "../../lib/thread-voice";
 import { liveEndRunError } from "../../lib/thread-window";
+import { ComposerModelMenu } from "../composer-model-menu";
 import { FailedSendBubble } from "../failed-send-bubble";
 import { NewestPageCards } from "../pages/page-card";
 import { RunErrorSheet } from "../run-error-sheet";
@@ -671,6 +672,7 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
                 (attachment) => attachment.id,
               )}
               botId={botId}
+              modelMenu={botId ? <ComposerModelMenu botId={botId} /> : undefined}
               onCall={onCall}
               sending={attachments.shareImporting}
               styles={styles}

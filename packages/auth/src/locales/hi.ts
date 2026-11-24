@@ -23,8 +23,6 @@ export const HI_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "यह पुष्टि करने के लिए कि यह आप ही हैं, RoBots में यह कोड डालें:",
   "Welcome to RoBots": "RoBots में आपका स्वागत है",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "RoBots में आपका स्वागत है। जो लोग इसका सबसे ज़्यादा फ़ायदा उठाते हैं, वे तीन काम करते हैं:",
   "Get the apps": "ऐप डाउनलोड करें",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots {platforms} पर चलता है, ताकि आपके बॉट आप तक कहीं भी पहुँच सकें।",

@@ -5,11 +5,6 @@ import type { UserDevice, UserDeviceGateway } from "./user-device-protocol.js";
 
 export const USER_DEVICE_EMULATOR_OUTPUT = "fixture-mac\n";
 
-/**
- * Deterministic, offline stand-in for a connected desktop: every user has one, every command
- * prints USER_DEVICE_EMULATOR_OUTPUT, and every app shows one empty window. Records what it was
- * asked to run.
- */
 export class UserDeviceEmulator implements UserDeviceGateway {
   readonly requests: Array<{ userId: string; request: HostComputerRequest }> = [];
 
@@ -42,6 +37,10 @@ export class UserDeviceEmulator implements UserDeviceGateway {
         { type: "exit", code: 0 },
       ];
       for (const event of events) yield event as T;
+      return;
+    }
+    if (request.method === "macApp") {
+      yield { emulated: true, tool: request.call.tool } as T;
       return;
     }
     if (request.method === "screenObserve" || request.method === "screenAct") {

@@ -228,4 +228,7 @@ export const JA_MESSAGES: Record<string, string> = {
   "Waiting for Docker…": "Dockerを待っています…",
   "Docker is installed but not running. Start the Docker service to continue.":
     "Dockerはインストールされていますが、実行されていません。続行するにはDockerサービスを起動してください。",
+  "Let other devices open RoBots?": "他のデバイスから RoBots を開けるようにしますか？",
+  "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.":
+    "ネットワーク上のデバイスが {address} でこのコンピュータの RoBots にアクセスできるようになります。各デバイスはサインインまたはペアリングが必要です。",
 };

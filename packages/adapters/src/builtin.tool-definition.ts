@@ -27,6 +27,7 @@ import {
 import { z } from "zod";
 import { allowPrivateHttpSecretOrigins } from "./bot-secrets.js";
 import { BROWSER_ACT_KINDS } from "./browser-tools.js";
+import { macAppAgentTools } from "./mac-apps.tool-definition.js";
 import { SCHEDULE_TIMING_FIELDS } from "./schedule-tools.js";
 import { SCRATCHPAD_NOTES_MAX_LENGTH, SCRATCHPAD_TITLE_MAX_LENGTH } from "./scratchpad-tools.js";
 import { messageUserMaxLength } from "./user-progress.js";
@@ -543,6 +544,7 @@ export const builtinAgentTools: ConnectorTool[] = [
       required: ["app", "actions"],
     },
   },
+  ...macAppAgentTools,
   {
     name: "open_path",
     description:

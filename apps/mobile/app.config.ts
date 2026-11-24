@@ -43,6 +43,20 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     };
   }
 
+  const updatesUrl = mobileUpdatesUrl(process.env.EXPO_PUBLIC_API_URL);
+  if (updatesUrl) {
+    result = {
+      ...result,
+      updates: {
+        ...result.updates,
+        enabled: true,
+        url: updatesUrl,
+        checkAutomatically: "ON_LOAD",
+        fallbackToCacheTimeout: 0,
+      },
+    };
+  }
+
   const googleServicesFile = process.env.GOOGLE_SERVICES_JSON;
   if (googleServicesFile) {
     result = { ...result, android: { ...result.android, googleServicesFile } };
@@ -87,4 +101,14 @@ function passkeyRpId(apiUrl: string | undefined): string | null {
   if (url.protocol !== "https:" || !host.includes(".")) return null;
   if (host.startsWith("[") || /^\d+(\.\d+){3}$/.test(host)) return null;
   return host;
+}
+
+function mobileUpdatesUrl(apiUrl: string | undefined): string | null {
+  if (process.env.ROBOTS_MOBILE_UPDATES === "0") return null;
+  try {
+    const url = new URL(apiUrl ?? "");
+    return url.protocol === "https:" ? new URL("/api/mobile-updates/manifest", url).href : null;
+  } catch {
+    return null;
+  }
 }

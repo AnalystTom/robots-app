@@ -39,6 +39,7 @@ function fixture(group = false) {
     userModelRoleChoice: { findMany: vi.fn().mockResolvedValue([]) },
     spaceSettingOverride: { findUnique: vi.fn().mockResolvedValue(null) },
     userModelCredential: {
+      findMany: vi.fn().mockResolvedValue([]),
       findFirst: vi.fn().mockResolvedValue({
         id: "credential-1",
         provider: "openrouter",

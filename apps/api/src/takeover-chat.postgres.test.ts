@@ -30,6 +30,7 @@ import {
   createThreadEvents,
   endTakeoverWaits,
   expireStuckRun,
+  installAuditEventStore,
   runAsSystem,
   runAsTenant,
 } from "@robots/db";
@@ -52,6 +53,7 @@ describePostgres("chat replies during screen takeover (PostgreSQL)", () => {
     db = createDb(process.env.DATABASE_URL!);
     prisma = db.prisma;
     system = asSystem(prisma);
+    installAuditEventStore(prisma);
     dataDir = await mkdtemp(join(process.cwd(), ".takeover-chat-test-"));
     await system.deploymentSettings.upsert({
       where: { id: "default" },
@@ -65,6 +67,7 @@ describePostgres("chat replies during screen takeover (PostgreSQL)", () => {
   });
 
   afterAll(async () => {
+    installAuditEventStore(undefined);
     if (prisma) {
       await system.organization.deleteMany({ where: { id: { in: organizations } } });
       await system.user.deleteMany({ where: { id: { in: organizations } } });

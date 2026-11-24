@@ -27,9 +27,6 @@ export function welcomeEmail(
     say("Welcome to RoBots"),
     <>
       <Text>{greeting(say, user.name)}</Text>
-      <Text>
-        {say("Welcome to RoBots. The people who get the most out of it do three things:")}
-      </Text>
       <Text style={stepStyle}>
         <strong>1. {say("Get the apps")}</strong>
       </Text>
@@ -67,5 +64,6 @@ export function welcomeEmail(
       <Text>The RoBots team</Text>
     </>,
     unsubscribeUrl,
+    { src: "https://tryrobots.app/og.png", alt: "RoBots" },
   );
 }

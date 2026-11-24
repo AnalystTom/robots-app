@@ -30,6 +30,11 @@
       "development": "./src/network-host.ts",
       "default": "./src/network-host.ts"
     },
+    "./device-pairing": {
+      "types": "./src/device-pairing.ts",
+      "development": "./src/device-pairing.ts",
+      "default": "./src/device-pairing.ts"
+    },
     "./user-devices": {
       "types": "./src/user-devices.ts",
       "development": "./src/user-devices.ts",

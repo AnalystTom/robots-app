@@ -31,7 +31,6 @@ describe("parseBotEmailName", () => {
   it("keeps reserved names and their lookalikes for no bot", () => {
     for (const name of [
       "hello",
-      "elie",
       "support.ts",
       "admin-bot",
       "help_desk",

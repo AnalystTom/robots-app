@@ -76,8 +76,10 @@ function fakeRun(
       (!or || or.some((clause) => Object.entries(clause).some(matchesClause)))
     );
   };
+  const publishSpaceChange = vi.fn(async () => undefined);
   const ctx = {
     deps: {
+      events: { publishSpaceChange },
       prisma: {
         ...(options.queryTokens
           ? {
@@ -145,7 +147,7 @@ function fakeRun(
     ) as Promise<Record<string, unknown>>;
   const call = (args: Record<string, unknown>) => invoke("read_email", args);
   const remove = (args: Record<string, unknown>) => invoke("delete_email", args);
-  return { call, remove, inbox, copyEarlierFiles };
+  return { call, remove, inbox, copyEarlierFiles, publishSpaceChange };
 }
 
 describe("read_email", () => {
@@ -370,7 +372,7 @@ describe("read_email", () => {
 
 describe("delete_email", () => {
   it("deletes only mail this bot received", async () => {
-    const { remove, inbox } = fakeRun([
+    const { remove, inbox, publishSpaceChange } = fakeRun([
       row({ id: "spam" }),
       row({ id: "kept" }),
       row({ id: "theirs", botId: "bot-2" }),
@@ -381,6 +383,8 @@ describe("delete_email", () => {
       deleted: 1,
     });
     expect(inbox.map((email) => email.id)).toEqual(["kept", "theirs", "outgoing"]);
+    // The owner's Email page reads the inbox again.
+    expect(publishSpaceChange).toHaveBeenCalledTimes(1);
   });
 
   it("works only in its owner's runs, for a bounded list of ids", async () => {
@@ -633,6 +637,7 @@ describe("send_email", () => {
     };
     const ctx = {
       deps: {
+        events: { publishSpaceChange: async () => undefined },
         inboundEmailDomain: "bots.test",
         email: { send },
         prisma: {

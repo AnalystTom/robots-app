@@ -64,7 +64,10 @@ test("sidebar rail keeps chats interactive and remembers a dragged width", async
     .toBe(true);
   await captureScreenshot(page, testInfo, "sidebar-mini-avatar-rail");
   await page.getByTestId("user-menu-trigger").click();
-  await page.getByRole("button", { name: "Connect apps", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Connect apps", exact: true })
+    .and(page.locator(':not([data-testid="rail-connect-apps"])'))
+    .click();
   await expect(page.getByTestId("account-menu-header")).toBeHidden();
   await page.getByRole("button", { name: "Close integrations", exact: true }).click();
   await page.reload();

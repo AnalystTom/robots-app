@@ -236,6 +236,7 @@ async function deleteEmail(ctx: RunContext, call: ToolCall) {
   const { count } = await deps.prisma.botEmailMessage.deleteMany({
     where: { id: { in: [...new Set(parsed.data.ids)] }, botId: bot.id, sent: false },
   });
+  if (count) await deps.events.publishSpaceChange?.(bot.spaceId, "email");
   return call.finish({ deleted: count });
 }
 
@@ -442,6 +443,8 @@ async function sendEmail(ctx: RunContext, call: ToolCall) {
       error: `Sending failed (${error instanceof Error ? error.message : String(error)}). It most likely did not go out.`,
     });
   }
+  // The owner's Email page lists what the bot sent.
+  await deps.events.publishSpaceChange?.(bot.spaceId, "email");
   return done(row.id);
 }
 

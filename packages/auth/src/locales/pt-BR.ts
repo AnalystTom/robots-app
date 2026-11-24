@@ -24,8 +24,6 @@ export const PT_BR_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "Digite este código no RoBots para confirmar que é você:",
   "Welcome to RoBots": "Boas-vindas ao RoBots",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "Boas-vindas ao RoBots. Quem aproveita o RoBots ao máximo faz três coisas:",
   "Get the apps": "Baixe os apps",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "O RoBots funciona no {platforms}, para que seus bots falem com você onde você estiver.",

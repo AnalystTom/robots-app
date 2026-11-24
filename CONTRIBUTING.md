@@ -81,10 +81,9 @@ Keep message IDs, placeholders, JSX markers, and ICU plural branches intact; do 
 generated `*.js`/`*.mjs` catalog files or unrelated changes to existing catalogs.
 
 Update the shared and platform locale tests, including normalization and plural rules, and a
-UI E2E scenario for each supported surface. The marketing homepage in `apps/www` and the
-native Electron setup window and menus (`apps/desktop/src/i18n.ts` and `locales/`) have
-separate localization paths; scope and test those changes explicitly instead of assuming the
-web catalog covers them.
+UI E2E scenario for each supported surface. The native Electron setup window and menus
+(`apps/desktop/src/i18n.ts` and `locales/`) have a separate localization path; scope and
+test those changes explicitly instead of assuming the web catalog covers them.
 
 See [agent verification](docs/agent-verification.md) for the distinction between
 deterministic execution tests, computer replay, and real-model quality evals.
@@ -130,7 +129,6 @@ capability config, fixtures, logs, or snapshots; use the encrypted secret store 
 
 ## Contact
 
-| Where                                                            | Use for                                               |
-| ---------------------------------------------------------------- | ----------------------------------------------------- |
-| [security@tryrobots.app](mailto:security@tryrobots.app)          | Vulnerabilities only — see [SECURITY.md](SECURITY.md) |
-| [GitHub issues](https://github.com/AnalystTom/robots-app/issues) | Bugs, user and support questions                      |
+| Address                                           | Use for                                                                                              |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [hello@tryrobots.app](mailto:hello@tryrobots.app) | Vulnerabilities (see [SECURITY.md](SECURITY.md)), user and support questions, and maintainer contact |

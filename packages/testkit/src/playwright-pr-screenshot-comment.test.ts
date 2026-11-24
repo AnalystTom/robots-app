@@ -46,8 +46,8 @@ describe("screenshotMatchesSpecStem", () => {
   it("matches output directories nested under a project folder", () => {
     expect(
       screenshotMatchesSpecStem(
-        "www-marketing/homepage-screenshots-plugin-pages-chromium/07-submit.png",
-        "homepage-screenshots",
+        "mobile-web/plugin-pages-screenshots-submit-chromium/07-submit.png",
+        "plugin-pages-screenshots",
       ),
     ).toBe(true);
   });
