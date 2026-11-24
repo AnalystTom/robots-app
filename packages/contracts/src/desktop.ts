@@ -1,3 +1,5 @@
+import type { MacGrantId, MacGrantState } from "./mac-apps.js";
+
 /**
  * `unsupported` covers an unpackaged build and a repository with no published releases, which is
  * the normal state for a fork. It is not an error the user needs to act on. Automatic checks stay
@@ -90,7 +92,46 @@ export function isDesktopMenuCommand(value: unknown): value is DesktopMenuComman
   return (DESKTOP_MENU_COMMANDS as readonly unknown[]).includes(value);
 }
 
+/**
+ * Who else can open the stack this app runs on this computer. `off` keeps it on this computer;
+ * `local` opens it to devices on the same private network (LAN or a private overlay network);
+ * `private-https` publishes it at an HTTPS name on the private overlay network.
+ */
+export const DESKTOP_NETWORK_MODES = ["off", "local", "private-https"] as const;
+export type DesktopNetworkMode = (typeof DESKTOP_NETWORK_MODES)[number];
+
+export function isDesktopNetworkMode(value: unknown): value is DesktopNetworkMode {
+  return (DESKTOP_NETWORK_MODES as readonly unknown[]).includes(value);
+}
+
+export interface DesktopNetworkState {
+  mode: DesktopNetworkMode;
+  /** The modes this computer can turn on now; `private-https` needs the private network ready. */
+  available: DesktopNetworkMode[];
+  /** Addresses another device can open, best first. Empty while off. */
+  urls: string[];
+  /**
+   * Why the last change did not apply, as a code the page words: `missing` (no private network
+   * software), `stopped` (not connected), `no-https` (HTTPS names are off), `in-use` (its HTTPS
+   * port serves something else), or `failed`.
+   */
+  error: string | null;
+}
+
 export interface RobotsDesktop {
+  macApps?: {
+    permissions: () => Promise<MacGrantState[] | null>;
+    allow: (grant: MacGrantId) => Promise<MacGrantState[] | null>;
+  };
+  /**
+   * Opening the stack on this computer to other devices. Absent on older releases; `state`
+   * answers null when the app shows a server on another computer.
+   */
+  network?: {
+    state: () => Promise<DesktopNetworkState | null>;
+    /** Restarts the stack when the address changes; resolves once it is back. */
+    setMode: (mode: DesktopNetworkMode) => Promise<DesktopNetworkState | null>;
+  };
   /** Optional for older desktop releases. Returns false when the native write is refused. */
   clipboard?: {
     writeText: (text: string) => Promise<boolean>;

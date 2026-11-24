@@ -37,7 +37,6 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
       message: "the protected-input run must be ready for takeover",
     })
     .toBe("waiting_takeover");
-  // The chat card has its own Skip and I'm done; these steps answer from the computer.
   const chrome = page.getByTestId("computer-chrome");
   const computerCard = page.getByTestId("computer-card");
   await expect(computerCard).toBeVisible();
@@ -65,7 +64,6 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
       message: "the second protected-input run must be ready for takeover",
     })
     .toBe("waiting_takeover");
-  // Reopen the computer tab so Open sees a refreshed computer status.
   const sidePanel = page.getByTestId("side-panel");
   const pill = page.getByTestId("bot-settings-trigger");
   if ((await pill.getAttribute("aria-expanded")) === "true") {
@@ -149,10 +147,9 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
   await expect(page.getByText("Tool sources", { exact: true })).toBeHidden();
   await captureScreenshot(page, testInfo, "11-plugins-catalog");
 
-  // Nearest ancestor with an Add/Added control (featured tile or catalog row).
   const gmailRow = featured
     .getByText("Gmail", { exact: true })
-    .locator("xpath=ancestor::*[.//button][1]");
+    .locator("xpath=ancestor::*[count(.//button)>=2][1]");
   await gmailRow.getByRole("button", { name: "Add", exact: true }).click();
   await expect(gmailRow.getByRole("button", { name: "Added", exact: true })).toBeVisible();
   await expect(page.getByTestId("connection-tile-gmail")).toBeVisible();
@@ -176,7 +173,6 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
     window.addEventListener("keydown", (event) => keys.push(event.key));
     return keys;
   });
-  // These synthetic keyboard events exercise the browser event flags; they do not start an OS IME.
   for (const composition of [{ isComposing: true }, { keyCode: 229 }]) {
     await accountLabel.dispatchEvent("keydown", { key: "Enter", ...composition });
     await accountLabel.dispatchEvent("keydown", { key: "Escape", ...composition });
@@ -191,11 +187,10 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
   await expect(detail.getByLabel("Account label").nth(1)).toHaveValue(accountName);
   await captureScreenshot(page, testInfo, "11a2-multi-account-plugins");
 
-  await page
-    .getByTestId("connection-tools")
-    .getByText(/tools?$/)
-    .click();
   await expect(detail.getByText("Send email", { exact: true })).toBeVisible();
+  await expect(detail.getByRole("button", { name: "Permission for Send email" })).toHaveText(
+    "Ask each time",
+  );
   await captureScreenshot(page, testInfo, "11a3-plugin-tools");
 
   await page.getByRole("button", { name: "Close integrations" }).click();
@@ -215,13 +210,13 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
   const gmailRowEmpty = page
     .getByTestId("featured-connectors")
     .getByText("Gmail", { exact: true })
-    .locator("xpath=ancestor::*[.//button][1]");
+    .locator("xpath=ancestor::*[count(.//button)>=2][1]");
   await expect(gmailRowEmpty.getByRole("button", { name: "Add", exact: true })).toBeVisible();
   await captureScreenshot(page, testInfo, "11b-connected-plugins-empty");
 
   const linearRow = page
     .getByText("Linear", { exact: true })
-    .locator("xpath=ancestor::*[.//button][1]");
+    .locator("xpath=ancestor::*[count(.//button)>=2][1]");
   const connectPopup = page.waitForEvent("popup");
   await linearRow.getByRole("button", { name: "Add", exact: true }).click();
   const popup = await connectPopup;
@@ -234,7 +229,6 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
   await expect(page.getByTestId("connection-detail")).toHaveCount(0);
   await expect(linearRow.getByRole("button", { name: "Add", exact: true })).toBeVisible();
 
-  // Custom sources live behind one menu: GitHub, then MCP → OpenAPI → GraphQL → Executor.
   await page.getByRole("button", { name: "Add custom", exact: true }).click();
   const addItems = page.getByRole("menuitem");
   await expect(addItems).toHaveText([
@@ -258,7 +252,6 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
   await expect(feed.getByRole("button", { name: "OPENAPI Add", exact: true })).toBeVisible();
   await expect(feed.getByRole("button", { name: "GRAPHQL Manual", exact: true })).toBeDisabled();
   await expect(feed.getByRole("button", { name: "CLI Manual", exact: true })).toBeDisabled();
-  // Editing the query must drop prior results so a stale Add cannot run for the old domain.
   await feed.getByRole("textbox", { name: "Integration domain" }).fill("gitlab.com");
   await expect(feed.getByText("GitHub", { exact: true })).toBeHidden();
   await feed.getByRole("textbox", { name: "Integration domain" }).fill("github.com");
@@ -320,7 +313,7 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
   await page.getByText("Chief").first().click();
   await openBotPanelTab(page, "Advanced");
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export" }).click();
+  await page.getByRole("button", { name: "Export", exact: true }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/chief-export\.json/i);
   await page.getByRole("button", { name: "Close panel" }).click();
@@ -345,7 +338,6 @@ test("sign-in, spawn, and stop work in the shell", async ({ page }, testInfo) =>
     if (message.type() === "error") browserErrors.push(message.text());
   });
   page.on("requestfailed", (request) => {
-    // Leaving a page closes the live streams it held open.
     if (
       request.url().includes("/rpc/notifications/subscribe") &&
       request.failure()?.errorText === "net::ERR_ABORTED"
@@ -394,8 +386,6 @@ test("sign-in, spawn, and stop work in the shell", async ({ page }, testInfo) =>
   await expect(holdToTalk).toBeVisible();
   await composer.fill("Use the newer report and keep the answer short.");
   await expect(holdToTalk).toHaveCount(0);
-  // Stop can arrive over the live stream before the first send returns; Send stays disabled
-  // until then, and Tab would skip it.
   await expect(page.getByRole("button", { name: "Send", exact: true })).toBeEnabled();
   await composer.press("Tab");
   await expect(page.getByRole("button", { name: "Send", exact: true })).toBeFocused();
@@ -430,7 +420,6 @@ test("sign-in, spawn, and stop work in the shell", async ({ page }, testInfo) =>
   await expect(page.getByRole("button", { name: "Send", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Stop", exact: true })).toBeDisabled();
   releaseStopRequest();
-  // Idle Send stays disabled with an empty draft; wait for Stop to leave instead.
   await expect(page.getByRole("button", { name: "Stop", exact: true })).toHaveCount(0, {
     timeout: 30_000,
   });

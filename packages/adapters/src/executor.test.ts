@@ -4497,7 +4497,7 @@ description: Prepare standup notes
           runtime: { describe: () => ({ capabilities: { scripted: provider === "scripted" } }) },
           prisma: {
             userModelPreference: { findFirst: async () => null },
-            userModelCredential: { findFirst: async () => null },
+            userModelCredential: { findFirst: async () => null, findMany: async () => [] },
             deploymentSettings: {
               findUnique: async () => ({
                 defaultModelProvider: provider,

@@ -3,9 +3,7 @@ const TEST_LIMIT = 1500;
 
 export const message = `A new source file may not exceed ${SOURCE_LIMIT} lines, or ${TEST_LIMIT} for a test file. Split the file along its responsibilities; do not add it to the frozen list.`;
 
-export const include = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,astro,css,py,sh,swift,kt}"];
-
-export const exclude = ["apps/www/src/i18n/**"];
+export const include = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,css,py,sh,swift,kt}"];
 
 /** One hit for a file over its limit. Files over it today are frozen at 1, so they may still grow. */
 export function count(text, file) {

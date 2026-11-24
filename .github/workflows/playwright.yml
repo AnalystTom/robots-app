@@ -170,40 +170,10 @@ jobs:
         if: always() && steps.areas.outputs.e2e != 'false'
         run: bash .github/scripts/local-artifact.sh upload "playwright-heavy-${{ matrix.spec }}-${{ github.run_id }}-${{ github.run_attempt }}" blob-report apps/web/test-results
 
-  # Homepage screenshots only: no copy or layout assertions. Runs beside the product shards so the
-  # slowest shard no longer waits on them after its own tests finish.
-  www-screenshots:
-    name: Marketing homepage screenshots
-    runs-on: [self-hosted, big-machine]
-    timeout-minutes: 10
-    outputs:
-      e2e: ${{ steps.areas.outputs.e2e }}
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          fetch-depth: ${{ inputs.changed_areas && 2 || 1 }}
-      - id: areas
-        if: inputs.changed_areas
-        run: bash .github/scripts/changed-areas.sh >> "$GITHUB_OUTPUT"
-      - uses: ./.github/actions/setup-workspace
-        if: steps.areas.outputs.e2e != 'false'
-      - name: Install Chromium
-        if: steps.areas.outputs.e2e != 'false'
-        timeout-minutes: 5
-        run: pnpm --filter @robots/www exec playwright install chromium
-      - name: Capture marketing homepage screenshots
-        if: steps.areas.outputs.e2e != 'false'
-        id: www_e2e
-        run: pnpm --filter @robots/www e2e
-      - name: Keep homepage screenshots on the runner
-        if: always() && steps.areas.outputs.e2e != 'false'
-        run: bash .github/scripts/local-artifact.sh upload "playwright-www-${{ github.run_id }}-${{ github.run_attempt }}" playwright-report-www
-
-  # Keeps the single "Web E2E" check and artifact that branch protection and the publisher expect.
   playwright:
     name: Web E2E
-    needs: [shard, heavy, www-screenshots]
-    if: ${{ !cancelled() && (needs.shard.outputs.e2e != 'false' || needs.heavy.outputs.e2e != 'false' || needs.www-screenshots.outputs.e2e != 'false') }}
+    needs: [shard, heavy]
+    if: ${{ !cancelled() && (needs.shard.outputs.e2e != 'false' || needs.heavy.outputs.e2e != 'false') }}
     runs-on: [self-hosted, big-machine]
     timeout-minutes: 10
     concurrency:
@@ -223,13 +193,11 @@ jobs:
         run: |
           bash .github/scripts/local-artifact.sh download "playwright-shard-*-${{ github.run_id }}-*" "$RUNNER_TEMP/shards"
           bash .github/scripts/local-artifact.sh download "playwright-heavy-*-${{ github.run_id }}-*" "$RUNNER_TEMP/heavy"
-          bash .github/scripts/local-artifact.sh download "playwright-www-${{ github.run_id }}-*" "$RUNNER_TEMP/www"
       - name: Combine shard results
         shell: bash
         env:
           SHARDS: ${{ runner.temp }}/shards
           HEAVY: ${{ runner.temp }}/heavy
-          WWW: ${{ runner.temp }}/www
           SHARD_TOTAL: 6
           HEAVY_SPECS: page-browser pages
         run: |
@@ -268,13 +236,6 @@ jobs:
             done
             copy_blob "Heavy $spec" "$latest"
           done
-          for attempt in $(seq "$GITHUB_RUN_ATTEMPT" -1 1); do
-            candidate="$WWW/playwright-www-$GITHUB_RUN_ID-$attempt"
-            if [[ -d "$candidate/playwright-report-www" ]]; then
-              cp -R "$candidate/playwright-report-www" .
-              break
-            fi
-          done
           exit "$missing"
       - name: Merge Playwright reports
         if: ${{ !cancelled() && hashFiles('blob-report/*.zip') != '' }}
@@ -289,7 +250,7 @@ jobs:
       - name: Record Playwright result
         if: ${{ !cancelled() && inputs.upload_artifacts }}
         env:
-          PLAYWRIGHT_RESULT: ${{ needs.shard.result == 'success' && needs.heavy.result == 'success' && needs.www-screenshots.result == 'success' && job.status == 'success' && 'success' || 'failure' }}
+          PLAYWRIGHT_RESULT: ${{ needs.shard.result == 'success' && needs.heavy.result == 'success' && job.status == 'success' && 'success' || 'failure' }}
         run: |
           mkdir -p test-report/e2e
           if [[ "$PLAYWRIGHT_RESULT" == "success" ]]; then
@@ -299,7 +260,7 @@ jobs:
           fi
       - name: Keep Playwright artifacts on the runner
         if: ${{ !cancelled() && inputs.upload_artifacts }}
-        run: bash .github/scripts/local-artifact.sh upload "playwright-artifacts-${{ github.run_id }}-${{ github.run_attempt }}" playwright-report playwright-report-www apps/web/test-results test-report/e2e
+        run: bash .github/scripts/local-artifact.sh upload "playwright-artifacts-${{ github.run_id }}-${{ github.run_attempt }}" playwright-report apps/web/test-results test-report/e2e
       - name: Publish Playwright visual report
         if: ${{ !cancelled() && inputs.publish_report }}
         env:
@@ -310,7 +271,7 @@ jobs:
           S3_BUCKET: ${{ vars.S3_BUCKET }}
           S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
           PLAYWRIGHT_PUBLIC_BASE_URL: ${{ vars.PLAYWRIGHT_PUBLIC_BASE_URL }}
-          PLAYWRIGHT_RESULT: ${{ needs.shard.result == 'success' && needs.heavy.result == 'success' && needs.www-screenshots.result == 'success' && job.status == 'success' && 'success' || 'failure' }}
+          PLAYWRIGHT_RESULT: ${{ needs.shard.result == 'success' && needs.heavy.result == 'success' && job.status == 'success' && 'success' || 'failure' }}
           PLAYWRIGHT_RUN_ATTEMPT: ${{ github.run_attempt }}
           PLAYWRIGHT_RUN_ID: ${{ github.run_id }}
           PLAYWRIGHT_RUN_NUMBER: ${{ github.run_number }}
@@ -319,14 +280,12 @@ jobs:
           PLAYWRIGHT_EVENT: ${{ github.event_name }}
           PLAYWRIGHT_BRANCH: ${{ github.ref_name }}
         run: bash scripts/publish-playwright-report.sh
-      - name: Fail when a shard, heavy spec, or homepage capture failed
-        if: needs.shard.result != 'success' || needs.heavy.result != 'success' || needs.www-screenshots.result != 'success'
+      - name: Fail when a shard or heavy spec failed
+        if: needs.shard.result != 'success' || needs.heavy.result != 'success'
         env:
           SHARD_RESULT: ${{ needs.shard.result }}
           HEAVY_RESULT: ${{ needs.heavy.result }}
-          WWW_RESULT: ${{ needs.www-screenshots.result }}
         run: |
           echo "Playwright shards finished with: $SHARD_RESULT" >&2
           echo "Heavy page-browser/pages finished with: $HEAVY_RESULT" >&2
-          echo "Marketing homepage screenshots finished with: $WWW_RESULT" >&2
           exit 1

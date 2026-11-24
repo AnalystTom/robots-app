@@ -25,8 +25,6 @@ export const JA_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "ご本人であることを確認するには、RoBotsで次のコードを入力してください:",
   "Welcome to RoBots": "RoBotsへようこそ",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "RoBots へようこそ。RoBots を最大限に活用している人は、次の 3 つをしています。",
   "Get the apps": "アプリを入手する",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots は {platforms} で使えるので、ボットはどこにいてもあなたに連絡できます。",

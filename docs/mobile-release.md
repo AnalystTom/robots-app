@@ -10,7 +10,7 @@ your own branded build, use your own Expo and store accounts.
 
 When a RoBots store listing goes live, add its URL to `MOBILE_APP_LINKS` in
 `packages/contracts/src/mobile-app-links.ts`. Until a platform has a URL there, the
-web app, the marketing site, and the welcome email leave that store out.
+web app, the marketing site (Robots-site repo), and the welcome email leave that store out.
 
 ## Configure a build
 
@@ -142,6 +142,16 @@ To publish a compatible update manually from `apps/mobile`:
 
 ```sh
 eas update --platform all --channel production --environment production --message "Short description"
+```
+
+A self-hosted server can also serve updates. When `EXPO_PUBLIC_API_URL` is an HTTPS URL,
+the app asks that server's `/api/mobile-updates/manifest` for a bundle. Set
+`ROBOTS_MOBILE_UPDATES=0` when building the app to turn this off. To publish a bundle to your
+server, run from the repository root with the same `EXPO_PUBLIC_API_URL` and the API's data
+directory:
+
+```sh
+EXPO_PUBLIC_API_URL=https://app.example.com pnpm exec tsx scripts/publish-mobile-update.ts --data-dir ./data --platform android
 ```
 
 Installed release builds download a compatible update in the background on

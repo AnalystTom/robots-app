@@ -5,6 +5,7 @@ import type {
   CompatibleEndpointPreset,
   ModelOAuthSignInMode,
   ModelRoutingField,
+  ModelTier,
   ThinkingLevel,
 } from "@robots/contracts";
 import {
@@ -13,6 +14,8 @@ import {
   MODEL_KEY_REJECTED_ERROR,
 } from "@robots/contracts";
 import { cloudflareRoutingFields } from "./cloudflare-ai-gateway.js";
+import type { PricedModel } from "./model-tiers.js";
+import { modelTiers } from "./model-tiers.js";
 import { COMPATIBLE_ENDPOINT_PRESETS } from "./openai-compatible-url.js";
 import { LOCAL_PROVIDER_ID, registerLocalProvider } from "./pi-local-provider.js";
 import { applyPiModelCompatibility } from "./pi-model-compat.js";
@@ -29,6 +32,7 @@ export type PiCatalogAuth = "api-key" | "oauth" | "both";
 
 export type PiCatalogEntry = {
   recommended?: boolean;
+  tier?: ModelTier;
   provider: string;
   providerName: string;
   id: string;
@@ -296,6 +300,7 @@ function buildPiCatalog(): PiCatalogEntry[] {
     registerLocalProvider(applyPiModelCompatibility(builtinModels())),
   );
   const entries: PiCatalogEntry[] = [];
+  const priced: PricedModel[] = [];
   for (const provider of models.getProviders()) {
     const providerName = PROVIDER_DISPLAY_NAMES[provider.id] ?? provider.name;
     const apiKey = Boolean(provider.auth.apiKey);
@@ -327,6 +332,13 @@ function buildPiCatalog(): PiCatalogEntry[] {
       if (!catalogModelServesAgents(model)) hiddenCatalogKeys.add(`${provider.id}:${model.id}`);
       if (maximumModelCallCost(model.cost, 0, 0) !== undefined)
         pricedCatalogKeys.add(`${provider.id}:${model.id}`);
+      if (catalogModelServesAgents(model) && provider.id !== OPENAI_COMPATIBLE_PROVIDER_ID)
+        priced.push({
+          provider: provider.id,
+          id: model.id,
+          label: model.name || model.id,
+          price: (model.cost?.input ?? 0) + (model.cost?.output ?? 0),
+        });
       const thinkingLevels = getSupportedThinkingLevels(model) as ThinkingLevel[];
       entries.push({
         provider: provider.id,
@@ -357,6 +369,12 @@ function buildPiCatalog(): PiCatalogEntry[] {
         ...(routingFields ? { routingFields } : {}),
       });
     }
+  }
+
+  const tiers = modelTiers(priced);
+  for (const entry of entries) {
+    const tier = tiers.get(`${entry.provider}:${entry.id}`);
+    if (tier) entry.tier = tier;
   }
 
   const envDefaultModel = process.env.PI_DEFAULT_MODEL?.trim();

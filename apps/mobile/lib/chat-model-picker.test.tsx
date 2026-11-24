@@ -639,7 +639,7 @@ describe("chat settings model row", () => {
     await render();
     expect(container.querySelector('[data-menu="Model"]')).toBeNull();
     const row = container.querySelector<HTMLButtonElement>('button[aria-label="Model"]');
-    expect(row?.getAttribute("aria-valuetext")).toBe("Space default (Model 1)");
+    expect(row?.getAttribute("aria-valuetext")).toBe("Space default · Model 1");
     act(() => row!.click());
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({
       pathname: "/bot-model",
@@ -647,7 +647,7 @@ describe("chat settings model row", () => {
     });
   });
 
-  it("stages the model the list hands back until Save", async () => {
+  it("saves the model the list hands back at once", async () => {
     mocks.params = { botId: "bot-fixture" };
     await render();
     mocks.params = { botId: "bot-fixture", model: "openrouter::vendor/model-3" };
@@ -655,13 +655,12 @@ describe("chat settings model row", () => {
     expect(mocks.setParams).toHaveBeenCalledWith({ model: undefined });
     const row = container.querySelector('button[aria-label="Model"]');
     expect(row?.getAttribute("aria-valuetext")).toBe("Model 3 (OpenRouter)");
-    expect(mocks.update).not.toHaveBeenCalled();
-    const save = [...container.querySelectorAll("button")].find(
-      (button) => button.textContent === "Save",
-    );
-    await act(async () => save!.click());
     expect(mocks.update).toHaveBeenCalledWith(
-      expect.objectContaining({ modelProvider: "openrouter", modelId: "vendor/model-3" }),
+      expect.objectContaining({
+        modelProvider: "openrouter",
+        modelId: "vendor/model-3",
+        thinkingLevel: null,
+      }),
     );
   });
 });

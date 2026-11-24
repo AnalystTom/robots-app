@@ -1,5 +1,10 @@
 import type { ConnectorCall, ConnectorTool } from "@robots/adapter-kit";
-import { BOT_INSTRUCTIONS_MAX_LENGTH, BotSecretAuth, OneTimeCodeTarget } from "@robots/contracts";
+import {
+  BOT_INSTRUCTIONS_MAX_LENGTH,
+  BotSecretAuth,
+  isMacAppTool,
+  OneTimeCodeTarget,
+} from "@robots/contracts";
 import { redactSecrets } from "@robots/core";
 import { runLoginKind } from "@robots/db";
 import { prepareAgentConnectionResponse } from "./agent-connections.js";
@@ -23,6 +28,7 @@ import { validCloudAgentArgs } from "./cloud-agent-tools.js";
 import { sanitizeConnectorError } from "./connector-safety.js";
 import { isFleetApprovalTool, modelLabel, prepareFleetRequest } from "./fleet-tools.js";
 import { assertConnectorToolArgs, CATALOG_EXECUTE } from "./lazy-tool-catalog.js";
+import { parseMacAppCall } from "./mac-apps-protocol.js";
 import { paidRequestEffect, restorePaidRequest } from "./paid-request.js";
 import type { PurchaseApproval } from "./purchase-gate.js";
 import {
@@ -404,7 +410,8 @@ export async function prepareToolRequest(
     );
   }
   // Before the gate, so a run that may never reach the user's computer shows no approval card.
-  if (USER_COMPUTER_TOOLS.has(name)) {
+  const macApp = isMacAppTool(name);
+  if (USER_COMPUTER_TOOLS.has(name) || macApp) {
     if (!ctx.source.userComputerOwner || !deps.userDevices)
       return refusal(
         "user_computer_unavailable",
@@ -412,6 +419,13 @@ export async function prepareToolRequest(
       );
     if (isSubagentToolExecution(executionId))
       return refusal("helper_user_computer", "Helpers cannot use the user's computer.");
+  }
+  if (macApp) {
+    const parsed = parseMacAppCall(name, args);
+    if ("error" in parsed) return refusal("mac_app_arguments_invalid", parsed.error);
+    args = parsed.call.args as Record<string, unknown>;
+    request.args = args;
+    request.effectRequest = args;
   }
   // Before the gate, so a routine that cannot be saved shows no approval card. An approved
   // replay goes on to the handler, which checks again.

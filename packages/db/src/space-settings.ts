@@ -20,7 +20,6 @@ type CopyClient = Pick<
   | "vaultCredential"
 >;
 
-/** The settings this Space replaces with its own for the member. */
 export async function spaceSettingOverrides(
   prisma: OverrideClient,
   scope: Scope,
@@ -33,10 +32,6 @@ export async function spaceSettingOverrides(
   return SpaceSettingSchema.options.filter((setting) => saved.has(setting));
 }
 
-/**
- * The copy a settings call acts on. An explicit scope wins; otherwise the Space's override
- * when it has one, else the account's, so apps that predate overrides keep working.
- */
 export async function settingsTarget(
   prisma: OverrideClient,
   scope: Scope,
@@ -51,11 +46,6 @@ export async function settingsTarget(
   return row ? "space" : "account";
 }
 
-/**
- * Locks the member's place in the Space for the rest of the caller's transaction. Starting or
- * ending an override takes it, and so does every settings write before it picks a copy, so a
- * write never lands in the copy an override change just replaced.
- */
 export async function lockSpaceSettings(
   tx: Pick<Prisma.TransactionClient, "$queryRaw">,
   scope: Scope,
@@ -66,12 +56,6 @@ export async function lockSpaceSettings(
   if (members.length !== 1) throw new Error("Space membership not found");
 }
 
-/**
- * Starts or ends a Space's override. Starting copies the account's settings so the Space
- * begins where the member already is; ending drops the Space's copy so nothing stale stays.
- * Credentials are the exception: a Space's own vault starts empty, so it holds only what was
- * saved for it, and ending the override deletes those credentials.
- */
 export async function setSpaceSettingOverride(
   prisma: PrismaClient,
   scope: Scope,
@@ -160,7 +144,12 @@ async function copyAccountIntoSpace(tx: CopyClient, scope: Scope, setting: Space
     }
     if (autoReview) {
       await tx.actionAutoReviewPreference.create({
-        data: { ...member, enabled: autoReview.enabled, skipApprovals: autoReview.skipApprovals },
+        data: {
+          ...member,
+          enabled: autoReview.enabled,
+          skipApprovals: autoReview.skipApprovals,
+          ...(autoReview.actionRules != null ? { actionRules: autoReview.actionRules } : {}),
+        },
       });
     }
   }

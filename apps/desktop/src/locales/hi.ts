@@ -218,4 +218,7 @@ export const HI_MESSAGES: Record<string, string> = {
   "Waiting for Docker…": "Docker का इंतज़ार…",
   "Docker is installed but not running. Start the Docker service to continue.":
     "Docker इंस्टॉल है लेकिन चल नहीं रहा। जारी रखने के लिए Docker सेवा शुरू करें।",
+  "Let other devices open RoBots?": "क्या अन्य डिवाइस को RoBots खोलने दें?",
+  "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.":
+    "आपके नेटवर्क के डिवाइस इस कंप्यूटर के RoBots तक {address} पर पहुँच सकेंगे। हर डिवाइस को फिर भी साइन इन या पेयर करना होगा।",
 };

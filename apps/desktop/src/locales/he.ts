@@ -219,4 +219,7 @@ export const HE_MESSAGES: Record<string, string> = {
   "Waiting for Docker…": "ממתין ל-Docker…",
   "Docker is installed but not running. Start the Docker service to continue.":
     "Docker מותקן אבל לא פועל. יש להפעיל את שירות Docker כדי להמשיך.",
+  "Let other devices open RoBots?": "לאפשר למכשירים אחרים לפתוח את RoBots?",
+  "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.":
+    "מכשירים ברשת שלך יוכלו להגיע ל-RoBots במחשב הזה בכתובת {address}. כל מכשיר עדיין יצטרך להתחבר או להתצמד.",
 };

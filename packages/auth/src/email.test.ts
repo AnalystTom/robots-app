@@ -234,7 +234,7 @@ describe("email languages", () => {
     expect(english.text).toContain("Hi Ana,");
     expect(english.text).toMatch(/RoBots runs on Mac \S+, Windows \S+, and Linux \S+, so/);
     expect(english.html).not.toMatch(/apps\.apple\.com|play\.google\.com/);
-    expect(english.html).not.toContain("<img");
+    expect(english.html).toContain('src="https://tryrobots.app/og.png"');
     expect(english.text).toContain("The RoBots team");
   });
 

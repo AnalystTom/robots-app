@@ -16,6 +16,7 @@ it("marks only the reads a change kind covers as stale", async () => {
     runs: key("runs", "list"),
     history: key("routines", "history"),
     routines: key("routines", "list"),
+    mailboxes: key("email", "mailboxes"),
     bots: key("bots", "list"),
   };
   for (const queryKey of Object.values(keys)) client.setQueryData(queryKey, []);
@@ -28,11 +29,14 @@ it("marks only the reads a change kind covers as stale", async () => {
   expect(invalidated()).toEqual(["runs", "history"]);
   await spaceChanged("routines", client);
   expect(invalidated()).toEqual(["runs", "history", "routines"]);
+  await spaceChanged("email", client);
+  expect(invalidated()).toEqual(["runs", "history", "routines", "mailboxes"]);
 });
 
 it("knows which frames are read changes", () => {
   expect(isReadChangeKind("runs")).toBe(true);
   expect(isReadChangeKind("routines")).toBe(true);
+  expect(isReadChangeKind("email")).toBe(true);
   expect(isReadChangeKind("computerUpdates")).toBe(false);
   expect(isReadChangeKind("toString")).toBe(false);
 });

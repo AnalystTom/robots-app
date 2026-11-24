@@ -2,17 +2,12 @@ export const message =
   "A comment may not excuse a shortcut (workaround, hack, TODO, FIXME, XXX). Do the real fix in this change, or open an issue and leave no marker in the code.";
 
 export const include = [
-  "{apps,packages,infra,scripts}/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,astro,css,sql,swift,kt,gradle}",
+  "{apps,packages,infra,scripts}/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,css,sql,swift,kt,gradle}",
   "{apps,packages,infra,scripts}/**/*.{sh,py,yaml,yml,toml}",
   "{apps,packages,infra,scripts}/**/Dockerfile*",
 ];
 
-export const exclude = [
-  "**/*.{test,spec}.*",
-  "**/e2e/**",
-  "apps/www/src/i18n/**",
-  "scripts/checks/ratchets/**",
-];
+export const exclude = ["**/*.{test,spec}.*", "**/e2e/**", "scripts/checks/ratchets/**"];
 
 // The tags are upper case only: lower-case "todo" is a ticket status and a Spanish word.
 const HEDGE = String.raw`(?:\b(?:workarounds?|hacks?|hacky)\b|(?-i:\b(?:TODO|FIXME|XXX)\b))`;

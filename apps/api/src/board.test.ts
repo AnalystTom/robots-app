@@ -125,6 +125,7 @@ function meDeps(labs: string[], deploymentLabs: string[] = []) {
       update,
     },
     userModelPreference: { findFirst: vi.fn(async () => null) },
+    userModelCredential: { findMany: vi.fn(async () => []) },
     spaceSettingOverride: { findUnique: vi.fn(async () => null) },
     userModelRoleChoice: { findMany: vi.fn(async () => []) },
     deploymentSettings: { findUnique: vi.fn(async () => null) },
@@ -149,7 +150,7 @@ it.each([
   const { client } = meDeps(stored);
   await expect(client.me()).resolves.toMatchObject({
     labs,
-    labsAvailable: ["board"],
+    labsAvailable: ["board", "email", "docs"],
     ticketBoardEnabled,
   });
 });
@@ -158,7 +159,7 @@ it("reports a feature the deployment turns on as on and not switchable", async (
   const { client } = meDeps([], ["board"]);
   await expect(client.me()).resolves.toMatchObject({
     labs: ["board"],
-    labsAvailable: [],
+    labsAvailable: ["email", "docs"],
     ticketBoardEnabled: true,
   });
 });

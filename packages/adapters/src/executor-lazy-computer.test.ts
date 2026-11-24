@@ -217,7 +217,7 @@ async function runRoutine(
     connection: { findMany: vi.fn(async () => []) },
     userModelPreference: { findFirst: vi.fn(async () => null) },
     secret: { findMany: vi.fn(async () => []), findFirst: vi.fn(async () => null) },
-    userModelCredential: { findFirst: vi.fn(async () => null) },
+    userModelCredential: { findMany: async () => [], findFirst: vi.fn(async () => null) },
     deploymentSettings: {
       findUnique: vi.fn(async () => ({
         defaultModelProvider: "openrouter",

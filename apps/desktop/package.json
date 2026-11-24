@@ -73,7 +73,10 @@
       "entitlementsInherit": "assets/entitlements.mac.plist",
       "extendInfo": {
         "NSMicrophoneUsageDescription": "RoBots uses the microphone for dictation and voice calls with your bots.",
-        "NSSpeechRecognitionUsageDescription": "RoBots turns what you say into text for dictation and voice calls with your bots."
+        "NSSpeechRecognitionUsageDescription": "RoBots turns what you say into text for dictation and voice calls with your bots.",
+        "NSAppleEventsUsageDescription": "RoBots uses Mail, Messages, Notes, Reminders, Calendar and Contacts for your bots when you allow it.",
+        "NSLocationUsageDescription": "RoBots shares your Mac's location with your bots when you allow it.",
+        "NSLocationWhenInUseUsageDescription": "RoBots shares your Mac's location with your bots when you allow it."
       },
       "extraResources": [
         {

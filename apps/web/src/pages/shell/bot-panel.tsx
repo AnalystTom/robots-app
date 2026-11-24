@@ -18,7 +18,7 @@ import {
   parseModelOptionKey,
   resolveSelectableModelId,
 } from "@robots/core";
-import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger } from "@robots/ui-web";
+import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger, toast } from "@robots/ui-web";
 import { useQuery } from "@tanstack/react-query";
 import { Mail } from "lucide-react";
 import type { ReactNode } from "react";
@@ -43,6 +43,8 @@ import {
   ToolsGroup,
   VoiceGroup,
 } from "./bot-settings-sections";
+import { botModelChange, botModelKey } from "./composer-model-picker";
+import { ExportBotDialog } from "./export-bot-dialog";
 
 const ScratchpadSection = lazyComponent(() =>
   import("../ScratchpadSection").then((module) => module.ScratchpadSection),
@@ -52,21 +54,34 @@ const KnowledgeSection = lazyComponent(() =>
   import("../KnowledgeSection").then((module) => module.KnowledgeSection),
 );
 
-/** The advanced fields one Save sends, in the order their saved snapshot keeps them. */
-function advancedValues(bot: Bot) {
-  return [
-    bot.modelProvider && bot.modelId ? modelOptionKey(bot.modelProvider, bot.modelId) : "",
-    bot.thinkingLevel ?? "",
-    bot.computerMode,
-    bot.memoryScope,
-    bot.autoSpeak,
-    bot.voiceId ?? "",
-  ] as const;
-}
+type AdvancedPatch = {
+  computerMode?: ComputerMode;
+  memoryScope?: "isolated" | "shared" | null;
+  autoSpeak?: boolean;
+  voiceId?: string | null;
+  modelProvider?: string | null;
+  modelId?: string | null;
+  thinkingLevel?: ThinkingLevel | null;
+};
+
+type QueuedPatch = {
+  name?: string;
+  description?: string;
+  color?: string;
+  avatarSet?: BotAvatarSet;
+  notifyOnFinish?: boolean;
+  fleetManagement?: boolean;
+  replyMode?: ReplyMode;
+  crossSpaceCommunication?: boolean;
+  dailyCheckIns?: boolean;
+  disabledBuiltinTools?: string[];
+  baseDisabledBuiltinTools?: string[];
+  advanced?: AdvancedPatch;
+  revertAdvanced?: () => void;
+};
 
 export type BotPanelTab = "computer" | "routines" | "pages" | "settings";
 
-/** A bot's profile above its Computer, Routines, Pages and Advanced tabs. */
 export function BotSettings({
   bot,
   tab = "settings",
@@ -89,7 +104,6 @@ export function BotSettings({
   routines?: ReactNode;
   focusModel?: number;
   onOpenConnections?: () => void;
-  /** Unused: the skill sections read and save the shared cached skill list. */
   onSkillsChange?: (skills: AgentSkillCatalogEntry[]) => void;
   memoryProviderConfigured: boolean;
   onSave: (patch: {
@@ -127,10 +141,6 @@ export function BotSettings({
   const [name, setName] = useState(bot.name);
   const savedNameRef = useRef(bot.name);
   const [description, setDescription] = useState(bot.description);
-  // A roster refresh can skip replacing bots while a reorder is in flight, so
-  // this prop keeps the description from when the panel opened. Later saves
-  // compare against the description last saved here; otherwise a model or
-  // voice change treats that stale text as an edit and overwrites instructions.
   const savedDescriptionRef = useRef(bot.description ?? "");
   const [color, setColor] = useState(bot.color);
   const [avatarSet, setAvatarSet] = useState(() => resolveBotAvatarSet(bot.avatarSet));
@@ -158,15 +168,11 @@ export function BotSettings({
   const [replyMode, setReplyMode] = useState(bot.replyMode);
   useEffect(() => setReplyMode(bot.replyMode), [bot.replyMode]);
   const [voiceId, setVoiceId] = useState(bot.voiceId ?? "");
-  const [modelKey, setModelKey] = useState(
-    bot.modelProvider && bot.modelId ? modelOptionKey(bot.modelProvider, bot.modelId) : "",
-  );
+  const [modelKey, setModelKey] = useState(() => botModelKey(bot));
   const [thinkingLevel, setThinkingLevel] = useState(bot.thinkingLevel ?? "");
   const [disabledBuiltinTools, setDisabledBuiltinTools] = useState<string[]>(
     bot.disabledBuiltinTools ?? [],
   );
-  // The list on screen is updated before the save returns. This stays on the
-  // last list the server accepted so a rejection can undo that preview.
   const persistedDisabledToolsRef = useRef(disabledBuiltinTools);
   const serverDisabledToolsRef = useRef(disabledBuiltinTools);
   const pendingSavesRef = useRef(0);
@@ -177,7 +183,6 @@ export function BotSettings({
     persistedDisabledToolsRef.current = next;
     if (pendingSavesRef.current === 0) setDisabledBuiltinTools(next);
   }, [bot.disabledBuiltinTools]);
-  // Shared with the model and voice settings, so a revisit paints at once and refreshes behind.
   const queries = useSpaceQueries();
   const refresh = { refetchOnMount: "always" } as const;
   const voices = useQuery({ ...queries.voice.voices.queryOptions({ input: {} }), ...refresh }).data;
@@ -187,48 +192,16 @@ export function BotSettings({
   const credentials = credentialsQuery.data ?? NO_CREDENTIALS;
   const catalog = catalogQuery.data ?? NO_CATALOG;
   const me = meQuery.data ?? null;
-  // A failed catalog load must not clear an existing thinkingLevel override on save.
-  const modelMetaReady =
-    credentialsQuery.data !== undefined &&
-    catalogQuery.data !== undefined &&
-    meQuery.data !== undefined;
   const [saving, setSaving] = useState(false);
-  const [savedAdvanced, setSavedAdvanced] = useState(() => JSON.stringify(advancedValues(bot)));
-  const advancedSnapshot = JSON.stringify([
-    modelKey,
-    thinkingLevel,
-    computerMode,
-    memoryScope,
-    autoSpeak,
-    voiceId,
-  ]);
-  const dirty =
-    name.trim() !== savedNameRef.current.trim() ||
-    advancedSnapshot !== savedAdvanced ||
-    description.trim() !== savedDescriptionRef.current;
   const [error, setError] = useState<string | null>(null);
+  const [exportingBot, setExportingBot] = useState(false);
   const saveQueueRef = useRef(Promise.resolve());
   const executeSaveRef = useRef<
     (
-      patchOverrides?: {
-        name?: string;
-        description?: string;
-        color?: string;
-        avatarSet?: BotAvatarSet;
-        notifyOnFinish?: boolean;
-        fleetManagement?: boolean;
-        replyMode?: ReplyMode;
-        crossSpaceCommunication?: boolean;
-        dailyCheckIns?: boolean;
-        disabledBuiltinTools?: string[];
-        baseDisabledBuiltinTools?: string[];
-      },
+      patchOverrides?: QueuedPatch,
       revisions?: { color: number; avatarSet: number; notifyOnFinish: number },
     ) => Promise<void>
   >(async () => undefined);
-  // The panel can open on a cached bot. When a newer copy arrives, every field not edited since
-  // follows it, so a later save does not send the cached values back over it. A copy that is not
-  // newer (a roster read from before a save) is ignored.
   const shownBotRef = useRef(bot);
   useEffect(() => {
     if (bot.updatedAt <= shownBotRef.current.updatedAt) return;
@@ -248,15 +221,13 @@ export function BotSettings({
       avatarSet: nextAvatarSet,
       notifyOnFinish: nextNotify,
     };
-    const saved = JSON.parse(savedAdvanced) as unknown[];
-    const next = advancedValues(bot);
-    if (modelKey === saved[0]) setModelKey(next[0]);
-    if (thinkingLevel === saved[1]) setThinkingLevel(next[1]);
-    if (computerMode === saved[2]) setComputerMode(next[2]);
-    if (memoryScope === saved[3]) setMemoryScope(next[3]);
-    if (autoSpeak === saved[4]) setAutoSpeak(next[4]);
-    if (voiceId === saved[5]) setVoiceId(next[5]);
-    setSavedAdvanced(JSON.stringify(next));
+    if (pendingSavesRef.current > 0) return;
+    setModelKey(botModelKey(bot));
+    setThinkingLevel(bot.thinkingLevel ?? "");
+    setComputerMode(bot.computerMode);
+    setMemoryScope(bot.memoryScope);
+    setAutoSpeak(bot.autoSpeak);
+    setVoiceId(bot.voiceId ?? "");
   }, [bot]);
 
   const connectedOptions = connectedModelChoices(credentials, catalog);
@@ -274,10 +245,11 @@ export function BotSettings({
   const defaultEntry = me?.defaultModel
     ? catalogEntry(catalog, me.defaultProvider, me.defaultModel)
     : undefined;
+  const defaultModelLabel = defaultEntry?.label ?? me?.defaultModel;
   const modelChoices = chatModelChoices(
     connectedOptions,
     selectedModelKey,
-    t`Space default`,
+    defaultModelLabel ? t`Space default · ${defaultModelLabel}` : t`Space default`,
     defaultEntry?.images,
   );
 
@@ -300,24 +272,16 @@ export function BotSettings({
   const defaultThinkingLevel = effectiveCredential?.thinkingLevel ?? "medium";
 
   async function executeSave(
-    patchOverrides?: {
-      name?: string;
-      description?: string;
-      color?: string;
-      avatarSet?: BotAvatarSet;
-      notifyOnFinish?: boolean;
-      fleetManagement?: boolean;
-      replyMode?: ReplyMode;
-      crossSpaceCommunication?: boolean;
-      dailyCheckIns?: boolean;
-      disabledBuiltinTools?: string[];
-      baseDisabledBuiltinTools?: string[];
-    },
+    patchOverrides?: QueuedPatch,
     revisions?: { color: number; avatarSet: number; notifyOnFinish: number },
   ) {
     try {
       setSaving(true);
       setError(null);
+      if (patchOverrides?.advanced) {
+        await onSave(patchOverrides.advanced);
+        return;
+      }
       if (patchOverrides?.crossSpaceCommunication !== undefined) {
         await onSave({ crossSpaceCommunication: patchOverrides.crossSpaceCommunication });
         return;
@@ -334,7 +298,6 @@ export function BotSettings({
         await onSave({ replyMode: patchOverrides.replyMode });
         return;
       }
-      const selected = selectedModel;
       const nextName = (patchOverrides?.name !== undefined ? patchOverrides.name : name).trim();
       const nextDescription = (
         patchOverrides?.description !== undefined ? patchOverrides.description : description
@@ -350,36 +313,16 @@ export function BotSettings({
       setDescription(nextDescription);
       const patch = {
         ...(nextName && nextName !== savedNameRef.current.trim() ? { name: nextName } : {}),
-        // Keep untouched profile fields off the wire.
         ...botProfilePatch(savedDescriptionRef.current, nextDescription),
-        // Unchanged color stays off the wire so a legacy named value cannot fail a name save.
         ...(nextColor !== acceptedAutomatic.current.color ? { color: nextColor } : {}),
         ...(patchOverrides?.avatarSet !== undefined ||
         nextAvatarSet !== acceptedAutomatic.current.avatarSet
           ? { avatarSet: nextAvatarSet }
           : {}),
         notifyOnFinish: nextNotify,
-        computerMode,
-        memoryScope,
-        autoSpeak,
-        voiceId: voiceId || null,
-        modelProvider: selected?.provider ?? null,
-        modelId: selected?.modelId ?? null,
-        ...(modelMetaReady &&
-        (thinkingOptions.length > 0 ||
-          (selected?.provider ?? null) !== bot.modelProvider ||
-          (selected?.modelId ?? null) !== bot.modelId)
-          ? {
-              thinkingLevel: thinkingOptions.length
-                ? ((thinkingLevel || null) as ThinkingLevel | null)
-                : null,
-            }
-          : {}),
       };
       const requestedTools = patchOverrides?.disabledBuiltinTools;
       const baseTools = patchOverrides?.baseDisabledBuiltinTools ?? [];
-      // Preserve this edit's additions/removals against any refreshed server list.
-      // Retry if a refresh arrives while the request is in flight.
       for (;;) {
         const serverTools = serverDisabledToolsRef.current;
         const nextTools =
@@ -394,7 +337,6 @@ export function BotSettings({
                     !baseTools.includes(name) && !persistedDisabledToolsRef.current.includes(name),
                 ),
               ];
-        // Unrelated saves omit the list, preserving changes from other sessions.
         await onSave({
           ...patch,
           ...(nextTools !== undefined ? { disabledBuiltinTools: nextTools } : {}),
@@ -415,10 +357,11 @@ export function BotSettings({
       };
       if (nextName) savedNameRef.current = nextName;
       savedDescriptionRef.current = nextDescription;
-      setSavedAdvanced(
-        JSON.stringify([modelKey, thinkingLevel, computerMode, memoryScope, autoSpeak, voiceId]),
-      );
     } catch (err) {
+      if (patchOverrides?.advanced) {
+        patchOverrides.revertAdvanced?.();
+        toast.error(errorText(err, t`Could not save`));
+      }
       if (
         patchOverrides?.color !== undefined &&
         revisions?.color === automaticRevision.current.color
@@ -463,21 +406,11 @@ export function BotSettings({
     void enqueueSave({ disabledBuiltinTools: next });
   }
 
-  function enqueueSave(patchOverrides?: {
-    name?: string;
-    description?: string;
-    color?: string;
-    avatarSet?: BotAvatarSet;
-    notifyOnFinish?: boolean;
-    fleetManagement?: boolean;
-    replyMode?: ReplyMode;
-    crossSpaceCommunication?: boolean;
-    dailyCheckIns?: boolean;
-    disabledBuiltinTools?: string[];
-  }) {
-    // Serialize full-object auto-saves so an older in-flight request cannot
-    // finish after a newer one and clobber fields. Always call through a ref so
-    // queued work reads the latest field values, not a stale render closure.
+  function saveAdvanced(advanced: AdvancedPatch, revertAdvanced: () => void) {
+    void enqueueSave({ advanced, revertAdvanced });
+  }
+
+  function enqueueSave(patchOverrides?: Omit<QueuedPatch, "baseDisabledBuiltinTools">) {
     pendingSavesRef.current += 1;
     if (patchOverrides?.color !== undefined) automaticRevision.current.color += 1;
     if (patchOverrides?.avatarSet !== undefined) automaticRevision.current.avatarSet += 1;
@@ -554,7 +487,6 @@ export function BotSettings({
         <TabsContent value="pages" className="pt-4">
           {tab === "pages" ? <PagesList botId={bot.id} /> : null}
         </TabsContent>
-        {/* Stays mounted so scratchpad and knowledge drafts survive a tab switch. */}
         <TabsContent value="settings" keepMounted data-testid="bot-settings-advanced">
           <NotificationsSection
             ids={ids}
@@ -582,29 +514,57 @@ export function BotSettings({
               choices={modelChoices}
               value={selectedModelKey}
               onModelChange={(key) => {
+                if (key === selectedModelKey) return;
+                const previous = { modelKey, thinkingLevel };
                 setModelKey(key);
                 setThinkingLevel("");
+                saveAdvanced({ ...botModelChange(key), thinkingLevel: null }, () => {
+                  setModelKey(previous.modelKey);
+                  setThinkingLevel(previous.thinkingLevel);
+                });
               }}
               thinkingOptions={thinkingOptions}
               thinkingLevel={thinkingLevel}
               defaultThinkingLevel={defaultThinkingLevel}
-              onThinkingLevelChange={setThinkingLevel}
+              onThinkingLevelChange={(level) => {
+                const previous = thinkingLevel;
+                setThinkingLevel(level);
+                saveAdvanced({ thinkingLevel: (level || null) as ThinkingLevel | null }, () =>
+                  setThinkingLevel(previous),
+                );
+              }}
             />
             <ComputerGroup
               computerMode={computerMode}
-              onComputerModeChange={setComputerMode}
+              onComputerModeChange={(mode) => {
+                const previous = computerMode;
+                setComputerMode(mode);
+                saveAdvanced({ computerMode: mode }, () => setComputerMode(previous));
+              }}
               memoryProviderConfigured={memoryProviderConfigured}
               memoryScope={memoryScope}
-              onMemoryScopeChange={setMemoryScope}
+              onMemoryScopeChange={(scope) => {
+                const previous = memoryScope;
+                setMemoryScope(scope);
+                saveAdvanced({ memoryScope: scope }, () => setMemoryScope(previous));
+              }}
               actions={computerActions}
             />
             <VoiceGroup
               ids={ids}
               autoSpeak={autoSpeak}
-              onAutoSpeakChange={setAutoSpeak}
+              onAutoSpeakChange={(enabled) => {
+                const previous = autoSpeak;
+                setAutoSpeak(enabled);
+                saveAdvanced({ autoSpeak: enabled }, () => setAutoSpeak(previous));
+              }}
               voices={voices}
               voiceId={voiceId}
-              onVoiceIdChange={setVoiceId}
+              onVoiceIdChange={(next) => {
+                const previous = voiceId;
+                setVoiceId(next);
+                saveAdvanced({ voiceId: next || null }, () => setVoiceId(previous));
+              }}
             />
             <PermissionsGroup
               ids={ids}
@@ -652,6 +612,7 @@ export function BotSettings({
               }}
             />
             <ExportAndClear
+              onExportBot={() => setExportingBot(true)}
               onExport={() => {
                 setError(null);
                 onExport().catch((err: unknown) => setError(errorText(err)));
@@ -659,25 +620,12 @@ export function BotSettings({
               onClear={onClear}
             />
           </div>
-          {dirty ? (
-            <Button
-              className="sticky bottom-0 mt-5 w-full"
-              disabled={saving}
-              onClick={() => {
-                void enqueueSave({
-                  name,
-                  description,
-                  color,
-                  notifyOnFinish,
-                });
-              }}
-            >
-              <Trans>Save</Trans>
-            </Button>
-          ) : null}
         </TabsContent>
       </Tabs>
       {error ? <p className="mt-2 text-body-sm text-destructive">{error}</p> : null}
+      {exportingBot ? (
+        <ExportBotDialog bot={{ id: bot.id, name }} onClose={() => setExportingBot(false)} />
+      ) : null}
     </div>
   );
 }
@@ -761,7 +709,6 @@ function InlineProfileField({
   );
 }
 
-/** The bot's address under its name; on a server that receives email, offered until claimed. */
 function BotEmail({ bot }: { bot: { id: string; name: string } }) {
   const queries = useSpaceQueries();
   const email = useQuery(queries.bots.emailAddress.queryOptions({ input: { botId: bot.id } })).data;

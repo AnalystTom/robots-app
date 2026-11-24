@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const ALLOWLIST_FILE = "scripts/checks/import-boundaries.allowlist.json";
-const SOURCE_FILE = /\.(?:[cm]?[jt]sx?|astro)$/;
+const SOURCE_FILE = /\.[cm]?[jt]sx?$/;
 const SCOPE = "@robots/";
 
 const LEAF_PACKAGES = ["packages/contracts", "packages/logging", "packages/ui-tokens"];

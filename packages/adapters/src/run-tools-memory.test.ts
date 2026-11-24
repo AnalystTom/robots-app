@@ -56,3 +56,31 @@ it.each(["Provider-generated context", ""])(
     expect(ctx.state.tainted).toBe(Boolean(text));
   },
 );
+
+it("signals a Space memory change once a bot saves shared memory", async () => {
+  const publishSpaceChange = vi.fn(async () => undefined);
+  const commit = vi.fn(async () => ({ id: "doc-1", path: "Roadmap.md", revision: 2, content: "" }));
+  const finish = vi.fn((result: unknown) => result);
+  const ctx = {
+    runId: "run-1",
+    thread: { id: "thread-1" },
+    context: { spaceId: "space-1" },
+    deps: {
+      memory: {
+        read: vi.fn(async () => ({ documents: [{ revision: 1 }] })),
+        commit,
+      },
+      events: { publishSpaceChange },
+    },
+  };
+  await memoryTools.save_shared_memory!(
+    ctx as never,
+    { args: { path: "Roadmap.md", content: "Next" }, finish } as never,
+  );
+  expect(commit).toHaveBeenCalledWith(
+    expect.objectContaining({ scope: "user", path: "Roadmap.md", expectedRevision: 1 }),
+    ctx.context,
+  );
+  expect(publishSpaceChange).toHaveBeenCalledWith("space-1", "memory");
+  expect(finish).toHaveBeenCalledWith({ ok: true, path: "Roadmap.md", revision: 2 });
+});

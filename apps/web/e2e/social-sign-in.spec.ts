@@ -88,6 +88,33 @@ test("sign-in offers Google and Apple before email", async ({ page }, testInfo) 
   await captureScreenshot(page, testInfo, "sign-up-chooser");
 });
 
+test("sign-up offers only Google while email signup is off, and sign-in keeps email", async ({
+  page,
+}, testInfo) => {
+  await mockSignedOut(page, []);
+  await page.route("**/api/auth/capabilities", (route) =>
+    route.fulfill({ json: { ...passwordOnly, providers: [both[0]], emailSignup: false } }),
+  );
+  await page.goto("/sign-up");
+  await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with email" })).toHaveCount(0);
+  await expect(page.getByLabel("Email", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await captureScreenshot(page, testInfo, "sign-up-google-only");
+
+  await page.goto("/sign-up/email");
+  await expect(page.getByRole("button", { name: "Continue with email" })).toHaveCount(0);
+  await expect(page.getByLabel("Password", { exact: true })).toHaveCount(0);
+
+  await page.getByRole("link", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue with email" }).click();
+  await expect(page.getByLabel("Email", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+  await captureScreenshot(page, testInfo, "sign-in-email-kept");
+});
+
 for (const path of ["/sign-in", "/sign-up"]) {
   test(`${path} email form follows browser history and survives reload`, async ({ page }) => {
     await mockSignedOut(page, both);

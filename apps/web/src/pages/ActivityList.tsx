@@ -419,7 +419,7 @@ function ActivitySection({
   );
 }
 
-function ActivityRow({
+export function ActivityRow({
   run,
   bot,
   detailed,

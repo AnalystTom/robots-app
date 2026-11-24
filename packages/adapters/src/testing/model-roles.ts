@@ -21,6 +21,7 @@ type MockClient = {
     findFirst?: (args: unknown) => Promise<unknown>;
     findMany?: (args: unknown) => Promise<unknown>;
   };
+  userModelCredential?: { findMany?: (args: unknown) => Promise<unknown> };
   userModelRoleChoice?: unknown;
   spaceModelRoleChoice?: unknown;
   spaceSettingOverride?: unknown;
@@ -99,6 +100,8 @@ export function withModelRoles<T>(prisma: T, rows: RoleRow[] = []): T {
             ),
           }
         : (own ?? roleTable);
+    target.userModelCredential ??= {};
+    target.userModelCredential.findMany ??= vi.fn(async () => []);
     target.spaceSettingOverride ??= {
       findUnique: vi.fn(async () => null),
       findMany: vi.fn(async () => []),

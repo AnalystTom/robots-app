@@ -205,7 +205,7 @@ describe("isConnectionFailure", () => {
 describe("errorHelpUrl", () => {
   it("looks up a documented code independently of its message", () => {
     expect(errorHelpUrl({ code: "MCP_OAUTH_REDIRECT_MISMATCH", message: "Localized copy" })).toBe(
-      "https://tryrobots.app/docs/troubleshooting/#mcp-oauth-redirect-mismatch",
+      "https://tryrobots.app/docs/troubleshooting.md",
     );
   });
 

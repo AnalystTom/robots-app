@@ -175,7 +175,12 @@ async function runWithModel(
       findUnique: vi.fn(async () => ({ id: "member-1" })),
       findMany: vi.fn(async () => [{ userId: "user-1" }]),
     },
-    user: { findUnique: vi.fn(async () => null) },
+    user: {
+      findUnique: vi.fn(async () => null),
+      findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
+        where.id.in.map((id) => ({ id })),
+      ),
+    },
     run: {
       findUnique: vi.fn(async () => run),
       findUniqueOrThrow: vi.fn(async () => run),
@@ -221,6 +226,7 @@ async function runWithModel(
     },
     attempt: {
       create: vi.fn(async () => ({ id: "attempt-1" })),
+      findMany: vi.fn(async () => []),
       update: vi.fn(),
       updateMany: vi.fn(async () => ({ count: 1 })),
     },
@@ -259,7 +265,7 @@ async function runWithModel(
       ),
     },
     secret: { findMany: vi.fn(async () => []), findFirst: vi.fn(async () => null) },
-    userModelCredential: { findFirst: vi.fn(async () => null) },
+    userModelCredential: { findMany: async () => [], findFirst: vi.fn(async () => null) },
     userModelRoleChoice: {
       findMany: vi.fn(async ({ where }: { where: { role: string } }) => {
         if (where.role !== "main") return [];

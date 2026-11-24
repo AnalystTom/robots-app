@@ -8,6 +8,11 @@ import type {
 } from "@robots/contracts";
 import { AuditActorTypeSchema, AuditOutcomeSchema } from "@robots/contracts";
 import { getLogger } from "@robots/logging";
+
+export { installAuditEventStore } from "./audit-store.js";
+
+import type { AuditEventDb } from "./audit-store.js";
+import { auditEventStore } from "./audit-store.js";
 import { GUEST_ROLE, ownedOrganizationId } from "./billing.js";
 import type { Prisma, PrismaClient } from "./client.js";
 import { parsePositiveInteger } from "./client.js";
@@ -15,68 +20,34 @@ import { runAsSystem } from "./row-security.js";
 import { IsolationError } from "./scope.js";
 import { securityEventMetadata, securityRequestCaller } from "./security-events.js";
 
-type AuditEventDb = Pick<PrismaClient, "auditEvent" | "space" | "user" | "member">;
 type AuditEventRow = Prisma.AuditEventGetPayload<object>;
 
 export interface AuditEventInput {
-  /** A stable dotted name, such as `tool.call` or `space.deleted`. */
   action: string;
   actor:
     | { type: "user"; id: string }
     | { type: "bot"; id: string; label: string }
     | { type: "system"; label?: string };
-  /** The space acted in; its organization owns the event. */
   spaceId?: string | null;
-  /**
-   * The person whose vault holds the item the event names: the acting user, or the run's for a
-   * bot's use. It decides whether the event may name the item; only an account vault item's event
-   * goes on to their own organization.
-   */
   userId?: string;
-  /** For a space that may already be gone. Without either, a user's event goes to each of their organizations. */
   organizationId?: string;
   spaceName?: string;
   target?: { type: string; id?: string | null; label?: string | null };
   outcome?: AuditOutcome;
   runId?: string | null;
   threadId?: string | null;
-  /** Identifiers, kinds, and outcomes. Content-like keys and non-scalar values are dropped. */
   metadata?: Record<string, string | number | boolean | null | undefined>;
 }
 
-/**
- * Where an event about a vault item lands and what it says there, the one place this is decided.
- * - A Space vault item (`scope: "space"`), whatever the event: rows only in the Space's
- *   organization, naming the item, its username or its site only when the acting person is a full
- *   member of it; for a guest, or someone who has left, the row keeps just these fields and no
- *   target label. No row goes to any other organization.
- * - An account vault item is its person's own. Their own action on it lands only in their own
- *   organization, or withheld in the Space's when they own none. A bot's use of it in a Space run
- *   lands in the Space's organization, withheld for a guest, who also gets the named row, without
- *   the Space's name, in the oldest organization they own.
- * - Without a vault scope (an older client), an event in a Space is treated as a Space vault item.
- */
 const VAULT_TARGETS = new Set(["vault_credential", "bot_secret"]);
 const VAULT_FIELDS_FOR_OTHERS = new Set(["procedure", "kind", "scope", "tool"]);
 
-let store: AuditEventDb | undefined;
-
-/** Composition roots install the database once; until then events only reach the log on failure. */
-export function installAuditEventStore(db: AuditEventDb | undefined): void {
-  store = db;
-}
-
-/**
- * Append one audit event. Never throws: the action it records already happened. A failed
- * write logs the whole event, so the record still reaches the log sink.
- */
 export async function recordAuditEvent(input: AuditEventInput): Promise<void> {
   await tryRecordAuditEvent(input);
 }
 
-/** Whether the database accepted the event; lets callers retry without suppressing a use. */
 export async function tryRecordAuditEvent(input: AuditEventInput): Promise<boolean> {
-  const db = store;
+  const db = auditEventStore();
   if (!db) return false;
   const caller = input.actor.type === "user" ? securityRequestCaller() : undefined;
   try {
@@ -108,7 +79,6 @@ async function auditRows(
   caller: { ip?: string; userAgent?: string } | undefined,
 ): Promise<Prisma.AuditEventCreateManyInput[]> {
   const { actor } = input;
-  // The person the event is about: the acting user, or a user something was done to.
   const personId =
     actor.type === "user"
       ? actor.id
@@ -124,22 +94,17 @@ async function auditRows(
       : null,
     personId ? db.user.findUnique({ where: { id: personId }, select: { email: true } }) : null,
     !input.spaceId && !input.organizationId && personId
-      ? // A guest's own account events are not the business of the organizations that invited them.
-        db.member.findMany({
+      ? db.member.findMany({
           where: { userId: personId, role: { not: GUEST_ROLE } },
           select: { organizationId: true },
         })
       : [],
   ]);
-  // The person whose vault holds the item (see VAULT_TARGETS), when the event is about one.
   const owner =
     VAULT_TARGETS.has(input.target?.type ?? "") && !input.organizationId
       ? (input.userId ?? personId)
       : undefined;
-  // Only an account vault item is its person's own, to follow them to their own organization.
   const ownItem = Boolean(owner) && input.metadata?.scope === "account";
-  // Whether that person is only a guest of the space's organization, or no longer in it, so the
-  // row there must not name the item, whichever vault holds it.
   const outsider =
     space && owner
       ? await db.member
@@ -151,8 +116,6 @@ async function auditRows(
           })
           .then((member) => !member || member.role === GUEST_ROLE)
       : false;
-  // Their own organization, computed only for an account vault item: nothing of a Space vault
-  // item, or of one whose vault isn't said, leaves the Space's organization.
   const personal =
     owner && ownItem && (outsider || actor.type === "user")
       ? await ownedOrganizationId(db, owner).catch((error: unknown) => {
@@ -160,7 +123,6 @@ async function auditRows(
           throw error;
         })
       : undefined;
-  // Their own action on an account vault item happened in no space, so it is theirs alone.
   const ownTrail = actor.type === "user" && personal;
   const landings: { organizationId: string; withheld: boolean }[] = input.organizationId
     ? [{ organizationId: input.organizationId, withheld: false }]
@@ -193,7 +155,6 @@ async function auditRows(
     ip: bounded(caller?.ip, 64),
     userAgent: bounded(caller?.userAgent, 512),
     metadata: securityEventMetadata(input.metadata),
-    // One time for both rows of a guest's vault event, so its owner's activity lists it once.
     ...(owner && landings.length > 1 ? { createdAt: new Date() } : {}),
   };
   const withheld = {
@@ -207,7 +168,6 @@ async function auditRows(
   };
   return landings.map((landing) => ({
     ...(landing.withheld ? withheld : row),
-    // The shared space's name is its organization's; the person's own keeps only its id.
     ...(landing.organizationId === personal ? { spaceName: null } : {}),
     organizationId: landing.organizationId,
   }));
@@ -217,12 +177,10 @@ function bounded(value: string | null | undefined, max: number): string | null {
   return value ? value.slice(0, max) : null;
 }
 
-/** The memberships that may read the audit log of the organization that owns this space. */
 function auditLogReaderWhere(spaceId: string): Prisma.MemberWhereInput {
   return { role: { in: ["owner", "admin"] }, organization: { spaces: { some: { id: spaceId } } } };
 }
 
-/** The organization whose audit log this actor may read, if any. */
 export async function auditLogOrganization(
   db: Pick<PrismaClient, "member">,
   actor: { userId: string; spaceId: string },
@@ -254,7 +212,6 @@ function filterWhere(
   };
 }
 
-/** One organization's events, newest first. The caller has already authorized the organization. */
 export async function listAuditEvents(
   db: Pick<PrismaClient, "auditEvent">,
   organizationId: string,
@@ -270,7 +227,6 @@ export async function listAuditEvents(
   const rows = await db.auditEvent.findMany({
     where: {
       ...filterWhere(organizationId, input),
-      // Same order as the sort, so events sharing a timestamp are neither skipped nor repeated.
       ...(after
         ? {
             OR: [
@@ -290,7 +246,6 @@ export async function listAuditEvents(
   };
 }
 
-/** Every matching event, newest first, as JSON Lines. */
 export async function* exportAuditEvents(
   db: Pick<PrismaClient, "auditEvent">,
   organizationId: string,

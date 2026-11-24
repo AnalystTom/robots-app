@@ -9,10 +9,6 @@ import { rpc } from "../../lib/rpc";
 import { AgentImportPlanReview, headingClass, sectionClass } from "./agent-import-plan";
 import { useAgentImportSource } from "./use-agent-import-source";
 
-/**
- * An assistant with no export: copy a prompt to send it, then paste its reply or choose the
- * file it made. The reply is held by the form so it survives a trip to the preview and back.
- */
 function PromptReplySection({
   testId,
   fileTestId,
@@ -44,7 +40,6 @@ function PromptReplySection({
 }) {
   const { t } = useLingui();
   const fileInput = useRef<HTMLInputElement>(null);
-  // Unmounted while the preview is open, so a copy that fails then never greets the return.
   const [copied, copy, copyFailed, resetCopy] = useCopyText();
   return (
     <section className={sectionClass} data-testid={testId}>
@@ -134,6 +129,9 @@ export function AgentImportForm({
     previewGrokReply,
     previewGrokBot,
     pickGrokFiles,
+    pickBotPackage,
+    look,
+    acceptedRisks,
     stopReading,
     selectedInstructions,
     chosen,
@@ -141,6 +139,7 @@ export function AgentImportForm({
     ready,
   } = source;
   const archiveInput = useRef<HTMLInputElement>(null);
+  const packageInput = useRef<HTMLInputElement>(null);
   const [computerMode, setComputerMode] = useState<ComputerMode>("team");
   const [reply, setReply] = useState("");
   const [grokReply, setGrokReply] = useState("");
@@ -160,6 +159,7 @@ export function AgentImportForm({
         name: name.trim(),
         description: description.trim(),
         computerMode,
+        ...(look ?? {}),
         selection: {
           instructions: selectedInstructions.map((item) => item.id),
           memory: plan.memory
@@ -167,6 +167,9 @@ export function AgentImportForm({
             .map((item) => ({ id: item.id, destination: destinations[item.id] ?? "bot" })),
           skills: chosen(plan.skills)
             .filter((item) => item.status.kind !== "unsupported")
+            .map((item) => item.id),
+          acceptedRisks: chosen(plan.skills)
+            .filter((item) => acceptedRisks.has(item.id))
             .map((item) => item.id),
           model: Boolean(plan.model && modelUsable && !unchecked.has(plan.model.id)),
           mcpServers: chosen(plan.mcpServers)
@@ -237,7 +240,40 @@ export function AgentImportForm({
         />
       ) : (
         <div data-testid="agent-import-choose">
-          <section>
+          <section data-testid="agent-import-package">
+            <h3 className={headingClass}>
+              <Trans>RoBots package</Trans>
+            </h3>
+            <input
+              ref={(node) => {
+                packageInput.current = node;
+                if (!node) return;
+                node.addEventListener("cancel", stopReading);
+                return () => {
+                  node.removeEventListener("cancel", stopReading);
+                  packageInput.current = null;
+                };
+              }}
+              type="file"
+              accept=".json,application/json"
+              data-testid="agent-import-package-file"
+              className="hidden"
+              onChange={(event) => {
+                void pickBotPackage(event.target.files);
+                event.target.value = "";
+              }}
+            />
+            <div className="mt-2 flex gap-2">
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => packageInput.current?.click()}
+              >
+                <Trans>Choose file</Trans>
+              </Button>
+            </div>
+          </section>
+          <section className={sectionClass}>
             <h3 className={headingClass}>
               <Trans>OpenClaw or Hermes</Trans>
             </h3>

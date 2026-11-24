@@ -28,6 +28,7 @@ import {
 } from "@robots/adapters";
 import type {
   Actor,
+  LabFeature,
   ModelCatalogEntry,
   ModelRole,
   ModelRoleChoice,
@@ -444,15 +445,20 @@ export function createRouterContext(deps: RouterDeps) {
     return next();
   });
 
-  const boardEnabled = authed.use(async ({ context, next }) => {
-    if (deps.env?.deploymentLabs?.includes("board")) return next();
-    const user = await deps.prisma.user.findUnique({
-      where: { id: context.actor.userId },
-      select: { labs: true },
+  /** Hides a Labs procedure from accounts that haven't turned the feature on. */
+  const labEnabled = (feature: LabFeature) =>
+    authed.use(async ({ context, next }) => {
+      if (deps.env?.deploymentLabs?.includes(feature)) return next();
+      const user = await deps.prisma.user.findUnique({
+        where: { id: context.actor.userId },
+        select: { labs: true },
+      });
+      if (!hasLab(user?.labs, feature)) throw new ORPCError("NOT_FOUND");
+      return next();
     });
-    if (!hasLab(user?.labs, "board")) throw new ORPCError("NOT_FOUND");
-    return next();
-  });
+  const boardEnabled = labEnabled("board");
+  const emailEnabled = labEnabled("email");
+  const docsEnabled = labEnabled("docs");
   const ticketDeps = {
     prisma: deps.prisma,
     onTicketChange: deps.ticketChanges,
@@ -463,6 +469,8 @@ export function createRouterContext(deps: RouterDeps) {
     os,
     repos,
     onboardingDeps,
+    emailEnabled,
+    docsEnabled,
     mcpOAuth,
     mcpAwaitsOAuth,
     probeMcpServer,

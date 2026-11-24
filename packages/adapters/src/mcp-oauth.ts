@@ -372,6 +372,44 @@ type PreRegisteredClient = OAuthClientInformation & {
   authorization_params?: string;
 };
 
+export type SharedMcpOAuthClient = { client_id: string; client_secret: string };
+
+const GOOGLE_AUTHORIZATION_SERVER = "https://accounts.google.com/";
+const GOOGLE_OFFLINE_AUTHORIZATION_PARAMS = "access_type=offline&prompt=consent";
+
+export function googleMcpOAuthClientFromEnv(
+  source: NodeJS.ProcessEnv,
+): SharedMcpOAuthClient | undefined {
+  const clientId = source.GOOGLE_MCP_OAUTH_CLIENT_ID?.trim();
+  const clientSecret = source.GOOGLE_MCP_OAUTH_CLIENT_SECRET?.trim();
+  if (Boolean(clientId) !== Boolean(clientSecret))
+    throw new Error(
+      "GOOGLE_MCP_OAUTH_CLIENT_ID and GOOGLE_MCP_OAUTH_CLIENT_SECRET must be configured together",
+    );
+  return clientId && clientSecret
+    ? { client_id: clientId, client_secret: clientSecret }
+    : undefined;
+}
+
+function sharedMcpOAuthClientSecrets(googleClient: SharedMcpOAuthClient | undefined) {
+  return googleClient ? [googleClient.client_secret] : [];
+}
+
+function effectiveMcpOAuthClient(
+  material: OAuthMaterial,
+  googleClient: SharedMcpOAuthClient | undefined,
+): PreRegisteredClient | undefined {
+  if (material.oauthClient) return material.oauthClient;
+  const discovered = material.oauth?.discoveryState?.authorizationServerUrl;
+  if (!googleClient || !discovered || new URL(discovered).href !== GOOGLE_AUTHORIZATION_SERVER)
+    return undefined;
+  return {
+    ...googleClient,
+    authorization_server: GOOGLE_AUTHORIZATION_SERVER,
+    authorization_params: GOOGLE_OFFLINE_AUTHORIZATION_PARAMS,
+  };
+}
+
 function boundClient(
   client: PreRegisteredClient,
   authorizationServerUrl: string | undefined,
@@ -451,6 +489,7 @@ type ProviderOptions = {
   refresh?: (heldRefreshToken: string) => Promise<TokenGrant>;
   /** The instance opt-in that lets OAuth URLs use plain HTTP on a private network. */
   allowPrivateEndpoint?: boolean;
+  googleClient?: SharedMcpOAuthClient;
 };
 
 /** Refresh before expiry to cover clock skew and request time. */
@@ -597,7 +636,7 @@ export class StoredMcpOAuthProvider implements OAuthClientProvider {
     // Only a registration this client is about to make has to match the server; a
     // pre-registered client was given its method out of band, and this document is
     // then read for its scope alone.
-    const authMethod = this.material.oauthClient
+    const authMethod = this.oauthClient()
       ? undefined
       : registrationAuthMethod(this.material.oauth?.discoveryState);
     return {
@@ -613,21 +652,30 @@ export class StoredMcpOAuthProvider implements OAuthClientProvider {
 
   /** The scope configured with the pre-registered client, if any. */
   get configuredScope(): string | undefined {
-    return this.material.oauthClient?.scope;
+    return this.oauthClient()?.scope;
+  }
+
+  private oauthClient(): PreRegisteredClient | undefined {
+    return effectiveMcpOAuthClient(this.material, this.options.googleClient);
+  }
+
+  private usesDeploymentClient(): boolean {
+    return !this.material.oauthClient && Boolean(this.oauthClient());
   }
 
   state(): string {
     return this.options.state ?? this.runtimeState;
   }
   clientInformation(): OAuthClientInformationMixed | undefined {
-    const client = this.material.oauthClient;
+    const client = this.oauthClient();
     if (!client) return this.material.oauth?.clientInformation;
     // The SDK saves discovery before asking for the client, so this is the server
     // about to receive it. The first one is kept and written with the next persist.
     const server = this.material.oauth?.discoveryState?.authorizationServerUrl;
     const information = boundClient(client, server);
-    if (!client.authorization_server && server)
-      this.material.oauthClient = { ...client, authorization_server: new URL(server).href };
+    const stored = this.material.oauthClient;
+    if (stored && !stored.authorization_server && server)
+      this.material.oauthClient = { ...stored, authorization_server: new URL(server).href };
     return information;
   }
   /**
@@ -641,6 +689,7 @@ export class StoredMcpOAuthProvider implements OAuthClientProvider {
     this.material.oauthClient = { ...client, authorization_server: bound };
   }
   async saveClientInformation(value: OAuthClientInformationMixed): Promise<void> {
+    if (this.usesDeploymentClient()) return;
     this.oauth().clientInformation = value;
     await this.persist();
   }
@@ -746,7 +795,7 @@ export class StoredMcpOAuthProvider implements OAuthClientProvider {
       }
       throw error;
     }
-    const extra = this.material.oauthClient?.authorization_params;
+    const extra = this.oauthClient()?.authorization_params;
     if (extra) {
       for (const [key, value] of Object.entries(parseMcpOAuthAuthorizationParams(extra)))
         if (!authorizationUrl.searchParams.has(key)) authorizationUrl.searchParams.set(key, value);
@@ -853,6 +902,7 @@ function oauthFetch(
   network: RemoteTransportDependencies,
   material: OAuthMaterial = {},
   allowPrivateEndpoint = false,
+  deploymentSecrets: string[] = [],
 ): {
   fetch: typeof fetch;
   close: () => Promise<void>;
@@ -908,7 +958,7 @@ function oauthFetch(
     close: () => safeFetch.close(),
     publicError: (error, message) => {
       if (error instanceof Error && networkErrors.has(error)) return error;
-      const secrets = oauthMaterialSecrets(material);
+      const secrets = [...oauthMaterialSecrets(material), ...deploymentSecrets];
       const sdk = sanitizeConnectorError(error, secrets);
       const surfaced = rejection ? formatOAuthRejection(rejection, sdk, secrets) : undefined;
       getLogger().warn(`${message}: ${surfaced ?? sdk}`);
@@ -1080,13 +1130,15 @@ export function lockMcpOAuthMaterial(
 /** One refresh-token grant against the stored authorization server. */
 async function requestRefresh(
   material: OAuthMaterial,
+  googleClient: SharedMcpOAuthClient | undefined,
   refreshToken: string,
   fetchFn: typeof fetch,
   allowPrivateEndpoint: boolean,
 ): Promise<OAuthTokens> {
   const discovery = material.oauth?.discoveryState;
-  const clientInformation = material.oauthClient
-    ? boundClient(material.oauthClient, discovery?.authorizationServerUrl)
+  const client = effectiveMcpOAuthClient(material, googleClient);
+  const clientInformation = client
+    ? boundClient(client, discovery?.authorizationServerUrl)
     : material.oauth?.clientInformation;
   if (!discovery?.authorizationServerUrl || !clientInformation)
     throw new Error("MCP OAuth state cannot refresh");
@@ -1137,6 +1189,7 @@ function conflictsWithBinding(stored: PreRegisteredClient | undefined, flow: OAu
 export type McpOAuthSummary = {
   status: "none" | "connected" | "reconnect";
   clientId: string | null;
+  sharedClient: boolean;
   /** Whether the stored material holds a credential; a lone generation marker holds none. */
   credential: boolean;
 };
@@ -1154,11 +1207,15 @@ function hasCredential(material: OAuthMaterial): boolean {
   );
 }
 
-function summarize(material: OAuthMaterial): McpOAuthSummary {
+function summarize(
+  material: OAuthMaterial,
+  googleClient: SharedMcpOAuthClient | undefined,
+): McpOAuthSummary {
   const status = material.oauth?.tokens ? "connected" : material.oauth ? "reconnect" : "none";
   return {
     status,
     clientId: material.oauthClient?.client_id ?? null,
+    sharedClient: !material.oauthClient && Boolean(effectiveMcpOAuthClient(material, googleClient)),
     credential: hasCredential(material),
   };
 }
@@ -1171,7 +1228,22 @@ export class McpOAuthBroker {
     private readonly secrets: SecretStore,
     private readonly network: RemoteTransportDependencies = {},
     private readonly allowPrivateEndpoint = false,
+    private readonly googleClient?: SharedMcpOAuthClient,
   ) {}
+
+  secretsIn(material: OAuthMaterial): string[] {
+    return [...oauthMaterialSecrets(material), ...sharedMcpOAuthClientSecrets(this.googleClient)];
+  }
+
+  private oauthFetch(endpoint: string, material: OAuthMaterial = {}) {
+    return oauthFetch(
+      endpoint,
+      this.network,
+      material,
+      this.allowPrivateEndpoint,
+      sharedMcpOAuthClientSecrets(this.googleClient),
+    );
+  }
 
   async statusFor(server: ServerRef, context: ActorRef): Promise<McpOAuthSummary["status"]> {
     return (await this.summaryFor(server, context)).status;
@@ -1179,14 +1251,17 @@ export class McpOAuthBroker {
 
   async summaryFor(server: ServerRef, context: ActorRef): Promise<McpOAuthSummary> {
     const { material } = await this.loadMaterial(server, context);
-    return summarize(material);
+    return summarize(material, this.googleClient);
   }
 
   async summaryForCiphertext(
     ciphertext: string | undefined,
     recordId: string | undefined,
   ): Promise<McpOAuthSummary> {
-    return summarize(ciphertext && recordId ? await this.read(ciphertext, recordId) : {});
+    return summarize(
+      ciphertext && recordId ? await this.read(ciphertext, recordId) : {},
+      this.googleClient,
+    );
   }
 
   async providerFor(
@@ -1220,7 +1295,9 @@ export class McpOAuthBroker {
     const context = { spaceId: input.spaceId, userId: input.userId };
     const loaded = await this.loadMaterial(server, context);
     // A stdio server has no MCP endpoint; OAuth runs against its authorization server.
-    const target = server.endpoint ?? loaded.material.oauthClient?.authorization_server;
+    const target =
+      server.endpoint ??
+      effectiveMcpOAuthClient(loaded.material, this.googleClient)?.authorization_server;
     if (!target) throw new Error("MCP server endpoint is required for OAuth");
     await this.sweepExpiredPending();
     let actorPending = 0;
@@ -1250,11 +1327,9 @@ export class McpOAuthBroker {
     // Never destroy working tokens here: if this attempt fails (network error,
     // cancelled popup), the server keeps its valid connection. The SDK itself
     // invalidates dead tokens when a refresh is rejected with invalid_grant.
-    const networkFetch = oauthFetch(
+    const networkFetch = this.oauthFetch(
       target,
-      this.network,
       server.endpoint ? loaded.material : withoutRequestCredentials(loaded.material),
-      this.allowPrivateEndpoint,
     );
     try {
       if (server.endpoint)
@@ -1409,13 +1484,11 @@ export class McpOAuthBroker {
       const stored = await this.loadMaterial(current, input);
       pending.provider.adoptClientBinding(stored.material.oauthClient);
     }
-    const networkFetch = oauthFetch(
+    const networkFetch = this.oauthFetch(
       pending.endpoint,
-      this.network,
       // Only for redacting errors: the exchange sends the client secret, but none of
       // the server's static headers.
       { oauth: { clientInformation: pending.provider.clientInformation() } },
-      this.allowPrivateEndpoint,
     );
     try {
       if (pending.stdio)
@@ -1548,7 +1621,8 @@ export class McpOAuthBroker {
   ): StoredMcpOAuthProvider {
     const endpoint = server.endpoint;
     // A stdio server has no endpoint; its refresh goes to the client's authorization server.
-    const target = endpoint ?? loaded.material.oauthClient?.authorization_server;
+    const target =
+      endpoint ?? effectiveMcpOAuthClient(loaded.material, this.googleClient)?.authorization_server;
     return new StoredMcpOAuthProvider(
       server.id,
       loaded.material,
@@ -1577,6 +1651,7 @@ export class McpOAuthBroker {
             }
           : {}),
         allowPrivateEndpoint: this.allowPrivateEndpoint,
+        googleClient: this.googleClient,
         ...options,
       },
     );
@@ -1598,7 +1673,7 @@ export class McpOAuthBroker {
     onPersisted?: ProviderOptions["onPersisted"],
   ): Promise<TokenGrant> {
     // Resolve the network before taking a connection for the lock.
-    const network = oauthFetch(target, this.network, {}, this.allowPrivateEndpoint);
+    const network = this.oauthFetch(target);
     let stored: { id: string; ciphertext: string } | undefined;
     let rotated: { material: OAuthMaterial; grant: TokenGrant; spent: string } | undefined;
     try {
@@ -1624,6 +1699,7 @@ export class McpOAuthBroker {
                 grant = {
                   tokens: await requestRefresh(
                     material,
+                    this.googleClient,
                     current,
                     network.fetch,
                     this.allowPrivateEndpoint,

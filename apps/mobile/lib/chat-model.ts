@@ -3,7 +3,6 @@ import type { ChatModelChoice } from "@robots/core";
 import { chatModelChoices, connectedModelChoices } from "@robots/core";
 import type { MobileMe, MobileModel, MobileModelCredential } from "./mobile-types";
 
-/** What a chat's model picker lists, with the space default named after its model. */
 export function chatModelPickerChoices(
   me: MobileMe | null,
   catalog: MobileModel[],
@@ -13,8 +12,9 @@ export function chatModelPickerChoices(
   const defaultEntry = me?.defaultModel
     ? catalogEntry(catalog, me.defaultProvider, me.defaultModel)
     : undefined;
-  const spaceDefaultLabel = me?.defaultModel
-    ? `${t`Space default`} (${defaultEntry?.label ?? me.defaultModel})`
+  const defaultModelLabel = me?.defaultModel ? (defaultEntry?.label ?? me.defaultModel) : null;
+  const spaceDefaultLabel = defaultModelLabel
+    ? t`Space default · ${defaultModelLabel}`
     : t`Space default`;
   const choices = chatModelChoices(
     connectedModelChoices(credentials, catalog),

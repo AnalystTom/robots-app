@@ -38,7 +38,6 @@ async function reconcileConnections(
     connectedProviderKeys.has(row.provider.trim().toLowerCase()),
   );
   const sync = planLiveConnectionSync(rows, connectedProviders);
-  // One update per row so the credential event goes only to rows this call actually connected.
   const connectedIds: string[] = [];
   const updates = [
     ...sync.connectIds.map((id) => async (tx: Prisma.TransactionClient) => {
@@ -62,7 +61,6 @@ async function reconcileConnections(
             }),
         ]
       : []),
-    // The provider reports these accounts dead, so the app offers to connect them again.
     ...(reconnectRefs.length > 0
       ? [
           (tx: Prisma.TransactionClient) =>
@@ -79,7 +77,6 @@ async function reconcileConnections(
         ]
       : []),
   ];
-  // Interactive rather than a batch: a batch cannot carry the request's database context.
   if (updates.length > 0)
     await prisma.$transaction(async (tx) => {
       for (const update of updates) await update(tx);
@@ -88,8 +85,6 @@ async function reconcileConnections(
     await recordSecurityEvent(connectionCreatedEvent("connections.catalog", id, owner));
   }
 }
-
-/** Serialize begin/revoke for one user+provider so slug-wide remote deletes cannot race a new connect. */
 
 export function connectionsRoutes(ctx: RouterContext) {
   const { deps, authed } = ctx;
@@ -215,6 +210,7 @@ export function connectionsRoutes(ctx: RouterContext) {
           return tools.map((tool) => ({
             name: tool.name,
             description: tool.description,
+            readOnly: tool.readOnly,
           }));
         } catch (error) {
           getLogger().error("connections.tools failed", error, {

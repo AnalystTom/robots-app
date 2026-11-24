@@ -844,7 +844,8 @@ describe("BotSettings cached data", () => {
     expect(descriptionField().value).toBe("Invoices");
     await clickSave();
     const patch = onSave.mock.lastCall?.[0];
-    expect(patch).toMatchObject({ description: "Invoices", computerMode: "dedicated" });
+    expect(patch).toMatchObject({ description: "Invoices" });
     expect(patch).not.toHaveProperty("name");
+    expect(patch).not.toHaveProperty("computerMode");
   });
 });

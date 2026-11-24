@@ -8,6 +8,11 @@
       "types": "./src/index.ts",
       "development": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./audit-store": {
+      "types": "./src/audit-store.ts",
+      "development": "./src/audit-store.ts",
+      "default": "./src/audit-store.ts"
     }
   },
   "scripts": {

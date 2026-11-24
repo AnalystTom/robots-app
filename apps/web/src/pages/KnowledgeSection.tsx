@@ -1,7 +1,8 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { ORPCError } from "@orpc/client";
 import type { AgentSkill, AgentSkillCatalogEntry, MemoryDocument } from "@robots/contracts";
-import { isDeletableMemoryDocument, isEmptyBotMemory } from "@robots/contracts";
+import { isDeletableMemoryDocument, isEmptyBotMemory, skillSafetyBlock } from "@robots/contracts";
+import { parseSkillMd, scanSkillSafety, skillSafetyBlocks } from "@robots/core";
 import { fetchFresh, writeSaved } from "@robots/core/query";
 import { Badge, Button, SectionHeading, Skeleton, Textarea } from "@robots/ui-web";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@robots/ui-web/components/ui/tooltip";
@@ -14,6 +15,8 @@ import {
   reachesOtherSpaces,
   useOwnSpaces,
 } from "../components/integrations/space-availability";
+import type { RiskySkill } from "../components/skill-safety";
+import { SkillRiskDialog, SkillSafetyList } from "../components/skill-safety";
 import { downloadArtifactBytes } from "../lib/artifact-open";
 import { useSpaceQueries } from "../lib/query";
 import { useSpaceRpc } from "../lib/space-rpc";
@@ -27,10 +30,6 @@ function rowClass(open: boolean): string {
   return `h-auto w-full justify-start whitespace-normal px-2.5 py-2.5 text-start ${open ? "bg-muted" : ""}`;
 }
 
-/**
- * Bot memory. Skills belong to the person in a space, not to one bot, so they live in
- * the Skills dialog; memory shared across bots lives in the Memory settings overlay.
- */
 export function KnowledgeSection({ botId }: { botId: string }) {
   return (
     <MemoryDocumentList
@@ -42,7 +41,6 @@ export function KnowledgeSection({ botId }: { botId: string }) {
   );
 }
 
-/** The space's shared memory documents, mounted in the Memory settings overlay. */
 export function SpaceMemorySection() {
   return (
     <section
@@ -76,7 +74,6 @@ function MemoryDocumentList({
   const queries = useSpaceQueries();
   const queryClient = useQueryClient();
   const list = queries.memory.list.queryOptions({ input });
-  // Bots write memory as they run, so every open refreshes behind the cached list.
   const listQuery = useQuery({ ...list, refetchOnMount: "always" });
   const docs = listQuery.data ?? NO_DOCS;
   const loading = listQuery.isPending;
@@ -94,7 +91,6 @@ function MemoryDocumentList({
     : 0;
   const kb = Math.ceil(bytesLeftOut / 1024);
   const [showAll, setShowAll] = useState(false);
-  // Once shown, memory stays visible while the panel is open, even if emptied.
   const [memoryShown, setMemoryShown] = useState(false);
   const memoryVisible = memoryShown || docs.some((doc) => !isEmptyBotMemory(doc));
   if (memoryVisible && !memoryShown) setMemoryShown(true);
@@ -165,9 +161,7 @@ function MemoryDocumentList({
         setConflicted(true);
         try {
           await fetchFresh(queryClient, list);
-        } catch {
-          // Keep the draft and conflict state even if refreshing fails.
-        }
+        } catch {}
       } else {
         setError(t`Could not save`);
       }
@@ -336,13 +330,11 @@ description: What this skill does and when the agent should use it.
 Steps the agent should follow.
 `;
 
-/** Your own skills in this space, plus the built-in ones; plugin skills are listed by plugin. */
 export function AgentSkills() {
   const rpc = useSpaceRpc();
   const { t } = useLingui();
   const queries = useSpaceQueries();
   const queryClient = useQueryClient();
-  // The same list the composer offers as skill mentions, so a change here shows there at once.
   const list = queries.agentSkills.list.queryOptions();
   const listQuery = useQuery({ ...list, refetchOnMount: "always" });
   const skills = (listQuery.data ?? NO_SKILLS).filter((skill) => skill.source !== "plugin");
@@ -354,6 +346,7 @@ export function AgentSkills() {
   const [actionError, setError] = useState<string | null>(null);
   const error = actionError ?? (listQuery.isError ? t`Could not load` : null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [risky, setRisky] = useState<RiskySkill[] | null>(null);
   const selection = useRef(0);
   const spaceCount = useOwnSpaces().length;
 
@@ -376,7 +369,6 @@ export function AgentSkills() {
     setError(null);
     try {
       const skill = await rpc.agentSkills.get({ skillId: entry.id });
-      // A slower response must not clobber a newer selection or a fresh draft.
       if (current !== selection.current) return;
       setOpen(skill);
       setDraft(skill.content);
@@ -386,15 +378,21 @@ export function AgentSkills() {
     }
   }
 
-  async function save() {
+  async function save(acceptRisk = false) {
     if (busy || !draft.trim()) return;
+    if (!acceptRisk && skillSafetyBlocks(findings)) {
+      const parsed = parseSkillMd(draft);
+      setRisky([{ name: "error" in parsed ? (open?.name ?? "") : parsed.name, findings }]);
+      return;
+    }
+    setRisky(null);
     setBusy(true);
     setError(null);
     try {
       if (creating) {
-        await rpc.agentSkills.create({ content: draft });
+        await rpc.agentSkills.create({ content: draft, acceptRisk });
       } else if (open) {
-        await rpc.agentSkills.update({ skillId: open.id, content: draft });
+        await rpc.agentSkills.update({ skillId: open.id, content: draft, acceptRisk });
       }
       setOpen(null);
       setCreating(false);
@@ -404,8 +402,10 @@ export function AgentSkills() {
       } catch {
         setError(t`Could not load`);
       }
-    } catch {
-      setError(t`Could not save skill`);
+    } catch (err) {
+      const blocked = skillSafetyBlock(err);
+      if (blocked) setRisky(blocked.skills);
+      else setError(t`Could not save skill`);
     } finally {
       setBusy(false);
     }
@@ -439,6 +439,7 @@ export function AgentSkills() {
   }
 
   const editorOpen = creating || open;
+  const findings = editorOpen && !open?.readOnly ? scanSkillSafety(draft) : [];
   return (
     <div data-testid="bot-knowledge-skills">
       {error ? <div className="px-2.5 pb-2 text-body-sm text-destructive">{error}</div> : null}
@@ -488,9 +489,7 @@ export function AgentSkills() {
                     id={open.id}
                     availability={open.availability}
                     onChanged={async () => {
-                      // Another skill may have been opened while this was saving; leave it alone.
                       const opened = selection.current;
-                      // Narrowed away from this space, the skill can no longer be read here.
                       const here = (await refresh()).some((entry) => entry.id === open.id);
                       if (selection.current !== opened) return;
                       if (!here) {
@@ -516,6 +515,7 @@ export function AgentSkills() {
             className={fieldClass}
             dir="auto"
           />
+          <SkillSafetyList findings={findings} className="mt-2" />
           <div className="mt-2 flex items-center gap-2">
             {!open?.readOnly ? (
               <Button
@@ -572,6 +572,7 @@ export function AgentSkills() {
           disabled={busy}
           onClick={() => {
             selection.current += 1;
+            setRisky(null);
             setOpen(null);
             setCreating(true);
             setConfirmingDelete(false);
@@ -584,6 +585,14 @@ export function AgentSkills() {
           <Plus aria-hidden="true" className="size-4 text-muted-foreground" />
         </Button>
       )}
+      {risky ? (
+        <SkillRiskDialog
+          skills={risky}
+          busy={busy}
+          onCancel={() => setRisky(null)}
+          onConfirm={() => void save(true)}
+        />
+      ) : null}
     </div>
   );
 }

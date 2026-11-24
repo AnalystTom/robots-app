@@ -4,10 +4,8 @@ import { BOT_TEMPLATES } from "@robots/core";
 import { describe, expect, it } from "vitest";
 import { UI_LOCALES } from "./ui-locale";
 
-/** A string used only by these files belongs to bot templates. */
 const TEMPLATE_DIR = "apps/web/src/components/bot-templates/";
-/** Bot template strings that live in shared files. */
-const SHARED_TEMPLATE_STRINGS = ["Bot templates", "Templates"];
+const SHARED_TEMPLATE_STRINGS = ["RoBot templates", "Templates"];
 
 const localesDir = new URL("../../../../packages/i18n/locales/", import.meta.url);
 const catalog = (locale: string) =>

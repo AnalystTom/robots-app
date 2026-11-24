@@ -18,7 +18,7 @@ function setup() {
       spaceSettingOverride: { findUnique: vi.fn(async () => null) },
       userModelRoleChoice: { findMany: vi.fn(async () => []) },
       spaceModelRoleChoice: { findMany: vi.fn(async () => []) },
-      userModelCredential: { findMany: vi.fn(async () => []) },
+      userModelCredential: { findMany: vi.fn(async () => []), findFirst: vi.fn(async () => null) },
       secret: { findMany: vi.fn(async () => []) },
       bot: { findMany: vi.fn(async () => []) },
       routine: { findMany: vi.fn(async () => []) },
@@ -90,14 +90,11 @@ describe("consent grants", () => {
       return (await aiConsentStatus(deps, actor, { botId: "bot", uses: ["model"] })).recipients;
     };
     const first = await recipients("https://t3.example.test/mcp");
-    // Only an environment the target agent may use is disclosed for it.
     expect(forActor).toHaveBeenCalledWith({
       spaceId: actor.spaceId,
       userId: actor.userId,
       botIds: ["bot"],
     });
-    // The agent's work goes to the user's own environment, and to the deployment's provider
-    // once that environment's approval runs out.
     expect(first.map((entry) => entry.name)).toEqual(
       expect.arrayContaining(["T3 Code (https://t3.example.test)", "Cursor"]),
     );
@@ -116,8 +113,6 @@ describe("consent grants", () => {
     deps.cloudAgent = connection("deployment", "cursor") as RouterDeps["cloudAgent"];
     const t3 = connection("mcp:one", "t3code", "https://one.example.test/mcp");
     const other = connection("mcp:two", "t3code", "https://two.example.test/mcp");
-    // The target agent first has neither environment, so its work goes to the deployment, then
-    // only the second one; any agent's first choice is the first environment.
     let assigned: typeof t3 | null = null;
     deps.userCloudAgents = {
       forActor: async ({ botIds }: { botIds?: string[] }) => (botIds ? assigned : t3),
@@ -127,7 +122,6 @@ describe("consent grants", () => {
       if (name !== "Cursor") assigned = other;
       const shown = await aiConsentStatus(deps, actor, { botId: "bot", uses: ["model"] });
       const recipient = shown.recipients.find((entry) => entry.name === name)!;
-      // The client allows without the target, as mobile does.
       await allowAiConsent(deps, actor, {
         scope: shown.scope,
         version: shown.version,
@@ -178,7 +172,7 @@ describe("consent grants", () => {
       expect.arrayContaining([
         expect.objectContaining({
           name: "Anthropic",
-          detail: "claude-backup",
+          detail: "",
           use: "model",
           allowed: false,
         }),

@@ -14,7 +14,7 @@ test("a bot template previews what it adds, then creates a bot with a paused rou
     .getByRole("dialog", { name: "Integrations", exact: true })
     .getByTestId("open-bot-templates")
     .click();
-  const dialog = page.getByRole("dialog", { name: "Bot templates", exact: true });
+  const dialog = page.getByRole("dialog", { name: "RoBot templates", exact: true });
   const cards = dialog.getByTestId("bot-template-card");
   await expect(cards).toHaveCount(4);
   const briefing = cards.filter({ hasText: "Morning briefing" });

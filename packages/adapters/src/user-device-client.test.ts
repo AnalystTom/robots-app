@@ -9,6 +9,7 @@ import { USER_DEVICE_CONNECT_PATH } from "@robots/contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { WebSocket } from "ws";
 import { WebSocketServer } from "ws";
+import type { MacApps } from "./mac-apps-protocol.js";
 import type { UserDeviceClient } from "./user-device-client.js";
 import { startUserDeviceClient, USER_DEVICE_MAX_MESSAGE_BYTES } from "./user-device-client.js";
 
@@ -73,11 +74,12 @@ describe("user device client", () => {
     await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 50 });
   });
 
-  function start(authorize: () => Promise<boolean> = async () => true) {
+  function start(authorize: () => Promise<boolean> = async () => true, macApps?: MacApps) {
     client = startUserDeviceClient({
       serverUrl,
       token,
       root,
+      macApps,
       onRevoked: revoked,
       authorize,
       retryMs: { min: 20, max: 40 },
@@ -131,6 +133,35 @@ describe("user device client", () => {
       .map((frame) => frame.frame.value);
     expect(values).toContainEqual({ type: "stdout", data: "hi" });
     expect(values.at(-1)).toMatchObject({ type: "exit", code: 0 });
+  });
+
+  it("answers a Mac app request over the socket with this Mac's apps", async () => {
+    const seen: unknown[] = [];
+    start(async () => true, {
+      async run(call) {
+        seen.push(call);
+        return { reminders: [{ id: "x-apple-reminder://1", title: "Milk" }] };
+      },
+    });
+    const ws = await connection();
+    const received = frames(ws);
+    const call = {
+      tool: "mac_reminders_list",
+      args: { include_completed: false, limit: 10 },
+    };
+    ws.send(
+      JSON.stringify({
+        type: "request",
+        id: "mac",
+        request: { method: "macApp", botId: "bot", runId: "run", call },
+      }),
+    );
+    await until(() => received.some((frame) => frame.id === "mac" && "done" in frame.frame));
+    expect(seen).toEqual([call]);
+    expect(received.filter((frame) => frame.id === "mac").map((frame) => frame.frame)).toEqual([
+      { value: { reminders: [{ id: "x-apple-reminder://1", title: "Milk" }] } },
+      { done: true },
+    ]);
   });
 
   it("stops a cancelled command without answering for it, and keeps serving", async () => {

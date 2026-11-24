@@ -64,6 +64,48 @@ export function activityNotificationsEnabled(
   return pushNotifications && (groupId !== null || notifyOnFinish);
 }
 
+const ACTIVITY_ROW_INCLUDE = {
+  bot: { select: { name: true, archivedAt: true, notifyOnFinish: true } },
+  task: { select: { prompt: true } },
+  sourceMessage: { select: { blocks: true } },
+  thread: {
+    select: {
+      groupId: true,
+      group: { select: { name: true } },
+    },
+  },
+} as const;
+
+type ActivityRunRow = Prisma.RunGetPayload<{ include: typeof ACTIVITY_ROW_INCLUDE }>;
+
+function activityRow(
+  row: ActivityRunRow,
+  finished: boolean,
+  pushNotifications: boolean,
+): RunActivityRow {
+  return {
+    runId: row.id,
+    botId: row.botId,
+    botName: row.bot.name,
+    groupId: row.thread.groupId,
+    groupName: row.thread.group ? row.thread.group.name : null,
+    threadId: row.threadId,
+    status: row.status as RunActivityRow["status"],
+    trigger: row.trigger as RunActivityRow["trigger"],
+    notificationsEnabled: activityNotificationsEnabled(
+      row.thread.groupId,
+      row.bot.notifyOnFinish,
+      pushNotifications,
+    ),
+    ...activityPreview({
+      trigger: row.trigger,
+      prompt: row.task.prompt,
+      sourceBlocks: row.sourceMessage?.blocks,
+    }),
+    updatedAt: (finished && row.completedAt ? row.completedAt : row.updatedAt).toISOString(),
+  };
+}
+
 export async function listSpaceRuns(
   prisma: PrismaClient,
   actor: Actor,
@@ -84,48 +126,14 @@ export async function listSpaceRuns(
               status: { in: [...ACTIVE_RUN_STATUSES] },
             }
           : { spaceId: actor.spaceId, id: { in: await latestFinishedRunPerChat(prisma, actor) } },
-      include: {
-        bot: { select: { name: true, archivedAt: true, notifyOnFinish: true } },
-        task: { select: { prompt: true } },
-        sourceMessage: { select: { blocks: true } },
-        thread: {
-          select: {
-            groupId: true,
-            group: { select: { name: true } },
-          },
-        },
-      },
+      include: ACTIVITY_ROW_INCLUDE,
       orderBy:
         filter === "active"
           ? [{ updatedAt: "desc" }, { id: "desc" }]
           : [{ completedAt: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
     }),
   ]);
-
-  return rows.map((row) => ({
-    runId: row.id,
-    botId: row.botId,
-    botName: row.bot.name,
-    groupId: row.thread.groupId,
-    groupName: row.thread.group ? row.thread.group.name : null,
-    threadId: row.threadId,
-    status: row.status as RunActivityRow["status"],
-    trigger: row.trigger as RunActivityRow["trigger"],
-    notificationsEnabled: activityNotificationsEnabled(
-      row.thread.groupId,
-      row.bot.notifyOnFinish,
-      account.pushNotifications,
-    ),
-    ...activityPreview({
-      trigger: row.trigger,
-      prompt: row.task.prompt,
-      sourceBlocks: row.sourceMessage?.blocks,
-    }),
-    updatedAt: (filter === "recent" && row.completedAt
-      ? row.completedAt
-      : row.updatedAt
-    ).toISOString(),
-  }));
+  return rows.map((row) => activityRow(row, filter === "recent", account.pushNotifications));
 }
 
 async function latestFinishedRunPerChat(prisma: PrismaClient, actor: Actor): Promise<string[]> {

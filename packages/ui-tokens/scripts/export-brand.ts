@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
@@ -53,18 +53,14 @@ async function ico(input: Buffer, name: string, sizes: number[]) {
   await writeFile(path(name), Buffer.concat([header, ...frames]));
 }
 
-for (const app of ["web", "www"]) {
-  const publicDir = `apps/${app}/public`;
-  await png(rounded, `${publicDir}/favicon-16x16.png`, 16);
-  await png(rounded, `${publicDir}/favicon-32x32.png`, 32);
-  await png(rounded, `${publicDir}/favicon.png`, 128);
-  await png(square, `${publicDir}/apple-touch-icon.png`, 180);
-  await png(square, `${publicDir}/icon-192.png`, 192);
-  await png(square, `${publicDir}/icon-512.png`, 512);
-  await ico(rounded, `${publicDir}/favicon.ico`, [16, 32, 48]);
-}
-await mkdir(path("apps/www/public/brand"), { recursive: true });
-await png(rounded, "apps/www/public/brand/robots-mark.png", 256);
+const webPublic = "apps/web/public";
+await png(rounded, `${webPublic}/favicon-16x16.png`, 16);
+await png(rounded, `${webPublic}/favicon-32x32.png`, 32);
+await png(rounded, `${webPublic}/favicon.png`, 128);
+await png(square, `${webPublic}/apple-touch-icon.png`, 180);
+await png(square, `${webPublic}/icon-192.png`, 192);
+await png(square, `${webPublic}/icon-512.png`, 512);
+await ico(rounded, `${webPublic}/favicon.ico`, [16, 32, 48]);
 await png(rounded, "apps/mobile/assets/favicon.png", 128);
 await png(square, "apps/desktop/assets/icon.png", 1024);
 await ico(rounded, "apps/desktop/assets/icon.ico", [16, 32, 48, 64, 128, 256]);

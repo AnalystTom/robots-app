@@ -17,7 +17,7 @@ import { DIRECT_TOOL_LIMIT } from "./lazy-tool-catalog.js";
 import { MCP_CLOSE_TIMEOUT_MS } from "./mcp-close.js";
 import { allowlistDrift, McpConnector } from "./mcp-connector.js";
 import type { McpOAuthBroker, OAuthMaterial } from "./mcp-oauth.js";
-import { StoredMcpOAuthProvider } from "./mcp-oauth.js";
+import { oauthMaterialSecrets, StoredMcpOAuthProvider } from "./mcp-oauth.js";
 import { MCP_TOOL_TIMEOUT_MS, McpSession } from "./mcp-transport.js";
 import { InMemoryRealtimeFanout } from "./realtime.js";
 import { checkRoutineWatch, validateRoutineWatch } from "./routine-watch.js";
@@ -26,12 +26,10 @@ import { ComposedSecretStore } from "./secret-store-factory.js";
 import { infisicalFake } from "./secret-store-fake.js";
 import { EncryptedSecretStore } from "./secrets.js";
 
-// No server is shared with every agent, so only assignments reach a bot.
 const NO_SHARED_SERVERS = { findMany: async () => [], findFirst: async () => null };
 
 afterEach(() => vi.unstubAllGlobals());
 
-/** Discovery of a failed server offers only its stand-in "unavailable" tool. */
 const unavailableOnly = (slug = "demo") => [
   expect.objectContaining({
     name: `mcp__${slug}__unavailable`,
@@ -60,7 +58,6 @@ const ASSIGNMENT = {
 };
 
 const TEST_NETWORK = {
-  // Read the global per call so a fetch stubbed after construction still wins.
   fetch: (input: string | URL | Request, init?: RequestInit) => globalThis.fetch(input, init),
   resolveHostname: async () => [{ address: "203.0.113.10", family: 4 }],
 };
@@ -78,9 +75,7 @@ function mcpFetch(
   state: {
     failNext: boolean;
     initializations: number;
-    /** Tool requests to answer 404, as a server that expired the session. */
     sessionNotFound?: number;
-    /** Overrides the 404 with another rejection, e.g. the SDK's 400 after a restart. */
     sessionNotFoundResponse?: { status: number; body: string };
     rejectedRequests?: string[];
     headers?: Record<string, string>[];
@@ -91,9 +86,7 @@ function mcpFetch(
       annotations?: { readOnlyHint?: boolean };
     }>;
     calls?: string[];
-    /** Answer tool calls with a JSON-RPC error, as a server whose tool failed. */
     rpcError?: boolean;
-    /** Hold tool calls until the request is aborted, as a slow tool. */
     holdCalls?: boolean;
   },
   expectedUrl = "https://mcp.example.test/mcp",
@@ -416,7 +409,6 @@ describe("MCP connector session cache", () => {
       );
       fake.values.delete(record.ref.split(":").at(-1)!);
       await vi.advanceTimersByTimeAsync(100);
-      // Discovery suppresses per-server errors; no tools from the deleted credential survive.
       await expect(connector.discoverTools(context)).resolves.toEqual(unavailableOnly());
       expect((connector as unknown as { sessions: Map<string, unknown> }).sessions.size).toBe(0);
     } finally {
@@ -458,8 +450,6 @@ describe("MCP connector session cache", () => {
       await connector.discoverTools(context);
       expect(state.initializations).toBe(1);
 
-      // A credential write from the worker leaves the old record readable here
-      // and does not bump the server revision.
       const next = await store.put(
         JSON.stringify({ headers: { Authorization: "Bearer from-worker" } }),
         context,
@@ -503,7 +493,6 @@ describe("MCP connector session cache", () => {
       },
       secret: { findFirst: vi.fn(async () => ({ id: record.id, ciphertext: record.ref })) },
     };
-    // Health writes succeed, so the only log lines are the ones this test is about.
     Object.assign(prisma, {
       mcpServer: { ...NO_SHARED_SERVERS, updateMany: vi.fn(async () => ({ count: 1 })) },
     });
@@ -535,7 +524,6 @@ describe("MCP connector session cache", () => {
       expect(log).not.toContain(record.ref);
       expect(log).not.toContain(record.id);
       expect(log).not.toContain("Bearer initial");
-      // Recovery still revalidates and observes a rotation without a manual read.
       fake.offline = false;
       fake.values.set(
         record.ref.split(":").at(-1)!,
@@ -668,7 +656,6 @@ describe("MCP connector session cache", () => {
       "connectors_load_tool",
       "connectors_execute_tool",
     ]);
-    // Anthropic rejects Claude Code OAuth requests carrying any `mcp_`-prefixed tool name.
     expect(tools.every((tool) => !tool.name.startsWith("mcp_"))).toBe(true);
     expect(JSON.stringify(tools)).not.toContain("schema-marker");
     await connector.close();
@@ -830,8 +817,6 @@ describe("MCP connector session cache", () => {
       ...ASSIGNMENT,
       server: { ...SERVER, endpoint: "http://localhost:8123/api/mcp", secretId: "secret-1" },
     };
-    // The connect itself fails, so the session never reaches the cache. The upstream
-    // body quotes back the header it was sent, the way a strict server rejects one.
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response("rejected credential local-key", { status: 500 })),
@@ -904,8 +889,6 @@ describe("MCP connector session cache", () => {
       signal: new AbortController().signal,
     };
 
-    // Both callers land on the same pending connect, so both receive the one
-    // rejection it produces. Neither may see the credential it reflected.
     const [first, second] = await Promise.all([
       connector.discoverTools(context as never),
       connector.discoverTools(context as never),
@@ -913,7 +896,6 @@ describe("MCP connector session cache", () => {
 
     expect(first).toEqual(unavailableOnly());
     expect(second).toEqual(unavailableOnly());
-    // The reason the model reads is redacted the same way.
     expect(JSON.stringify([first, second])).not.toContain("local-key");
     expect(first[0]?.description).toContain("[redacted]");
     expect(append).toHaveBeenCalledTimes(2);
@@ -945,8 +927,6 @@ describe("MCP connector session cache", () => {
       signal: new AbortController().signal,
     };
 
-    // Discovery is reached again on every lazy catalog access inside the same run; past
-    // the failure backoff, the server is tried (and can fail) again.
     await connector.discoverTools(context as never);
     const now = Date.now();
     vi.spyOn(Date, "now").mockReturnValue(now + 31_000);
@@ -995,19 +975,16 @@ describe("MCP connector session cache", () => {
         );
         const tried = requests.mock.calls.length;
 
-        // Well past the usual backoff cap, nothing is sent yet.
         const now = Date.now();
         const clock = vi.spyOn(Date, "now").mockReturnValue(now + 30 * 60_000);
         expect(await connector.discoverTools(context)).toEqual(unavailableOnly());
         expect(requests).toHaveBeenCalledTimes(tried);
 
-        // Reconnecting bumps the revision, which ends the wait.
         server.revision = 2;
         await connector.discoverTools(context);
         const retried = requests.mock.calls.length;
         expect(retried).toBeGreaterThan(tried);
 
-        // A refresh that failed only briefly still gets another try after an hour.
         clock.mockReturnValue(now + 2 * 60 * 60_000);
         await connector.discoverTools(context);
         expect(requests.mock.calls.length).toBeGreaterThan(retried);
@@ -1070,7 +1047,6 @@ describe("MCP connector session cache", () => {
         try {
           const discovering = connector.discoverTools(context);
           await started;
-          // Sign-in bumps the revision and the new revision's check records its own result.
           row.revision = 2;
           row.healthStatus = fresh;
           release();
@@ -1101,9 +1077,7 @@ describe("MCP connector session cache", () => {
       try {
         await connector.discoverTools(context);
         await connector.discoverTools(context);
-        // The same result for the same revision within a minute is not rewritten.
         await vi.waitFor(() => expect(revisions()).toEqual([1]));
-        // Signing in bumps the revision; its first, identical result must still be recorded.
         server.revision = 2;
         await connector.discoverTools(context);
         await vi.waitFor(() => expect(revisions()).toEqual([1, 2]));
@@ -1128,7 +1102,6 @@ describe("MCP connector session cache", () => {
         { network: TEST_NETWORK },
       );
       try {
-        // Signing in bumps the revision, so a check of revision 1 must not land on revision 2.
         await connector.probe({ ...SERVER, revision: 1 } as never, { spaceId: "w1", userId: "u1" });
         expect(writes).toHaveBeenCalledWith(
           expect.objectContaining({ where: { id: SERVER.id, revision: 1 } }),
@@ -1158,13 +1131,11 @@ describe("MCP connector session cache", () => {
         });
         const tried = resolveHostname.mock.calls.length;
 
-        // A host name that is gone (an expired tunnel) will not come back on its own.
         const now = Date.now();
         vi.spyOn(Date, "now").mockReturnValue(now + 30 * 60_000);
         expect(await connector.discoverTools(context)).toEqual(unavailableOnly());
         expect(resolveHostname).toHaveBeenCalledTimes(tried);
 
-        // Editing the address bumps the revision, which ends the wait.
         server.revision = 2;
         await connector.discoverTools(context);
         expect(resolveHostname.mock.calls.length).toBeGreaterThan(tried);
@@ -1194,7 +1165,6 @@ describe("MCP connector session cache", () => {
         });
         const tried = requests.mock.calls.length;
 
-        // A host that is only down is tried again once the short backoff passes.
         vi.spyOn(Date, "now").mockReturnValue(Date.now() + 31_000);
         await connector.discoverTools(context);
         expect(requests.mock.calls.length).toBeGreaterThan(tried);
@@ -1253,7 +1223,6 @@ describe("MCP connector session cache", () => {
         });
         const tried = requests.mock.calls.length;
 
-        // A refusal waits for the user to reconnect; a rate limit is retried on the usual backoff.
         vi.spyOn(Date, "now").mockReturnValue(Date.now() + 31_000);
         await connector.discoverTools(context);
         expect(requests.mock.calls.length > tried).toBe(retriesSoon);
@@ -1477,6 +1446,8 @@ describe("MCP connector session cache", () => {
         spaceSettingOverride: { findUnique: vi.fn().mockResolvedValue(null) },
         actionApprovalRule: { findMany: vi.fn().mockResolvedValue([]) },
         userActionApprovalRule: { findMany: vi.fn().mockResolvedValue([]) },
+        userActionAutoReviewPreference: { findUnique: vi.fn().mockResolvedValue(null) },
+        actionAutoReviewPreference: { findUnique: vi.fn().mockResolvedValue(null) },
       };
       const mcp = new McpConnector(prisma as never, {} as never, { network: TEST_NETWORK });
       const secrets = new EncryptedSecretStore("test-encryption-key");
@@ -1868,7 +1839,10 @@ describe("MCP connector session cache", () => {
             }),
           },
         },
-        { providerFor: vi.fn().mockResolvedValue(provider) } as unknown as McpOAuthBroker,
+        {
+          providerFor: vi.fn().mockResolvedValue(provider),
+          secretsIn: oauthMaterialSecrets,
+        } as unknown as McpOAuthBroker,
       );
       const error = vi.spyOn(getLogger(), "error");
       try {
@@ -1954,7 +1928,10 @@ describe("MCP connector session cache", () => {
             }),
           },
         },
-        { providerFor: vi.fn().mockResolvedValue(provider) } as unknown as McpOAuthBroker,
+        {
+          providerFor: vi.fn().mockResolvedValue(provider),
+          secretsIn: oauthMaterialSecrets,
+        } as unknown as McpOAuthBroker,
       );
 
       try {
@@ -1973,7 +1950,6 @@ describe("MCP connector session cache", () => {
         ]);
         expect(invalidate).toHaveBeenCalledWith("all");
         expect(requests.some((request) => request.url === metadataUrl)).toBe(false);
-        // The endpoint-origin compatibility retry remains allowed, through remote policy.
         expect(
           requests.some((request) => request.url === "https://mcp.example.test/private-probe"),
         ).toBe(true);
@@ -2184,7 +2160,6 @@ describe("MCP connector session cache", () => {
     try {
       await connector.discoverTools(context);
       expect(state.initializations).toBe(1);
-      // Two calls hang on the first session; the second starts halfway through the first's wait.
       const first = execute();
       await vi.waitFor(() => expect(state.calls).toHaveLength(1));
       await vi.advanceTimersByTimeAsync(MCP_TOOL_TIMEOUT_MS / 2);
@@ -2193,12 +2168,10 @@ describe("MCP connector session cache", () => {
       await vi.advanceTimersByTimeAsync(MCP_TOOL_TIMEOUT_MS / 2);
       expect(await first).toMatchObject([{ type: "error" }]);
 
-      // The hung session was dropped, so the next call starts a fresh one.
       state.holdCalls = false;
       expect(await execute()).toMatchObject([{ type: "result" }]);
       expect(state.initializations).toBe(2);
 
-      // The second call times out on the old session and leaves the fresh one alone.
       await vi.advanceTimersByTimeAsync(MCP_TOOL_TIMEOUT_MS);
       expect(await second).toMatchObject([{ type: "error" }]);
       expect(await execute()).toMatchObject([{ type: "result" }]);
@@ -2250,7 +2223,6 @@ describe("MCP connector session cache", () => {
 
     expect(state.rejectedRequests).toEqual(["tools/call"]);
 
-    // A server that keeps forgetting the session gets one retry, not a loop.
     state.sessionNotFound = 2;
     const failed: unknown[] = [];
     for await (const event of connector.execute(call, context)) failed.push(event);
@@ -2295,6 +2267,7 @@ describe("MCP connector session cache", () => {
       },
     };
     const oauth = {
+      secretsIn: oauthMaterialSecrets,
       providerFor: vi.fn(
         async (_server: unknown, _context: unknown, loaded: { material: OAuthMaterial }) =>
           loaded.material.oauth
@@ -2477,7 +2450,6 @@ describe("MCP connector session cache", () => {
           await callReleased;
         }
         if (message.method === "tools/list" && ++lists === 2) {
-          // The server stops answering tools/list.
           await listReleased;
           return new Response(null, { status: 202 });
         }
@@ -2597,7 +2569,6 @@ describe("MCP connector session cache", () => {
 
     state.sessionNotFound = 1;
     state.sessionNotFoundResponse = { status: 400, body: "Bad Request: Invalid session parameter" };
-    // Not retried: the server's tools are replaced by the stand-in that carries the reason.
     expect((await connector.discoverTools(context)).map((tool) => tool.name)).toEqual([
       "mcp__demo__unavailable",
     ]);
@@ -2657,7 +2628,6 @@ describe("MCP connector stdio OAuth", () => {
     signal: new AbortController().signal,
   } as never;
 
-  /** Stored as one fixed value, as in the database: a changing value reads as a credential write. */
   function stored(overrides: Partial<OAuthMaterial> = {}, mutate?: (value: OAuthMaterial) => void) {
     const value = material(overrides);
     mutate?.(value);
@@ -2695,7 +2665,7 @@ describe("MCP connector stdio OAuth", () => {
 
   function stdioConnector(
     load: () => OAuthMaterial,
-    oauth: Pick<McpOAuthBroker, "providerFor"> | undefined,
+    oauth: Pick<McpOAuthBroker, "providerFor" | "secretsIn"> | undefined,
   ) {
     const assignment = { ...ASSIGNMENT, server: STDIO_SERVER };
     const prisma = {
@@ -2716,9 +2686,9 @@ describe("MCP connector stdio OAuth", () => {
     return connector;
   }
 
-  /** A broker whose provider holds whatever the stored material says. */
   function brokerFor() {
     return {
+      secretsIn: oauthMaterialSecrets,
       providerFor: vi.fn<McpOAuthBroker["providerFor"]>(async (_server, _context, loaded) =>
         loaded?.material.oauth
           ? new StoredMcpOAuthProvider("server-1", loaded.material, async () => undefined)
@@ -2927,7 +2897,6 @@ describe("MCP connector stdio OAuth", () => {
     await connector.discoverTools(context);
     expect(launches).toHaveLength(1);
 
-    // The provider renews the grant when asked for tokens inside the last minute.
     oauth.providerFor.mockImplementationOnce(async (_server, _context, loaded) => {
       const provider = new StoredMcpOAuthProvider(
         "server-1",
@@ -3036,7 +3005,6 @@ describe("MCP connector stdio credential files", () => {
     };
   }
 
-  /** Stored as one fixed value, as in the database. */
   function stored(overrides: Partial<OAuthMaterial> = {}, obtainedAt = Date.now()) {
     const json = JSON.stringify(material(overrides, obtainedAt));
     return () => JSON.parse(json) as OAuthMaterial;
@@ -3054,6 +3022,7 @@ describe("MCP connector stdio credential files", () => {
     };
     const secrets = { load: vi.fn(async () => JSON.stringify(load())) };
     const broker = {
+      secretsIn: oauthMaterialSecrets,
       providerFor: vi.fn<McpOAuthBroker["providerFor"]>(async (_server, _context, loaded) =>
         loaded?.material.oauth
           ? new StoredMcpOAuthProvider("server-1", loaded.material, async () => undefined, {
@@ -3087,11 +3056,9 @@ describe("MCP connector stdio credential files", () => {
 
   type Launch = {
     env: Record<string, string>;
-    /** What the launched process could read at start-up, by env variable. */
     files: Record<string, { content: string; mode: number; dir: string; dirMode: number }>;
   };
 
-  /** Records each launch and snapshots the credential files while they exist. */
   function stubSession(connect?: () => Promise<void>) {
     const launches: Launch[] = [];
     vi.spyOn(McpSession.prototype, "connectStdio").mockImplementation(async (options) => {
@@ -3583,13 +3550,11 @@ describe("allowlistDrift", () => {
       stringAllowedCount: 2,
     });
     expect(allowlistDrift(["echo"], offered).missing).toEqual([]);
-    // allowedTools is a Json column, so it can hold anything: it must not throw.
     expect(allowlistDrift(null, offered)).toEqual({
       missing: [],
       offered: 2,
       stringAllowedCount: 0,
     });
-    // Non-string JSON values are ignored for both missing and the warning ratio.
     expect(allowlistDrift([42, "vanished_tool"], offered)).toEqual({
       missing: ["vanished_tool"],
       offered: 2,

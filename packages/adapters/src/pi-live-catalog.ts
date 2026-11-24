@@ -80,6 +80,7 @@ export function liveCatalogEntry(
   return {
     ...entry,
     id,
+    tier: undefined,
     recommended: isRecommendedCatalogModel(provider, id),
     label: catalogModelLabel(id),
     live: true,

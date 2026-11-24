@@ -17,7 +17,6 @@ const RESERVED_BOT_EMAIL_NAMES = new Set([
   "billing",
   "careers",
   "contact",
-  "elie",
   "help",
   "hello",
   "hi",

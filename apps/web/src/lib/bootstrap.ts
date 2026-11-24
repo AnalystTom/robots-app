@@ -7,6 +7,8 @@ import { markOnce } from "./performance";
 import { rpc, selectedSpaceId } from "./rpc";
 
 let labs: readonly LabFeature[] = [];
+/** False until a bootstrap or a Labs save says which features are on. */
+let labsLoaded = false;
 let maxUploadSizeBytes = ATTACHMENT_MAX_BYTES;
 export function getMaxUploadSizeBytes() {
   return maxUploadSizeBytes;
@@ -15,9 +17,14 @@ const capabilityListeners = new Set<() => void>();
 export function getLabs() {
   return labs;
 }
+/** The account's Labs, or null before the first bootstrap says which are on. */
+export function getLoadedLabs(): readonly LabFeature[] | null {
+  return labsLoaded ? labs : null;
+}
 /** Applies a saved Labs list at once, so routes and menus follow without a reload. */
 export function setLabs(next: readonly LabFeature[]) {
   labs = next;
+  labsLoaded = true;
   for (const listener of capabilityListeners) listener();
 }
 export function subscribeLabs(listener: () => void) {
@@ -117,6 +124,7 @@ function requestBootstrap(botId?: string, spaceId?: string, groupId?: string) {
 
 function applyCapabilities(bootstrap: AppBootstrap): AppBootstrap {
   labs = parseLabs(bootstrap.me.labs);
+  labsLoaded = true;
   maxUploadSizeBytes = attachmentMaxBytes(bootstrap.me);
   for (const listener of capabilityListeners) listener();
   return bootstrap;

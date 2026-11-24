@@ -1,6 +1,7 @@
 import { boundedSandboxCommandTimeoutMs } from "@robots/core";
 import { z } from "zod";
 import { hostScreenMethods } from "./host-screen.js";
+import { macAppCall } from "./mac-apps-protocol.js";
 
 export const HOST_COMPUTER_MAX_BYTES = 12 * 1024 * 1024;
 export const HOST_COMPUTER_MAX_FILE_BYTES = 8 * 1024 * 1024;
@@ -60,6 +61,7 @@ export const hostComputerRequest = z.discriminatedUnion("method", [
   z.object({ ...base, method: z.literal("writeFile"), file }),
   z.object({ ...base, method: z.literal("screenObserve"), ...hostScreenMethods.screenObserve }),
   z.object({ ...base, method: z.literal("screenAct"), ...hostScreenMethods.screenAct }),
+  z.object({ ...base, method: z.literal("macApp"), call: macAppCall }),
 ]);
 export type HostComputerRequest = z.infer<typeof hostComputerRequest>;
 export interface HostComputerEnvironment {
@@ -73,9 +75,10 @@ export type HostComputerFrame<T> =
   | { error: string }
   | { heartbeat: true };
 
-/** Leave time for the command timeout event and final response to cross the bridge. */
 export function hostComputerDeadlineMs(request: HostComputerRequest) {
   if (request.method === "execute")
     return boundedSandboxCommandTimeoutMs(request.command.timeoutMs) + 30_000;
-  return request.method.startsWith("screen") ? 2 * 60_000 : 10 * 60_000;
+  return request.method.startsWith("screen") || request.method === "macApp"
+    ? 2 * 60_000
+    : 10 * 60_000;
 }

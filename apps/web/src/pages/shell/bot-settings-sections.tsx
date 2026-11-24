@@ -15,7 +15,7 @@ import {
   Textarea,
   Toggle,
 } from "@robots/ui-web";
-import { Download, Settings, X } from "lucide-react";
+import { Download, Package, Settings, X } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import { thinkingLevelLabel } from "../../lib/model-catalog";
 import { ChatModelPicker } from "./chat-model-picker";
@@ -50,7 +50,6 @@ export function ComputerModePicker({
   );
 }
 
-/** `plain` drops the card for a section whose single control already draws its own frame. */
 function BotPanelGroup({
   label,
   plain = false,
@@ -112,7 +111,6 @@ export function NotificationsSection({
   );
 }
 
-/** The model picker and, when the model offers levels, its thinking level. */
 export function ModelSection({
   ids,
   containerRef,
@@ -398,7 +396,6 @@ export function DescriptionGroup({
   ids: string;
   description: string;
   onDescriptionChange: (description: string) => void;
-  /** Saves the description when the field loses focus. */
   onCommit: () => void;
 }) {
   const { t } = useLingui();
@@ -478,9 +475,11 @@ export function ToolsGroup({
 }
 
 export function ExportAndClear({
+  onExportBot,
   onExport,
   onClear,
 }: {
+  onExportBot: () => void;
   onExport: () => void;
   onClear: () => void;
 }) {
@@ -489,6 +488,14 @@ export function ExportAndClear({
       <button
         type="button"
         className="flex min-h-12 w-full items-center justify-between text-body"
+        onClick={onExportBot}
+      >
+        <Trans>Export bot</Trans>
+        <Package className="size-4 text-muted-foreground" />
+      </button>
+      <button
+        type="button"
+        className="flex min-h-12 w-full items-center justify-between border-t border-border text-body"
         onClick={onExport}
       >
         <Trans>Export</Trans>

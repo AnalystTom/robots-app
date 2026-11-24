@@ -63,7 +63,6 @@ describe("toolRequiresApproval", () => {
     expect(toolRequiresApproval("forget_secret", false)).toBe(true);
     expect(toolRequiresApproval("forget_memory", false)).toBe(true);
     expect(toolRequiresApproval("list_secrets", false)).toBe(false);
-    // A random value the bot cannot read exposes nothing, and never replaces a saved credential.
     expect(toolRequiresApproval("generate_secret", false)).toBe(false);
     expect(toolRequiresApproval("delete_bot", false)).toBe(false);
     expect(toolRequiresApproval("delete_bot", true, true)).toBe(true);
@@ -72,7 +71,6 @@ describe("toolRequiresApproval", () => {
     expect(toolRequiresApproval("cloud_agent_launch", false)).toBe(true);
     expect(toolRequiresApproval("create_space", false)).toBe(true);
     expect(toolRequiresExplicitApproval("create_space")).toBe(true);
-    // The wallet owner approves every purchase on the provider's side.
     expect(toolRequiresApproval("request_purchase", false)).toBe(false);
     expect(toolRequiresApproval("purchase_status", false)).toBe(false);
     expect(toolRequiresExplicitApproval("save_shared_memory")).toBe(false);
@@ -423,6 +421,23 @@ describe("resolveActionApproval", () => {
   });
 });
 
+describe("watchToolRefusal with action rules", () => {
+  it("refuses a watch a routine's action rule denies or asks for", () => {
+    const base = { toolName: "github_list_issues", readOnly: true, rules: [] };
+    const actionRule = (effect: string, initiator: string | null) => [
+      { id: "r", matchKind: "connector", matchValue: "github", effect, initiator },
+    ];
+    expect(watchToolRefusal({ ...base, actionRules: actionRule("deny", null) })).toMatch(
+      /not allowed/,
+    );
+    expect(watchToolRefusal({ ...base, actionRules: actionRule("ask", "routine") })).toMatch(
+      /approval/,
+    );
+    expect(watchToolRefusal({ ...base, actionRules: actionRule("deny", "you") })).toBeNull();
+    expect(watchToolRefusal({ ...base, actionRules: [{ broken: true }] })).toMatch(/approval/);
+  });
+});
+
 describe("planActionGate", () => {
   const unruled = {
     decision: "allow" as const,
@@ -464,6 +479,23 @@ describe("planActionGate", () => {
     expect(gate("never")).toBe("allow");
     expect(gate("auto")).toBe("judge");
     expect(gate("ask")).toBe("ask");
+  });
+
+  it("lets an action rule decide before the mode", () => {
+    for (const mode of ["never", "auto", "ask"] as const) {
+      expect(gate(mode, { actionRule: "deny" })).toBe("deny");
+      expect(gate(mode, { actionRule: "ask" })).toBe("ask");
+    }
+    expect(gate("auto", { actionRule: "allow" })).toBe("allow");
+    expect(gate("ask", { actionRule: "allow" })).toBe("allow");
+  });
+
+  it("never lets an action rule's allow pass a block, a purchase, an ask entry or a person's approval", () => {
+    expect(gate("ask", { actionRule: "allow", resolved: blocked })).toBe("deny");
+    expect(gate("ask", { actionRule: "allow", purchase: true })).toBe("ask");
+    expect(gate("ask", { actionRule: "allow", resolved: asked })).toBe("ask");
+    expect(gate("ask", { actionRule: "allow", mandatory: true })).toBe("ask");
+    expect(gate("auto", { actionRule: "allow", newDestination: true })).toBe("judge");
   });
 
   it("asks in Auto when no approval model is set up", () => {
@@ -1064,7 +1096,6 @@ describe("approvalRuleChoices", () => {
     ]);
     expect(choices).toContainEqual({ matchKind: "tool", matchValue: "shell", label: "Shell" });
     expect(choices.some((choice) => choice.matchValue === "web_search")).toBe(false);
-    // Always approved by a person, but still worth blocking.
     expect(choices.some((choice) => choice.matchValue === "create_space")).toBe(true);
     const labels = choices.map((choice) => choice.label);
     expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b)));
@@ -1098,5 +1129,40 @@ describe("approvalRuleEffectChoices", () => {
       "deny",
     ]);
     expect(approvalRuleEffectChoices(rule("category", "email"))).toEqual([]);
+  });
+
+  it("never offers Allow for sending from the user's Mac, and offers it for reading", () => {
+    const rule = (matchValue: string) => ({
+      effect: "require_approval" as const,
+      matchKind: "tool" as const,
+      matchValue,
+    });
+    for (const send of ["mac_mail_send", "mac_messages_send"])
+      expect(approvalRuleEffectChoices(rule(send))).toEqual(["require_approval", "deny"]);
+    expect(approvalRuleEffectChoices(rule("mac_mail_search"))).toEqual([
+      "always_allow",
+      "require_approval",
+      "deny",
+    ]);
+  });
+});
+
+describe("Mac app tools", () => {
+  it("need approval as built-ins and count Mac Mail's writes as email", () => {
+    expect(toolRequiresApproval("mac_notes_search", false)).toBe(true);
+    expect(
+      resolveActionApproval({
+        toolName: "mac_mail_send",
+        connectorKind: "mac_mail",
+        rules: [{ effect: "deny", matchKind: "category", matchValue: "email" }],
+      }),
+    ).toBe("deny");
+    expect(
+      resolveActionApproval({
+        toolName: "mac_mail_search",
+        connectorKind: "mac_mail",
+        rules: [{ effect: "deny", matchKind: "category", matchValue: "email" }],
+      }),
+    ).toBe("allow");
   });
 });

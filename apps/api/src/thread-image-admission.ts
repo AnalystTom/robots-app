@@ -7,6 +7,7 @@ import {
   connectionModelSettings,
   findConnectedModelCredential,
   knownModelImageInput,
+  memberMainChoice,
   modelAcceptsImageInput,
   parseModelSecret,
   resolveMemberMainModel,
@@ -18,7 +19,7 @@ import type { Actor, MessageBlock } from "@robots/contracts";
 import { OPENAI_COMPATIBLE_PROVIDER_ID } from "@robots/contracts";
 import { MODEL_IMAGE_INPUT_ERROR, MODEL_IMAGE_INPUT_UNKNOWN } from "@robots/core";
 import type { PrismaClient } from "@robots/db";
-import { appliedModelRole, findModelCredential, findModelCredentialById } from "@robots/db";
+import { findModelCredential, findModelCredentialById } from "@robots/db";
 
 type ModelChoice = {
   modelProvider: string | null;
@@ -31,7 +32,6 @@ export type ImageAdmissionRun = ModelChoice & {
   trigger?: string | null;
 };
 
-/** Never refresh credentials while admitting a send. A supplied Codex catalog may answer image input. */
 export async function assertThreadImageInput(
   prisma: PrismaClient,
   actor: Actor,
@@ -51,7 +51,6 @@ export async function assertThreadImageInput(
     select: { modelProvider: true, modelId: true, thinkingLevel: true },
   });
   if (!bot) return;
-  // A running turn has already selected its model, including any backup switch.
   const running = run?.status === "running" && run.modelProvider && run.modelId;
   const override = running ? run : run ? runModelChoice(run, bot) : bot;
   const overrideCredential =
@@ -84,8 +83,6 @@ export async function assertThreadImageInput(
   let supportsImages = knownModelImageInput(provider, id);
   const credential = running ? overrideCredential : selected.credential;
   if (supportsImages === undefined && configuration && credential) {
-    // A model the catalog cannot describe reads images when its settings say so; without
-    // one its capability is unknown, so the user is asked to configure it.
     const secret = await loadModelSecret(prisma, configuration.secrets, actor, credential);
     if (secret) {
       const settings = connectionModelSettings(secret, provider, id, {
@@ -115,7 +112,6 @@ export async function assertThreadImageInput(
     });
 }
 
-/** An unreadable secret describes nothing, so the model's image input stays unknown. */
 async function loadModelSecret(
   prisma: PrismaClient,
   secrets: Pick<SecretStore, "load">,
@@ -133,7 +129,6 @@ async function loadModelSecret(
   }
 }
 
-/** Connections saved before per-model image settings recorded the capability on the row. */
 async function legacyImageInput(prisma: PrismaClient, actor: Actor, credentialId: string) {
   return (
     await prisma.userModelCredential.findFirst({
@@ -143,9 +138,8 @@ async function legacyImageInput(prisma: PrismaClient, actor: Actor, credentialId
   )?.supportsImages;
 }
 
-/** The main model as resolveMemberMainModel picks it, without reading secrets. */
 async function mainModelWithoutSecrets(prisma: PrismaClient, actor: Actor) {
-  const { primary } = await appliedModelRole(prisma, actor, "main");
+  const primary = await memberMainChoice(prisma, actor);
   if (!primary) return null;
   return {
     ...primary,

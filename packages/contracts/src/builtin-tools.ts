@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { MAC_APP_TOOL_NAMES } from "./mac-apps.js";
 
 /** Fleet management tools. Only list_fleet is read-only. */
 export const FLEET_TOOL_NAMES = [
@@ -34,6 +35,7 @@ export const BUILTIN_TOOL_NAMES = [
   "user_computer_shell",
   "user_computer_observe",
   "user_computer_act",
+  ...MAC_APP_TOOL_NAMES,
   "open_path",
   "launch_app",
   "request_takeover",
