@@ -9,7 +9,6 @@ import {
   newBotPreviewIdentity,
   ORGANIC_PREVIEW_IDENTITIES,
 } from "@robots/core";
-import { bestEffort } from "@robots/logging";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler, ScrollView, Text, TextInput, View } from "react-native";
@@ -18,6 +17,7 @@ import { BotLookPicker } from "../components/bot-look-picker";
 import { NativeActionButton } from "../components/native-action-button";
 import { cancelHeaderOptions } from "../components/sheet-header";
 import { rpc } from "../lib/api";
+import { bestEffort } from "../lib/best-effort";
 import { askForModelBeforeFirstBot, createInboxBot } from "../lib/create-inbox-bot";
 import { openChatFromInbox } from "../lib/inbox-changes";
 import { native, useMobileTokens } from "../lib/native";
