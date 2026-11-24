@@ -1,0 +1,91 @@
+name: robots-hosted-test
+x-app: &app
+  image: ${STAGING_IMAGE:?}
+  restart: unless-stopped
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+x-environment: &environment
+  DATABASE_URL: postgres://robots_app:${STAGING_DB_RUNTIME:?}@postgres:5432/robots_hosted_test
+  DATA_DIR: /data
+  ENCRYPTION_KEY: ${STAGING_ENCRYPTION:?}
+  CONTENT_ENCRYPTION: "on"
+  BETTER_AUTH_SECRET: ${STAGING_SESSION:?}
+  SCREEN_PROXY_SECRET: ${STAGING_SCREEN:?}
+  WEB_ORIGIN: https://hosted-test.tryrobots.app
+  API_URL: https://hosted-test.tryrobots.app
+  BETTER_AUTH_URL: https://hosted-test.tryrobots.app
+  SIGNUPS_ENABLED: ${STAGING_SIGNUPS_ENABLED:-false}
+  SIGNUP_ALLOWLIST: ${STAGING_OWNER_EMAIL:?}
+  SANDBOX_PROVIDER: none
+  WAKEUP_DRIVER: graphile
+  AGENT_RUNTIME: pi
+  ROBOTS_LIVE_MODEL_CATALOG: "off"
+services:
+  postgres:
+    image: postgres:16@sha256:e17e86066e5ef83e0952a9347f5c792b7ece00972e2aa787a6986f471b3dd3d5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: robots_hosted_test
+      POSTGRES_USER: robots_hosted_migrator
+      POSTGRES_PASSWORD: ${STAGING_DB_ADMIN:?}
+    volumes: [database:/var/lib/postgresql/data]
+    networks: [database]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "robots_hosted_migrator", "-d", "robots_hosted_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  migrate:
+    <<: *app
+    restart: "no"
+    working_dir: /app/apps/api
+    command: ["node", "dist/cli/migrate-database.js"]
+    environment:
+      DATABASE_URL: postgres://robots_app:${STAGING_DB_RUNTIME:?}@postgres:5432/robots_hosted_test
+      DATABASE_MIGRATION_URL: postgres://robots_hosted_migrator:${STAGING_DB_ADMIN:?}@postgres:5432/robots_hosted_test
+    networks: [database]
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    <<: *app
+    working_dir: /app/apps/api
+    command: ["node", "dist/index.js"]
+    environment:
+      <<: *environment
+      API_HOST: 0.0.0.0
+    volumes: [workspace:/data]
+    networks: [database, frontend]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/ready').then(r=>process.exit(r.ok?0:1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+  worker:
+    <<: *app
+    working_dir: /app/apps/worker
+    command: ["node", "dist/index.js"]
+    environment: *environment
+    volumes: [workspace:/data]
+    networks: [database, frontend]
+    depends_on:
+      api: {condition: service_healthy}
+  web:
+    <<: *app
+    working_dir: /app/apps/web
+    command: ["node_modules/.bin/vite", "preview", "--host", "0.0.0.0", "--port", "5173"]
+    environment:
+      ROBOTS_HOST: hosted-test.tryrobots.app
+      SCREEN_PROXY_SECRET: ${STAGING_SCREEN:?}
+      API_PROXY_TARGET: http://api:3100
+    networks: [frontend]
+    depends_on:
+      api: {condition: service_healthy}
+volumes:
+  database:
+  workspace:
+networks:
+  frontend:
+  database:
+    internal: true
