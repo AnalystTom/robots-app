@@ -3,8 +3,8 @@
 ## Scope
 
 The mobile client obtains permission before uploading attachments, submitting messages,
-starting routines, or sending voice content. Consent is stored per account, Space, recipient,
-and disclosure version. Read-only disclosure/grant endpoints do not change provider execution.
+starting routines, or sending voice content. Consent applies per account, recipient, and
+disclosure version across all Spaces. Read-only disclosure/grant endpoints do not change provider execution.
 Web, Electron, workers, helper model selection, and self-hosted server execution retain their
 existing behavior. There are no gateway blocklists, provider-routing overrides, or external
 metadata requests introduced by consent.
@@ -38,15 +38,17 @@ using their existing controls. This flow is not a global data-access or run-revo
 
 Use synthetic content and a fresh review account on iPhone and an 11-inch iPad.
 
-1. Send a first message. Confirm the alert names configured recipients, explains data and
-   purposes, and opens the correct deployment policy.
-2. Choose Not now. Confirm neither content upload nor message submission occurs and the draft
-   remains available. Repeat with an attachment and with voice.
-3. Choose Allow. Confirm the grant is saved before the mobile action proceeds.
+1. Send a first message. Confirm the consent screen names configured recipients, explains data
+   and purposes, and opens the correct deployment policy.
+2. Choose Deny. Confirm neither content upload nor message submission occurs and the draft
+   remains available. On Android the app closes; on iPhone and iPad the screen shows the denied
+   state with Review again. Repeat with an attachment and with voice.
+3. Choose Approve. Confirm the grant is saved before the mobile action proceeds.
 4. Relaunch and verify the approved configuration does not prompt again.
 5. Withdraw permission in Account → AI data sharing. Confirm the next mobile action prompts.
    Verify the screen explains that existing runs and routines are stopped separately.
-6. Switch account, Space, server, or recipient endpoint. Confirm grants are not mixed.
+6. Switch account, server, or recipient endpoint. Confirm grants are not mixed. Switching Space
+   keeps the same grants.
 7. Use desktop/web without mobile grants. Confirm messages, attachments, helpers, voice, memory,
    and routines retain their previous behavior.
 8. Verify OpenRouter, Vercel AI Gateway, and custom/local providers remain selectable and keep
@@ -59,10 +61,11 @@ Replace bracketed fields after verification. Keep credentials in App Store Conne
 
 The mobile app requests permission before submitting content to configured AI services.
 The alert names recipients, describes the data and purpose, and lets users decline.
-To review: sign in, open [bot], enter a message, and tap Send. Choose Not now to verify that
-submission is blocked, then send again and choose Allow. Voice requests permission separately.
+To review: sign in, open [bot], enter a message, and tap Send. Choose Deny to verify that
+submission is blocked, then send again and choose Approve. Voice requests permission separately.
 Account → AI data sharing withdraws permission for new mobile actions; stop already-authorized
-runs and disable routines using their controls. The policy is linked from the alert and Account.
+runs and disable routines using their controls. The policy is linked from the consent screen and
+Account.
 Tested build: [version/build]. Attached: [native iPad screenshot].
 
 ## Reply template

@@ -13,8 +13,6 @@ import type { PrismaClient } from "@robots/db";
 import { Prisma } from "@robots/db";
 
 const RECENT_LIMIT = 20;
-// Background ticket work belongs on the board, not in the activity list. A background helper and
-// the turn passing on its result show in the chat, on the helper's card.
 const ACTIVITY_HIDDEN_TRIGGERS = [
   ...BACKGROUND_RUN_TRIGGERS,
   BACKGROUND_HELPER_TRIGGER,
@@ -61,43 +59,31 @@ export function activityPreview(
 export function activityNotificationsEnabled(
   groupId: string | null,
   notifyOnFinish: boolean,
+  pushNotifications: boolean,
 ): boolean {
-  return groupId !== null || notifyOnFinish;
+  return pushNotifications && (groupId !== null || notifyOnFinish);
 }
 
-export async function listSpaceRuns(
-  prisma: PrismaClient,
-  actor: Actor,
-  filter: "active" | "recent",
-): Promise<RunActivityRow[]> {
-  const rows = await prisma.run.findMany({
-    where:
-      filter === "active"
-        ? {
-            spaceId: actor.spaceId,
-            bot: { archivedAt: null },
-            trigger: { notIn: [...ACTIVITY_HIDDEN_TRIGGERS] },
-            status: { in: [...ACTIVE_RUN_STATUSES] },
-          }
-        : { spaceId: actor.spaceId, id: { in: await latestFinishedRunPerChat(prisma, actor) } },
-    include: {
-      bot: { select: { name: true, archivedAt: true, notifyOnFinish: true } },
-      task: { select: { prompt: true } },
-      sourceMessage: { select: { blocks: true } },
-      thread: {
-        select: {
-          groupId: true,
-          group: { select: { name: true } },
-        },
-      },
+const ACTIVITY_ROW_INCLUDE = {
+  bot: { select: { name: true, archivedAt: true, notifyOnFinish: true } },
+  task: { select: { prompt: true } },
+  sourceMessage: { select: { blocks: true } },
+  thread: {
+    select: {
+      groupId: true,
+      group: { select: { name: true } },
     },
-    orderBy:
-      filter === "active"
-        ? [{ updatedAt: "desc" }, { id: "desc" }]
-        : [{ completedAt: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
-  });
+  },
+} as const;
 
-  return rows.map((row) => ({
+type ActivityRunRow = Prisma.RunGetPayload<{ include: typeof ACTIVITY_ROW_INCLUDE }>;
+
+function activityRow(
+  row: ActivityRunRow,
+  finished: boolean,
+  pushNotifications: boolean,
+): RunActivityRow {
+  return {
     runId: row.id,
     botId: row.botId,
     botName: row.bot.name,
@@ -106,20 +92,50 @@ export async function listSpaceRuns(
     threadId: row.threadId,
     status: row.status as RunActivityRow["status"],
     trigger: row.trigger as RunActivityRow["trigger"],
-    notificationsEnabled: activityNotificationsEnabled(row.thread.groupId, row.bot.notifyOnFinish),
+    notificationsEnabled: activityNotificationsEnabled(
+      row.thread.groupId,
+      row.bot.notifyOnFinish,
+      pushNotifications,
+    ),
     ...activityPreview({
       trigger: row.trigger,
       prompt: row.task.prompt,
       sourceBlocks: row.sourceMessage?.blocks,
     }),
-    updatedAt: (filter === "recent" && row.completedAt
-      ? row.completedAt
-      : row.updatedAt
-    ).toISOString(),
-  }));
+    updatedAt: (finished && row.completedAt ? row.completedAt : row.updatedAt).toISOString(),
+  };
 }
 
-/** Recent lists chats keyed like `activitySections`, so one busy chat must not push the others out of the limit. */
+export async function listSpaceRuns(
+  prisma: PrismaClient,
+  actor: Actor,
+  filter: "active" | "recent",
+): Promise<RunActivityRow[]> {
+  const [account, rows] = await Promise.all([
+    prisma.user.findUniqueOrThrow({
+      where: { id: actor.userId },
+      select: { pushNotifications: true },
+    }),
+    prisma.run.findMany({
+      where:
+        filter === "active"
+          ? {
+              spaceId: actor.spaceId,
+              bot: { archivedAt: null },
+              trigger: { notIn: [...ACTIVITY_HIDDEN_TRIGGERS] },
+              status: { in: [...ACTIVE_RUN_STATUSES] },
+            }
+          : { spaceId: actor.spaceId, id: { in: await latestFinishedRunPerChat(prisma, actor) } },
+      include: ACTIVITY_ROW_INCLUDE,
+      orderBy:
+        filter === "active"
+          ? [{ updatedAt: "desc" }, { id: "desc" }]
+          : [{ completedAt: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
+    }),
+  ]);
+  return rows.map((row) => activityRow(row, filter === "recent", account.pushNotifications));
+}
+
 async function latestFinishedRunPerChat(prisma: PrismaClient, actor: Actor): Promise<string[]> {
   const rows = await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT id FROM (

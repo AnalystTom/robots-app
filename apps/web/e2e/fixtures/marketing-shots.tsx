@@ -124,6 +124,7 @@ function CreateShot() {
     <main data-ready={ready ? "true" : "false"} className="min-h-screen bg-background">
       <CreateBotDialog
         avatarSet="organic"
+        ownBotColors={[]}
         onCreate={async () => undefined}
         onCancel={() => undefined}
       />
@@ -233,6 +234,7 @@ const subscriptionMe: Me = {
   labsAvailable: [],
   navLinks: [],
   phoneCallsEnabled: false,
+  pushNotifications: true,
   userId: "user-demo",
   email: "ada@example.test",
   name: "Ada",

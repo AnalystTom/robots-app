@@ -209,4 +209,7 @@ export const ZH_TW_MESSAGES: Record<string, string> = {
   "Waiting for Docker…": "正在等待 Docker…",
   "Docker is installed but not running. Start the Docker service to continue.":
     "Docker 已安裝但未執行。請啟動 Docker 服務以繼續。",
+  "Let other devices open RoBots?": "允許其他裝置開啟 RoBots？",
+  "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.":
+    "你網路中的裝置將可透過 {address} 存取這台電腦上的 RoBots。每台裝置仍需登入或配對。",
 };

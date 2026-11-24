@@ -15,7 +15,7 @@ import {
   resolveBotAvatarSet,
 } from "@robots/contracts";
 import { displayName, phoneCallSettings, ringingCall } from "@robots/core";
-import { chooseBotAvatar } from "./bot-avatar-choice.js";
+import { chooseBotAvatar, chooseRobotCharacter } from "./bot-avatar-choice.js";
 import { botThreadPreviews } from "./bot-previews.js";
 import type { Prisma, PrismaClient } from "./client.js";
 import type { ComputerMode } from "./computers.js";
@@ -508,15 +508,19 @@ export function createRepos(
             ? resolveBotAvatarSet(owner.botAvatarSet)
             : DEFAULT_NEW_BOT_AVATAR_SET;
           const avatarSet = input.avatarSet ?? defaultSet;
-          // Only Original balances existing looks; seeded logo colours need no roster read.
-          const avatar = chooseBotAvatar(
-            avatarSet === "organic"
+          const roster =
+            avatarSet === "organic" || input.color === undefined
               ? await tx.bot.findMany({
                   where: { spaceId: actor.spaceId, archivedAt: null },
-                  select: { id: true, color: true },
+                  select: { id: true, color: true, userId: true },
                 })
-              : [],
-            input.color,
+              : [];
+          const avatar = chooseBotAvatar(
+            avatarSet === "organic" ? roster : [],
+            input.color ??
+              (avatarSet === "robots"
+                ? chooseRobotCharacter(roster.filter((bot) => bot.userId === actor.userId))
+                : undefined),
             { family: input.avatarFamily, avatarSet, id: input.id },
           );
           const computer = await ensureComputerRecord(

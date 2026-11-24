@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import type { BotAvatarSet } from "@robots/contracts";
+import type { BotAvatarSet, RobotLook } from "@robots/contracts";
 import type { AvatarEyes, AvatarMotionMode, LogoAvatarActivity } from "@robots/core";
 import {
   AVATAR_LID_CLOSE,
@@ -15,31 +15,29 @@ import {
   avatarSchedulePose,
   avatarThinkingDot,
   avatarWorkingDot,
-  botAvatarActivity,
   botEyeInk,
   isRunWorking,
   ORGANIC_AVATAR_EYES,
   ORGANIC_AVATAR_VIEWBOX,
   organicAvatarEyeTilt,
   organicAvatarPath,
+  robotCharacterSvg,
+  robotLookForIdentity,
   SHIPPED_BOT_AVATAR_EYES,
   SHIPPED_BOT_AVATAR_VIEWBOX,
-  usesLogoAvatar,
 } from "@robots/core";
-import { memo, useSyncExternalStore } from "react";
+import { memo, useMemo } from "react";
 import { Image, Pressable, View } from "react-native";
 import Animated, {
   useAnimatedProps,
   useAnimatedStyle,
   useReducedMotion,
 } from "react-native-reanimated";
-import Svg, { G, Path, Rect } from "react-native-svg";
+import Svg, { G, Path, Rect, SvgXml } from "react-native-svg";
 import type { AvatarLife } from "../lib/avatar-life";
 import { useAvatarOnScreen, useLife, usePoke, useSettling } from "../lib/avatar-life";
 import { mobileBotAvatarPresentation } from "../lib/bot-avatar";
-import { mobileLogoAvatarActivity } from "../lib/logo-avatar-activity";
 import { useMobileTokens } from "../lib/native";
-import { LogoAvatar } from "./logo-avatar";
 import { NativeSymbol } from "./native-symbol";
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
@@ -127,53 +125,10 @@ export interface BotAvatarProps {
   pokeable?: boolean;
 }
 
-/** Missing set metadata deliberately preserves every existing avatar. */
-export const BotAvatar = memo(function BotAvatar(props: BotAvatarProps) {
-  if (usesLogoAvatar(props)) {
-    return <RobotsBotAvatar {...props} />;
-  }
+export const BotAvatar = memo(function BotAvatar(stored: BotAvatarProps) {
+  const props = { ...stored, color: robotLookForIdentity(stored.color, stored.identity ?? "") };
   return <LegacyBotAvatar {...props} />;
 });
-
-function RobotsBotAvatar({
-  color,
-  identity,
-  size = 54,
-  status,
-  activity,
-  composing = false,
-  muted = false,
-  motion = "static",
-  pokeable = false,
-}: BotAvatarProps) {
-  const liveActivity = useSyncExternalStore(
-    mobileLogoAvatarActivity.subscribe,
-    () => mobileLogoAvatarActivity.getActivity(identity ?? "", status),
-    (): LogoAvatarActivity => "idle",
-  );
-  const resolved = botAvatarActivity(
-    { color, avatarSet: "robots" },
-    activity ??
-      (composing && (liveActivity === "working" || liveActivity === "idle")
-        ? "writing"
-        : liveActivity),
-  );
-  const working = isRunWorking(status) && resolved !== "writing" && motion !== "running";
-  return (
-    <View style={{ width: size, height: size }}>
-      <LogoAvatar
-        color={color}
-        identity={identity}
-        size={size}
-        activity={resolved}
-        motion={motion}
-        pokeable={pokeable}
-      />
-      {working ? <WorkingDot size={size} muted={muted} /> : null}
-      {muted ? <MutedBadge size={size} /> : null}
-    </View>
-  );
-}
 
 function WorkingDot({ size, muted }: { size: number; muted: boolean }) {
   const tokens = useMobileTokens();
@@ -276,7 +231,11 @@ function LegacyBotAvatar({
   // itself that sign, so it carries none.
   const isWorking = isRunWorking(status) && !composing && motion !== "running";
   const parsed = mobileBotAvatarPresentation(color);
-  const fillColor = parsed.kind === "shape" || parsed.kind === "color" ? parsed.color : color;
+  const fillColor =
+    parsed.kind === "shape" || parsed.kind === "color" || parsed.kind === "robot"
+      ? parsed.color
+      : color;
+  const picturePainted = parsed.kind === "image" || parsed.kind === "robot";
   const eyeColor = botEyeInk(fillColor, tokens);
   const onScreen = useAvatarOnScreen();
   const reducedMotion = useReducedMotion();
@@ -284,7 +243,7 @@ function LegacyBotAvatar({
   const clock = avatarClock({
     mode: motion,
     onScreen,
-    hasEyes: parsed.kind !== "image",
+    hasEyes: !picturePainted,
     size,
     state,
     settling,
@@ -307,6 +266,8 @@ function LegacyBotAvatar({
       >
         <Image source={{ uri: parsed.imageUrl }} style={{ width: size, height: size }} />
       </View>
+    ) : parsed.kind === "robot" ? (
+      <RobotCharacter look={parsed.look} size={size} />
     ) : parsed.kind === "shape" ? (
       <ShippedShapeAvatar
         color={parsed.color}
@@ -329,7 +290,7 @@ function LegacyBotAvatar({
   const avatar = (
     <View style={{ width: size, height: size }}>
       {picture}
-      {parsed.kind !== "image" && clock !== "still" ? (
+      {!picturePainted && clock !== "still" ? (
         <ThinkingDots color={fillColor} size={size} life={life} />
       ) : null}
       {isWorking ? <WorkingDot size={size} muted={muted} /> : null}
@@ -401,6 +362,21 @@ function useBarEyes(eyes: AvatarEyes, viewBox: string, life: AvatarLife) {
   };
   return [useAnimatedProps(eyeProps(eyes.leftCx)), useAnimatedProps(eyeProps(eyes.rightCx))];
 }
+
+const RobotCharacter = memo(function RobotCharacter({
+  look,
+  size,
+}: {
+  look: RobotLook;
+  size: number;
+}) {
+  const xml = useMemo(() => robotCharacterSvg(look), [look]);
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: "hidden" }}>
+      <SvgXml xml={xml} width={size} height={size} />
+    </View>
+  );
+});
 
 function ShippedShapeAvatar({
   color,

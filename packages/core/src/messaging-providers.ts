@@ -5,20 +5,17 @@ const PROVIDER_NAMES: Record<string, string> = {
   telegram: "Telegram",
   lark: "Feishu",
   photon: "iMessage (Photon)",
+  discord: "Discord",
 };
 
-/** User-facing name of a messaging provider (falls back to the raw id). */
 export function messagingProviderName(provider: string): string {
-  // Extra named Telegram bots mount as "telegram-<name>".
   const telegramBot = /^telegram-(.+)$/.exec(provider)?.[1];
   if (telegramBot) return `Telegram (${telegramBot})`;
-  // Extra named Photon projects mount as "photon-<name>".
   const photonProject = /^photon-(.+)$/.exec(provider)?.[1];
   if (photonProject) return `iMessage (${photonProject})`;
   return PROVIDER_NAMES[provider] ?? provider;
 }
 
-/** Per-message provider label, narrowed to a recognized transport when available. */
 export function messagingProviderLabel(provider: string, transport?: string): string {
   if (provider === "sendblue" && ["iMessage", "SMS", "RCS"].includes(transport ?? "")) {
     return transport!;
@@ -26,7 +23,6 @@ export function messagingProviderLabel(provider: string, transport?: string): st
   return messagingProviderName(provider);
 }
 
-/** One connection option per app; workspace authorization replaces Slack's code setup. */
 export function messagingConnectOptions(
   providers: readonly string[],
   slackInstallAvailable: boolean,

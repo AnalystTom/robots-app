@@ -17,7 +17,7 @@ import "../../src/styles.css";
 const params = new URLSearchParams(location.search);
 const theme = params.get("theme") === "light" ? "light" : "dark";
 document.documentElement.dataset.theme = theme;
-const officialMark = new URL("../../../www/public/brand/robots-mark.png", import.meta.url).href;
+const officialMark = new URL("../../public/favicon.png", import.meta.url).href;
 const team = [
   { id: "inbox-01", name: "Inbox", color: "orange" },
   { id: "scout-02", name: "Scout", color: "green" },

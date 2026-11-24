@@ -16,7 +16,6 @@ vi.mock("../../lib/rpc", () => {
       get: vi.fn(),
       update: vi.fn(),
       restoreInstructions: vi.fn(),
-      // This server receives no email, so the panel offers no address.
       emailAddress: vi.fn(async () => null),
     },
     voice: { voices: vi.fn().mockResolvedValue([]) },
@@ -517,7 +516,6 @@ describe("BotSettings description saves", () => {
     });
     expect(onSave.mock.lastCall?.[0]).not.toHaveProperty("instructions");
 
-    // The parent still passes the description from when the panel opened.
     await render();
     await clickSave();
     expect(onSave).toHaveBeenCalledTimes(2);
@@ -738,7 +736,6 @@ it.each([{ isComposing: true }, { keyCode: 229 }])(
     }
     window.removeEventListener("keydown", onWindowKey);
     expect(container.querySelector('[aria-label="Name"]')).toBe(input);
-    // A composing Escape must not reach page-level Escape listeners such as the reply chip.
     expect(windowKeys).not.toContain("Escape");
     expect(onSave).not.toHaveBeenCalled();
     await act(async () =>
@@ -778,7 +775,7 @@ it("saves a color change back to the initial value after a successful automatic 
 });
 
 describe("BotSettings avatar set persistence", () => {
-  it("interprets a legacy missing set as Original without saving a replacement", async () => {
+  it("reads a missing set as Original without saving a replacement", async () => {
     await render();
     expect(
       container.querySelector('[aria-label="Avatar set"]')?.getAttribute("data-avatar-set"),
@@ -787,7 +784,7 @@ describe("BotSettings avatar set persistence", () => {
   });
 
   it("saves an explicit set switch atomically with its generated colour and retains it after reload", async () => {
-    await render("Billing", { color: "#10B981" });
+    await render("Billing", { color: "#10B981", avatarSet: "organic" });
     const control = () => container.querySelector<HTMLButtonElement>('[aria-label="Avatar set"]')!;
     await act(async () => control().click());
     expect(onSave.mock.lastCall?.[0]).toMatchObject({ avatarSet: "robots", color: "#F97316" });
@@ -799,7 +796,7 @@ describe("BotSettings avatar set persistence", () => {
   });
 
   it("restores the accepted colour and set when switching fails", async () => {
-    await render("Billing", { color: "#10B981" });
+    await render("Billing", { color: "#10B981", avatarSet: "organic" });
     onSave.mockRejectedValueOnce(new Error("offline"));
     await act(async () =>
       container.querySelector<HTMLButtonElement>('[aria-label="Avatar set"]')!.click(),
@@ -847,7 +844,8 @@ describe("BotSettings cached data", () => {
     expect(descriptionField().value).toBe("Invoices");
     await clickSave();
     const patch = onSave.mock.lastCall?.[0];
-    expect(patch).toMatchObject({ description: "Invoices", computerMode: "dedicated" });
+    expect(patch).toMatchObject({ description: "Invoices" });
     expect(patch).not.toHaveProperty("name");
+    expect(patch).not.toHaveProperty("computerMode");
   });
 });

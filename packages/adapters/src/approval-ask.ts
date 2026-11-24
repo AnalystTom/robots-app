@@ -1,6 +1,6 @@
 import type { ToolBatch } from "@robots/adapter-kit";
 import type { AskReceipt, MessageBlock } from "@robots/contracts";
-import { BOT_INSTRUCTIONS_MAX_LENGTH } from "@robots/contracts";
+import { BOT_INSTRUCTIONS_MAX_LENGTH, isMacAppTool } from "@robots/contracts";
 import {
   batchActions,
   CARD_TITLE_ESCAPED_CHARACTERS,
@@ -12,6 +12,7 @@ import {
   toolRequiresExplicitApproval,
 } from "@robots/core";
 import { urlSite } from "@robots/core/egress";
+import { macAppApprovalCard } from "./mac-apps-approval.js";
 import { USER_COMPUTER_SCREEN_TOOLS, userComputerAppName } from "./user-computer-tools.js";
 
 export const MAX_APPROVAL_SUMMARY_LENGTH = 500;
@@ -64,6 +65,8 @@ export function buildApprovalAskBlock(
   },
 ): MessageBlock {
   const onceOnly = toolRequiresExplicitApproval(toolName) || Boolean(options?.onceOnly);
+  if (isMacAppTool(toolName))
+    return macAppApprovalCard(effectId, toolName, args, secrets, Boolean(options?.onceOnly));
   if (options?.summary) {
     // Built from what was resolved before the effect was recorded, not from what the model typed.
     return {

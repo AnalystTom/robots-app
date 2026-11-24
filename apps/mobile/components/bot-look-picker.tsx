@@ -1,11 +1,15 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import type { BotAvatarSet } from "@robots/contracts";
-import { BOT_COLORS } from "@robots/contracts";
+import { BOT_COLORS, robotCharacterValue } from "@robots/contracts";
+import type { RobotPresetId } from "@robots/core";
 import {
   botLookState,
   botLookWithColor,
   botLookWithShape,
+  ROBOT_PRESETS,
+  robotPresetOf,
+  robotPresetValue,
   SHIPPED_BOT_AVATAR_SHAPE_KEYS,
 } from "@robots/core";
 import type { ReactNode } from "react";
@@ -13,11 +17,8 @@ import { Pressable, Text, View } from "react-native";
 import { useMobileTokens } from "../lib/native";
 import { BotAvatar } from "./bot-avatar";
 
-/**
- * The shape grid and color row for a bot's look, as on web. With `organicIdentities`, the grid
- * offers the organic body each identity draws (for a bot that has no id yet); without them,
- * "Default" restores the bot's own organic body.
- */
+const ROBOT_SIZE = 48;
+
 export function BotLookPicker({
   value,
   identity,
@@ -30,17 +31,57 @@ export function BotLookPicker({
   identity?: string;
   organicIdentities?: readonly string[];
   avatarSet: BotAvatarSet;
-  /** While the look is being saved, so what is shown stays what is saved. */
   disabled?: boolean;
   onChange: (value: string, identity?: string) => void;
 }) {
   const { t } = useLingui();
-  const tokens = useMobileTokens();
-  const { photo, shapeIndex: shape, color, defaultLook } = botLookState(value);
+  const { photo, shapeIndex: shape, color, robot, defaultLook } = botLookState(value);
   const labeled = !organicIdentities;
+  const pickedPreset = robot ? robotPresetOf(robot) : null;
+  const presetLabels: Record<RobotPresetId, string> = {
+    assistant: t`Assistant`,
+    researcher: t`Researcher`,
+    coder: t`Coder`,
+    writer: t`Writer`,
+    analyst: t`Analyst`,
+    creator: t`Creator`,
+    chef: t`Chef`,
+    hero: t`Hero`,
+    hoodie: t`Hoodie`,
+    critic: t`Critic`,
+    professor: t`Professor`,
+    detective: t`Detective`,
+    keynote: t`Keynote`,
+    hustler: t`Hustler`,
+    host: t`Host`,
+  };
 
   return (
     <View style={{ gap: 20 }}>
+      <View>
+        {labeled ? <Label>{t`Robot`}</Label> : null}
+        <View accessibilityRole="radiogroup" style={grid}>
+          {robot && pickedPreset === null ? (
+            <Choice disabled={disabled} label={t`Current look`} selected>
+              <BotAvatar color={robotCharacterValue(robot)} size={ROBOT_SIZE} />
+            </Choice>
+          ) : null}
+          {ROBOT_PRESETS.map((preset) => {
+            const look = robotPresetValue(preset.id);
+            return (
+              <Choice
+                disabled={disabled}
+                key={preset.id}
+                label={presetLabels[preset.id]}
+                selected={preset.id === pickedPreset}
+                onPress={() => onChange(look)}
+              >
+                <BotAvatar color={look} size={ROBOT_SIZE} />
+              </Choice>
+            );
+          })}
+        </View>
+      </View>
       {avatarSet === "organic" ? (
         <View>
           {labeled ? <Label>{t`Shape`}</Label> : null}
@@ -81,42 +122,23 @@ export function BotLookPicker({
           </View>
         </View>
       ) : null}
-      <View>
-        {labeled ? <Label>{t`Color`}</Label> : null}
-        <View accessibilityRole="radiogroup" style={grid}>
-          {BOT_COLORS.map((option, index) => {
-            const selected = !photo && color.toLowerCase() === option.toLowerCase();
-            return (
-              <Pressable
+      {robot ? null : (
+        <View>
+          {labeled ? <Label>{t`Color`}</Label> : null}
+          <View accessibilityRole="radiogroup" style={grid}>
+            {BOT_COLORS.map((option, index) => (
+              <Swatch
                 key={option}
-                accessibilityRole="radio"
-                accessibilityLabel={t`Color ${ph({ number: index + 1 })}`}
-                accessibilityState={{ checked: selected, disabled }}
+                fill={option}
+                label={t`Color ${ph({ number: index + 1 })}`}
+                selected={!photo && color.toLowerCase() === option.toLowerCase()}
                 disabled={disabled}
                 onPress={() => onChange(botLookWithColor(value, option))}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  padding: 3,
-                  borderWidth: 2,
-                  borderColor: selected ? tokens.foreground : "transparent",
-                }}
-              >
-                <View
-                  style={{
-                    flex: 1,
-                    borderRadius: 20,
-                    backgroundColor: option,
-                    borderWidth: 1,
-                    borderColor: tokens.border,
-                  }}
-                />
-              </Pressable>
-            );
-          })}
+              />
+            ))}
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -135,6 +157,49 @@ function Label({ children }: { children: string }) {
   );
 }
 
+function Swatch({
+  fill,
+  label,
+  selected,
+  disabled,
+  onPress,
+}: {
+  fill: string;
+  label: string;
+  selected: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const tokens = useMobileTokens();
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: selected, disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        padding: 3,
+        borderWidth: 2,
+        borderColor: selected ? tokens.foreground : "transparent",
+      }}
+    >
+      <View
+        style={{
+          flex: 1,
+          borderRadius: 20,
+          backgroundColor: fill,
+          borderWidth: 1,
+          borderColor: tokens.border,
+        }}
+      />
+    </Pressable>
+  );
+}
+
 function Choice({
   disabled,
   label,
@@ -145,7 +210,7 @@ function Choice({
   disabled: boolean;
   label: string;
   selected: boolean;
-  onPress: () => void;
+  onPress?: () => void;
   children: ReactNode;
 }) {
   const tokens = useMobileTokens();

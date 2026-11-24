@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { afterAll } from "vitest";
+import { afterAll, beforeEach } from "vitest";
+import { pinMemoryAuditLog } from "./pin-audit-log.js";
 import { pinLocalSecretStore } from "./pin-secret-store.js";
 
 const dom = (
@@ -10,7 +11,6 @@ const dom = (
 
 if (dom) {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
-  // Vitest skips host globals even when their getters return undefined.
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
     writable: true,
@@ -22,10 +22,6 @@ if (dom) {
   });
 }
 
-/**
- * `pnpm test` must stay emulator-only even when a developer .env points at
- * Pi, Docker, Graphile, or live Composio. Opt-in canaries set VERIFY_PROVIDERS.
- */
 if (!process.env.VERIFY_PROVIDERS) {
   process.env.ROBOTS_LIVE_MODEL_CATALOG = "off";
   process.env.AGENT_RUNTIME = "scripted";
@@ -47,6 +43,7 @@ if (!process.env.VERIFY_PROVIDERS) {
   if (!process.env.VERIFY_DATABASE) {
     delete process.env.DATABASE_URL;
     delete process.env.REALTIME_DATABASE_URL;
+    beforeEach(pinMemoryAuditLog);
   }
 }
 delete process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
@@ -62,16 +59,10 @@ if (!process.env.VERIFY_LOGGING) {
   process.env.LOG_LEVEL = "off";
 }
 
-// Tests must never export product analytics to a configured collector.
 process.env.ANALYTICS_PROVIDER = "none";
 
-// Postgres suites connect as the runtime login. A protected table reached
-// without runAsTenant/runAsSystem returns nothing there, as in production, so
-// fail the suite on it instead. Loaded only then: other tests need no database.
 if (process.env.VERIFY_DATABASE) {
   const { createPool, drainUnscopedDatabaseAccess } = await import("@robots/db");
-  // Each app reconciles all durable work in its database, including a fixture's unfinished
-  // runs, so parallel files each get a copy of the pristine migrated database.
   if (process.env.COPY_TEST_DATABASE) {
     const owner = new URL(process.env.DATABASE_MIGRATION_URL!);
     const template = owner.pathname.slice(1);

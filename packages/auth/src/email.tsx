@@ -11,6 +11,7 @@ import {
   Head,
   Hr,
   Html,
+  Img,
   Link,
   render,
   Section,
@@ -104,6 +105,7 @@ export async function message(
   subject: string,
   content: ReactNode,
   unsubscribeUrl?: string,
+  image?: { src: string; alt: string },
 ): Promise<TransactionalEmail> {
   const html = await render(
     <Html lang={locale} dir={textDirectionForLocale(locale)}>
@@ -139,17 +141,27 @@ export async function message(
             overflow: "hidden",
           }}
         >
+          {image ? (
+            <Img
+              src={image.src}
+              alt={image.alt}
+              width="520"
+              style={{ width: "100%", height: "auto" }}
+            />
+          ) : null}
           <Section style={{ padding: "24px 32px" }}>
-            <Text
-              style={{
-                margin: "0 0 24px",
-                fontSize: "22px",
-                fontWeight: 600,
-                letterSpacing: "-0.5px",
-              }}
-            >
-              robots
-            </Text>
+            {image ? null : (
+              <Text
+                style={{
+                  margin: "0 0 24px",
+                  fontSize: "22px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.5px",
+                }}
+              >
+                robots
+              </Text>
+            )}
             {content}
             {unsubscribeUrl ? (
               <>

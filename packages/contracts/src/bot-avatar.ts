@@ -1,24 +1,23 @@
 import * as z from "zod";
+import type { RobotLook } from "./robot-character.js";
+import { parseRobotCharacter, ROBOT_COLOUR_FILLS } from "./robot-character.js";
 
-/** Per-bot set. Missing values belong to the original renderer. */
 export const BotAvatarSetSchema = z.enum(["organic", "robots"]);
 export type BotAvatarSet = z.infer<typeof BotAvatarSetSchema>;
-export const DEFAULT_NEW_BOT_AVATAR_SET: BotAvatarSet = "organic";
+export const DEFAULT_NEW_BOT_AVATAR_SET: BotAvatarSet = "robots";
 
 export function resolveBotAvatarSet(value?: string | null): BotAvatarSet {
-  return value === "robots" ? "robots" : "organic";
+  const parsed = BotAvatarSetSchema.safeParse(value);
+  return parsed.success ? parsed.data : "organic";
 }
 
 export interface BotColorDef {
   id: string;
   name: string;
-  /** The bot's one color: its avatar, name and bubble all start from it. */
   hex: string;
-  /** Deeper value this color was stored as before; existing bots still resolve through it. */
   previousHex?: string;
 }
 
-/** The one bot palette: every picker offers it and the server assigns from it. */
 export const BOT_COLOR_LIST: readonly BotColorDef[] = [
   { id: "white", name: "Staff White", hex: "#FFFFFF" },
   {
@@ -85,13 +84,8 @@ export const BOT_COLOR_LIST: readonly BotColorDef[] = [
 
 export const BOT_COLORS: readonly string[] = BOT_COLOR_LIST.map((color) => color.hex);
 
-/** Matches the eight shipped mascot shapes in `@robots/core`. */
 export const BOT_AVATAR_SHAPE_COUNT = 8;
 
-/**
- * 256x256 webp data URLs from Avatar Studio stay well under this. Cap writes so
- * a pasted raw photo cannot bloat every bot list payload.
- */
 export const BOT_AVATAR_VALUE_MAX_LENGTH = 200_000;
 
 const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -100,6 +94,7 @@ const DATA_IMAGE = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,
 
 export type ParsedBotAvatar =
   | { kind: "image"; imageUrl: string }
+  | { kind: "robot"; look: RobotLook; color: string }
   | { kind: "shape"; color: string; shapeIndex: number }
   | { kind: "color"; color: string }
   | { kind: "other"; raw: string };
@@ -108,6 +103,8 @@ export function parseBotAvatarValue(raw: string): ParsedBotAvatar {
   if (raw.startsWith("data:image/")) {
     return { kind: "image", imageUrl: raw };
   }
+  const look = parseRobotCharacter(raw);
+  if (look) return { kind: "robot", look, color: ROBOT_COLOUR_FILLS[look.colour] };
   if (raw.includes("::shape_")) {
     const parts = raw.split("::shape_");
     const color = parts[0] || "#F97316";
@@ -120,10 +117,14 @@ export function parseBotAvatarValue(raw: string): ParsedBotAvatar {
   return { kind: "other", raw };
 }
 
-/** True for values we persist on `bots.color` (hex, encoded shape, or data image). */
 export function isBotAvatarValue(raw: string): boolean {
   if (!raw || raw.length > BOT_AVATAR_VALUE_MAX_LENGTH) return false;
-  return HEX_COLOR.test(raw) || SHAPE_SUFFIX.test(raw) || DATA_IMAGE.test(raw);
+  return (
+    HEX_COLOR.test(raw) ||
+    SHAPE_SUFFIX.test(raw) ||
+    DATA_IMAGE.test(raw) ||
+    parseRobotCharacter(raw) !== null
+  );
 }
 
 export const BotAvatarValueSchema = z

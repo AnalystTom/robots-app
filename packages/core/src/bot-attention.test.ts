@@ -4,9 +4,9 @@ import {
   initialLogoAvatarSignals,
   logoAvatarActivity,
   logoAvatarNeedsAttention,
-  usesLogoAvatar,
 } from "./logo-avatar-activity.js";
 import { createLogoAvatarActivityStore } from "./logo-avatar-activity-store.js";
+import { robotPresetValue } from "./robot-presets.js";
 
 const bot = { avatarSet: "robots", color: "orange" };
 const needsAttention = (activity: ReturnType<typeof logoAvatarActivity>) =>
@@ -17,6 +17,13 @@ describe("avatar attention", () => {
     expect(needsAttention(logoAvatarActivity({ ...initialLogoAvatarSignals("bot"), status }))).toBe(
       true,
     );
+  });
+
+  it.each([
+    { avatarSet: "robots", color: "#F97316" },
+    { avatarSet: "robots", color: robotPresetValue("coder") },
+  ])("raises attention for a RoBots bot whatever its colour form: %j", (avatar) => {
+    expect(logoAvatarNeedsAttention(botAvatarActivity(avatar, "waiting"))).toBe(true);
   });
 
   it.each(["idle", "running", "queued", "completed", "failed", "cancelled"])(
@@ -44,7 +51,6 @@ describe("avatar attention", () => {
     { ...bot, avatarSet: "organic" },
     { color: "orange" },
     { ...bot, color: "data:image/png;base64,fixture" },
-    { ...bot, color: "orange::shape_3" },
     { ...bot, archivedAt: "2026-01-01T00:00:00.000Z" },
   ])("excludes avatars without a visible waiting state: %j", (avatar) => {
     expect(logoAvatarNeedsAttention(botAvatarActivity(avatar, "waiting"))).toBe(false);
@@ -68,10 +74,5 @@ describe("avatar attention", () => {
       payload: {},
     });
     expect(needsAttention(store.getActivity("bot", "idle"))).toBe(true);
-  });
-
-  it("uses the same avatar selection as rendering", () => {
-    expect(usesLogoAvatar(bot)).toBe(true);
-    expect(botAvatarActivity(bot, "waiting")).toBe("waiting");
   });
 });

@@ -117,8 +117,13 @@ describe("run activity copy", () => {
 
 describe("run activity notification preference", () => {
   it("silences only direct messages", () => {
-    expect(activityNotificationsEnabled(null, false)).toBe(false);
-    expect(activityNotificationsEnabled("group-1", false)).toBe(true);
+    expect(activityNotificationsEnabled(null, false, true)).toBe(false);
+    expect(activityNotificationsEnabled("group-1", false, true)).toBe(true);
+  });
+
+  it("silences every chat while the account's pushes are off", () => {
+    expect(activityNotificationsEnabled("group-1", true, false)).toBe(false);
+    expect(activityNotificationsEnabled(null, true, false)).toBe(false);
   });
 });
 

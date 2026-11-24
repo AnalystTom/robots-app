@@ -236,4 +236,3 @@ backups. Homes stay on that volume unless they are kept in
 Use the same HTTPS origin for the web app, `/api`, and `/rpc`. Preserve the authenticated screen
 proxy routes. Choose a [computer provider](./self-host-sandbox-providers.md#choosing-a-provider) appropriate to the
 service's trust boundary. `SIGNUPS_ENABLED` and `SIGNUP_ALLOWLIST` apply from the environment on every API start.
-The optional marketing site in `apps/www` can be hosted separately.

@@ -6,6 +6,7 @@ import { HOST_COMPUTER_MAX_BYTES } from "./host-computer-protocol.js";
 import type { HostComputerCall } from "./host-computer-runner.js";
 import { createHostComputerRunner } from "./host-computer-runner.js";
 import type { HostScreen } from "./host-screen.js";
+import type { MacApps } from "./mac-apps-protocol.js";
 import type { UserDeviceClientMessage, UserDeviceRevokeReason } from "./user-device-protocol.js";
 import {
   USER_DEVICE_REVOKED_HEADER,
@@ -13,7 +14,6 @@ import {
   userDeviceServerMessage,
 } from "./user-device-protocol.js";
 
-/** One frame or request plus its small envelope, in either direction. */
 export const USER_DEVICE_MAX_MESSAGE_BYTES = HOST_COMPUTER_MAX_BYTES + 4096;
 const PING_INTERVAL_MS = 30_000;
 const BUSY_MESSAGE = "Local computer is busy. Try again shortly.";
@@ -23,25 +23,22 @@ export interface UserDeviceClientOptions {
   serverUrl: string;
   token: string;
   root: string;
-  /** Drives this computer's apps. Owned by the caller, which closes it. */
   screen?: HostScreen;
-  /** The server revoked the device or rejected its token. The client has already stopped. */
+  macApps?: MacApps;
   onRevoked: (reason?: UserDeviceRevokeReason) => void;
-  /** Whether this computer lets the server's bots run anything. Asked before every request. */
   authorize: () => Promise<boolean>;
   retryMs?: { min: number; max: number };
 }
 
-/**
- * Connects outbound to a RoBots server so its bots can use this computer. The server never
- * connects in. Runs only while started; `close` stops every command and the connection, and
- * `cancelAll` stops every command and refuses requests still waiting on `authorize`.
- */
 export function startUserDeviceClient(options: UserDeviceClientOptions) {
   if (secureHttpOrigin(options.serverUrl) === null)
     throw new Error("Local computer access requires HTTPS or loopback");
   const retry = options.retryMs ?? { min: 1_000, max: 60_000 };
-  const runner = createHostComputerRunner({ root: options.root, screen: options.screen });
+  const runner = createHostComputerRunner({
+    root: options.root,
+    screen: options.screen,
+    macApps: options.macApps,
+  });
   runner.setEnabled(true);
   const url = new URL(USER_DEVICE_CONNECT_PATH, options.serverUrl);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
@@ -74,7 +71,6 @@ export function startUserDeviceClient(options: UserDeviceClientOptions) {
 
   function scheduleReconnect() {
     if (stopped) return;
-    // Full jitter keeps many devices from reconnecting in lockstep after a server restart.
     const ceiling = Math.min(retry.max, retry.min * 2 ** attempt);
     attempt += 1;
     reconnectTimer = setTimeout(connect, retry.min / 2 + Math.random() * ceiling);
@@ -115,7 +111,6 @@ export function startUserDeviceClient(options: UserDeviceClientOptions) {
     });
     ws.on("open", () => {
       openedAt = Date.now();
-      // A silent network drop otherwise leaves the device looking connected for hours.
       ping = setInterval(() => {
         if (!alive) {
           ws.terminate();
@@ -129,12 +124,9 @@ export function startUserDeviceClient(options: UserDeviceClientOptions) {
     ws.on("pong", () => {
       alive = true;
     });
-    ws.on("error", () => {
-      /* "close" follows and reconnects. */
-    });
+    ws.on("error", () => {});
     ws.on("close", () => {
       clearInterval(ping);
-      // A lost response is never retried, so in-flight work stops with the connection.
       for (const { call } of calls.values()) call.abort();
       calls.clear();
       if (socket === ws) {
@@ -217,7 +209,6 @@ export function startUserDeviceClient(options: UserDeviceClientOptions) {
           refusal = "Local computer operation stopped";
         if (refusal && !entry.cancelled && !entry.settled) await send(id, { error: refusal });
       } catch {
-        /* The connection closed; the server fails the request. */
       } finally {
         call.end();
         if (calls.get(id) === entry) calls.delete(id);

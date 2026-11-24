@@ -101,7 +101,6 @@ export default function SignIn() {
     let active = true;
     setReset(null);
     setCapabilityError(false);
-    // A code belongs to the server that sent it.
     setCodeSent(false);
     setCode("");
     void passwordResetCapabilities()
@@ -149,14 +148,21 @@ export default function SignIn() {
 
   const providers = reset ? signInProviders(reset) : [];
   const codeFlow = Boolean(reset?.passwordAuth && reset.emailCode && mode !== "forgot");
-  // A blank password asks for an emailed code, so code-only accounts need no toggle.
   const usingCode = codeFlow && (codeSent || !password);
   const codeStep = codeFlow && codeSent;
+  const providerOnlySignup = mode === "up" && reset?.emailSignup === false;
   const chooser = Boolean(
-    reset?.passwordAuth && providers.length > 0 && !emailStep && mode !== "forgot" && !codeStep,
+    reset?.passwordAuth &&
+      (providerOnlySignup || (providers.length > 0 && !emailStep)) &&
+      mode !== "forgot" &&
+      !codeStep,
   );
   const presented = Boolean(
-    reset?.passwordAuth && providers.length > 0 && mode !== "forgot" && !codeStep && !resetSent,
+    reset?.passwordAuth &&
+      (providerOnlySignup || providers.length > 0) &&
+      mode !== "forgot" &&
+      !codeStep &&
+      !resetSent,
   );
 
   async function submit(enteredCode = code) {
@@ -177,7 +183,6 @@ export default function SignIn() {
       );
       return;
     }
-    // An unfinished code would spend one of the code's three attempts.
     if (codeStep && enteredCode.length !== CODE_LENGTH) return;
     setPending(true);
     setError(null);
@@ -198,15 +203,12 @@ export default function SignIn() {
         setCodeSent(true);
         return;
       }
-      // Everything past this point saves new credentials, which deletes the unsent
-      // queue a server-rejected session kept; ask first, like a sign-out does.
       if (!(await confirmUnsentSendLoss("sign-in"))) return;
       if (usingCode) {
         const trimmedEmail = email.trim();
         await signInWithCode(
           trimmedEmail,
           enteredCode,
-          // Only used when this creates the account.
           mode === "up" ? name.trim() || trimmedEmail.split("@")[0] || "User" : undefined,
         );
       } else if (mode === "up") {
@@ -231,7 +233,6 @@ export default function SignIn() {
     }
   }
 
-  // Any sign-in can create the account (a code, SSO), so ask the server rather than the form.
   async function openApp() {
     if (hasIncomingShare()) return router.replace("/share");
     const me = await rpc("me").catch(() => null);
@@ -247,8 +248,6 @@ export default function SignIn() {
     setPending(true);
     setError(null);
     try {
-      // External sign-ins save credentials too, so the kept queue gets the same question;
-      // pending is already set, so the wait for the queue check cannot double-open it.
       if (!(await confirmUnsentSendLoss("sign-in"))) return;
       if (await run()) await openApp();
     } catch (err) {
@@ -298,7 +297,7 @@ export default function SignIn() {
                     : undefined
                 }
               >
-                {presented && emailStep ? (
+                {presented && emailStep && !providerOnlySignup ? (
                   <Pressable
                     accessibilityRole="button"
                     hitSlop={8}
@@ -433,7 +432,6 @@ export default function SignIn() {
                           onChangeText={(value) => {
                             const digits = value.replace(/\D/g, "").slice(0, CODE_LENGTH);
                             setCode(digits);
-                            // iOS offers the code from Mail; a complete code signs in at once.
                             if (digits.length === CODE_LENGTH) void submit(digits);
                           }}
                           onSubmitEditing={() => void submit()}
@@ -471,10 +469,14 @@ export default function SignIn() {
                         <SocialSignInButtons
                           providers={providers}
                           disabled={pending}
-                          onEmail={() => {
-                            setError(null);
-                            setEmailStep(true);
-                          }}
+                          onEmail={
+                            providerOnlySignup
+                              ? undefined
+                              : () => {
+                                  setError(null);
+                                  setEmailStep(true);
+                                }
+                          }
                           onPasskey={
                             passkeys && mode === "in"
                               ? () => void externalSignIn(signInWithPasskey)

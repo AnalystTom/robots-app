@@ -8,7 +8,6 @@ import {
   completeOnboarding,
   manageModelConnection,
   modelConnectionDialog,
-  modelConnectOption,
   openBotPanelTab,
   openModelConnection,
   openUserSettings,
@@ -370,12 +369,15 @@ test("connects, lists, and uses an OpenAI-compatible endpoint", async ({ page },
       select.size = 0;
       select.style.removeProperty("height");
     });
-    await settings.getByRole("combobox", { name: "Thinking", exact: true }).selectOption("high");
     const botSaved = page.waitForResponse(
-      (response) => response.url().includes("/rpc/bots/update") && response.ok(),
+      (response) =>
+        response.url().includes("/rpc/bots/update") &&
+        response.ok() &&
+        response.request().postData()?.includes('"thinkingLevel":"high"') === true,
     );
-    await settings.getByRole("button", { name: "Save", exact: true }).click();
+    await settings.getByRole("combobox", { name: "Thinking", exact: true }).selectOption("high");
     await botSaved;
+    await expect(settings.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
 
     if (process.env.AGENT_RUNTIME === "pi") {
       const composer = page.getByPlaceholder(/Message/);

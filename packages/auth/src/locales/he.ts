@@ -24,8 +24,6 @@ export const HE_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "יש להזין את הקוד הזה ב-RoBots כדי לאשר שזה באמת את/ה:",
   "Welcome to RoBots": "ברוכים הבאים ל-RoBots",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "ברוכים הבאים ל-RoBots. מי שמפיקים ממנו הכי הרבה עושים שלושה דברים:",
   "Get the apps": "להוריד את האפליקציות",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots זמין ל-{platforms}, כדי שהבוטים שלך יוכלו להשיג אותך בכל מקום.",

@@ -11,7 +11,6 @@ describePostgres("avatar-set migration and persistence (PostgreSQL)", () => {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-      // A temporary table shadows public.bots; this test never alters real bot rows.
       await client.query(
         "CREATE TEMP TABLE bots (id TEXT PRIMARY KEY, color TEXT NOT NULL) ON COMMIT DROP",
       );
@@ -50,6 +49,47 @@ describePostgres("avatar-set migration and persistence (PostgreSQL)", () => {
         (await client.query('SELECT "avatarSet" FROM bots WHERE id=$1', ["explicit"])).rows[0]
           .avatarSet,
       ).toBe("organic");
+    } finally {
+      await client.query("ROLLBACK");
+      client.release();
+      await pool.end();
+    }
+  });
+
+  it("defaults new accounts and bots to RoBots without restyling existing rows", async () => {
+    const pool = new Pool({ connectionString: databaseUrl });
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `CREATE TEMP TABLE "user" (id TEXT PRIMARY KEY, "botAvatarSet" TEXT NOT NULL DEFAULT 'organic') ON COMMIT DROP`,
+      );
+      await client.query(
+        `CREATE TEMP TABLE bots (id TEXT PRIMARY KEY, color TEXT NOT NULL, "avatarSet" TEXT NOT NULL DEFAULT 'organic') ON COMMIT DROP`,
+      );
+      await client.query(`INSERT INTO "user" (id) VALUES ('existing')`);
+      await client.query(`INSERT INTO bots (id, color) VALUES ('existing', '#8B5CF6')`);
+      await client.query(
+        await readFile(
+          new URL(
+            "../prisma/migrations/20261224120000_bot_avatar_set_robots_default/migration.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      await client.query(`INSERT INTO "user" (id) VALUES ('new')`);
+      await client.query(`INSERT INTO bots (id, color) VALUES ('new', '#3B82F6')`);
+      expect(
+        (await client.query(`SELECT id, "botAvatarSet" FROM "user" ORDER BY id`)).rows,
+      ).toEqual([
+        { id: "existing", botAvatarSet: "organic" },
+        { id: "new", botAvatarSet: "robots" },
+      ]);
+      expect((await client.query(`SELECT id, "avatarSet" FROM bots ORDER BY id`)).rows).toEqual([
+        { id: "existing", avatarSet: "organic" },
+        { id: "new", avatarSet: "robots" },
+      ]);
     } finally {
       await client.query("ROLLBACK");
       client.release();

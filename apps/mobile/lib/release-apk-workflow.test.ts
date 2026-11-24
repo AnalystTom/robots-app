@@ -20,7 +20,9 @@ describe("Android APK release workflow", () => {
   });
 
   it("pins every third-party action to an immutable commit", () => {
-    const actionReferences = [...workflow.matchAll(/uses:\s+([^\s#]+)/g)].map((match) => match[1]);
+    const actionReferences = [...workflow.matchAll(/uses:\s+([^\s#]+)/g)]
+      .map((match) => match[1])
+      .filter((reference) => !reference?.startsWith("./"));
     expect(actionReferences.length).toBeGreaterThan(0);
     for (const reference of actionReferences) {
       expect(reference, reference).toMatch(/@[0-9a-f]{40}$/);

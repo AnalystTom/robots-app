@@ -27,13 +27,12 @@ export function botAvatarActivity(
   bot: { avatarSet?: string; color: string; archivedAt?: string | null },
   activity: LogoAvatarActivity,
 ): LogoAvatarActivity {
-  if (bot.archivedAt || !usesLogoAvatar(bot)) return "idle";
+  if (bot.archivedAt || !usesRobotsActivity(bot)) return "idle";
   return activity;
 }
 
-export function usesLogoAvatar(bot: { avatarSet?: string; color: string }): boolean {
-  const parsed = parseBotAvatarValue(bot.color);
-  return bot.avatarSet === "robots" && parsed.kind !== "image" && parsed.kind !== "shape";
+function usesRobotsActivity(bot: { avatarSet?: string; color: string }): boolean {
+  return bot.avatarSet === "robots" && parseBotAvatarValue(bot.color).kind !== "image";
 }
 
 export function logoAvatarNeedsAttention(activity: LogoAvatarActivity): boolean {

@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import type {
   ApnsVoipConfig,
+  DiscordBotCredentials,
   PhotonProjectCredentials,
+  SharedMcpOAuthClient,
   TelegramBotCredentials,
 } from "@robots/adapters";
 import {
@@ -9,6 +11,8 @@ import {
   boatApiKeyFromEnv,
   boatApiUrlFromEnv,
   deploymentLabsFromEnv,
+  discordBotFromEnv,
+  googleMcpOAuthClientFromEnv,
   mcpStdioOptionsFromEnv,
   photonProjectsFromEnv,
   resolveCloudAgentProvider,
@@ -32,21 +36,19 @@ import {
   resolveSupervisorToken,
   uploadSizeFromEnv,
 } from "@robots/core";
+import { deploymentAdminEmails } from "@robots/db";
 import { getLogger, monitoringPseudonymSecret } from "@robots/logging";
 
 export { resolveCloudAgentProvider, resolveSandboxProvider } from "@robots/adapters";
 
-/** Where a local development stack serves the web client. */
 const DEFAULT_WEB_ORIGIN = "http://127.0.0.1:5173";
 
 export interface AppEnv {
   passwordAuth?: boolean;
-  /** Opt-in Have I Been Pwned check for new passwords. Default off: it calls an outside service. */
+  emailSignup?: boolean;
   breachedPasswordCheck?: boolean;
   oidc?: OidcConfig;
-  /** Google and Apple sign-in. Absent when neither provider is configured. */
   social?: SocialAuthConfig;
-  /** Bearer token the identity provider presents to provision accounts over SCIM. */
   scimBearerToken?: string;
   nodeEnv: string;
   desktopStackToken?: string;
@@ -55,16 +57,12 @@ export interface AppEnv {
   authSecret: string;
   authUrl: string;
   webOrigin: string;
-  /** Extra browser origins trusted for sign-in and CORS, from `ROBOTS_EXTRA_AUTH_ORIGINS`. */
   extraAuthOrigins: string[];
-  /** `<TEAM_ID>.<bundle id>` of iOS apps that may use this domain's passkeys. */
   passkeyAppleAppIds: string[];
-  /** SHA-256 signing certificate fingerprints of Android apps that may use this domain's passkeys. */
   passkeyAndroidCertFingerprints: string[];
   privacyPolicyUrl?: string;
   apiUrl: string;
   apiHost: string;
-  /** Proxies whose forwarded client address is believed; empty means local networks. */
   trustedProxies: string[];
   clientIpHeader: string;
   signupsEnabled: string | undefined;
@@ -72,25 +70,17 @@ export interface AppEnv {
   encryptionKey: string;
   contentEncryption: boolean;
   dataDir: string;
-  /** Opt-in Pi JSONL session recording under DATA_DIR/pi-sessions. Default off. */
   piSessionRecording: boolean;
-  /** Labs features this deployment turns on for every account. */
   deploymentLabs: LabFeature[];
-  /** USER_DEVICES_ENABLED=false stops users connecting their own computers. Default on. */
   userDevicesEnabled: boolean;
-  /** COMPUTER_SETTINGS_ENABLED=true lets Settings choose where computers run. Default off. */
   computerSettingsEnabled: boolean;
-  /** Operator menu links that frame a same-origin page (ROBOTS_NAV_LINKS). */
   navLinks?: NavLink[];
-  /** Verified accounts that review plugin submissions, add stdio MCP servers, and grant access
-   * (ROBOTS_ADMIN_EMAILS), lowercased. */
   adminEmails: string[];
   phoneCallsEnabled: boolean;
   phoneCallRingSeconds: number;
   phoneCallCooldownMinutes: number;
   maxUploadSizeBytes: number;
   maxAttachmentsPerMessage: number;
-  /** Bot replies longer than this are read aloud as a summary; unset reads every reply in full. */
   voiceSummaryMinChars: number | undefined;
   sandboxSupervisorUrl: string;
   sandboxSupervisorToken: string | undefined;
@@ -99,14 +89,11 @@ export interface AppEnv {
   cloudAgentProvider: string;
   cloudAgentSpaceId: string | undefined;
   cursorApiKey: string | undefined;
-  /** Raw PAYMENT_WALLET_* values; createPaymentWalletProvider resolves them. */
   paymentWalletProvider: string | undefined;
   paymentWalletClientId: string | undefined;
   agentRuntime: string;
   deploymentModelKey: string | undefined;
-  /** The deployment default model can run; see resolveDeploymentModel. */
   deploymentModelConfigured: boolean;
-  /** The deployment default model runs on the host's credentials rather than a key. */
   deploymentModelHostCredentials: boolean;
   e2bApiKey: string | undefined;
   novitaApiKey: string | undefined;
@@ -117,7 +104,6 @@ export interface AppEnv {
   boatApiKey: string | undefined;
   boatApiUrl: string | undefined;
   composioApiKey: string | undefined;
-  /** Optional integrations.sh-compatible catalog base URL. */
   integrationsCatalogUrl: string | undefined;
   pipedreamClientId: string | undefined;
   pipedreamClientSecret: string | undefined;
@@ -136,15 +122,12 @@ export interface AppEnv {
   emailApiKey?: string;
   emailFrom: string | undefined;
   emailReplyTo?: string;
-  /** Mail to bots' addresses, posted by a relay; off unless the domain and secret are both set. */
   inboundEmail?: { domain: string; secret: string };
-  /** Billing turns on only when all three are set; self-hosted installs leave them unset. */
   stripeSecretKey: string | undefined;
   stripeWebhookSecret: string | undefined;
   stripePriceId: string | undefined;
   emailEmulator: boolean;
   billingEmulator: boolean;
-  /** A/B tests this deployment runs, by key; none by default. */
   experiments: string | undefined;
   slackClientId?: string;
   slackClientSecret?: string;
@@ -159,7 +142,6 @@ export interface AppEnv {
   whatsappVerifyToken: string | undefined;
   telegramBotToken: string | undefined;
   telegramWebhookSecret: string | undefined;
-  /** Extra named Telegram bots (TELEGRAM_BOT_TOKEN_<NAME>), e.g. one per space. */
   telegramBots?: TelegramBotCredentials[];
   larkAppId: string | undefined;
   larkAppSecret: string | undefined;
@@ -169,13 +151,10 @@ export interface AppEnv {
   photonProjectId: string | undefined;
   photonProjectSecret: string | undefined;
   photonWebhookSecret: string | undefined;
-  /** Extra named Photon projects (PHOTON_PROJECT_ID_<NAME>), each with its own number. */
   photonProjects?: PhotonProjectCredentials[];
-  /** Unknown chat senders auto-provision their own accounts when true. */
+  discordBot?: DiscordBotCredentials;
   messagingOpenSignup: boolean;
-  /** Bot that owns team/external chat rooms on the messaging surface. */
   teamChatBotId: string | undefined;
-  /** Optional model override for ambient engagement judging. */
   teamChatJudgeProvider: string | undefined;
   teamChatJudgeModel: string | undefined;
   defaultProvider: string;
@@ -184,17 +163,14 @@ export interface AppEnv {
   mcpStdioEnabled: boolean;
   mcpStdioAllowedCommands: string[];
   mcpStdio: ReturnType<typeof mcpStdioOptionsFromEnv>;
-  /** Deployment-owner escape for remote MCP on RFC1918 / Docker-network hosts. */
   mcpAllowPrivateEndpoint: boolean;
+  googleMcpOAuthClient: SharedMcpOAuthClient | undefined;
   port: number;
   gitSha: string | undefined;
-  /** Oldest client build per kind the API still serves (ROBOTS_MIN_CLIENT_BUILD). */
   minimumClientBuilds?: MinimumClientBuilds;
-  /** Browser error reporting, served to the web app at runtime. The DSN is public by design. */
   browserMonitoring:
     | { dsn: string; environment?: string; release?: string; pseudonymSecret?: string }
     | undefined;
-  /** Crisp chat on the paywall, for the hosted service; self-hosted installs leave it unset. */
   crispWebsiteId?: string | null;
 }
 
@@ -220,6 +196,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   }
   for (const key of [
     "AUTH_PASSWORD_ENABLED",
+    "AUTH_EMAIL_SIGNUP_ENABLED",
     "AUTH_BREACHED_PASSWORD_CHECK_ENABLED",
     "OIDC_ALLOW_SIGNUP_BYPASS",
   ]) {
@@ -261,6 +238,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   const deploymentModel = resolveDeploymentModel(source);
   return {
     passwordAuth,
+    emailSignup: source.AUTH_EMAIL_SIGNUP_ENABLED !== "false",
     breachedPasswordCheck: source.AUTH_BREACHED_PASSWORD_CHECK_ENABLED === "true",
     oidc,
     social,
@@ -293,7 +271,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     userDevicesEnabled: source.USER_DEVICES_ENABLED !== "false",
     computerSettingsEnabled: source.COMPUTER_SETTINGS_ENABLED === "true",
     navLinks: parseNavLinks(source.ROBOTS_NAV_LINKS),
-    adminEmails: list(source.ROBOTS_ADMIN_EMAILS).map((email) => email.toLowerCase()),
+    adminEmails: deploymentAdminEmails(source.ROBOTS_ADMIN_EMAILS),
     ...phoneCallSettings(source),
     maxUploadSizeBytes: uploadSizeFromEnv(source),
     maxAttachmentsPerMessage: attachmentCountFromEnv(source),
@@ -309,7 +287,6 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     paymentWalletProvider: optional(source.PAYMENT_WALLET_PROVIDER),
     paymentWalletClientId: optional(source.PAYMENT_WALLET_CLIENT_ID),
     agentRuntime: source.AGENT_RUNTIME ?? "pi",
-    // Provider, model and key resolve together: see resolveDeploymentModel.
     deploymentModelKey: deploymentModel.key,
     deploymentModelConfigured: deploymentModel.configured,
     deploymentModelHostCredentials: deploymentModel.hostCredentials,
@@ -367,6 +344,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     larkVerificationToken: optional(source.LARK_VERIFICATION_TOKEN),
     larkEncryptKey: optional(source.LARK_ENCRYPT_KEY),
     larkDomain: optional(source.LARK_DOMAIN),
+    discordBot: discordBotFromEnv(source),
     photonProjectId: optional(source.PHOTON_PROJECT_ID),
     photonProjectSecret: optional(source.PHOTON_PROJECT_SECRET),
     photonWebhookSecret: optional(source.PHOTON_WEBHOOK_SECRET),
@@ -385,6 +363,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
       .filter(Boolean),
     mcpStdio: mcpStdioOptionsFromEnv(source),
     mcpAllowPrivateEndpoint: source.MCP_ALLOW_PRIVATE_ENDPOINT === "true",
+    googleMcpOAuthClient: googleMcpOAuthClientFromEnv(source),
     port: Number(source.API_PORT ?? 3100),
     gitSha: optional(source.GIT_SHA) ?? optional(source.ROBOTS_GIT_SHA),
     minimumClientBuilds: parseMinimumClientBuilds(source.ROBOTS_MIN_CLIENT_BUILD),
@@ -393,11 +372,6 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   };
 }
 
-/**
- * An origin used to build absolute links. Trailing slashes are dropped so
- * `${webOrigin}/path` cannot produce `https://host//path`; providers reject a
- * double-slash redirect URI as a mismatch against the one registered with them.
- */
 function resolveWebOrigin(value: string | undefined, fallback: string, name: string): string {
   const origin = (optional(value) ?? fallback).replace(/\/+$/, "");
   try {
@@ -409,11 +383,6 @@ function resolveWebOrigin(value: string | undefined, fallback: string, name: str
   return origin;
 }
 
-/**
- * Comma-separated origins an operator adds for a second address of the same install (a tailnet
- * or LAN URL). Only bare `https://` origins, or `http://` on loopback or a private network, are
- * kept; anything else is dropped with a warning so a typo cannot widen trust.
- */
 export function parseExtraAuthOrigins(value: string | undefined): string[] {
   const origins = new Set<string>();
   for (const raw of (value ?? "").split(/[\s,]+/).filter(Boolean)) {
@@ -427,7 +396,6 @@ export function parseExtraAuthOrigins(value: string | undefined): string[] {
       if (!bare || !allowed) throw new Error();
       origins.add(url.origin);
     } catch {
-      // The entry is not logged: it may carry credentials.
       getLogger().warn("ignoring invalid ROBOTS_EXTRA_AUTH_ORIGINS entry");
     }
   }
@@ -496,7 +464,6 @@ function list(value: string | undefined): string[] {
   return (value ?? "").split(/[\s,]+/).filter(Boolean);
 }
 
-/** SHA-256 signing certificate fingerprints, normalized to the `AA:BB:…` form Digital Asset Links uses. */
 function androidCertFingerprints(value: string | undefined): string[] {
   return list(value).map((fingerprint) => {
     const hex = fingerprint.replace(/:/g, "");

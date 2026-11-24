@@ -5,6 +5,7 @@ import { assertHostCommandsAllowed, DesktopSandboxProvider } from "./desktop-san
 import { DockerSandboxProvider } from "./docker-sandbox.js";
 import { E2BSandboxProvider } from "./e2b-sandbox.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
+import type { HostComputerAccess } from "./host-computer-access.js";
 import { IncusSandboxProvider } from "./incus-sandbox.js";
 import type { KubernetesSandboxOptions } from "./kubernetes-sandbox.js";
 import { KubernetesSandboxProvider } from "./kubernetes-sandbox.js";
@@ -15,6 +16,7 @@ import { RailwaySandboxProvider } from "./railway-sandbox.js";
 export interface SandboxProviderOptions {
   hostComputerUrl?: string;
   hostComputerToken?: string;
+  hostComputerAccess?: HostComputerAccess;
   supervisorUrl?: string;
   supervisorToken?: string;
   e2bApiKey?: string;

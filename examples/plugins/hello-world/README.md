@@ -1,7 +1,7 @@
 # Hello world plugin
 
 A minimal RoBots plugin: a manifest and one skill. Copy this folder to start your own, then read
-[Build a plugin](https://tryrobots.app/docs/build-a-plugin/).
+[Build a plugin](https://tryrobots.app/docs/build-a-plugin.md).
 
 For hosted tools, start with the [MCP server example](../mcp-server/README.md).
 

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { PrismaClient } from "@robots/db";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { HostComputerAccess } from "./host-computer-access.js";
 import { HOST_COMPUTER_DEVICE_ID, withHostComputerScreen } from "./host-computer-device.js";
 import { startHostComputerServer } from "./host-computer-server.js";
 import type { HostScreen } from "./host-screen.js";
@@ -30,7 +31,20 @@ describe("this computer's screen on the desktop app's own server", () => {
     deploymentSettings: {
       findUnique: async () => ({ computerHost, updatedAt: grantedAt }),
     },
+    user: {
+      findUnique: async ({ where }: { where: { id: string } }) =>
+        ({
+          admin: { email: "Admin@Example.test", emailVerified: true },
+          unverified: { email: "admin@example.test", emailVerified: false },
+          member: { email: "member@example.test", emailVerified: true },
+        })[where.id] ?? null,
+    },
   } as unknown as PrismaClient;
+  const desktopApp: HostComputerAccess = { adminEmails: [], singleAccount: true };
+  const sharedServer: HostComputerAccess = {
+    adminEmails: ["admin@example.test"],
+    singleAccount: false,
+  };
 
   beforeEach(async () => {
     root = await mkdtemp(path.join(tmpdir(), "robots-host-device-"));
@@ -43,14 +57,45 @@ describe("this computer's screen on the desktop app's own server", () => {
     await rm(root, { recursive: true, force: true });
   });
 
-  function gateway(devices?: UserDeviceGateway) {
+  function gateway(devices?: UserDeviceGateway, access = desktopApp) {
     return withHostComputerScreen(devices, {
       prisma,
       sandboxKind: "docker",
       url: `http://127.0.0.1:${server.port}`,
       token,
+      access,
     })!;
   }
+
+  it("offers the screen on a shared server only to a verified deployment admin", async () => {
+    const observed = vi.mocked(screen.observe).mock.calls.length;
+    const devices = gateway(undefined, sharedServer);
+    expect((await devices.connected("admin"))?.deviceId).toBe(HOST_COMPUTER_DEVICE_ID);
+    expect(await devices.pairedSince("admin")).toEqual(grantedAt);
+    for (const userId of ["member", "unverified", "missing"]) {
+      expect(await devices.connected(userId)).toBeNull();
+      expect(await devices.pairedSince(userId)).toBeNull();
+      await expect(
+        collect(
+          devices.request(
+            userId,
+            { method: "screenObserve", botId: "bot", app: "Notes" },
+            AbortSignal.timeout(5_000),
+            HOST_COMPUTER_DEVICE_ID,
+          ),
+        ),
+      ).rejects.toThrow();
+    }
+    expect(vi.mocked(screen.observe).mock.calls).toHaveLength(observed);
+    const unconfigured = withHostComputerScreen(undefined, {
+      prisma,
+      sandboxKind: "docker",
+      url: `http://127.0.0.1:${server.port}`,
+      token,
+      access: undefined,
+    })!;
+    expect(await unconfigured.connected("admin")).toBeNull();
+  });
 
   it("offers only the screen, and only while bots run on this computer", async () => {
     expect(await gateway().connected("user")).toEqual({
@@ -142,8 +187,14 @@ describe("this computer's screen on the desktop app's own server", () => {
   });
 
   it("changes nothing off the desktop app's own server", () => {
-    expect(withHostComputerScreen(undefined, { prisma, sandboxKind: "e2b", url: "x", token })).toBe(
-      undefined,
-    );
+    expect(
+      withHostComputerScreen(undefined, {
+        prisma,
+        sandboxKind: "e2b",
+        url: "x",
+        token,
+        access: desktopApp,
+      }),
+    ).toBe(undefined);
   });
 });

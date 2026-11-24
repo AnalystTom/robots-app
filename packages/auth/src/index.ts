@@ -43,6 +43,7 @@ import {
 } from "./account-security.js";
 import { createAppleClientSecretCache } from "./apple-client-secret.js";
 import { breachedPasswordCheck } from "./breached-password.js";
+import { devicePairing, issuePairingCode, PAIRING_CODE_PREFIX } from "./device-pairing.js";
 import { DEACTIVATED_AT_FIELD } from "./directory.js";
 import type { EmailLocaleOf } from "./email.js";
 import { emailLocale, passwordResetEmail, signInCodeEmail, verificationEmail } from "./email.js";
@@ -88,6 +89,7 @@ export { welcomeEmail } from "./welcome-email.js";
 export interface AuthEnv {
   analytics?: ProductAnalytics;
   passwordAuth?: boolean;
+  emailSignup?: boolean;
   breachedPasswordCheck?: boolean;
   oidc?: OidcConfig;
   social?: SocialAuthConfig;
@@ -107,6 +109,7 @@ export interface AuthEnv {
   afterReplaceSession?: (previous: AuthSession, session: AuthSession) => Promise<void>;
   afterSignIn?: (userId: string, headers?: Headers) => Promise<void>;
   directoryProvisioning?: boolean;
+  afterDevicePaired?: (userId: string) => Promise<void>;
 }
 
 type AuthSession = { id: string; userId: string };
@@ -151,6 +154,7 @@ export function authRateLimitOptions(nodeEnv = process.env.NODE_ENV) {
       "/request-account-deletion": { window: 600, max: 3 },
       "/request-identity-code": { window: 600, max: 3 },
       "/confirm-identity": rule,
+      "/pairing/exchange": rule,
       "/passkey/verify-authentication": rule,
       "/passkey/verify-registration": rule,
       "/passkey/generate-authenticate-options": { window: 60, max: 30 },
@@ -196,6 +200,8 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
     if (!env.singleAccount || !policy.enabled) return policy;
     return (await hasAdmittedAccount(prisma)) ? { ...policy, enabled: false } : policy;
   };
+  const emailAdmission = async () =>
+    env.emailSignup === false ? { ...signupPolicyFromEnv(env), enabled: false } : admission();
   const admitSoleAccount = (userId: string) =>
     prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('robots:single-account'))`;
@@ -261,6 +267,7 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
           "reset-password:": "hashed",
           "delete-account-": "hashed",
           [ACCOUNT_EXPORT_TOKEN_PREFIX]: "hashed",
+          [PAIRING_CODE_PREFIX]: "hashed",
         },
       },
     },
@@ -451,6 +458,7 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
         env.passwordAuth !== false,
       ),
       identityConfirmation(env.email, emailLocaleOf),
+      devicePairing({ clientIpHeader: CLIENT_IP_HEADER, onPaired: env.afterDevicePaired }),
       ...(discovery ? [discovery.plugin] : []),
       ...(emailCodeSignIn
         ? [
@@ -595,7 +603,7 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
             .trim()
             .toLowerCase();
           if (!(await ctx.context.internalAdapter.findUserByEmail(email))) {
-            const policy = await admission();
+            const policy = await emailAdmission();
             if (!policy.enabled || !emailAllowed(email, policy.allowlist)) {
               if (ctx.path === SEND_SIGN_IN_CODE_PATH) return ctx.json({ success: true });
               throw new APIError("BAD_REQUEST", { code: "INVALID_OTP", message: "Invalid OTP" });
@@ -604,7 +612,7 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
         }
         let policy =
           ctx.path === "/sign-up/email"
-            ? await admission()
+            ? await emailAdmission()
             : ctx.path === "/sign-in/email"
               ? signupPolicyFromEnv(env)
               : undefined;
@@ -897,6 +905,7 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
   authContext = auth.$context;
   return Object.assign(auth, {
     emailCodeSignIn,
+    emailSignup: env.passwordAuth !== false && env.emailSignup !== false,
     encryptStoredOAuthTokens: async () => encryptStoredOAuthTokens(prisma, await tokenKey()),
     ssoAvailability: () => discovery?.availability(),
     passkeyRpId: relyingParty?.rpID ?? null,
@@ -906,6 +915,11 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
       issueAccountExportToken((await auth.$context).internalAdapter, userId),
     consumeAccountExportToken: async (token: string) =>
       consumeAccountExportToken((await auth.$context).internalAdapter, token),
+    issuePairingCode: async (userId: string) =>
+      issuePairingCode((await auth.$context).internalAdapter, userId),
+    endSessions: async (tokens: string[]) => {
+      if (tokens.length) await (await auth.$context).internalAdapter.deleteSessions(tokens);
+    },
     disposeOidcDiscovery: () => {
       discovery?.dispose();
     },

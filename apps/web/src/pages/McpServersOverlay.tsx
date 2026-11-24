@@ -25,11 +25,13 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ErrorNotice } from "../components/ErrorNotice";
 import type { AgentAccess } from "../components/integrations/agent-access";
 import { AgentAccessControl } from "../components/integrations/agent-access";
+import { ConnectionPageHeader } from "../components/integrations/connection-page";
 import {
   AvailabilityControl,
   reachesOtherSpaces,
   useOwnSpaces,
 } from "../components/integrations/space-availability";
+import { useBotName } from "../components/integrations/use-bot-name";
 import { McpServerHealthLine } from "../components/McpServerHealthLine";
 import { desktopBridge } from "../lib/desktop";
 import { connectMcpOauth, MCP_OAUTH_CHANNEL } from "../lib/mcp-connect";
@@ -44,11 +46,10 @@ import {
   mcpServerConfig,
   mcpServerDraftFor,
 } from "./McpServerForm";
+import { McpServerPage } from "./mcp-server-page";
 
-/** How often the list is re-read while a server installs its package or is being tested. */
 const INSTALL_POLL_MS = 2500;
 
-/** A server whose authorization server cannot register a client until the user enters one. */
 function needsOAuthClient(server: McpServer): boolean {
   return server.health.code === MCP_OAUTH_CLIENT_REQUIRED && !server.oauthClientId;
 }
@@ -66,14 +67,16 @@ export function McpServersOverlay({
   onClose,
   editServerId,
   stdioEnabled,
+  activeBotId,
 }: {
   onClose: () => void;
-  /** Opens with this server's form, as an import's setup checklist does. */
   editServerId?: string;
-  /** Whether this deployment runs stdio servers. */
   stdioEnabled: boolean;
+  activeBotId?: string;
 }) {
   const { t } = useLingui();
+  const botName = useBotName(activeBotId);
+  const [openServerId, setOpenServerId] = useState<string | null>(null);
   const [editing, setEditing] = useState<McpServer | null>(null);
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<McpServer | null>(null);
@@ -89,10 +92,6 @@ export function McpServersOverlay({
   const serversOptions = queries.mcp.servers.list.queryOptions();
   const serversQuery = useQuery({
     ...serversOptions,
-    // A freshly saved stdio server installs its package in the background, so its health
-    // moves installing -> ok/error on its own, and a test can spend minutes installing.
-    // Re-read the list while either is true so the card follows along; a refused request
-    // stops it.
     refetchInterval: (query) => {
       const error = query.state.error;
       if (error && !isRetryableError(error)) return false;
@@ -117,12 +116,10 @@ export function McpServersOverlay({
       bots.map((bot) => [bot.id, assignments.filter((assignment) => assignment.botId === bot.id)]),
     ) as Record<string, BotMcpServer[]>;
   }, [bots, assignmentsQuery.data]);
-  // replace() overwrites a bot's whole list, so changes wait for a read of every assignment.
   const assignmentsReady = assignmentsQuery.isSuccess && !assignmentsQuery.isFetching;
   const loadFailed = serversQuery.isError || botsQuery.isError || assignmentsQuery.isError;
   const shownError = error ?? (loadFailed ? errorDetails(t`Could not load MCP servers`) : null);
 
-  /** Reads everything again with requests sent after a change. */
   async function refresh() {
     await Promise.all([
       fetchFresh(queryClient, serversOptions),
@@ -141,9 +138,6 @@ export function McpServersOverlay({
   }, [editServerId, servers]);
 
   useEffect(() => {
-    // BroadcastChannel instead of window.opener messaging: provider login
-    // pages with COOP sever the opener link, but the channel is origin-scoped
-    // and unaffected.
     const channel = new BroadcastChannel(MCP_OAUTH_CHANNEL);
     channel.onmessage = (event: MessageEvent) => {
       if ((event.data as { type?: string } | null)?.type !== "mcp-oauth-complete") return;
@@ -213,9 +207,6 @@ export function McpServersOverlay({
       if (!draft.access.allBots) await rpc.mcp.servers.agents({ id: created.id, ...draft.access });
       await refresh();
       resetForm();
-      // A remote server is checked in the background; wait for that check so a server
-      // that cannot work as entered says so now. It starts after the refresh, whose read
-      // the test's cache write would otherwise cancel.
       if (created.health.status === "unknown" && !created.health.checkedAt)
         void testServer(created, false);
     } catch (err) {
@@ -291,7 +282,6 @@ export function McpServersOverlay({
     setError(null);
     try {
       await rpc.mcp.servers.remove({ id: server.id });
-      // A server added again gets a fresh jar anyway; this drops the old one.
       await mcpBrowser?.clear(server.id).catch(() => undefined);
       if (editing?.id === server.id) resetForm();
       await refresh();
@@ -329,7 +319,6 @@ export function McpServersOverlay({
     setError(null);
     try {
       setOauthPending(server.id);
-      // Forget the provider's cookies too, so the next Connect can pick another account.
       await mcpBrowser?.clear(server.id);
       await rpc.mcp.oauth.disconnect({ serverId: server.id });
       await refresh();
@@ -340,14 +329,65 @@ export function McpServersOverlay({
     }
   }
 
-  // A save refreshes the list before it resets the form, so the form waits for the reset.
+  const openServer = servers.find((server) => server.id === openServerId) ?? null;
   const formOpen =
     saving || adding || editing !== null || (serversQuery.isSuccess && servers.length === 0);
 
+  function accessControls(server: McpServer) {
+    return (
+      <>
+        {server.installId ? null : (
+          <AvailabilityControl
+            kind="mcpServer"
+            id={server.id}
+            availability={server.availability}
+            onChanged={() => serversQuery.refetch()}
+          />
+        )}
+        <AgentAccessControl
+          bots={bots}
+          access={accessOf(server)}
+          disabled={!assignmentsReady}
+          onChange={(access) => void setServerAgents(server, access)}
+        />
+      </>
+    );
+  }
+
+  function usesOAuth(server: McpServer) {
+    return (
+      (server.transport !== "stdio" || Boolean(server.oauthClientId)) && !needsOAuthClient(server)
+    );
+  }
+
+  function renderServerPage(server: McpServer) {
+    const pending = oauthPending === server.id;
+    return (
+      <McpServerPage
+        server={server}
+        botName={botName}
+        signIn={
+          usesOAuth(server)
+            ? {
+                label: oauthActionLabel(server, pending),
+                pending,
+                signedIn: server.oauthStatus === "connected",
+                onConnect: () => void connectOAuth(server),
+                onDisconnect: () => void disconnectOAuth(server),
+              }
+            : null
+        }
+        access={accessControls(server)}
+        testing={testingIds.has(server.id)}
+        onEdit={() => startEditing(server)}
+        onTest={() => void testServer(server)}
+        onDelete={() => setDeleting(server)}
+      />
+    );
+  }
+
   function renderServer(server: McpServer) {
-    const oauth =
-      (server.transport !== "stdio" || server.oauthClientId) && !needsOAuthClient(server);
-    // A working server does not need signing in up front, so the action waits in its menu.
+    const oauth = usesOAuth(server);
     const signInFirst =
       oauth &&
       (server.oauthStatus === "reconnect" ||
@@ -363,7 +403,13 @@ export function McpServersOverlay({
       >
         <div className="min-w-0 space-y-0.5">
           <div className="flex items-baseline gap-2">
-            <span className="truncate text-body font-medium text-foreground">{server.name}</span>
+            <button
+              type="button"
+              className="truncate rounded text-body font-medium text-foreground underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+              onClick={() => setOpenServerId(server.id)}
+            >
+              {server.name}
+            </button>
             {working && server.health.toolCount !== null ? (
               <span className="shrink-0 text-label text-muted-foreground">
                 <Plural value={server.health.toolCount} one="# tool" other="# tools" />
@@ -376,20 +422,7 @@ export function McpServersOverlay({
           <McpServerHealthLine health={server.health} checking={testing} />
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {server.installId ? null : (
-            <AvailabilityControl
-              kind="mcpServer"
-              id={server.id}
-              availability={server.availability}
-              onChanged={() => serversQuery.refetch()}
-            />
-          )}
-          <AgentAccessControl
-            bots={bots}
-            access={accessOf(server)}
-            disabled={!assignmentsReady}
-            onChange={(access) => void setServerAgents(server, access)}
-          />
+          {accessControls(server)}
           {signInFirst ? (
             <Button
               type="button"
@@ -448,24 +481,32 @@ export function McpServersOverlay({
       }}
     >
       <DialogContent showCloseButton={false} size="md">
-        <DialogHeader className="flex-row items-center justify-between gap-3 border-b border-border px-6 py-5">
-          <DialogTitle className="text-heading2 text-foreground">
-            <Trans>MCP servers</Trans>
-          </DialogTitle>
-          <div className="flex items-center gap-1">
-            {formOpen ? null : (
-              <Button type="button" size="sm" onClick={() => setAdding(true)}>
-                <Plus />
-                <Trans>Add server</Trans>
-              </Button>
-            )}
-            <DialogClose
-              render={<Button variant="ghost" size="icon-sm" aria-label={t`Close MCP servers`} />}
-            >
-              <X />
-            </DialogClose>
-          </div>
-        </DialogHeader>
+        {openServer && !formOpen ? (
+          <ConnectionPageHeader
+            title={openServer.name}
+            onBack={() => setOpenServerId(null)}
+            closeLabel={t`Close MCP servers`}
+          />
+        ) : (
+          <DialogHeader className="flex-row items-center justify-between gap-3 border-b border-border px-6 py-5">
+            <DialogTitle className="text-heading2 text-foreground">
+              <Trans>MCP servers</Trans>
+            </DialogTitle>
+            <div className="flex items-center gap-1">
+              {formOpen ? null : (
+                <Button type="button" size="sm" onClick={() => setAdding(true)}>
+                  <Plus />
+                  <Trans>Add server</Trans>
+                </Button>
+              )}
+              <DialogClose
+                render={<Button variant="ghost" size="icon-sm" aria-label={t`Close MCP servers`} />}
+              >
+                <X />
+              </DialogClose>
+            </div>
+          </DialogHeader>
+        )}
         {shownError ? (
           <div className="mx-6 mt-5 rounded-xl border border-destructive/40 bg-destructive/10 p-3">
             <ErrorNotice error={shownError} />
@@ -486,6 +527,8 @@ export function McpServersOverlay({
               onBack={resetForm}
               onSave={() => void saveServer()}
             />
+          ) : openServer ? (
+            renderServerPage(openServer)
           ) : (
             <ul className="-my-3 divide-y divide-border">{servers.map(renderServer)}</ul>
           )}

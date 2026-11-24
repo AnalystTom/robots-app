@@ -77,7 +77,6 @@ function createDeps(
   };
   const outboundRows: Array<Record<string, unknown>> = [];
   let outboundIds = 0;
-  // Honors replace and skipDuplicates on the idempotency key, as the real recorder does.
   const recordIn = vi.fn(
     async (
       _tx: unknown,
@@ -176,7 +175,6 @@ function createDeps(
     messagingChannel: {
       findMany: vi.fn(async () => [{ id: channel.id }]),
       findUnique: vi.fn(async () => channel),
-      // The transaction's roster read and write share the channel object's state.
       findUniqueOrThrow: vi.fn(async () => channel),
       upsert: vi.fn(async () => channel),
       update: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
@@ -243,8 +241,6 @@ function createDeps(
           };
           data: Record<string, unknown>;
         }) => {
-          // Single-row predicated claims (owner commands) honor the status
-          // predicate; bulk group writes (sweep, departures) apply to members.
           if (where.id) {
             const row = [overrides.invitedMember, overrides.approvedMember, ...members]
               .filter(Boolean)
@@ -274,7 +270,6 @@ function createDeps(
       ),
     },
     messagingOutbound: {
-      // Rows not out yet: anything but sent, or sent with no handle yet (claimed).
       count: vi.fn(
         async ({ where }: { where: { sourceMessageId: { in: string[] } } }) =>
           outboundRows.filter(
@@ -309,9 +304,6 @@ function createDeps(
     user: {
       findUnique: vi.fn(async () => ({ id: "user-1", name: "Alice Owner" })),
     },
-    // Claim-and-confirm paths run inside their own transaction; the tx
-    // delegate shares the same stateful models (plus the txMock tables used
-    // by createThreadMessage).
     $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
       fn({
         ...txMock,
@@ -377,7 +369,6 @@ function createDeps(
   };
 }
 
-/** Runs the send's claim in `tx` once the run exists, as sendUserMessage does. */
 function claimingSend(deps: ReturnType<typeof createDeps>, tx: unknown) {
   deps.sendUserMessage.mockImplementationOnce(
     async (input: { claim?: (tx: unknown, sent: object) => Promise<boolean> }) => {
@@ -389,7 +380,6 @@ function claimingSend(deps: ReturnType<typeof createDeps>, tx: unknown) {
   );
 }
 
-/** Keeps each transaction the fake database opens, so a test can see where a write ran. */
 function transactions(deps: ReturnType<typeof createDeps>) {
   const run = vi.mocked(deps.prisma.$transaction).getMockImplementation()!;
   const opened: unknown[] = [];
@@ -413,6 +403,20 @@ const dmEvent = {
   channelName: null,
   participants: ["+15551111111"],
   content: "hello bot",
+  mediaUrl: null,
+};
+
+const discordDmEvent = {
+  type: "message" as const,
+  provider: "discord",
+  handle: "1300000000000000001",
+  threadId: "discord:@me:998877665544332211",
+  isDirect: true,
+  from: "112233445566778899",
+  fromLabel: "Ada Lovelace",
+  channelName: null,
+  participants: [],
+  content: "What is on my calendar today?",
   mediaUrl: null,
 };
 
@@ -458,6 +462,46 @@ describe("createMessagingInboundHandler DM routing", () => {
       trigger: "messaging",
       clientNonce: "messaging:sendblue:handle-1",
     });
+    expect(deps.enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "run.continue", payload: { runId: "run-1" } }),
+    );
+  });
+
+  it("delivers a linked Discord sender's direct message into their bot's chat", async () => {
+    const deps = createDeps({
+      identity: {
+        id: "mi-discord",
+        provider: "discord",
+        address: discordDmEvent.from,
+        dmThreadId: null,
+        userId: "user-1",
+        spaceId: "ws-1",
+        botId: "bot-1",
+        verifiedAt: null,
+        lastInboundAt: null,
+        outboundSinceInbound: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    const handle = createMessagingInboundHandler(deps);
+    await handle(discordDmEvent);
+
+    expect(deps.provision).not.toHaveBeenCalled();
+    expect(deps.prisma.messagingIdentity.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ dmThreadId: discordDmEvent.threadId }),
+      }),
+    );
+    expect(deps.sendUserMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        threadId: "thread-1",
+        botId: "bot-1",
+        blocks: [{ kind: "text", text: discordDmEvent.content }],
+        trigger: "messaging",
+        clientNonce: `messaging:discord:${discordDmEvent.handle}`,
+      }),
+    );
     expect(deps.enqueue).toHaveBeenCalledWith(
       expect.objectContaining({ name: "run.continue", payload: { runId: "run-1" } }),
     );
@@ -763,7 +807,6 @@ describe("createMessagingInboundHandler DM routing", () => {
       ],
     });
     expect(storeAttachment).toHaveBeenCalledTimes(2);
-    // A slow transcription must not eat the shared download deadline of later files.
     const firstTranscribe = transcribe.mock.invocationCallOrder[0]!;
     for (const order of storeAttachment.mock.invocationCallOrder) {
       expect(order).toBeLessThan(firstTranscribe);
@@ -793,7 +836,6 @@ describe("createMessagingInboundHandler DM routing", () => {
       await vi.advanceTimersByTimeAsync(20_001);
       await pending;
       expect(transcribe).toHaveBeenCalledTimes(1);
-      // The stalled provider call is cancelled, not left running in the background.
       const [{ signal }] = transcribe.mock.calls[0] as unknown as [{ signal: AbortSignal }];
       expect(signal.aborted).toBe(true);
       expect(deps.sendUserMessage).toHaveBeenCalledWith(
@@ -1097,7 +1139,6 @@ describe("createMessagingInboundHandler DM routing", () => {
 
     expect(deps.sendUserMessage).toHaveBeenCalledTimes(1);
     expect(deps.sendUserMessage.mock.calls[0]?.[0]?.trigger).toBe("webhook");
-    // Only a TeamChat message has a deferred row for the wake to claim.
     expect(deps.sendUserMessage.mock.calls[0]?.[0]).not.toHaveProperty("claim");
     expect(deps.enqueue).toHaveBeenCalledTimes(1);
   });
@@ -1157,7 +1198,6 @@ describe("createMessagingInboundHandler DM routing", () => {
       where: { id: "external-deferred", status: "deferred" },
       data: { status: "ignored", engagementReason: "message_routine_wake" },
     });
-    // The agent's backup job for the message goes in the same transaction.
     expect(deps.cancelIn).toHaveBeenCalledWith(tx, "team_chat.engage:external-deferred");
     expect(deps.enqueue).toHaveBeenCalledWith(
       expect.objectContaining({ name: "run.continue", payload: { runId: "run-1" } }),
@@ -1178,7 +1218,6 @@ describe("createMessagingInboundHandler DM routing", () => {
       { deliveryProvider: "slack", externalMessageId: "external-agent-owned" },
     );
 
-    // Handled: the caller must not hand the message to the agent a second time.
     expect(woken).toBe(true);
     expect(deps.cancelIn).not.toHaveBeenCalled();
     expect(deps.enqueue).not.toHaveBeenCalled();
@@ -1214,7 +1253,6 @@ describe("createMessagingInboundHandler DM routing", () => {
       }),
     );
     expect(deps.sendUserMessage).not.toHaveBeenCalled();
-    // Under the cap nothing is held back, so there is nothing to send.
     expect(deps.send).not.toHaveBeenCalled();
   });
 
@@ -1234,7 +1272,6 @@ describe("createMessagingInboundHandler DM routing", () => {
     await handle({ ...dmEvent, content: "", mediaUrl: null });
 
     expect(deps.send).toHaveBeenCalledWith([{ identityId: "mi-1" }]);
-    // The counter is reset first, or the held replies would stay capped.
     expect(
       vi.mocked(deps.prisma.messagingIdentity.update).mock.invocationCallOrder[0]!,
     ).toBeLessThan(deps.send.mock.invocationCallOrder[0]!);
@@ -1288,7 +1325,6 @@ describe("inbound receipt", () => {
     deps.runs.get("run-1")!.messagingMirroredAt = new Date("2026-01-01T00:00:00Z");
     await expect(handled()).resolves.toBe(false);
 
-    // Claimed: marked sent before its handle is known.
     deps.outboundRows[0]!.status = "sent";
     await expect(handled()).resolves.toBe(false);
     deps.outboundRows[0]!.providerHandle = "handle-1";
@@ -1345,7 +1381,6 @@ describe("inbound receipt", () => {
   });
 });
 
-/** The request prompt the line sent this person, as invites and connection requests write it. */
 function sentPrompt(
   deps: { outboundRows: Array<Record<string, unknown>> },
   idempotencyKey: string,
@@ -1571,7 +1606,6 @@ describe("createMessagingInboundHandler owner commands", () => {
     });
     sentPrompt(deps, "reply:msg-7:0", 120_000);
     sentPrompt(deps, "connect:bot-6:bot-1", 60_000, "pending");
-    // Sending the held replies delivers the request the person never saw.
     deps.send.mockImplementation(async () => {
       for (const [index, row] of deps.outboundRows.entries()) {
         if (row.status !== "pending") continue;
@@ -1755,7 +1789,6 @@ describe("createMessagingInboundHandler owner commands", () => {
     const handle = createMessagingInboundHandler(deps);
     await handle({ ...dmEvent, content: "YES" });
 
-    // The newer prompt names a connection that is no longer pending; the older invite stays open.
     expect(connection).toHaveBeenCalledWith({
       where: { requesterBotId: "bot-9", targetBotId: "bot-1", status: "pending" },
     });
@@ -1810,8 +1843,6 @@ describe("createMessagingInboundHandler owner commands", () => {
         body: "Nothing is running.",
       }),
     ]);
-    // The receipt is the replay guard: written before anything is cancelled, so the
-    // redelivery finds it and cancels nothing.
     expect(deps.recordIn.mock.invocationCallOrder[0]!).toBeLessThan(
       cancelRuns.mock.invocationCallOrder[0]!,
     );
@@ -1825,7 +1856,6 @@ describe("createMessagingInboundHandler channel routing", () => {
   it("discovers a Telegram group from the senders it has seen, without sweeping members", async () => {
     const deps = createDeps({ identity: null });
     const handle = createMessagingInboundHandler(deps);
-    // Telegram names no roster: participants accumulate as senders appear.
     await handle({
       type: "message",
       provider: "telegram",
@@ -1853,7 +1883,6 @@ describe("createMessagingInboundHandler channel routing", () => {
     expect(deps.members).toEqual([
       expect.objectContaining({ address: "777", identityId: null, status: "invited" }),
     ]);
-    // A rosterless event says nothing about who left; no member may be swept.
     expect(deps.prisma.messagingChannelMember.updateMany).not.toHaveBeenCalled();
   });
 
@@ -1891,7 +1920,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       ]),
     );
     const groupLane = { identityId: null, threadId: "sendblue:grp-1" };
-    // The invite commits with the roster change; the intro commits with the mark that it was posted.
     expect(deps.recordIn).toHaveBeenCalledWith(
       opened[0],
       { identityId: "mi-1" },
@@ -1908,7 +1936,6 @@ describe("createMessagingInboundHandler channel routing", () => {
     expect(deps.send).toHaveBeenCalledWith([{ identityId: "mi-1" }]);
     expect(deps.send).toHaveBeenCalledWith([groupLane]);
     expect(deps.txMock.message.create).toHaveBeenCalled();
-    // sender is only invited, not approved: no fan-out yet
     expect(deps.sendUserMessage).not.toHaveBeenCalled();
   });
 
@@ -1932,7 +1959,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       participants: ["+15553333333", "+15551111111"],
     });
 
-    // One order every writer agrees on, so two groups inviting the same people cannot deadlock.
     expect(
       deps.recordIn.mock.calls.map(([tx, lane, rows, options]) => [
         tx,
@@ -2072,8 +2098,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       ),
     });
     const handle = createMessagingInboundHandler(deps);
-    // The roster names both members; a roster without the peer would sweep
-    // their membership to left before the fan-out.
     await handle({
       ...groupEvent,
       participants: ["+15551111111", "+15553333333"],
@@ -2193,8 +2217,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       id: "cm-6",
       channelId: "ch-1",
       address: "+15551111111",
-      // Unlinking deletes the identity row but leaves this FK-free column
-      // pointing at the dead id; re-linking mints a new one.
       identityId: "mi-unlinked",
       status: "invited",
     };
@@ -2233,7 +2255,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       ],
     });
     const sparseHandle = createMessagingInboundHandler(sparse);
-    // A webhook with no participants roster must not mass-mark members left.
     await sparseHandle({ ...groupEvent, participants: [] });
     expect(sparse.prisma.messagingChannelMember.updateMany).not.toHaveBeenCalled();
   });
@@ -2248,14 +2269,12 @@ describe("createMessagingInboundHandler channel routing", () => {
     };
     const deps = createDeps({ members: [joined] });
     const handle = createMessagingInboundHandler(deps);
-    // The newer event first: its roster names the member, so the channel records it.
     await handle({
       ...groupEvent,
       handle: "handle-new",
       participants: ["+15551111111", "+15553333333"],
       rosterAt: new Date("2026-11-04T10:02:00.000Z"),
     });
-    // A retry of an older webhook, delivered late: its roster predates the member.
     await handle({
       ...groupEvent,
       handle: "handle-old",
@@ -2276,14 +2295,12 @@ describe("createMessagingInboundHandler channel routing", () => {
     };
     const deps = createDeps({ members: [gone] });
     const handle = createMessagingInboundHandler(deps);
-    // A newer event without the member sets the channel's roster time first.
     await handle({
       ...groupEvent,
       handle: "handle-new",
       participants: ["+15551111111"],
       rosterAt: new Date("2026-11-04T10:02:00.000Z"),
     });
-    // The delayed older roster still names the member, who has since left.
     await handle({
       ...groupEvent,
       handle: "handle-old",
@@ -2358,7 +2375,6 @@ describe("createMessagingInboundHandler channel routing", () => {
     };
     const deps = createDeps({ members: [leaver, peer], approvedMember: leaver });
     const handle = createMessagingInboundHandler(deps);
-    // The newest roster names both; the channel settles on its time.
     await handle({
       ...groupEvent,
       handle: "handle-settled",
@@ -2368,8 +2384,6 @@ describe("createMessagingInboundHandler channel routing", () => {
     await handle({ ...dmEvent, content: "LEAVE" });
     expect(leaver.status).toBe("left");
 
-    // A delayed delivery of a roster from before the settled one, naming only
-    // the leaver: it must not re-invite them or sweep the peer out.
     await handle({
       ...groupEvent,
       handle: "handle-old",
@@ -2409,8 +2423,6 @@ describe("createMessagingInboundHandler channel routing", () => {
     await handle({ ...dmEvent, content: "LEAVE" });
     expect(leaver.status).toBe("left");
 
-    // A conflicting roster claiming the same time as the settled one: not
-    // newer, so it changes no membership either.
     await handle({
       ...groupEvent,
       handle: "handle-equal",
@@ -2436,8 +2448,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       };
       const deps = createDeps({ members: [member] });
       const handle = createMessagingInboundHandler(deps);
-      // The sender's clock is far ahead of the server's: the roster's membership is
-      // not trusted, so the member keeps their status.
       await handle({
         ...groupEvent,
         handle: "handle-future",
@@ -2446,7 +2456,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       });
       expect(member.status).toBe("approved");
 
-      // A later real roster without the member must still win and sweep them out.
       vi.setSystemTime(new Date("2026-11-05T10:00:01.000Z"));
       await handle({
         ...groupEvent,
@@ -2464,8 +2473,6 @@ describe("createMessagingInboundHandler channel routing", () => {
   it("keeps two rosters' own order when both run seconds ahead of the server", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     try {
-      // Both platform clocks are seconds ahead of the server's: within the accepted
-      // skew, so each roster keeps its own time as its version.
       vi.setSystemTime(new Date("2026-11-05T10:00:00.000Z"));
       const member = {
         id: "cm-g",
@@ -2482,7 +2489,6 @@ describe("createMessagingInboundHandler channel routing", () => {
         participants: ["+15551111111", "+15552222222"],
         rosterAt: new Date("2026-11-05T10:00:05.000Z"),
       });
-      // A second roster, one platform second newer, without the member.
       await handle({
         ...groupEvent,
         handle: "handle-second",
@@ -2508,7 +2514,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       };
       const deps = createDeps({ members: [member] });
       const handle = createMessagingInboundHandler(deps);
-      // The roster runs seconds ahead of the server, within the accepted skew.
       vi.setSystemTime(new Date("2026-11-05T10:00:00.000Z"));
       await handle({
         ...groupEvent,
@@ -2516,7 +2521,6 @@ describe("createMessagingInboundHandler channel routing", () => {
         participants: ["+15551111111", "+15552222222"],
         rosterAt: new Date("2026-11-05T10:00:05.000Z"),
       });
-      // A newer roster removes the member.
       vi.setSystemTime(new Date("2026-11-05T10:00:01.000Z"));
       await handle({
         ...groupEvent,
@@ -2526,8 +2530,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       });
       expect(member.status).toBe("left");
 
-      // The first webhook is redelivered after both. Its own time is still the older
-      // version, so it must not restart the member's approval cycle.
       vi.setSystemTime(new Date("2026-11-05T10:00:02.000Z"));
       await handle({
         ...groupEvent,
@@ -2554,8 +2556,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       };
       const deps = createDeps({ members: [member] });
       const handle = createMessagingInboundHandler(deps);
-      // A roster dated far ahead of the server's clock: its membership is not trusted,
-      // so it changes nothing.
       vi.setSystemTime(new Date("2026-11-05T10:00:00.000Z"));
       await handle({
         ...groupEvent,
@@ -2565,7 +2565,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       });
       expect(member.status).toBe("approved");
 
-      // A real roster removes the member.
       vi.setSystemTime(new Date("2026-11-05T10:00:01.000Z"));
       await handle({
         ...groupEvent,
@@ -2575,8 +2574,6 @@ describe("createMessagingInboundHandler channel routing", () => {
       });
       expect(member.status).toBe("left");
 
-      // The far-future webhook is replayed after both: still distrusted, so it must
-      // not restart the member's approval cycle.
       vi.setSystemTime(new Date("2026-11-05T10:00:02.000Z"));
       await handle({
         ...groupEvent,
@@ -2687,7 +2684,6 @@ describe("createMessagingInboundHandler channel routing", () => {
     };
     await handle(event);
     expect(deps.prisma.routine.findMany).not.toHaveBeenCalled();
-    // A bare photo still reaches each bot's routines, but starts no plain run.
     await handle({
       ...event,
       handle: "-1001234:51",
@@ -2697,7 +2693,6 @@ describe("createMessagingInboundHandler channel routing", () => {
     expect(deps.sendUserMessage).not.toHaveBeenCalled();
     expect(deps.enqueue.mock.calls.filter(([job]) => job.name === "run.continue")).toHaveLength(0);
 
-    // The same sender's next real message still reaches both bots.
     await handle({ ...event, handle: "-1001234:52", content: "dinner at 7" });
     expect(deps.sendUserMessage).toHaveBeenCalledTimes(2);
   });
@@ -2775,11 +2770,9 @@ describe("createMessagingInboundHandler channel routing", () => {
       data: { status: "left" },
     });
     expect(alice.status).toBe("left");
-    // The service message itself reaches no bot and starts no run.
     expect(deps.sendUserMessage).not.toHaveBeenCalled();
     expect(deps.enqueue).not.toHaveBeenCalled();
 
-    // Alice's bot no longer receives the group's later messages.
     await handle({
       type: "message",
       provider: "telegram",
@@ -2797,7 +2790,6 @@ describe("createMessagingInboundHandler channel routing", () => {
   });
 
   it("ends a departed member's forum-topic memberships too", async () => {
-    // The group and its forum topic are separate channels of the same chat.
     const aliceGroup = {
       id: "cm-1",
       channelId: "ch-1",
@@ -2863,7 +2855,6 @@ describe("createMessagingInboundHandler channel routing", () => {
   ])(
     "invites nobody when a linked sender the channel has not seen departs: %s",
     async (_case, departures) => {
-      // Alice is linked but has never written in this group; her first event is a departure.
       const deps = createDeps({ members: [] });
       Object.assign(deps.prisma.messagingIdentity, {
         findUnique: vi.fn(async () => ({
@@ -2891,7 +2882,6 @@ describe("createMessagingInboundHandler channel routing", () => {
         departures,
       });
 
-      // No "Reply YES" invitation she could never accept, and no member row to answer it.
       expect(deps.recordIn).not.toHaveBeenCalled();
       expect(deps.send).not.toHaveBeenCalled();
       expect(deps.prisma.messagingChannelMember.upsert).not.toHaveBeenCalled();
@@ -2937,10 +2927,8 @@ describe("createMessagingInboundHandler channel routing", () => {
     });
     expect(alice.status).toBe("left");
     expect(carol.status).toBe("left");
-    // The removal service message itself starts no run.
     expect(deps.sendUserMessage).not.toHaveBeenCalled();
 
-    // With every membership ended, nothing in the group reaches a bot.
     await handle({
       type: "message",
       provider: "telegram",
@@ -2973,8 +2961,6 @@ describe("createMessagingInboundHandler owner-command status races", () => {
       findFirst: vi.fn(async ({ where }: { where?: { status?: string } }) => {
         if (where?.status === "invited" && swept.status === "invited") {
           const snapshot = { ...swept };
-          // Interleaved: a group-participant sweep marks the member left
-          // between the command's read and its write.
           swept.status = "left";
           return snapshot;
         }
@@ -2987,7 +2973,6 @@ describe("createMessagingInboundHandler owner-command status races", () => {
     expect(swept.status).toBe("left");
     expect(deps.outboundRows).toHaveLength(1);
     expect(deps.send).not.toHaveBeenCalled();
-    // No longer actionable: the text falls through as a normal message.
     expect(deps.sendUserMessage).toHaveBeenCalled();
   });
 
@@ -3005,7 +2990,6 @@ describe("createMessagingInboundHandler owner-command status races", () => {
     connectionModel.findFirst = vi.fn(async ({ where }: { where?: { status?: string } }) => {
       if (where?.status === "pending" && state.status === "pending") {
         const snapshot = { ...state };
-        // Interleaved: the requester revokes between the read and the write.
         state.status = "revoked";
         return snapshot;
       }
@@ -3044,8 +3028,6 @@ describe("createMessagingInboundHandler owner-command status races", () => {
       findFirst: vi.fn(async ({ where }: { where?: { status?: string } }) => {
         if (where?.status === "approved" && rejoined.status === "approved") {
           const snapshot = { ...rejoined };
-          // Interleaved: swept out and re-added, so the member is invited
-          // again by the time the stale LEAVE writes.
           rejoined.status = "invited";
           return snapshot;
         }
@@ -3076,19 +3058,15 @@ describe("createMessagingInboundHandler approval-cycle notifications", () => {
     const inviteRows = () =>
       deps.outboundRows.filter((row) => row.idempotencyKey === "invite:ch-1:mi-1");
 
-    // First return: invited and prompted.
     await handle(groupEvent);
     expect(member.status).toBe("invited");
     expect(inviteRows()).toHaveLength(1);
     inviteRows()[0]!.status = "sent";
 
-    // The owner approves, then leaves again.
     member.status = "approved";
     await handle({ ...dmEvent, content: "LEAVE" });
     expect(member.status).toBe("left");
 
-    // Second return: the stale invite row from the first cycle must not
-    // suppress the new prompt.
     deps.send.mockClear();
     await handle(groupEvent);
     expect(member.status).toBe("invited");
@@ -3113,8 +3091,6 @@ describe("createMessagingInboundHandler approval-cycle notifications", () => {
     expect(leaveRows()).toHaveLength(1);
     leaveRows()[0]!.status = "sent";
 
-    // Rejoin and leave again: the second confirmation must not be swallowed
-    // by the first cycle's idempotency key.
     member.status = "approved";
     deps.send.mockClear();
     await handle({ ...dmEvent, content: "LEAVE" });
@@ -3179,9 +3155,6 @@ describe("createMessagingInboundHandler confirmation atomicity", () => {
     const handle = createMessagingInboundHandler(deps);
     await handle({ ...dmEvent, content: "YES" });
 
-    // Both confirmations must be written while the claim's row lock is held;
-    // a revoke landing between claim and writes must not interleave. They go in
-    // identity order, so two answers cannot deadlock on the two chats.
     expect(
       deps.recordIn.mock.calls.map(([callTx, lane, rows]) => [
         callTx,
@@ -3216,8 +3189,6 @@ describe("createMessagingInboundHandler confirmation atomicity", () => {
     const handle = createMessagingInboundHandler(deps);
     await handle({ ...dmEvent, content: "YES" });
 
-    // The participant sweep updates the same membership row; writing the
-    // "You're in" text under the claim's lock keeps it from interleaving.
     expect(deps.recordIn).toHaveBeenCalledWith(
       tx,
       { identityId: "mi-1" },
@@ -3248,7 +3219,6 @@ describe("createMessagingInboundHandler confirmation atomicity", () => {
       try {
         return await transaction(fn);
       } catch (error) {
-        // Model rollback at the database boundary, not in the handler.
         newest.status = before.newest;
         older.status = before.older;
         throw error;
@@ -3319,6 +3289,34 @@ describe("createMessagingInboundHandler linking", () => {
     expect(deps.send).toHaveBeenCalledWith([{ identityId: "mi-linked" }]);
   });
 
+  it("links a Discord direct message sender via a valid code and confirms there", async () => {
+    const deps = createDeps({ identity: null, linkCode: { ...liveCode } });
+    deps.openSignup = false;
+    const handle = createMessagingInboundHandler(deps);
+    await handle({ ...discordDmEvent, content: "abcd-2345" });
+
+    expect(deps.createdIdentities).toEqual([
+      expect.objectContaining({
+        provider: "discord",
+        address: discordDmEvent.from,
+        dmThreadId: discordDmEvent.threadId,
+        userId: "user-web",
+        spaceId: "ws-web",
+        botId: "bot-web",
+      }),
+    ]);
+    expect(deps.sendUserMessage).not.toHaveBeenCalled();
+    expect(deps.outboundRows).toEqual([
+      expect.objectContaining({
+        idempotencyKey: "link:code-1",
+        kind: "dm",
+        identityId: "mi-linked",
+        body: 'Linked. Messages here now reach "Chief".',
+      }),
+    ]);
+    expect(deps.send).toHaveBeenCalledWith([{ identityId: "mi-linked" }]);
+  });
+
   it("rolls back linking when confirmation fails, then retries without starting a run", async () => {
     const deps = createDeps({ identity: null, linkCode: { ...liveCode } });
     deps.openSignup = false;
@@ -3327,7 +3325,6 @@ describe("createMessagingInboundHandler linking", () => {
       try {
         return await transaction(fn);
       } catch (error) {
-        // Model rollback at the database boundary, not in the handler.
         deps.linkCodes.push({ ...liveCode });
         deps.createdIdentities.length = 0;
         deps.outboundRows.length = 0;
@@ -3353,7 +3350,6 @@ describe("createMessagingInboundHandler linking", () => {
       try {
         return await transaction(fn);
       } catch (error) {
-        // Model rollback at the database boundary, not in the handler.
         deps.linkCodes.push({ ...liveCode, userId: "user-1" });
         deps.outboundRows.length = 0;
         throw error;
@@ -3514,7 +3510,6 @@ describe("teamChatSenderCanWakeMessageRoutines", () => {
       }),
     ).resolves.toBe(false);
 
-    // Pure TeamChat room (no MessagingChannel row): linked sender ok, stranger blocked.
     const linkedRoom = createDeps({
       identity: {
         id: "mi-2",

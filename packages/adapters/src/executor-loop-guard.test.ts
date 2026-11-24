@@ -16,7 +16,6 @@ vi.mock("./computer-lifecycle.js", async (importOriginal) => ({
 
 const REFUSAL =
   "computer_act accepts at most 24 actions but got 30; none ran. Send the first 24 or fewer now, then the rest in a separate call.";
-// Past this many requests the fake model gives up, so a missing guard fails the test instead of hanging it.
 const REQUEST_CAP = 40;
 const REPORT = { path: "downloads/report.csv", kind: "file", size: 1024 };
 
@@ -35,7 +34,6 @@ beforeEach(() => {
   });
 });
 
-/** Coordinates change on every request, so the identical-input guards never see a repeat. */
 function clickBatch(size: number, request: number, vary = true) {
   return {
     actions: Array.from({ length: size }, (_, index) => ({
@@ -56,11 +54,6 @@ function toolResultTexts(messages: Array<Record<string, unknown>>): string[] {
 
 type Answer = { text?: string; calls?: Array<{ name: string; args: object }> };
 
-/**
- * One real executor turn: real PiAgentRuntime and run loop against a fake OpenAI-compatible
- * server that gives `answer(request)` for each request; an answer without calls ends the turn.
- * `listing(call)` gives what each listing of `downloads` finds; by default one unchanged file.
- */
 async function runLoop(
   answer: (request: number) => Answer,
   { listing = (_call: number) => [REPORT], learning = false, finalized = true } = {},
@@ -109,6 +102,7 @@ async function runLoop(
   vi.resetModules();
   const { PiAgentRuntime } = await import("./pi-runtime.js");
   const { createRunExecutor } = await import("./executor.js");
+  (await import("./bot-secrets.test-support.js")).fakeAuditLog();
 
   const run = {
     id: "run-1",
@@ -138,7 +132,6 @@ async function runLoop(
     upsert: async () => ({}),
     update: async () => ({}),
   };
-  // The run records each computer action as an effect so a crashed one is never replayed.
   type Effect = { id: string; status: string; idempotencyKey?: string } & Record<string, unknown>;
   const effects: Effect[] = [];
   const externalEffect = {
@@ -279,7 +272,6 @@ async function runLoop(
       })),
     },
   };
-  // Models and methods the run touches but this test does not care about behave as empty tables.
   const table = (model: object) =>
     new Proxy(model, {
       get: (target, key) => (key in target ? target[key as keyof typeof target] : emptyMethod(key)),
@@ -326,7 +318,6 @@ async function runLoop(
     deploymentModelKey: "fake-deployment-key",
     runtime: new PiAgentRuntime(),
     sandbox,
-    // A real save takes a while, and the model must not keep going while it runs.
     home: { commit: vi.fn(() => delay(200, "fixture-revision")) },
     memory: { read: async () => ({ documents: [] }) },
     memoryProviders: {
@@ -346,7 +337,6 @@ async function runLoop(
     jobs: { enqueue },
     notifications: { send: vi.fn(async () => undefined) },
     secrets: [],
-    // Ends the run if the guard is missing, instead of letting the fake server answer forever.
     shutdownSignal: AbortSignal.timeout(20_000),
   } as unknown as Parameters<typeof createRunExecutor>[0]);
 
@@ -366,7 +356,6 @@ async function runLoop(
   return { requests, act, finalizeRun, finalText, enqueue };
 }
 
-/** Every answer is a computer_act call. `sizes` gives the batch size per request; the last repeats. */
 const runWithBatches = (sizes: number[], vary = true) =>
   runLoop((n) => ({
     calls: [
@@ -383,7 +372,6 @@ const unreadable = () => {
 };
 
 function expectStoppedAt(calls: number, run: { requests: unknown[]; finalText: string }) {
-  // The stop lands while the runtime may already be sending the next request.
   expect(run.requests.length).toBeGreaterThanOrEqual(calls);
   expect(run.requests.length).toBeLessThanOrEqual(calls + 1);
   expect(run.finalText).toMatch(
@@ -434,12 +422,8 @@ describe("over-limit computer_act batches through the run loop", () => {
   }, 30_000);
 
   it("starts the count over after a batch within the limit", async () => {
-    // over, over, in-limit, then over until the run is stopped.
     const { requests, act, finalText } = await runWithBatches([30, 30, 24, 30]);
 
-    // Not stopped by the first two, nor by the three after the reset: the fourth ends it, and no
-    // more requests go out while the executed batch is saved. The stop lands while the runtime
-    // may already be sending the next request.
     const stoppedAt = 2 + 1 + MAX_CONSECUTIVE_OVER_LIMIT_ACTION_CALLS;
     expect(requests.length).toBeGreaterThanOrEqual(stoppedAt);
     expect(requests.length).toBeLessThanOrEqual(stoppedAt + 1);

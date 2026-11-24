@@ -65,7 +65,6 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
-          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Resolve pull request
         id: pull_request
@@ -83,42 +82,25 @@ jobs:
           # receive the immutable run gallery below, without republishing history.
           number=$(jq -r 'first // empty' <<< "$pulls")
           echo "number=$number" >> "$GITHUB_OUTPUT"
-      - name: Check for Playwright artifact
+      - name: Copy Playwright artifacts from the runner
         id: artifact
         env:
           ARTIFACT_NAME: playwright-artifacts-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PLAYWRIGHT_JOB_RESULT: ${{ needs.result.outputs.job_result }}
           RUN_ID: ${{ github.event.workflow_run.id }}
         shell: bash
         run: |
-          artifacts="$(gh api --method GET \
-            "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts?name=${ARTIFACT_NAME}")"
-          count="$(jq --arg name "$ARTIFACT_NAME" \
-            '[.artifacts[] | select(.name == $name and .expired == false)] | length' \
-            <<<"$artifacts")"
-          if [[ "$count" == "1" ]]; then
+          bash .github/scripts/local-artifact.sh download "$ARTIFACT_NAME" "$RUNNER_TEMP/runner-artifacts" "$RUN_ID"
+          if [[ -d "$RUNNER_TEMP/runner-artifacts/$ARTIFACT_NAME" ]]; then
+            mv "$RUNNER_TEMP/runner-artifacts/$ARTIFACT_NAME" "$RUNNER_TEMP/playwright-artifacts"
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "id=$(jq -r --arg name "$ARTIFACT_NAME" '.artifacts[] | select(.name == $name and .expired == false) | .id' <<<"$artifacts")" >> "$GITHUB_OUTPUT"
-          elif [[ "$count" == "0" && "$PLAYWRIGHT_JOB_RESULT" == "timed_out" ]]; then
-            echo "::warning::The timed-out Playwright job ended before it uploaded an artifact. Publishing an empty gallery."
+          elif [[ "$PLAYWRIGHT_JOB_RESULT" == "timed_out" ]]; then
+            echo "::warning::The timed-out Playwright job ended before it stored its artifacts. Publishing an empty gallery."
             echo "exists=false" >> "$GITHUB_OUTPUT"
           else
-            echo "Expected exactly one unexpired Playwright artifact; found $count." >&2
+            echo "Expected the Playwright artifacts $ARTIFACT_NAME on this runner." >&2
             exit 1
           fi
-      - name: Download Playwright artifacts
-        if: steps.artifact.outputs.exists == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ARTIFACT_ID: ${{ steps.artifact.outputs.id }}
-        shell: bash
-        run: |
-          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > "$RUNNER_TEMP/playwright-artifacts.zip"
-          # Keep untrusted files outside the checkout, dependencies, configuration,
-          # and generated dashboard consumed by the comment step.
-          python3 scripts/extract-playwright-artifacts.py \
-            "$RUNNER_TEMP/playwright-artifacts.zip" "$RUNNER_TEMP/playwright-artifacts"
       - name: Publish trusted Playwright screenshot gallery
         id: publish
         env:
@@ -232,6 +214,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/screenshot-ready"
           printf 'ready\n' > "$RUNNER_TEMP/screenshot-ready/ready.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        continue-on-error: true
         with:
           name: pr-screenshot-e2e-${{ github.event.workflow_run.head_sha }}
           path: ${{ runner.temp }}/screenshot-ready/ready.txt

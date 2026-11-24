@@ -10,12 +10,13 @@ import {
 } from "@robots/adapters";
 import type {
   ActionApprovalRule,
+  ActionRule,
   Actor,
   Me,
   SettingsScope,
   SpaceChangeKind,
 } from "@robots/contracts";
-import { parseLabs } from "@robots/contracts";
+import { ActionRuleSchema, parseLabs } from "@robots/contracts";
 import {
   abortableDelay,
   approvalModeFromPreference,
@@ -31,6 +32,7 @@ import {
   findModelCredential,
   findModelCredentialById,
   isRecordNotFound,
+  listActionRules,
   listApprovalRules,
   listAuditEvents,
   listVoicePreferences,
@@ -40,6 +42,7 @@ import {
   removeApprovalRule,
   runAsSystem,
   runAsTenant,
+  saveActionRules,
   saveApprovalRule,
   saveAutoReviewPreference,
   selectVoicePreference,
@@ -49,7 +52,7 @@ import {
 import { getLogger } from "@robots/logging";
 import { createAccessGrant, listAccessGrants, revokeAccessGrant } from "../access-grants.js";
 import { requireAdmin } from "../admins.js";
-import { aiConsentStatus, allowAiConsent } from "../ai-consent.js";
+import { aiConsentStatus, allowAiConsent, revokeAiConsent } from "../ai-consent.js";
 import type { BillingService } from "../billing.js";
 import { firstModelConnectAnalytics } from "../model-connect-analytics.js";
 import type { RouterDeps } from "../router.js";
@@ -86,16 +89,9 @@ export function accountRoutes(ctx: RouterContext) {
       allow: authed.aiConsent.allow.handler(({ context, input }) =>
         allowAiConsent(deps, context.actor, input),
       ),
-      revoke: authed.aiConsent.revoke.handler(async ({ context, input }) => {
-        await deps.prisma.aiDataConsent.deleteMany({
-          where: {
-            userId: context.actor.userId,
-            spaceId: context.actor.spaceId,
-            recipientKey: input.key ?? undefined,
-          },
-        });
-        return aiConsentStatus(deps, context.actor);
-      }),
+      revoke: authed.aiConsent.revoke.handler(({ context, input }) =>
+        revokeAiConsent(deps, context.actor, input.key ?? null),
+      ),
     },
     analytics: {
       screen: authed.analytics.screen.handler(async ({ context, input }) => {
@@ -103,7 +99,6 @@ export function accountRoutes(ctx: RouterContext) {
           context.actor.userId,
           { name: "screen_viewed", ...input },
           undefined,
-          // The server only sends a plan layout while the test runs, so it is the exposure.
           input.planLayout ? { "plan-layout": input.planLayout } : undefined,
         );
         return { ok: true as const };
@@ -134,7 +129,6 @@ export function accountRoutes(ctx: RouterContext) {
       ),
       status: authed.billing.status.handler(async ({ context, input }) => {
         const billing = requireBilling(deps);
-        // A failed claim fails the request, so the client keeps the code and sends it again.
         if (input?.referralCode) await billing.claimReferral(context.actor, input.referralCode);
         return billing.status(context.actor);
       }),
@@ -187,35 +181,34 @@ export function accountRoutes(ctx: RouterContext) {
       update: authed.preferences.update.handler(async ({ context, input }): Promise<Me> => {
         const userId = context.actor.userId;
         const botAvatarSet = input.botAvatarSet;
-        // A feature the deployment turns on is not the account's choice, so it is not saved with it.
         const deploymentLabs = deps.env?.deploymentLabs ?? [];
         const labs =
           input.labs === undefined
             ? undefined
             : parseLabs(input.labs).filter((feature) => !deploymentLabs.includes(feature));
         if (input.timezone !== undefined) {
-          // The routines that took the account zone keep their local schedule in the new
-          // one, and the other fields commit in the same save. The move's row lock still
-          // waits for any bot creation holding the user row, so no new bot is missed below.
           await changeUserTimezone(deps, userId, input.timezone, {
             ...(input.locale === undefined ? {} : { locale: input.locale }),
             ...(botAvatarSet === undefined ? {} : { botAvatarSet }),
             ...(labs === undefined ? {} : { labs }),
+            ...(input.pushNotifications === undefined
+              ? {}
+              : { pushNotifications: input.pushNotifications }),
           });
         } else {
           await deps.prisma.user.update({
             where: { id: userId },
-            // An avatar style from an older app is accepted and ignored: there is only one.
             data: {
               ...(input.locale === undefined ? {} : { locale: input.locale }),
               ...(botAvatarSet === undefined ? {} : { botAvatarSet }),
               ...(labs === undefined ? {} : { labs }),
+              ...(input.pushNotifications === undefined
+                ? {}
+                : { pushNotifications: input.pushNotifications }),
             },
           });
         }
         if (botAvatarSet !== undefined) {
-          // Every bot of this user not pinned to another set follows the new default, in every
-          // space they own bots in, announced like any edit so other devices redraw it.
           const bots = await runAsSystem("restyle the user's own bots in all their spaces", () =>
             deps.prisma.bot.findMany({
               where: { userId, avatarSetPinned: false, avatarSet: { not: botAvatarSet } },
@@ -225,13 +218,11 @@ export function accountRoutes(ctx: RouterContext) {
           for (const bot of bots) {
             const threadId = bot.thread?.id;
             if (!threadId) continue;
-            // A newer save changed the default again: its own pass owns the remaining bots.
             const current = await deps.prisma.user.findUniqueOrThrow({
               where: { id: userId },
               select: { botAvatarSet: true },
             });
             if (current.botAvatarSet !== botAvatarSet) break;
-            // The default is saved; a bot that fails here keeps its style until the next save.
             await runAsTenant({ spaceId: bot.spaceId, userId }, () =>
               commitBotUpdate({
                 prisma: deps.prisma,
@@ -240,10 +231,7 @@ export function accountRoutes(ctx: RouterContext) {
                 threadId,
                 botId: bot.id,
                 emitBotUpdated: true,
-                // Pinned since it was listed: leave the owner's choice alone.
                 expectedSettings: { avatarSetPinned: false },
-                // Re-read under lock inside the transaction: a newer save of the
-                // default that lands while this writes owns the bot instead.
                 expectedUserAvatarSet: { userId, botAvatarSet },
                 data: { avatarSet: botAvatarSet },
               }),
@@ -256,7 +244,6 @@ export function accountRoutes(ctx: RouterContext) {
       }),
       adoptTimezone: authed.preferences.adoptTimezone.handler(
         async ({ context, input }): Promise<Me> => {
-          // Conditional in one statement: a concurrent explicit save always wins.
           await deps.prisma.user.updateMany({
             where: { id: context.actor.userId, timezone: null },
             data: { timezone: input.timezone },
@@ -265,7 +252,6 @@ export function accountRoutes(ctx: RouterContext) {
         },
       ),
     },
-    // Retain wire compatibility for older clients, but app accounts have no server authority.
     deployment: {
       get: authed.deployment.get.handler(() => {
         throw new ORPCError("FORBIDDEN");
@@ -317,8 +303,17 @@ export function accountRoutes(ctx: RouterContext) {
         return { ok: true as const };
       }),
     },
-    // The user's own list for the external-link prompt, kept apart from approval rules: a
-    // trusted link site never lets a bot fetch, and a site rule never skips the prompt.
+    actionRules: {
+      list: authed.actionRules.list.handler(async ({ context, input }) =>
+        storedActionRules(await listActionRules(deps.prisma, context.actor, input?.scope)),
+      ),
+      set: authed.actionRules.set.handler(async ({ context, input }) => {
+        await deps.prisma.$transaction((tx) =>
+          saveActionRules(tx, context.actor, input.rules, input.scope),
+        );
+        return input.rules;
+      }),
+    },
     trustedLinkSites: {
       list: authed.trustedLinkSites.list.handler(async ({ context }) => {
         const rows = await deps.prisma.trustedLinkSite.findMany({
@@ -328,7 +323,6 @@ export function accountRoutes(ctx: RouterContext) {
         return rows.map((row) => row.site);
       }),
       trust: authed.trustedLinkSites.trust.handler(async ({ context, input }) => {
-        // The server names the site, so the list only ever holds sites.
         const site = urlSite(input.url);
         if (!site) throw new ORPCError("BAD_REQUEST", { message: "Not a web link." });
         await deps.prisma.trustedLinkSite.createMany({
@@ -372,8 +366,6 @@ export function accountRoutes(ctx: RouterContext) {
           signal: AbortSignal,
         ): AsyncGenerator<typeof ROSTER_CHANGED> {
           if (!followRosterChanges) return;
-          // The app re-reads the roster only on these signals, so a failure ends the stream the
-          // same way Space changes do below.
           try {
             for await (const _ of followRosterChanges(userId, signal)) yield ROSTER_CHANGED;
           } catch (error) {
@@ -385,9 +377,6 @@ export function accountRoutes(ctx: RouterContext) {
           signal: AbortSignal,
         ): AsyncGenerator<{ spaceChange: SpaceChangeKind }> {
           if (!followSpaceChanges) return;
-          // The app re-reads what these cover only on signals, so a failure ends the stream and
-          // the app reconnects and re-reads. Alerts keep flowing for a while first, so a lasting
-          // failure costs one reconnect every half minute rather than a tight loop.
           try {
             for await (const spaceChange of followSpaceChanges(spaceId, signal))
               yield { spaceChange };
@@ -427,7 +416,6 @@ export function accountRoutes(ctx: RouterContext) {
       declineIncomingCall: authed.notifications.declineIncomingCall.handler(
         async ({ context, input }) => {
           if (!deps.env?.phoneCallsEnabled) throw new ORPCError("NOT_FOUND");
-          // A locked device has only the call id, and may be viewing a different Space.
           const settled = await runAsSystem(
             "decline the signed-in call owner's incoming call",
             async () => {
@@ -486,8 +474,6 @@ export function accountRoutes(ctx: RouterContext) {
       }),
       unregisterPush: authed.notifications.unregisterPush.handler(async ({ context }) => {
         if (context.sessionId) {
-          // Only the calling session's registration: another device of this account,
-          // which registered from its own session, keeps its notifications.
           await deps.pushTokens.endSession(context.actor.userId, context.sessionId);
           return { ok: true as const };
         }
@@ -496,7 +482,6 @@ export function accountRoutes(ctx: RouterContext) {
       }),
       followWorkActivity: authed.notifications.followWorkActivity.handler(
         async ({ context, input }) => {
-          // The card ends with the session that registered it.
           if (!context.sessionId) throw new ORPCError("UNAUTHORIZED");
           if (!input.token) return { following: Boolean(deps.workActivities) };
           const following = await deps.workActivities?.register(
@@ -509,7 +494,6 @@ export function accountRoutes(ctx: RouterContext) {
       ),
       registerWorkActivityStarts: authed.notifications.registerWorkActivityStarts.handler(
         async ({ context, input }) => {
-          // The phone stops getting cards with the session that registered it.
           if (!context.sessionId) throw new ORPCError("UNAUTHORIZED");
           await deps.workActivities?.registerStarts(
             context.actor.userId,
@@ -584,7 +568,6 @@ export function accountRoutes(ctx: RouterContext) {
               if (!found) {
                 throw new ORPCError("BAD_REQUEST", { message: "Connect a voice provider first." });
               }
-              // Picking a voice also makes its provider the one speak/transcribe use.
               await selectVoicePreference(tx, target, found.id, input.voiceId);
               return { ...found, voiceId: input.voiceId, isDefault: true };
             },
@@ -597,7 +580,6 @@ export function accountRoutes(ctx: RouterContext) {
         updateVoiceSpeechModel(deps, context.actor, input),
       ),
       voices: authed.voice.voices.handler(async ({ context, input }) => {
-        // A named provider lists its voices even before the copy has a default voice.
         const row = input.provider
           ? await loadVoiceCredential(
               deps,
@@ -638,9 +620,15 @@ function approvalRuleDto(row: {
   };
 }
 
+function storedActionRules(stored: unknown[]): ActionRule[] {
+  return stored.flatMap((rule) => {
+    const parsed = ActionRuleSchema.safeParse(rule);
+    return parsed.success ? [parsed.data] : [];
+  });
+}
+
 async function loadAutoReviewSettings(deps: RouterDeps, actor: Actor, scope?: SettingsScope) {
   const [role, preference] = await Promise.all([
-    // The account page judges the account's approval model; a Space, the one that applies there.
     effectiveModelRole(
       deps.prisma,
       actor,
@@ -662,7 +650,6 @@ async function loadAutoReviewSettings(deps: RouterDeps, actor: Actor, scope?: Se
   ];
   const environmentAvailable = isAutoReviewCheckerConfigured({ env: process.env });
   if (memberChoices.length === 0) {
-    // The deployment's checker runs on its own configuration or on the member's key for it.
     const requiredUserProvider =
       environmentAvailable || deploymentChecker?.provider === "scripted"
         ? null

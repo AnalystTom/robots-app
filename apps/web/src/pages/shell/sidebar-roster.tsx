@@ -33,6 +33,7 @@ import {
 } from "../../lib/roster-status";
 import type { ChatMenuState } from "./chat-context-menu";
 import { ChatMenu } from "./chat-context-menu";
+import { ShortcutHint } from "./primary-bot";
 import type { RosterDropAction, RosterDropTarget } from "./roster-drop";
 import type { sidebarGroupsForSpaces } from "./space-sidebar";
 import { useRedrawAtMidnight } from "./use-redraw-at-midnight";
@@ -65,6 +66,7 @@ export function SidebarRoster({
   reorderRosterBot,
   activeSnapshot,
   mini = false,
+  shortcutOf,
 }: {
   sidebarGroups: ReturnType<
     typeof sidebarGroupsForSpaces<Space["bots"][number], Space["groups"][number]>
@@ -95,6 +97,8 @@ export function SidebarRoster({
   reorderRosterBot: (sourceId: string, targetId: string, groupBotIds: string[]) => void;
   activeSnapshot: ThreadSnapshot | null;
   mini?: boolean;
+  /** The rail's ⌘-number label for a chat, keyed `bot:<id>` or `group:<id>`. */
+  shortcutOf?: (key: string) => string | undefined;
 }) {
   useRedrawAtMidnight();
   const { t } = useLingui();
@@ -415,6 +419,9 @@ export function SidebarRoster({
                     {mini ? (
                       <span className="relative shrink-0">
                         {avatar}
+                        {shortcutOf?.(`${item.kind}:${item.chat.id}`) ? (
+                          <ShortcutHint label={shortcutOf(`${item.kind}:${item.chat.id}`) ?? ""} />
+                        ) : null}
                         {rowError ? (
                           <span
                             aria-hidden="true"

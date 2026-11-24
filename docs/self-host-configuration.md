@@ -106,13 +106,16 @@ Each entry must be a bare origin (scheme, host, optional port; no path). `https:
 any host. `http://` is accepted only for loopback, `.local`, and private-network IPs (RFC 1918 and
 Tailscale's 100.64.0.0/10). Anything else is ignored and logged as a warning. Only origins you list
 are trusted; the default is none. `WEB_ORIGIN` stays the address used in links, passkeys and OAuth
-callbacks.
+callbacks. [Connect other devices](./connect.md) covers opening the web port to a LAN or private
+network and pairing devices with a one-time code.
 
 ## Feature switches
 
 | Variable               | Default         | Effect                                                                                                                                                  |
 | ---------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `TICKET_BOARD_ENABLED` | `false`         | Turns the ticket board on for every account. Otherwise each person turns it on in **Settings → Labs**. Set it on the API and worker.                    |
+| `EMAIL_PAGE_ENABLED`   | `false`         | Turns the Email page on for every account, the same way. Set it on the API and worker.                                                                  |
+| `DOCS_PAGE_ENABLED`    | `false`         | Turns the Docs page on for every account, the same way. Set it on the API and worker.                                                                   |
 | `USER_DEVICES_ENABLED` | on              | `false` stops signed-in desktop apps from letting bots run commands on the user's own computer. Set it on the API and worker.                           |
 | `PI_SESSION_RECORDING` | off             | `true` records agent sessions as JSONL under `DATA_DIR/pi-sessions`. The files are not encrypted, so do not use it on a shared or multi-tenant install. |
 | `PRIVACY_POLICY_URL`   | RoBots's policy | The privacy policy linked from the AI data-sharing notice. Set it on the API.                                                                           |

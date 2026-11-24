@@ -152,6 +152,10 @@ describe("tickRoutineWatch", () => {
         spaceSettingOverride: { findUnique: vi.fn(async () => null) },
         actionApprovalRule: { findMany: vi.fn(async () => []) },
         userActionApprovalRule: { findMany: vi.fn(async () => []) },
+
+        actionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
+
+        userActionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
         bot: {
           findUnique: vi.fn(async () => ({
             id: "bot-1",
@@ -238,7 +242,6 @@ describe("tickRoutineWatch", () => {
     expect(messages[0]?.role).toBe("system");
     expect(deps.jobs.enqueue).toHaveBeenCalledWith(expect.objectContaining({ availableAt: retry }));
     expect(new Date(saved.watchState.checkedAt).getTime()).toBeGreaterThanOrEqual(before);
-    // A continuing outage refreshes failure state without another thread notice.
     await tickRoutineWatch(deps, { ...routine, watchState: saved.watchState }, target, new Date());
     expect(messages).toHaveLength(1);
     deps.http.fetch = async () => new Response("ready");
@@ -278,7 +281,6 @@ describe("tickRoutineWatch", () => {
     expect(paused.watchState).not.toHaveProperty("retrying");
     expect(messages).toHaveLength(1);
     expect(messages[0]?.role).toBe("bot");
-    // Resuming retains the previous state. A new temporary outage still needs a notice.
     deps.http.fetch = async () => new Response("temporary outage", { status: 503 });
     await tickRoutineWatch(deps, { ...routine, watchState: paused.watchState }, target, new Date());
     expect(messages).toHaveLength(2);
@@ -299,7 +301,6 @@ describe("tickRoutineWatch", () => {
 
   it("records a quiet no-change check without a message and schedules the next", async () => {
     const { deps, routine, updateMany, messages } = setup({ data: { changes: [] } });
-    // First reading is the baseline.
     await tickRoutineWatch(deps, routine, target, scheduledAt);
     const baseline = (
       updateMany.mock.calls[0] as unknown as [
@@ -323,7 +324,6 @@ describe("tickRoutineWatch", () => {
 
   it("saves a check only for the owner it started with", async () => {
     const { deps, routine, updateMany } = setup({ data: { changes: [] } });
-    // Someone else taking the routine over mid-check makes this write miss.
     updateMany.mockResolvedValueOnce({ count: 0 });
     await expect(tickRoutineWatch(deps, routine, target, scheduledAt)).resolves.toEqual({
       run: false,
@@ -434,8 +434,6 @@ describe("tickRoutineWatch", () => {
   );
 
   it("keeps the structured data in a change note beside supplemental text", async () => {
-    // The duplicate text was dropped on the way in, so the reader must not let
-    // the leftover note replace the data that triggered the routine.
     const { deps, routine } = setup({
       data: {
         content: [{ type: "text", text: "Query completed." }],
@@ -494,6 +492,30 @@ describe("tickRoutineWatch", () => {
     ] as never);
     await expect(checkRoutineWatch(deps, routine)).rejects.toThrow("needs approval");
     expect(deps.prisma.userActionApprovalRule.findMany).not.toHaveBeenCalled();
+  });
+
+  it("refuses a watch the routine's action rules deny", async () => {
+    const { deps, routine } = setup({ data: "ok" });
+    vi.mocked(deps.connector!.discoverTools).mockResolvedValue([]);
+    deps.connector!.resolveCall = vi.fn(async (call) => ({
+      call,
+      tool: { name: "actual_read", readOnly: true, description: "Read", inputSchema: {} },
+    }));
+    vi.mocked(deps.prisma.userActionAutoReviewPreference.findUnique).mockResolvedValue({
+      actionRules: [
+        {
+          id: "r1",
+          matchKind: "tool",
+          matchValue: "actual_*",
+          effect: "deny",
+          initiator: "routine",
+        },
+      ],
+    } as never);
+    await expect(checkRoutineWatch(deps, routine)).rejects.toThrow(
+      "not allowed by your action rules",
+    );
+    expect(deps.connector!.execute).not.toHaveBeenCalled();
   });
 
   it("keeps sub-second modification times in file signatures", async () => {
@@ -601,6 +623,10 @@ describe("tool results", () => {
           spaceSettingOverride: { findUnique: vi.fn(async () => null) },
           actionApprovalRule: { findMany: vi.fn(async () => []) },
           userActionApprovalRule: { findMany: vi.fn(async () => []) },
+
+          actionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
+
+          userActionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
         },
         connector: {
           discoverTools: vi.fn(async () => [
@@ -800,7 +826,6 @@ describe("tickRoutineWatch on a computer", () => {
             throw new Error("unreadable");
           },
         },
-        // Present on purpose: a vm must not switch to this shell.
         shell: { platform: "win32", shell: "powershell.exe", home: "C:\\Users\\robots" },
       },
     );
@@ -966,7 +991,6 @@ describe("tickRoutineWatch on a computer", () => {
       Object.assign(deps, { paymentWallet: {} });
       Object.assign(deps.prisma, {
         purchase: {
-          // Only this bot's own purchases, as for its runs.
           findMany: vi.fn(async ({ where }: { where: Record<string, unknown> }) =>
             where.spaceId === "space-1" && where.userId === "user-1" && where.botId === "bot-1"
               ? [{ id: "purchase-1", cardCiphertext: "cipher-card", tokenCiphertext: null }]
@@ -1021,7 +1045,6 @@ describe("tickRoutineWatch on a computer", () => {
     expect(posted).not.toContain("4242424242424242");
     expect(posted).not.toContain("4242-4242-4242-4242");
 
-    // An item saved before its value was hidden is named from the last reading when it goes.
     vi.mocked(provisionComputer).mockResolvedValueOnce({
       id: "computer-1",
       botId: "bot-1",
@@ -1067,7 +1090,6 @@ describe("tickRoutineWatch on a computer", () => {
       undefined,
       { vault, secretStore: { load: async () => "unused" } },
     );
-    // The login is under a vault key the key manager can't unwrap right now.
     const outage = () => Promise.reject(new Error("fake key manager outage"));
     Object.assign(deps.prisma, {
       $contentEncryption: () => ({ ring: { byId: outage, all: outage } }),
@@ -1076,7 +1098,6 @@ describe("tickRoutineWatch on a computer", () => {
     const warn = vi.spyOn(Logging.getLogger(), "warn");
     try {
       expect(await tickRoutineWatch(deps, routine, target, scheduledAt)).toEqual({ run: false });
-      // Said in the log each time, naming the routine and the key manager's reason, but no value.
       expect(warn).toHaveBeenCalledWith("routine.watch_deferred", {
         "routine.id": "routine-1",
         error: expect.any(Error),
@@ -1089,7 +1110,6 @@ describe("tickRoutineWatch on a computer", () => {
       warn.mockRestore();
     }
     expect(execute).not.toHaveBeenCalled();
-    // Deferred before the computer is woken for it.
     expect(provisionComputer).not.toHaveBeenCalled();
     expect(messages).toEqual([]);
     expect(updateMany).toHaveBeenCalledWith({
@@ -1118,7 +1138,6 @@ describe("tickRoutineWatch on a computer", () => {
       undefined,
       { vault, secretStore: { load: async () => "unused" } },
     );
-    // The variable is under a vault key the key manager can't unwrap right now.
     const outage = () => Promise.reject(new Error("fake key manager outage"));
     Object.assign(deps.prisma, {
       $contentEncryption: () => ({ ring: { byId: outage, all: outage } }),
@@ -1127,7 +1146,6 @@ describe("tickRoutineWatch on a computer", () => {
     const warn = vi.spyOn(Logging.getLogger(), "warn");
     try {
       expect(await tickRoutineWatch(deps, routine, target, scheduledAt)).toEqual({ run: false });
-      // Deferred for the outage itself, not for some other error on the way.
       expect(warn).toHaveBeenCalledWith("routine.watch_deferred", {
         "routine.id": "routine-1",
         error: expect.any(Error),
@@ -1144,7 +1162,6 @@ describe("tickRoutineWatch on a computer", () => {
       warn.mockRestore();
     }
     expect(execute).not.toHaveBeenCalled();
-    // Deferred before the computer is woken for it.
     expect(provisionComputer).not.toHaveBeenCalled();
     expect(messages).toEqual([]);
     expect(updateMany).toHaveBeenCalledWith({
@@ -1414,7 +1431,6 @@ describe("tickRoutineWatch on a computer", () => {
       vi.mocked(provisionComputer).mockReset();
     });
 
-    /** A vault with a variable the check's command gets, and one that can't be read. */
     async function watched(watch: Record<string, unknown> = { kind: "command", command: "gh" }) {
       const vault = fakeDatabase();
       for (const [name, ciphertext] of [
@@ -1459,7 +1475,6 @@ describe("tickRoutineWatch on a computer", () => {
         expect.objectContaining({ env: { GH_TOKEN: secret }, unsetEnv: ["STRIPE_API_KEY"] }),
         expect.anything(),
       );
-      // Only the variable it got: the one that can't be read is unset, and no use.
       expect(rows).toEqual([
         expect.objectContaining({
           organizationId: "org-1",
@@ -1475,7 +1490,6 @@ describe("tickRoutineWatch on a computer", () => {
           metadata: { tool: "routine_watch", scope: "account", name: "gh-token", kind: "command" },
         }),
       ]);
-      // The next check is sent it again, which is its own use.
       await checkRoutineWatch(deps, routine);
       expect(rows).toHaveLength(2);
       expect(JSON.stringify(rows)).not.toContain(secret);
@@ -1485,7 +1499,6 @@ describe("tickRoutineWatch on a computer", () => {
       const rows = fakeAuditLog();
       const files = await watched({ kind: "files", paths: ["inbox"] });
       await checkRoutineWatch(files.deps, files.routine);
-      // Refused by the desktop-protection guard, then put off because the computer is busy.
       const refused = await watched({ kind: "command", command: "pkill chrome; gh" });
       await tickRoutineWatch(refused.deps, refused.routine, target, scheduledAt);
       const busy = await watched();
@@ -1498,7 +1511,6 @@ describe("tickRoutineWatch on a computer", () => {
     it("gives and records no variable the routine's bot may not use", async () => {
       const rows = fakeAuditLog();
       const { vault, deps, routine, execute } = await watched();
-      // Limited in this Space to chosen bots, of which the routine's bot is none.
       await vault.prisma.vaultCredentialLimit.createMany({
         data: [{ credentialId: "gh-token", userId: "user-1", spaceId: "space-1" }],
       });
@@ -1548,7 +1560,6 @@ describe("tickRoutineWatch on a computer", () => {
 });
 
 describe("watchFolder", () => {
-  // A team computer refuses "." as a bot path, which failed every files watch live.
   it("is the bot's own folder on a team computer and the workspace on a private one", () => {
     expect(watchFolder("team", "bot-1")).toBe("/home/robots/bots/bot-1");
     expect(watchFolder("dedicated", "bot-1")).toBe("/home/robots");
@@ -1556,7 +1567,6 @@ describe("watchFolder", () => {
 });
 
 describe("toolResultText", () => {
-  // The shape the VEC brain's brain_changed returned live through an installed MCP server.
   const envelope = {
     content: [{ type: "text", text: '{\n  "changes": [{"what": "add test note"}]\n}' }],
     isError: false,
@@ -1618,7 +1628,6 @@ describe("files listing script", () => {
     const folder = realpathSync(mkdtempSync(join(tmpdir(), "routine-watch-")));
     try {
       mkdirSync(join(folder, "inbox"));
-      // Keep the containment check real; emulate GNU find on hosts with BSD find.
       const script = `find() { printf 'inbox/note.txt\\t3\\t1.25\\n'; }\n${FILES_SCRIPT}`;
       const result = spawnSync("sh", ["-c", script, "watch", ".", "inbox"], {
         cwd: folder,
@@ -1655,7 +1664,6 @@ describe("files listing script", () => {
   });
 
   it("keeps an earlier listing failure and its stderr when the last path succeeds", () => {
-    // Simulate a sandbox where one find fails, followed by a successful listing.
     const script = `find() { if [ "$2" = / ]; then echo denied >&2; return 1; fi; printf 'ok\\t1\\t1.234\\n'; }\n${FILES_SCRIPT}`;
     const result = spawnSync("sh", ["-c", script, "watch", "", "/", "/."], { encoding: "utf8" });
     expect(result.status).toBe(1);
@@ -1792,6 +1800,10 @@ describe("watch tool guard", () => {
         spaceSettingOverride: { findUnique: vi.fn(async () => null) },
         actionApprovalRule: { findMany: vi.fn(async () => []) },
         userActionApprovalRule: { findMany: vi.fn(async () => rules) },
+
+        actionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
+
+        userActionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
       },
       connector: {
         discoverTools: vi.fn(async () => [{ ...tool, route: { connectorId: "installed" } }]),
@@ -1913,6 +1925,10 @@ it("loads authorized connection context for discovery, creation validation and c
       spaceSettingOverride: { findUnique: vi.fn(async () => null) },
       actionApprovalRule: { findMany: vi.fn(async () => []) },
       userActionApprovalRule: { findMany: vi.fn(async () => rules) },
+
+      actionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
+
+      userActionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
     },
     connector: { discoverTools, execute },
   } as unknown as RoutineWatchTickDeps;

@@ -664,7 +664,12 @@ describe("MCP connector managed stdio launch", () => {
       const connector = connectorFor();
       try {
         const result = await connector.probe(SERVER as never, { spaceId: "w1", userId: "u1" });
-        expect(result).toEqual({ status: "ok", message: null, toolCount: 1 });
+        expect(result).toEqual({
+          status: "ok",
+          message: null,
+          toolCount: 1,
+          tools: [{ name: "hello", description: "hello", readOnly: undefined }],
+        });
         expect(close).toHaveBeenCalledTimes(1);
         expect((connector as unknown as { sessions: Map<string, unknown> }).sessions.size).toBe(0);
         expect(healthWrites()).toEqual([

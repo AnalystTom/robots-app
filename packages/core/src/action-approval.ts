@@ -1,8 +1,9 @@
 import type { ActionApprovalRule as StoredActionApprovalRule } from "@robots/contracts";
-import { BUILTIN_TOOL_NAMES } from "@robots/contracts";
+import { BUILTIN_TOOL_NAMES, MAC_APP_TOOL_NAMES, macAppToolEntry } from "@robots/contracts";
 
 export { isSecretAskBlock } from "./ask-kind.js";
 
+import { evaluateActionRules } from "./action-rules.js";
 import { humanizeToolName } from "./events.js";
 
 const APPROVAL_EXEMPT_TOOLS = new Set([
@@ -31,14 +32,9 @@ const APPROVAL_EXEMPT_TOOLS = new Set([
   "schedule_cancel",
   "list_fleet",
   "organize_bot",
-  // The wallet owner approves every purchase in the wallet itself; a card here would ask twice.
   "request_purchase",
 ]);
 
-/**
- * Built-ins that only look, or only speak to the owner: free even when outside text started the
- * run. Anything else, new tools included, is gated there (see outsideRunToolRequiresApproval).
- */
 const OUTSIDE_RUN_SAFE_BUILTIN_TOOLS = new Set([
   "ask_user",
   "attach_file",
@@ -75,7 +71,6 @@ const APPROVAL_REQUIRED_BUILTIN_TOOLS = new Set([
   "secret_request",
   "forget_secret",
   "forget_memory",
-  // Permanent, and only for mail the bot received; its owner may still want it.
   "delete_email",
   "cloud_agent_launch",
   "cloud_agent_reply",
@@ -88,9 +83,9 @@ const APPROVAL_REQUIRED_BUILTIN_TOOLS = new Set([
   "create_child_routine",
   "feedback",
   "send_email",
+  ...MAC_APP_TOOL_NAMES,
 ]);
 const EXPLICIT_APPROVAL_BUILTIN_TOOLS = new Set([
-  // Permanent: the owner sees the exact address before it is theirs for good.
   "claim_email_address",
   "respond_agent_connection",
   "create_space",
@@ -99,13 +94,12 @@ const EXPLICIT_APPROVAL_BUILTIN_TOOLS = new Set([
 ]);
 
 const READ_ONLY_CONNECTOR_PATTERN = /(^|[_-])(get|list|search|find|read)([_-]|$)/i;
-/** App slug before a hyphenated action: letters and digits, with at most one underscore. */
 const PLAIN_CONNECTOR_SLUG = /^[a-z0-9]+(?:_[a-z0-9]+)?$/;
 const MUTATING_CONNECTOR_PATTERN =
   /(^|[_-])(accept|add|approve|archive|assign|buy|cancel|charge|checkout|close|commit|copy|create|delete|deploy|disable|enable|execute|forward|grant|invite|link|mark|merge|modify|move|patch|pay|post|publish|purchase|put|register|reject|remove|rename|replace|reply|reset|revoke|run|schedule|send|set|share|start|stop|submit|subscribe|trigger|unassign|unlink|unsubscribe|update|upload|upsert|write)([_-]|$)/i;
 const COMPOUND_CONNECTOR_ACTION_PATTERN = /[_-](and|or|then)[_-]/i;
 
-const EMAIL_CONNECTOR_SLUGS = new Set(["gmail", "outlook", "microsoft_outlook"]);
+const EMAIL_CONNECTOR_SLUGS = new Set(["gmail", "outlook", "microsoft_outlook", "mac_mail"]);
 const PURCHASE_CONNECTOR_SLUGS = new Set(["stripe", "shopify", "paypal", "square"]);
 
 export type ActionApprovalRule = Pick<
@@ -134,11 +128,6 @@ export function connectorKindFromToolName(toolName: string, connectorKinds: stri
   return (segment ?? toolName).toLowerCase();
 }
 
-/**
- * `readOnly` is the connector tool's declared effect (for installed APIs, derived from the stored
- * HTTP method and read-only flag). A declared write always needs approval. A declared read never
- * relaxes the name check: the provider chooses both the name and the hint.
- */
 export function connectorToolRequiresApproval(toolName: string, readOnly?: boolean): boolean {
   if (readOnly === false) return true;
   if (MUTATING_CONNECTOR_PATTERN.test(toolName)) return true;
@@ -146,17 +135,34 @@ export function connectorToolRequiresApproval(toolName: string, readOnly?: boole
   return !READ_ONLY_CONNECTOR_PATTERN.test(toolName);
 }
 
-/** Unattended watches require explicit read-only metadata and must respect approval rules. */
 export function watchToolRefusal(input: {
   toolName: string;
   toolAliases?: readonly string[];
   readOnly?: boolean;
   connectorKind?: string;
   rules: ActionApprovalRule[];
+  actionRules?: readonly unknown[];
 }): string | null {
   const { toolName, readOnly } = input;
   if (readOnly !== true) {
     return `${toolName} can change data, so a change trigger can't run it. Pick a read-only tool.`;
+  }
+  const ruled = evaluateActionRules({
+    rules: input.actionRules ?? [],
+    actions: [
+      {
+        name: toolName,
+        aliases: input.toolAliases,
+        connectorKind: input.connectorKind,
+        readOnly,
+      },
+    ],
+    initiator: "routine",
+  })?.effect;
+  if (ruled === "deny")
+    return `${toolName} is not allowed by your action rules, so a change trigger can't run it.`;
+  if (ruled === "ask") {
+    return `${toolName} needs approval under your action rules, and a change check cannot ask.`;
   }
   const decision = resolveActionApprovalDetail({
     toolName,
@@ -184,20 +190,10 @@ export function toolRequiresApproval(
   return false;
 }
 
-/**
- * A run a webhook or an email started carries text someone else may have written, so a built-in
- * that changes something is gated there even if the owner's own runs never ask for it. It is gated
- * like any other consequential action: Always allow, the approval model or Never ask can pass it.
- */
 export function outsideRunToolRequiresApproval(trigger: string, toolName: string): boolean {
   return trigger === "webhook" && !OUTSIDE_RUN_SAFE_BUILTIN_TOOLS.has(toolName);
 }
 
-/**
- * Whether this call repeats one of `denied`, the requests a person denied for this tool earlier in
- * the run. A Composio multi-execute repeats only when it shares an inner tool slug. Telling the
- * model not to retry did not stop it.
- */
 export function repeatsDeniedAction(input: {
   toolName: string;
   args: unknown;
@@ -219,35 +215,20 @@ function innerToolSlugs(args: unknown): string[] {
   });
 }
 
-/** Security-boundary changes cannot be auto-reviewed or permanently allowed. */
 export function toolRequiresExplicitApproval(toolName: string): boolean {
   return EXPLICIT_APPROVAL_BUILTIN_TOOLS.has(toolName);
 }
 
-/**
- * A run the owner started: their own message, a follow-up they wrote, or the close of their call.
- * Bot messages, channels, spawns, tickets, webhooks and routines are not, nor is anything new.
- */
 export function isOwnerStartedRun(trigger: string, followUpFromUser: boolean): boolean {
   if (trigger === "follow_up") return followUpFromUser;
   return trigger === "user" || trigger === "call_end";
 }
 
-/**
- * Tools whose results bring in nothing from outside during the run: confirmations of the bot's own
- * writes, the owner's answers, and the product's own saved state (memory, skills, history), which
- * is treated like the conversation already in context. save_page confirms the bot's own write; its
- * read mode returns a page's stored source and taints the run in its handler. Every other result
- * (pages, search hits, files, connector data, the screen, shell output, other bots) can carry text
- * an attacker wrote, and taints the run. New tools taint by default.
- */
 const OWN_STATE_RESULT_TOOLS = new Set([
   "ask_user",
-  // Only confirms what the bot itself sent.
   "send_email",
   "connect_app",
   "attach_file",
-  // Only confirms the bot's own address.
   "claim_email_address",
   "delete_email",
   "end_call",
@@ -285,12 +266,6 @@ export function toolResultTaintsRun(toolName: string): boolean {
   return !OWN_STATE_RESULT_TOOLS.has(toolName);
 }
 
-/**
- * A connector read still sends its arguments to the connector's server. Until outside content
- * enters the run, those arguments come from the owner's request. After that, injected text could
- * choose them, so a read skips approval only on a connector this run already used before then or
- * was approved for. Reads on that connector stay free, so list-then-get flows never ask twice.
- */
 export function connectorReadRequiresApproval(input: {
   tainted: boolean;
   connectorTrusted: boolean;
@@ -300,12 +275,6 @@ export function connectorReadRequiresApproval(input: {
 
 const MEMORY_WRITE_TOOLS = new Set(["remember", "save_memory", "save_shared_memory"]);
 
-/**
- * A memory save goes through the run's approval mode like any consequential action whenever the
- * run's current action permissions are reduced: fresh outside input entered it, or someone other
- * than the owner started it. Saved notes, summaries and recall are derived data and add no prompt
- * by themselves. The predicate is only checked for a memory write.
- */
 export async function memoryWriteNeedsApproval(
   toolName: string,
   actionTainted: () => Promise<boolean>,
@@ -313,13 +282,6 @@ export async function memoryWriteNeedsApproval(
   return MEMORY_WRITE_TOOLS.has(toolName) && (await actionTainted());
 }
 
-/**
- * web_fetch sends its whole URL, query string included, to the site it names, so a site this run
- * was not given is a new destination that injected text could have picked. Trusted sites (named in
- * the owner's own words, approved earlier in the run, or the exact URL of a search result) and
- * sites with an always-allow rule go through. Anything else is new: planActionGate decides who
- * judges it, and newSiteOutcome what happens when nobody passed it.
- */
 export function outboundSiteGate(input: {
   site: string;
   trusted: boolean;
@@ -328,10 +290,6 @@ export function outboundSiteGate(input: {
   return input.trusted || siteAlwaysAllowed(input.rules, input.site) ? "allow" : "new";
 }
 
-/**
- * A new site that Auto Review did not pass needs a person. A webhook run has nobody to ask, so
- * there it is refused.
- */
 export function newSiteOutcome(input: {
   trigger: string;
   decision: "ask" | "allow";
@@ -340,10 +298,6 @@ export function newSiteOutcome(input: {
   return input.trigger === "webhook" ? "deny" : "ask";
 }
 
-/**
- * These send data to the site their url names, so a site the run was not given is gated, and
- * "Always allow" on a card naming that site allows the site, never the tool.
- */
 export const SITE_SENDING_TOOLS: ReadonlySet<string> = new Set(["web_fetch", "paid_request"]);
 
 export function siteAlwaysAllowed(rules: ActionApprovalRule[], site: string): boolean {
@@ -355,7 +309,7 @@ export function siteAlwaysAllowed(rules: ActionApprovalRule[], site: string): bo
   );
 }
 
-function categoryMatches(
+export function categoryMatches(
   category: string,
   toolName: string,
   connectorKind: string,
@@ -374,11 +328,11 @@ function categoryMatches(
   return false;
 }
 
-/**
- * These run code inside Composio that can call any action, so a block scoped to one action could
- * be routed around through them. Any block that is not for a site matches them.
- */
 const COMPOSIO_CODE_TOOLS = new Set(["composio_remote_workbench", "composio_remote_bash_tool"]);
+
+export function routesAroundBlocks(toolName: string): boolean {
+  return COMPOSIO_CODE_TOOLS.has(toolName.toLowerCase());
+}
 
 function ruleMatches(
   rule: ActionApprovalRule,
@@ -387,11 +341,7 @@ function ruleMatches(
   readOnly: boolean | undefined,
   site: string | undefined,
 ): boolean {
-  if (
-    rule.effect === "deny" &&
-    rule.matchKind !== "site" &&
-    COMPOSIO_CODE_TOOLS.has(toolName.toLowerCase())
-  ) {
+  if (rule.effect === "deny" && rule.matchKind !== "site" && routesAroundBlocks(toolName)) {
     return true;
   }
   const value = rule.matchValue.toLowerCase();
@@ -430,14 +380,9 @@ export type ActionApprovalResolved = {
   decision: "ask" | "allow" | "deny";
   source: ActionApprovalSource;
   matchingRules: ActionApprovalRule[];
-  /** The rules that produced this decision; broader matches remain in `matchingRules`. */
   decisiveRules: ActionApprovalRule[];
 };
 
-/**
- * The saved rules responsible for an ask or block. Broader rules that also matched
- * are omitted so a refusal points at the decisive rule instead of every candidate.
- */
 export function decisiveActionApprovalRules(
   resolved: ActionApprovalResolved,
 ): ActionApprovalRule[] {
@@ -445,11 +390,6 @@ export function decisiveActionApprovalRules(
   return resolved.decisiveRules.filter((rule) => rule.effect === resolved.source);
 }
 
-/**
- * Deterministic rule resolution. A block always wins, so a narrower allow cannot punch through it.
- * Otherwise the most specific rule decides, and `site`, the destination of an outbound fetch,
- * beats a rule for the tool.
- */
 export function resolveActionApprovalDetail(input: {
   toolName: string;
   toolAliases?: readonly string[];
@@ -502,11 +442,6 @@ export function resolveActionApproval(input: {
   return resolveActionApprovalDetail(input).decision;
 }
 
-/**
- * The actions a batch call runs, where `shape` says the call names each one at
- * `args[items][i][action]`. `complete` is false when an entry names no action, or the call lists
- * none: nothing can show what it does, so the call must ask.
- */
 export function batchActions(
   shape: { items: string; action: string },
   args: unknown,
@@ -527,11 +462,6 @@ export function batchActions(
   return { actions: [...actions], complete };
 }
 
-/**
- * Rules for every action one call runs. The strictest action decides, so one allowed action never
- * carries the rest of a batch, and the batch is allowed by rule only when each action is. `wrapper`
- * can only block: a block on the batch tool itself or its connector still stops every batch.
- */
 export function resolveActionApprovalForTools(input: {
   tools: ReadonlyArray<{
     name: string;
@@ -573,13 +503,8 @@ export function resolveActionApprovalForTools(input: {
   };
 }
 
-/**
- * How much a space asks before acting. `never` runs everything without waiting, `auto` lets the approval model pass what
- * fits the owner's request, and `ask` asks before anything that changes something.
- */
 export type ApprovalMode = "never" | "auto" | "ask";
 
-/** The mode a stored preference means. Skipping approvals is Never ask, an enabled review is Auto. */
 export function approvalModeFromPreference(preference: {
   enabled: boolean;
   skipApprovals: boolean;
@@ -597,34 +522,20 @@ export function approvalPreferenceFromMode(mode: ApprovalMode): {
 
 export type AutoReviewJudgeDecision = "pass" | "ask" | "error";
 
-/**
- * The gate after rule resolution. A block refuses in every mode. A purchase asks in every mode, Never
- * ask included, and no allow rule or review passes it. An approval a person must give
- * asks, except in Never ask, which never waits: there it runs, unless `steerable` says outside
- * text could have asked for it. Otherwise Never ask runs it, an ask rule asks, and anything that
- * would ask goes to the approval model in Auto, falling back to asking when no model is set up.
- */
 export function planActionGate(input: {
   resolved: ActionApprovalResolved;
   mode: ApprovalMode;
-  /** Needs a person whatever the rules say (see toolRequiresExplicitApproval). */
   mandatory?: boolean;
-  /** Never ask refuses it: the owner did not start this run, or outside content entered it. */
   steerable?: boolean;
   consequential: boolean;
-  /**
-   * A read whose arguments outside content may have chosen (see connectorReadRequiresApproval).
-   * It goes to a connection the owner set up, so only the approval model checks it.
-   */
   reviewOnly?: boolean;
   checkerConfigured: boolean;
-  /** A fetch to a site the run was not given (see outboundSiteGate). */
   newDestination?: boolean;
-  /** A click that completes a purchase: a person approves it each time, in every mode. */
   purchase?: boolean;
+  actionRule?: "allow" | "ask" | "deny";
 }): "ask" | "allow" | "judge" | "deny" {
-  if (input.resolved.decision === "deny") return "deny";
-  if (input.purchase) return "ask";
+  if (input.resolved.decision === "deny" || input.actionRule === "deny") return "deny";
+  if (input.purchase || input.actionRule === "ask") return "ask";
   if (input.mandatory) {
     if (input.mode !== "never") return "ask";
     return input.steerable ? "deny" : "allow";
@@ -632,17 +543,12 @@ export function planActionGate(input: {
   if (input.mode === "never") return "allow";
   if (input.resolved.decision === "ask") return "ask";
   const review = input.mode === "auto" && input.checkerConfigured ? "judge" : "ask";
-  // A rule for the whole tool is not a choice of sites, so it never allows a new one; only a site
-  // rule does, and that makes the site no longer new. The approval model judges a new site on the
-  // owner's own words and the full URL: it never sees tool results or inbound messages, so text
-  // injected there cannot argue for the site.
   if (input.newDestination) return review;
-  if (input.resolved.source === "always_allow") return "allow";
+  if (input.resolved.source === "always_allow" || input.actionRule === "allow") return "allow";
   if (input.consequential) return review;
   return input.reviewOnly && review === "judge" ? "judge" : "allow";
 }
 
-/** Map a judge outcome onto ask/allow. Errors fail closed on consequential tools. */
 export function applyJudgeDecision(input: {
   decision: AutoReviewJudgeDecision;
   consequential: boolean;
@@ -652,10 +558,6 @@ export function applyJudgeDecision(input: {
   return input.consequential ? "ask" : "allow";
 }
 
-/**
- * The Markdown characters an approval card title escapes in the names it shows, as a regular
- * expression character class. Web renders the title as Markdown; plain-text surfaces unescape them.
- */
 export const CARD_TITLE_ESCAPED_CHARACTERS = "[\\\\`*_[\\]<>~|]";
 
 export function isApprovalAskBlock(block: {
@@ -672,10 +574,6 @@ export function isApprovalAskBlock(block: {
   );
 }
 
-/**
- * A payment receipt's page lines, leaving out any the page named like one of the card's own rows
- * (`labels`, as the app words them), so merchant text never reads as the card's.
- */
 export function receiptItems<Item extends { name: string }>(
   items: readonly Item[],
   labels: readonly string[],
@@ -683,17 +581,14 @@ export function receiptItems<Item extends { name: string }>(
   const own = labels.map((label) => label.trim().toLocaleLowerCase()).filter(Boolean);
   return items.filter((item) => {
     const name = item.name.trim().toLocaleLowerCase();
-    // "Total" and "Total due" pose as the card's row; "Totally Oats" doesn't.
     return !own.some(
       (label) => name.startsWith(label) && !/^[\p{L}\p{N}]/u.test(name.slice(label.length)),
     );
   });
 }
 
-/** The order rule lists group by: what goes through, what asks, what is refused. */
 export const APPROVAL_RULE_EFFECTS = ["always_allow", "require_approval", "deny"] as const;
 
-/** Whether a rule with this effect does anything in this mode: Never ask honours only blocks. */
 export function approvalRuleApplies(
   mode: ApprovalMode | null | undefined,
   effect: ActionApprovalRule["effect"],
@@ -701,32 +596,26 @@ export function approvalRuleApplies(
   return mode !== "never" || effect === "deny";
 }
 
-/**
- * The effects a person can switch a rule to. An older category rule can only be removed, and a tool
- * a person approves every time cannot be allowed, though it can still be blocked.
- */
 export function approvalRuleEffectChoices(
   rule: ActionApprovalRule,
 ): ReadonlyArray<ActionApprovalRule["effect"]> {
   if (rule.matchKind === "category") return [];
-  if (rule.matchKind === "tool" && toolRequiresExplicitApproval(rule.matchValue)) {
+  if (
+    rule.matchKind === "tool" &&
+    (toolRequiresExplicitApproval(rule.matchValue) ||
+      macAppToolEntry(rule.matchValue)?.tool.kind === "send")
+  ) {
     return APPROVAL_RULE_EFFECTS.filter((effect) => effect !== "always_allow");
   }
   return APPROVAL_RULE_EFFECTS;
 }
 
-/** A site reads as itself; a tool, app or older category by its name. */
 export function approvalRuleLabel(rule: ActionApprovalRule): string {
   return rule.matchKind === "site" ? rule.matchValue : humanizeToolName(rule.matchValue);
 }
 
-/** A built-in tool a person can add a rule for. */
 export type ApprovalRuleChoice = { matchKind: "tool"; matchValue: string; label: string };
 
-/**
- * What the rule picker lists: every built-in tool that has no rule yet, by name. Apps are left out:
- * an app rule matches a kind guessed from the action's name, which some providers' actions lack.
- */
 export function approvalRuleChoices(
   rules: ReadonlyArray<ActionApprovalRule>,
 ): ApprovalRuleChoice[] {

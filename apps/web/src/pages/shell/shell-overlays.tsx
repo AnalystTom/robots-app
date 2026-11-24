@@ -42,7 +42,6 @@ const McpServersOverlay = lazyOverlay(() =>
   import("../McpServersOverlay").then((module) => module.McpServersOverlay),
 );
 
-/** Bound Settings leave so a hung voice status refresh cannot block dismissal. */
 const VOICE_STATUS_REFRESH_TIMEOUT_MS = 10_000;
 
 function voiceStatusRefreshTimeout(): Promise<never> {
@@ -53,7 +52,6 @@ function voiceStatusRefreshTimeout(): Promise<never> {
   });
 }
 
-/** The integrations, skills, bot templates and MCP overlays the URL opens. */
 export function AppOverlays({
   overlay,
   setOverlay,
@@ -97,6 +95,7 @@ export function AppOverlays({
         <McpServersOverlay
           editServerId={overlay.serverId}
           stdioEnabled={stdioEnabled}
+          activeBotId={activeBotId}
           onClose={() => setOverlay(null)}
         />
       ) : null}
@@ -104,7 +103,6 @@ export function AppOverlays({
   );
 }
 
-/** Settings, opened from the URL, and a bot's conversation with another bot. */
 export function SettingsOverlays({
   rpc,
   queries,
@@ -154,7 +152,6 @@ export function SettingsOverlays({
   active: Bot | undefined;
   peerBot: (botId: string) => { color: string; avatarSet?: BotAvatarSet } | undefined;
 }) {
-  // Read when Usage opens; a reopened Usage shows the last summary while it refreshes.
   const usageQuery = useQuery({ ...queries.usage.summary.queryOptions(), enabled: false });
   const usage: UsageSummary | null = usageQuery.data ?? null;
   const refetchUsage = usageQuery.refetch;
@@ -206,8 +203,6 @@ export function SettingsOverlays({
             setBootstrapMe((prev) =>
               prev ? { ...prev, botAvatarSet: nextMe.botAvatarSet } : nextMe,
             );
-            // Unpinned bots were restyled with it. The save already succeeded, so a failed
-            // refresh only waits for the roster's next re-read.
             void refreshSpaces().catch(() => undefined);
           }}
           labs={parseLabs(bootstrapMe?.labs)}
@@ -242,7 +237,6 @@ export function SettingsOverlays({
                 await Promise.race([rpc.voice.status(), voiceStatusRefreshTimeout()]),
               );
             } catch {
-              // Prefer reopening Voice settings over starting a call with stale readiness.
               void queryClient.resetQueries({ queryKey: voiceStatusKey });
             }
           }}

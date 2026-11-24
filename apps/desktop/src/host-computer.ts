@@ -3,10 +3,14 @@ import { rm } from "node:fs/promises";
 import path from "node:path";
 import { startHostComputerServer } from "@robots/adapters/host-computer-server";
 import type { HostScreen } from "@robots/adapters/host-screen";
+import type { MacApps } from "@robots/adapters/mac-apps-protocol";
 import { readPrivateFile, writePrivateFile } from "./setup-store.js";
 
-/** App-private credentials and consent, never sent to a renderer or a connected remote server. */
-export async function prepareHostComputer(userDataDir: string, screen?: HostScreen) {
+export async function prepareHostComputer(
+  userDataDir: string,
+  screen?: HostScreen,
+  macApps?: MacApps,
+) {
   const configFile = path.join(userDataDir, "host-computer.json");
   const consentFile = path.join(userDataDir, "host-computer-consent");
   const raw = await readPrivateFile(configFile, 1024);
@@ -17,17 +21,14 @@ export async function prepareHostComputer(userDataDir: string, screen?: HostScre
     if (/^[a-f0-9]{64}$/.test(saved?.token)) token = saved.token;
     if (Number.isInteger(saved?.port) && saved.port >= 1024 && saved.port <= 65535)
       port = saved.port;
-  } catch {
-    /* Invalid local configuration is replaced. */
-  }
+  } catch {}
   let server: Awaited<ReturnType<typeof startHostComputerServer>>;
-  const options = { root: path.join(userDataDir, "computers"), token, screen };
+  const options = { root: path.join(userDataDir, "computers"), token, screen, macApps };
   try {
     server = await startHostComputerServer({ ...options, port });
   } catch (error) {
     const code = (error as NodeJS.ErrnoException | undefined)?.code;
     if (code !== "EADDRINUSE" && code !== "EACCES") throw error;
-    // A listener on the old port may have received the old credential from a still-running backend.
     token = randomBytes(32).toString("hex");
     server = await startHostComputerServer({ ...options, token });
   }
@@ -45,7 +46,6 @@ export async function prepareHostComputer(userDataDir: string, screen?: HostScre
     const write = consentWrites.then(() =>
       writePrivateFile(consentFile, value).catch(async (error) => {
         if (value) throw error;
-        // A stale token left on disk would re-enable the host computer on the next launch.
         await rm(consentFile, { force: true }).catch(() => {
           throw error;
         });
@@ -70,7 +70,6 @@ export async function prepareHostComputer(userDataDir: string, screen?: HostScre
       }
     },
     async revoke() {
-      // Revoke first, even if persisting the choice fails.
       ++consentIntent;
       allowed = false;
       server.setEnabled(false);

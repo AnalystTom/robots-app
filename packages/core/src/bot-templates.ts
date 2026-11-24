@@ -1,11 +1,8 @@
 import type { BotTemplate, ConnectionCatalogItem } from "@robots/contracts";
 import { matchConnectedAppCatalog } from "./app-connect.js";
+import type { RobotPresetId } from "./robot-presets.js";
+import { robotPresetValue } from "./robot-presets.js";
 
-/**
- * Reviewed, ready-made bots. Bump a template's `version` whenever any of its content changes:
- * a create from an older preview is refused, so what was shown is what gets made. Names,
- * summaries and samples are shown in the apps' languages; the rest is written for the bot.
- */
 export const BOT_TEMPLATES: readonly BotTemplate[] = [
   {
     id: "morning-briefing",
@@ -222,11 +219,21 @@ export const BOT_TEMPLATES: readonly BotTemplate[] = [
   },
 ];
 
+const BOT_TEMPLATE_ROBOTS: Readonly<Record<string, RobotPresetId>> = {
+  "morning-briefing": "host",
+  "pr-reviewer": "critic",
+  "topic-watch": "professor",
+};
+
+export function botTemplateLook(templateId: string): string | undefined {
+  const robot = BOT_TEMPLATE_ROBOTS[templateId];
+  return robot ? robotPresetValue(robot) : undefined;
+}
+
 export function findBotTemplate(id: string): BotTemplate | undefined {
   return BOT_TEMPLATES.find((template) => template.id === id);
 }
 
-/** The template's apps this server offers, preferring an entry some provider has connected. */
 export function botTemplateApps(
   template: Pick<BotTemplate, "apps">,
   catalog: ConnectionCatalogItem[],

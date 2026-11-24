@@ -47,11 +47,9 @@ import {
   vaultLoginUseOf,
 } from "./vault-card-use.js";
 
-// Authenticator keys (the first is RFC 6238's), written in pieces so they never read as saved secrets.
 const TEST_KEY = ("GEZDGNBV" + "GY3TQOJQ").repeat(2);
 const OTHER_TEST_KEY = "MFRGGZDF" + "MZTWQ2LK" + "NNWG23TP" + "OBYXE43U";
 
-// A refused call is audited; there is no database to record it in.
 vi.mock("@robots/db", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   recordAuditEvent: vi.fn(async () => {}),
@@ -124,9 +122,6 @@ describe("saving cards and contacts", () => {
   it("encrypts the whole value and saves it in its canonical shape", async () => {
     const db = await vaultWithCard();
     const row = db.rows().find((stored) => stored.name === "visa")!;
-    // Random base64 can hold a short substring by chance, so look for whole plaintext
-    // pieces it cannot produce: the full card number (as saved and as typed), and a street
-    // line with spaces.
     expect(row.ciphertext).not.toContain("4242424242424242");
     expect(row.ciphertext).not.toContain(fakeCard.number);
     expect(JSON.parse(await secretStore.load(row.ciphertext, row.id))).toMatchObject({
@@ -285,9 +280,7 @@ describe("filling a saved card", () => {
     expect(await fill(db, "expiry")).toMatchObject({ text: "08/30" });
     const cvc = await fill(db, "cvc");
     expect(cvc).toMatchObject({ text: "123" });
-    // Hiding 3 digits would blank every total and order number that contains them.
     expect("redactions" in cvc && cvc.redactions).not.toContain("123");
-    // The billing contact's postal code.
     expect(await fill(db, "postal_code")).toMatchObject({ text: "12345" });
   });
 
@@ -363,7 +356,6 @@ describe("approving a saved card", () => {
       title: "Pay with Visa ·· 4242 on shop.example.test?",
       lines: [],
     });
-    // Typed together with the click that pays: the card names what the page lists for the order.
     const purchase = {
       steps: [0],
       site: "shop.example.test",
@@ -394,7 +386,6 @@ describe("approving a saved login", () => {
         { ...step, field: "Email" },
         { kind: "fill_secret", ref: "e2", secret: "other", field: "PIN" },
         { kind: "click", ref: "e3" },
-        // Its authenticator code is one more thing the call types with it.
         { kind: "fill_code", ref: "e4", secret: "site" },
         { kind: "fill_code", ref: "e5" },
       ]),
@@ -417,7 +408,6 @@ describe("approving a saved login", () => {
       title: "Sign in to login.example.test with Work login?",
       lines: [],
     });
-    // The card says when the approval it is built from also covers the login's code.
     expect(loginUseSummary({ ...use, fields: [...use.fields, LOGIN_CODE_FIELD] }).lines).toEqual([
       "This types the login's authenticator code.",
     ]);
@@ -425,7 +415,6 @@ describe("approving a saved login", () => {
     expect(vaultLoginUseOf({ ...use, account: "alice" })).toEqual(use);
     expect(vaultLoginUseOf({ ...use, site: "http://login.example.test" })).toBeUndefined();
     expect(vaultLoginUseOf({ ...use, fields: "Password" })).toBeUndefined();
-    // A card's approval is never a login's, nor a login's a card's, and an older card one reads.
     const card = { card: "visa", site: "https://shop.example.test", title: "Visa", savedAt: "x" };
     expect(vaultLoginUseOf(card)).toBeUndefined();
     expect(vaultCardUseOf(use)).toBeUndefined();
@@ -434,8 +423,6 @@ describe("approving a saved login", () => {
 });
 
 describe("an item's uses, for its owner", () => {
-  // Rows as the audit log writes them, in one instant by one bot in one run and chat: a full row
-  // names the item, an unnamed one doesn't. A guest's use of an account item is one of each.
   const unnamed = {
     targetLabel: null,
     metadata: { kind: "login", scope: "account", tool: "browser_act" },
@@ -444,7 +431,6 @@ describe("an item's uses, for its owner", () => {
     targetLabel: "visa",
     metadata: { name: "visa", site: `https://${site}.example.test` },
   });
-  // A command variable goes to the bot's shell, so neither of its rows has a site.
   const shell = { targetLabel: "visa", metadata: { name: "visa", kind: "command", tool: "shell" } };
   it.each([
     ["two uses on two sites", [on("a"), on("b")], ["a", "b"]],
@@ -478,7 +464,6 @@ describe("an item's uses, for its owner", () => {
     const db = await vaultWithCard();
     const visa = db.rows().find((row) => row.name === "visa")!;
     const use = { actorLabel: "Shopper" };
-    // A guest's use of an account item is written twice: unnamed in the space's, named in theirs.
     const twice = { ...use, createdAt: new Date("2026-11-05T10:00:00.000Z"), threadId: "thread-1" };
     const named = { targetLabel: "visa", metadata: { site: "https://shop.example.test" } };
     const events = vi.fn(async () => [
@@ -518,7 +503,6 @@ describe("an item's uses, for its owner", () => {
       expect.objectContaining({
         where: { targetType: "vault_credential", targetId: visa.id, action: "credential.used" },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        // Twice the uses listed, as a guest's use is two rows.
         take: 40,
       }),
     );
@@ -631,7 +615,6 @@ describe("an item bots may not use", () => {
     expect(await uses.send()).toEqual({ error: expect.stringContaining("unavailable") });
     expect(await uses.env()).toEqual({});
     expect(remote.fetch).not.toHaveBeenCalled();
-    // Asking for it, generating one over it, or forgetting it says nothing about it.
     const hidden = { error: HIDDEN_ITEM };
     const credential = { name: "stripe", origin: "https://api.example.test", auth: api };
     expect(await tool("request_secret", { label: "Key", purpose: "api_key", credential })).toEqual(
@@ -649,14 +632,12 @@ describe("an item bots may not use", () => {
         auth: { type: "command" },
       }),
     ).toBe("another saved item");
-    // Every run still hides the values it can no longer use.
     expect(await loadLoginPasswordRedactions(db.prisma, secretStore, bot)).toContain(
       "fake-password-1",
     );
     expect((await loadCommandVariables(db.prisma, secretStore, bot)).redactions).toContain(
       "fake-command-1",
     );
-    // The owner still sees each item, and can remove it.
     expect(
       (await listVaultItems(db.prisma, secretStore, scope)).map((item) => [item.name, item.policy]),
     ).toContainEqual(["site", "off"]);
@@ -695,20 +676,17 @@ describe("an item bots may not use", () => {
     expect(scoped.forget).toEqual({ removed: false });
     expect(remote.fetch).not.toHaveBeenCalled();
     expect(row("stripe")).toBeDefined();
-    // The bot it was chosen for still uses it.
     expect(
       (await listBotSecrets(db.prisma, secretStore, { ...bot, botId: "bot-2" })).map(
         (item) => item.name,
       ),
     ).toEqual(["deploy", "home", "new-password", "site", "stripe", "visa"]);
-    // Every run still hides the values this bot can't use.
     expect(await loadLoginPasswordRedactions(db.prisma, secretStore, bot)).toContain(
       "fake-password-1",
     );
     expect((await loadCommandVariables(db.prisma, secretStore, bot)).redactions).toContain(
       "fake-command-1",
     );
-    // Saving over its name says only that the name can't be used, nothing of the item.
     for (const answer of [
       await tool("request_secret", { label: "Key", purpose: "api_key", credential }),
       await tool("generate_secret", { name: "site", type: "login", origin: site, username: "x" }),
@@ -722,7 +700,6 @@ describe("an item bots may not use", () => {
     ])
       expect(answer).toEqual({ error: HIDDEN_ITEM });
     expect(HIDDEN_ITEM).not.toMatch(/item|login|key|site|user/i);
-    // Removed by its owner, it looks the same to the bot as it did while chosen for another.
     for (const name of limited) await forgetBotSecret(db.prisma, scope, name);
     expect(await seen()).toEqual(scoped);
   });
@@ -740,7 +717,6 @@ describe("an item bots may not use", () => {
     await bots(scope, "home", { allBots: false, botIds: [] });
     expect(await names("bot-1")).toEqual(["deploy", "new-key", "site", "stripe", "visa"]);
     expect(await names("bot-2")).toEqual(["deploy", "site", "stripe", "visa"]);
-    // An older app's save, with or without a new value, keeps the choice.
     await relabelVaultItem(db.prisma, scope, "new-key", { title: "Renamed" });
     await store("new-key", "https://api.example.test", api, "fake-key-3");
     expect(await names("bot-2")).not.toContain("new-key");
@@ -748,7 +724,6 @@ describe("an item bots may not use", () => {
       allBots: false,
       botIds: ["bot-1"],
     });
-    // Another Space using the account vault chooses for its own bots, and never widens this one's.
     expect((await listVaultItems(db.prisma, secretStore, there, "new-key"))[0]).toMatchObject({
       allBots: true,
       botIds: [],
@@ -757,7 +732,6 @@ describe("an item bots may not use", () => {
     await bots(there, "new-key", { allBots: true });
     expect(await names("bot-other-space", "space-2")).toContain("new-key");
     expect(await names("bot-2")).not.toContain("new-key");
-    // A card's billing contact the bot may not use is never typed.
     const postal = await resolveVaultCardFill({
       prisma: db.prisma,
       secretStore,
@@ -767,9 +741,7 @@ describe("an item bots may not use", () => {
       site: "https://shop.example.test",
       savedAt: row("visa").updatedAt!.toISOString(),
     });
-    // Nothing invites the bot to type the withheld address itself.
     expect(postal).toEqual({ error: "This card has no billing address this bot can use." });
-    // Only bots of a Space that uses this vault; nothing is saved otherwise.
     for (const botIds of [["bot-other-space"], ["missing-bot"]]) {
       await expect(bots(scope, "new-key", { allBots: false, botIds })).rejects.toThrow(
         "Choose from your bots in this Space",
@@ -783,17 +755,13 @@ describe("an item bots may not use", () => {
       bots({ ...there, vault: "account" }, "new-key", { botIds: ["bot-other-space"] }),
     ).rejects.toThrow("Choose from your bots in this Space");
     expect(db.rows().some((entry) => entry.name === "refused")).toBe(false);
-    // Row security shows only the read's own Space's limits, so a bot's read is answered only
-    // inside its run's Space: elsewhere it finds nothing, never an item it was limited from.
     const visible = (spaceId: string) =>
       runAsTenant({ userId: scope.userId, spaceId }, () => names("bot-2"));
     expect(await visible("space-1")).toEqual(["deploy", "site", "stripe", "visa"]);
     expect(await visible("space-2")).toEqual([]);
-    // Nor under another member's context in this Space, whose limits it can't see either.
     expect(
       await runAsTenant({ userId: "user-2", spaceId: "space-1" }, () => names("bot-2")),
     ).toEqual([]);
-    // Every bot here again, and removing the item removes every choice.
     await bots(scope, "new-key", { allBots: true });
     expect(await names("bot-2")).toContain("new-key");
     for (const name of ["new-key", "home"]) await forgetBotSecret(db.prisma, scope, name);
@@ -801,10 +769,6 @@ describe("an item bots may not use", () => {
     expect(db.limits()).toEqual([]);
   });
 
-  // An item's bots in a Space are one of two states: every bot (no limit row and no chosen-bot
-  // rows) or limited to a set of chosen bots. A save moves between them as the table says; a
-  // chosen-bot row left behind on an unlimited item, as an earlier release's save could leave, is
-  // no choice: it is never listed, never limits, and is cleared when the item is next limited.
   type BotsState = "every" | "leftover" | string[];
   const transitions: [BotsState, VaultItemBots | undefined, BotsState][] = [
     ["every", undefined, "every"],
@@ -845,7 +809,6 @@ describe("an item bots may not use", () => {
         });
       else if (from === "leftover")
         await db.prisma.vaultCredentialBot.createMany({ data: [{ ...own, botId: "bot-1" }] });
-      // Saved with a new value or without one alike.
       for (const write of [
         () => relabelVaultItem(db.prisma, scope, "new-key", { bots: save }),
         () => store("new-key", "https://api.example.test", api, "fake-key-3", undefined, save),
@@ -866,7 +829,6 @@ describe("an item bots may not use", () => {
 
   it("lets each member of a shared Space limit their own item to any of its bots, for their runs only", async () => {
     const { db } = await vault();
-    // user-2 shares space-1, where user-1 made bot-1 and bot-2 and user-2 made a bot of their own.
     const member = { userId: "user-2", spaceId: "space-1" };
     const names = async (userId: string, botId: string) =>
       (await listBotSecrets(db.prisma, secretStore, { userId, spaceId: "space-1", botId })).map(
@@ -880,12 +842,10 @@ describe("an item bots may not use", () => {
       plaintext: "fake-key-5",
       bots: { allBots: false, botIds: ["bot-1"] },
     });
-    // bot-1's runs for user-2 use it; another bot's runs for user-2, and bot-1's for user-1, don't.
     expect(await names("user-2", "bot-1")).toEqual(["member-key"]);
     expect(await names("user-2", "bot-2")).toEqual([]);
     expect(await names("user-2", "bot-of-another-member")).toEqual([]);
     expect(await names("user-1", "bot-1")).not.toContain("member-key");
-    // user-1 may choose user-2's bot for user-1's own item, which leaves user-2's item as it was.
     await relabelVaultItem(db.prisma, scope, "stripe", {
       bots: { allBots: false, botIds: ["bot-of-another-member"] },
     });
@@ -897,7 +857,6 @@ describe("an item bots may not use", () => {
 
   it("saves Block or Ask first with the item in one write, and keeps it through an older app's save", async () => {
     const { db, row, store } = await vault();
-    // Refused with the item, so nothing is saved and a retry makes one item.
     await expect(
       store("new-home", "", { type: "contact" }, JSON.stringify(fakeHome), "off"),
     ).rejects.toThrow("can't be used that way");
@@ -914,7 +873,6 @@ describe("an item bots may not use", () => {
     expect(row("new-key")).toMatchObject({ policy: "allow" });
     await expect(relabel("home", "off")).rejects.toThrow("can't be used that way");
     expect(await relabel("missing", "off")).toBe(false);
-    // Only a login asks first, and a bot still finds it, to fill once the user agrees.
     expect(await relabel("site", "ask")).toBe(true);
     for (const name of ["new-key", "deploy", "visa", "home"])
       await expect(relabel(name, "ask")).rejects.toThrow("can't be used that way");
@@ -939,8 +897,6 @@ describe("an item bots may not use", () => {
       BLOCKED_ITEM_ANSWER,
     );
     expect(row("stripe").ciphertext).toBe(before);
-    // An item saved and blocked under a new name while the request waited is refused as blocked,
-    // not for its other site.
     const fresh = { ...destination, name: "fresh" };
     const waiting = await prepareBotSecret({
       prisma: db.prisma,
@@ -960,7 +916,6 @@ describe("an item bots may not use", () => {
     await expect(db.prisma.$transaction(async (tx) => waiting.store(tx as never))).rejects.toThrow(
       BLOCKED_ITEM_ANSWER,
     );
-    // Blocked under another site before the answer is even prepared: the same message.
     await expect(
       prepareBotSecret({
         prisma: db.prisma,
@@ -970,7 +925,6 @@ describe("an item bots may not use", () => {
         plaintext: "fake-key-late",
       }),
     ).rejects.toThrow(BLOCKED_ITEM_ANSWER);
-    // One limited to other bots while the answer waited, or before it, says this bot can't use it.
     const waitingKey = await prepareBotSecret({
       prisma: db.prisma,
       secretStore,
@@ -996,7 +950,6 @@ describe("an item bots may not use", () => {
         plaintext: login,
       }),
     ).rejects.toThrow(UNCHOSEN_ITEM_ANSWER);
-    // The owner's own save still replaces it.
     await storeBotSecret({ prisma: db.prisma, secretStore, scope, destination, plaintext: "k2" });
     expect(row("stripe").ciphertext).not.toBe(before);
   });
@@ -1022,24 +975,19 @@ describe("a save that leaves out the authenticator key", () => {
         plaintext: JSON.stringify({ fields }),
       });
     await save(secretStore);
-    // The deployment key changed: the old value can't be decrypted, so a login card's answer
-    // (key-less, as every card is) replaces it instead of failing on every try.
     const rotated = new EncryptedSecretStore("another-test-only-key");
     await save(rotated, "bot-1");
     expect(
       await revealBotSecret({ prisma: db.prisma, secretStore: rotated, scope, name: "shop" }),
     ).toEqual({ fields });
-    // A record the store says is gone holds no key either.
     const load = vi.spyOn(rotated, "load").mockRejectedValueOnce(new SecretNotFoundError());
     await save(rotated, "bot-1");
     expect(load).toHaveBeenCalled();
     load.mockRestore();
-    // Nor does a value that decrypts but isn't a login.
     const unreadable = vi.spyOn(rotated, "load").mockResolvedValueOnce("not a login");
     await save(rotated, "bot-1");
     expect(unreadable).toHaveBeenCalled();
     unreadable.mockRestore();
-    // Nor a login whose key no save accepts, such as one with a character too many.
     const badKey = JSON.stringify({ fields, otp: `${TEST_KEY}G` });
     const mistyped = vi.spyOn(rotated, "load").mockResolvedValueOnce(badKey);
     await save(rotated, "bot-1");
@@ -1072,7 +1020,6 @@ describe("a save that leaves out the authenticator key", () => {
     await save({ fields, otp });
     const before = db.rows()[0]!.ciphertext;
     class NewStoreError extends Error {}
-    // An aborted or timed-out request, or an error no one has seen yet, may hide a saved key.
     for (const error of [
       new DOMException("The operation was aborted.", "AbortError"),
       new DOMException("The operation timed out.", "TimeoutError"),
@@ -1148,7 +1095,6 @@ describe("a save that leaves out the authenticator key", () => {
     ] as const) {
       const db = fakeDatabase();
       await save(db.prisma, first);
-      // The owner changes the key after a login card's answer read the login, before it commits.
       const put = secretStore.put.bind(secretStore);
       const spy = vi.spyOn(secretStore, "put").mockImplementationOnce(async (...args) => {
         await save(db.prisma, change);
@@ -1177,10 +1123,8 @@ describe("what a save leaves of a login's key, its stop, its other sites and its
   const first = TEST_KEY;
   const second = OTHER_TEST_KEY;
   const bot = { ...scope, botId: "bot-1" };
-  // The login before the save: its key, and whether its codes were stopped.
   const states = ["no key", "a key", "a key its owner removed", "a key that was stopped"] as const;
 
-  /** The login in one of those states, after its owner took a site and a bot off it. */
   async function login(state: (typeof states)[number], ownVault: boolean) {
     const db = fakeDatabase();
     if (ownVault) db.useOwnVault("space-1");
@@ -1208,10 +1152,6 @@ describe("what a save leaves of a login's key, its stop, its other sites and its
   }
   type Made = Awaited<ReturnType<typeof login>>;
 
-  // Every save that reaches a login already saved, with what it carries of the key. Then the key
-  // the login has afterwards, for each state above in order, and whether a stop is still in place.
-  // A key left out is never brought back or dropped by the save, but for a bot's card for another
-  // site, which moves the login without what only its owner sets.
   it.each<[string, (made: Made) => Promise<unknown>, (string | undefined)[], boolean]>([
     [
       "the owner's, leaving the key out",
@@ -1297,7 +1237,6 @@ describe("what a save leaves of a login's key, its stop, its other sites and its
       true,
     ],
   ])("%s", async (name, saved, keys, stopped) => {
-    // In the account vault for every state, and once in the Space's own.
     for (const [index, ownVault] of [...states.map(() => false), true].entries()) {
       const state = states[index] ?? "a key that was stopped";
       const made = await login(state, ownVault);
@@ -1314,11 +1253,9 @@ describe("what a save leaves of a login's key, its stop, its other sites and its
       expect(revealed && "otp" in revealed ? revealed.otp : undefined, where).toBe(
         keys[states.indexOf(state)],
       );
-      // Only a key that was stopped can still be; no save stops one.
       expect(Boolean(row!.codesStoppedAt), where).toBe(
         state === "a key that was stopped" && stopped,
       );
-      // The site and the bot its owner took off never come back, nor does Ask first go.
       expect(row, where).toMatchObject({
         alsoOn: name.includes("another site") ? [] : [www],
         policy: "ask",
@@ -1375,7 +1312,6 @@ describe("a login moved to one of its other sites", () => {
       plaintext: value,
       alsoOn: ["https://www.bank.example.test", "https://app.bank.example.test"],
     });
-    // A login card the person answered for its other site moves the login there.
     await storeBotSecret({
       prisma: db.prisma,
       secretStore,
@@ -1431,10 +1367,7 @@ describe("a login that asks first, on its other sites and with its code", () => 
         ...(code && { code }),
       });
     const refused = { error: "The user has not approved signing in with this login here." };
-    // Approved on its own site: it is sent for that site only, so the page browser refuses the
-    // page on its other one.
     expect(await fill("Password", approval({ site }))).toMatchObject({ origin: site });
-    // An approval for a site the login no longer fills on: not what the user saw.
     expect(await fill("Password", approval({ site: "https://old.bank.example.test" }))).toEqual(
       refused,
     );
@@ -1442,7 +1375,6 @@ describe("a login that asks first, on its other sites and with its code", () => 
       text: "fake-bank-pass",
       origin: other,
     });
-    // Its code is typed only when the approval names it too.
     expect(await fill(LOGIN_CODE_FIELD, undefined, true)).toEqual(refused);
     expect(await fill(LOGIN_CODE_FIELD, approval(), true)).toEqual(refused);
     expect(
@@ -1466,7 +1398,6 @@ describe("a login that asks first, on its other sites and with its code", () => 
       policy: "ask",
     });
     Object.assign(db.prisma.secret, { findFirst: async () => null });
-    // What the approval names reads the same as the field does.
     expect(LOGIN_CODE_FIELD.trim()).toBe(label);
     const approvedFor = (kind: string) => ({
       kind: "login" as const,
@@ -1521,7 +1452,6 @@ describe("a login's authenticator code, wherever its password is refused", () =>
     Object.assign(db.prisma.secret, { findFirst: async () => null });
     return db;
   }
-  // What the run is told, or what it types, for one browser_act step.
   const filled =
     (db: ReturnType<typeof fakeDatabase>, as: BotSecretScope) =>
     async (step: typeof password | typeof code) => {
@@ -1537,7 +1467,6 @@ describe("a login's authenticator code, wherever its password is refused", () =>
       });
       return "error" in result ? result.error : `typed ${result.hidden ? "hidden" : "visible"}`;
     };
-  // A webhook run is refused at the approval gate, before anything is read to type.
   const gated =
     (db: ReturnType<typeof fakeDatabase>) => async (step: typeof password | typeof code) => {
       const args = { actions: [step] };
@@ -1577,6 +1506,8 @@ describe("a login's authenticator code, wherever its password is refused", () =>
           effects: { consumedIds: new Set(), counts: new Map(), occurrences: [] },
         },
         trust: {
+          initiator: "webhook",
+          loadActionRules: async () => [],
           loadApprovalRules: async () => [],
           loadAutoReviewPreference: async () => ({ enabled: false, skipApprovals: false }),
           receivedOutsideMessage: async () => true,
@@ -1653,7 +1584,6 @@ describe("an import's duplicate check", () => {
     for (const [index, username] of ["bob", "carol", "dave"].entries())
       await save(`new-${index}`, username, usernames);
     await expect(save("again", "carol", usernames)).rejects.toThrow("already saved");
-    // Only the login saved before the import is decrypted, once.
     expect(load).toHaveBeenCalledTimes(1);
     load.mockRestore();
   });

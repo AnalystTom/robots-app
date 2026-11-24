@@ -12,33 +12,18 @@ import {
 } from "./bot-avatar.js";
 
 describe("BotAvatar", () => {
-  it("renders distinct ring gradient IDs for concurrent working avatars", () => {
-    const html = renderToString(
-      <div>
-        <BotAvatar color="#8B5CF6::shape_0" status="running" />
-        <BotAvatar color="#10B981::shape_1" status="running" />
-      </div>,
-    );
-
-    const gradMatches = [...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1]);
-    expect(gradMatches).toHaveLength(2);
-    expect(new Set(gradMatches).size).toBe(2);
-    for (const id of gradMatches) {
-      expect(id).toBeTruthy();
-      expect(html).toContain(`url(#${id})`);
-    }
-  });
-
-  // Button sizes any SVG without a size class, which beats width/height attributes but not inline styles.
-  it("sizes the shape with an inline style so icon sizing in a button cannot shrink it", () => {
-    const html = renderToString(<BotAvatar color="#8B5CF6::shape_0" size={26} />);
-    const shape = html.match(/<svg[^>]*transition-transform[^>]*>/)?.[0];
-    expect(shape).toMatch(/style="[^"]*width:26px;height:26px/);
+  it.each([
+    ["a plain colour", "#F97316", "robots" as const],
+    ["a plain colour in the original set", "#F97316", "organic" as const],
+    ["an organic shape", "#8B5CF6::shape_3", undefined],
+  ])("draws %s as a preset robot", (_name, color, avatarSet) => {
+    const html = renderToString(<BotAvatar color={color} avatarSet={avatarSet} identity="bot-1" />);
+    expect(html).toMatch(/<img[^>]*src="data:image\/svg\+xml/);
   });
 
   it.each([...ACTIVE_RUN_STATUSES])("marks active run status %s as working", (status) => {
     const html = renderToString(<BotAvatar color="#3B82F6" status={status} />);
-    expect(html).toContain("<svg");
+    expect(html).toContain("robots-bot-avatar-ring-working");
     expect(html).toContain('data-working="true"');
   });
 
@@ -47,10 +32,13 @@ describe("BotAvatar", () => {
     expect(html).toContain('data-working="false"');
   });
 
-  it("renders distinct shapes for distinct bot identities", () => {
-    const maya = renderToString(<BotAvatar color={DEFAULT_BOT_AVATAR_COLOR} identity="maya" />);
-    const github = renderToString(<BotAvatar color={DEFAULT_BOT_AVATAR_COLOR} identity="github" />);
-    expect(maya).not.toEqual(github);
+  it("renders different preset robots for different bot identities", () => {
+    const looks = new Set(
+      Array.from({ length: 30 }, (_, index) =>
+        renderToString(<BotAvatar color={DEFAULT_BOT_AVATAR_COLOR} identity={`bot-${index}`} />),
+      ),
+    );
+    expect(looks.size).toBeGreaterThan(8);
   });
 
   it("parses shape indexes from encoded color values", () => {
@@ -109,6 +97,29 @@ describe("BotAvatar", () => {
     expect(html).not.toContain("robots-bot-avatar-ring");
   });
 
+  it("draws a robot character as an image in any set, sized and ringed like a photo", () => {
+    const value = "robot:red.chef-hat.grumpy.chef-jacket.steam";
+    for (const avatarSet of ["organic", "robots"] as const) {
+      const html = renderToString(
+        <BotAvatar color={value} avatarSet={avatarSet} identity="b1" size={40} status="running" />,
+      );
+      expect(html).toMatch(/<img src="data:image\/svg\+xml,%3Csvg[^"]*"/);
+      expect(html).toContain("width:40px;height:40px");
+      expect(html).toContain('data-working="true"');
+      expect(html).toContain("robots-bot-avatar-ring-working");
+    }
+    expect(defaultBotAvatarValue(value)).toBe("#D9483B");
+    expect(resolvePersonaColorDef("b1", value).hex).toBe("#D9483B");
+  });
+
+  it("does not draw a robot value that names an unknown part", () => {
+    const html = renderToString(
+      <BotAvatar color={'robot:red."><script>x</script>.grumpy.chef-jacket.none'} size={32} />,
+    );
+    expect(html).not.toContain("<script");
+    expect(html).not.toContain("unknown");
+  });
+
   it("does not treat arbitrary http(s) color values as remote images", () => {
     const parsed = parseBotAvatar("https://evil.example/track.png");
     expect(parsed.isImage).toBe(false);
@@ -116,16 +127,7 @@ describe("BotAvatar", () => {
     const html = renderToString(
       <BotAvatar color="https://evil.example/track.png" identity="maya" size={32} />,
     );
-    expect(html).not.toContain("<img");
     expect(html).not.toContain("evil.example");
-  });
-
-  it("honors reduced-motion for the working mascot pulse class", () => {
-    const html = renderToString(
-      <BotAvatar color="#8B5CF6::shape_0" identity="maya" size={32} status="running" />,
-    );
-    expect(html).toContain("animate-pulse");
-    expect(html).toContain("motion-reduce:animate-none");
   });
 
   it("restores a plain color that renders the organic body instead of a pinned shape", () => {
@@ -138,20 +140,6 @@ describe("BotAvatar", () => {
     expect(defaultBotAvatarValue("data:image/png;base64,abc")).toBe(DEFAULT_BOT_AVATAR_COLOR);
     expect(defaultBotAvatarValue("#zzzzzz::shape_1")).toBe(DEFAULT_BOT_AVATAR_COLOR);
     expect(defaultBotAvatarValue("")).toBe(DEFAULT_BOT_AVATAR_COLOR);
-
-    const restored = renderToString(
-      <BotAvatar
-        color={defaultBotAvatarValue(`${DEFAULT_BOT_AVATAR_COLOR}::shape_4`)}
-        identity="maya"
-      />,
-    );
-    const shaped = renderToString(
-      <BotAvatar color={`${DEFAULT_BOT_AVATAR_COLOR}::shape_4`} identity="maya" />,
-    );
-    expect(restored).toContain("robots-organic-avatar");
-    expect(restored).not.toContain("bot-character-eyes");
-    expect(shaped).toContain("bot-character-eyes");
-    expect(shaped).not.toContain("robots-organic-avatar");
   });
 
   it("exposes shape picker name and pressed state", () => {
@@ -163,52 +151,8 @@ describe("BotAvatar", () => {
     expect(html).toContain("focus-visible:ring-2");
   });
 
-  it("previews an organic body when no studio shape is given", () => {
-    const html = renderToString(
-      <BotShapePreview identity="maya" label="Shape 1" color="#8B5CF6" selected={false} />,
-    );
-    expect(html).toContain('aria-label="Shape 1"');
-    expect(html).toContain("robots-organic-avatar");
-  });
-
-  it("morphs the organic body only while working", () => {
-    const morphing = (status: string) =>
-      [
-        ...renderToString(<BotAvatar color="#8B5CF6" status={status} />).matchAll(
-          /robots-organic-avatar-body-(idle|working)"[^>]*>(<animate)?/g,
-        ),
-      ]
-        .filter((match) => match[2])
-        .map((match) => match[1]);
-    expect(morphing("idle")).toEqual([]);
-    expect(morphing("running")).toEqual(["working"]);
-  });
-
-  it("draws every plain-colour bot with the organic body", () => {
-    const html = renderToString(<BotAvatar color={DEFAULT_BOT_AVATAR_COLOR} identity="maya" />);
-    expect(html).toContain("robots-organic-avatar");
-    expect(html).not.toContain("robots-bot-avatar-visor");
-  });
-
   it("keeps uploaded images", () => {
     const html = renderToString(<BotAvatar color="data:image/png;base64,abc" identity="maya" />);
-    expect(html).toContain("<img");
-    expect(html).not.toContain("robots-organic-avatar");
-  });
-
-  it("keeps an encoded studio shape", () => {
-    const html = renderToString(
-      <BotAvatar color={`${DEFAULT_BOT_AVATAR_COLOR}::shape_3`} identity="maya" />,
-    );
-    expect(html).toContain("bot-character-eyes");
-    expect(html).not.toContain("robots-organic-avatar");
-  });
-
-  it("fills the organic body with the resolved palette hex when the custom color is invalid", () => {
-    const fallback = resolvePersonaColorDef("maya", "#zzzzzz");
-    const html = renderToString(<BotAvatar color="#zzzzzz" identity="maya" />);
-    expect(html).toContain("robots-organic-avatar");
-    expect(html).toContain(`fill="${fallback.hex}"`);
-    expect(html).not.toContain("#zzzzzz");
+    expect(html).toContain('src="data:image/png;base64,abc"');
   });
 });

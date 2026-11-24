@@ -33,7 +33,6 @@ jobs:
     outputs:
       web: ${{ steps.areas.outputs.web }}
       server: ${{ steps.areas.outputs.server }}
-      native: ${{ steps.areas.outputs.native }}
       compose: ${{ steps.areas.outputs.compose }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -68,27 +67,13 @@ jobs:
           DATABASE_URL: postgres://robots:robots@127.0.0.1:5433/robots
           BETTER_AUTH_SECRET: ci-build-auth-secret-at-least-32-characters
           ENCRYPTION_KEY: ci-build-encryption-key-at-least-32-characters
-          electron_config_cache: ${{ runner.temp }}/electron-cache
-      - name: Save turbo build cache
-        if: success()
-        continue-on-error: true
-        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-        with:
-          path: .turbo/cache
-          key: turbo-build-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
       - name: Provide xvfb-run
         run: bash .github/scripts/provide-host-tool.sh xvfb-run
       - name: Electron smoke
-        env:
-          electron_config_cache: ${{ runner.temp }}/electron-cache
         run: xvfb-run --auto-servernum pnpm --filter @robots/desktop exec playwright test --config e2e/playwright.config.ts
-      - name: Upload desktop setup screenshots
+      - name: Keep desktop setup screenshots on the runner
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: desktop-e2e-screenshots
-          path: apps/desktop/e2e/screenshots
-          if-no-files-found: ignore
+        run: bash .github/scripts/local-artifact.sh upload desktop-e2e-screenshots apps/desktop/e2e/screenshots
 
   # A deploy needs these jobs, so like Postgres journeys they check their own changed areas to reach
   # their main locks in push order. Pull requests typecheck and test only the packages their files
@@ -125,12 +110,6 @@ jobs:
         run: pnpm check --affected
         env:
           TURBO_SCM_BASE: HEAD^1
-      - name: Save typecheck cache
-        if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-        with:
-          path: .turbo/cache
-          key: turbo-check-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
       - name: Host operations safety tests
         if: steps.areas.outputs.all_packages != 'false'
         run: python3 infra/compose/host-safeguards.test.py
@@ -235,50 +214,6 @@ jobs:
     steps:
       - run: test "${{ needs.static-checks.result }}" = success && test "${{ needs.unit-tests-shard.result }}" = success
 
-  # Desktop + its workspace deps only. A full-workspace install on Windows also links supervisor
-  # (dockerode → cpu-features) and spends about a minute on a node-gyp rebuild that fails without
-  # Visual Studio and is unused by these tests. Electron's binary is cached separately from the
-  # pnpm store.
-  native-computer:
-    name: Native computer (${{ matrix.os }})
-    needs: changes
-    if: needs.changes.outputs.native == 'true' && vars.HOSTED_RUNNERS == 'true'
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          persist-credentials: false
-      - name: Windows pnpm launcher test
-        if: runner.os == 'Windows'
-        run: node --test scripts/pnpm.test.mjs
-      - name: Worktree environment setup test
-        run: node --test scripts/setup-worktree.test.mjs
-      - uses: ./.github/actions/setup-workspace
-        with:
-          electron: "true"
-          filter: "@robots/desktop..."
-      - run: pnpm db:generate
-        env:
-          DATABASE_URL: postgres://robots:robots@127.0.0.1:5433/robots
-          electron_config_cache: ${{ runner.temp }}/electron-cache
-      - run: pnpm --filter @robots/desktop build
-        env:
-          electron_config_cache: ${{ runner.temp }}/electron-cache
-      - run: pnpm exec vitest run packages/adapters/src/host-computer.test.ts packages/adapters/src/file-handle-path.test.ts packages/adapters/src/desktop-sandbox-command.test.ts packages/adapters/src/desktop-sandbox-paths.test.ts packages/adapters/src/desktop-workspace-cleanup.test.ts packages/adapters/src/computer-support.test.ts apps/desktop/src/host-computer.test.ts
-      - name: Screen control on a real Windows desktop
-        if: runner.os == 'Windows'
-        run: pnpm exec vitest run apps/desktop/src/host-screen.windows.test.ts
-      - name: Native computer in headless Electron
-        run: pnpm --filter @robots/desktop exec electron ../../node_modules/vitest/vitest.mjs run --root ../.. packages/adapters/src/host-computer.test.ts apps/desktop/src/host-computer.test.ts
-        env:
-          ELECTRON_RUN_AS_NODE: "1"
-          electron_config_cache: ${{ runner.temp }}/electron-cache
-
   # Checks its own changed areas instead of needing `changes`: a deploy needs this job, and on main
   # it must reach its lock in push order so an older revision cannot replace a newer waiting one.
   # The suites are CPU-bound; six runners keep them under the native install floor.
@@ -300,12 +235,6 @@ jobs:
       - id: areas
         if: github.event_name == 'pull_request'
         run: bash .github/scripts/changed-areas.sh >> "$GITHUB_OUTPUT"
-      - name: Restore Postgres binaries cache
-        if: steps.areas.outputs.server != 'false'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ${{ runner.temp }}/postgres-binaries-cache
-          key: postgres-binaries-${{ hashFiles('.github/scripts/start-postgres.sh') }}
       - name: Start Postgres
         if: steps.areas.outputs.server != 'false'
         run: bash .github/scripts/start-postgres.sh
@@ -518,7 +447,6 @@ jobs:
         if: steps.ota.outputs.publish == 'true'
         with:
           node-version: 24
-          cache: pnpm
       - name: Install dependencies
         if: steps.ota.outputs.publish == 'true'
         run: pnpm install --frozen-lockfile

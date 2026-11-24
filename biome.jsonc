@@ -19,9 +19,7 @@
       "!**/test-results",
       "!**/test-report",
       "!**/verify-report",
-      "!**/data",
-      "!**/*.astro",
-      "!**/apps/www"
+      "!**/data"
     ]
   },
   "plugins": [
@@ -35,7 +33,8 @@
         "!**/*.test.tsx",
         "!**/packages/ui-web/src/bot-avatar.tsx",
         "!**/apps/mobile/components/bot-avatar.tsx",
-        "!**/apps/web/src/pages/WindowChrome.tsx"
+        "!**/apps/web/src/pages/WindowChrome.tsx",
+        "!**/apps/web/src/components/RobotsMark.tsx"
       ]
     },
     {

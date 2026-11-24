@@ -23,8 +23,6 @@ export const PL_MESSAGES: Record<string, string> = {
   "Enter this code in RoBots to confirm it's you:":
     "Wpisz ten kod w RoBots, aby potwierdzić tożsamość:",
   "Welcome to RoBots": "Witaj w RoBots",
-  "Welcome to RoBots. The people who get the most out of it do three things:":
-    "Witamy w RoBots. Osoby, które korzystają z niego najlepiej, robią trzy rzeczy:",
   "Get the apps": "Pobierz aplikacje",
   "RoBots runs on {platforms}, so your bots can reach you wherever you are.":
     "RoBots działa na {platforms}, więc Twoje boty mogą skontaktować się z Tobą wszędzie.",

@@ -27,6 +27,7 @@ import {
   loadComputerProviderSelection,
 } from "./configured-sandbox.js";
 import { assertHostCommandsAllowed, DesktopSandboxProvider } from "./desktop-sandbox.js";
+import { hostComputerGate } from "./host-computer-access.js";
 import { HostComputerSandbox } from "./host-computer-sandbox.js";
 import type { SandboxProviderOptions } from "./sandbox-factory.js";
 import { createSandboxProvider } from "./sandbox-factory.js";
@@ -39,8 +40,6 @@ export async function createRunSandbox(
   },
 ): Promise<SandboxProvider> {
   const base = await createBaseRunSandbox(kind, opts);
-  // With the database at hand, Settings can send computers elsewhere: an admin's choice for
-  // everyone, or an account's own provider.
   if (!opts.prisma || !opts.secrets || kind === "desktop" || kind === "fake") return base;
   const { prisma, secrets } = opts;
   const configured = new ConfiguredSandbox(
@@ -56,7 +55,6 @@ export async function createRunSandbox(
         }),
     },
   );
-  // Startup never waits on the secret store or a saved provider: routing rereads them on first use.
   await configured
     .refresh()
     .catch((error) => getLogger().warn("computer_provider.load_failed", { error }));
@@ -85,7 +83,6 @@ async function createBaseRunSandbox(
                 kind: computer.kind,
                 providerRef: computer.providerRef,
                 homeKey: { not: computer.botId },
-                // One still saving its workspace needs the desktop until it finishes.
                 state: { in: ["booting", "running", "suspending"] },
               },
             }),
@@ -93,7 +90,6 @@ async function createBaseRunSandbox(
       : opts.referenceInUse,
     onUnsafeStop: opts.prisma
       ? async (providerRef) => {
-          // Quarantine ends any person's control; a recording made under it ends with it.
           const held = await opts.prisma!.computer.findMany({
             where: { kind, providerRef, controlLeaseId: { not: null } },
             select: { spaceId: true, controlLeaseId: true },
@@ -124,12 +120,7 @@ async function createBaseRunSandbox(
   return new HostAwareSandbox(
     primary,
     new HostComputerSandbox(opts.hostComputerUrl ?? "", opts.hostComputerToken ?? ""),
-    async () => {
-      const settings = await opts.prisma!.deploymentSettings.findUnique({
-        where: { id: "default" },
-      });
-      return settings?.computerHost === "this-mac";
-    },
+    hostComputerGate(opts.prisma, opts.hostComputerAccess).forHome,
   );
 }
 
@@ -139,19 +130,19 @@ export class HostAwareSandbox implements SandboxProvider {
   constructor(
     private readonly isolated: SandboxProvider,
     private readonly host: SandboxProvider,
-    private readonly hostEnabled: () => Promise<boolean>,
+    private readonly hostEnabled: (homeKey: string | undefined) => Promise<boolean>,
   ) {
     if (isolated.pageBrowser || host.pageBrowser) {
-      this.pageBrowser = (computer, request, context) => {
-        const provider = this.route(computer);
+      this.pageBrowser = async (computer, request, context) => {
+        const provider = await this.usable(computer);
         return provider.pageBrowser
           ? provider.pageBrowser(computer, request, context)
-          : Promise.resolve({
+          : {
               ok: false,
               uncertain: false,
               fallback: "computer_act",
               error: "Page browser is unavailable on this computer.",
-            });
+            };
       };
     }
   }
@@ -168,9 +159,19 @@ export class HostAwareSandbox implements SandboxProvider {
     return computer.kind === "desktop" ? this.host : this.isolated;
   }
 
-  async provisionKind() {
-    const provider = (await this.hostEnabled()) ? this.host : this.isolated;
-    return provider.describe().id as ComputerRef["kind"];
+  private async usable(computer: Pick<ComputerRef, "kind" | "botId">) {
+    if (computer.kind !== "desktop") return this.isolated;
+    if (!(await this.hostEnabled(computer.botId)))
+      throw new Error("Local computer access is disabled");
+    return this.host;
+  }
+
+  private async provisioner(homeKey: string | undefined) {
+    return (await this.hostEnabled(homeKey)) ? this.host : this.isolated;
+  }
+
+  async provisionKind(homeKey?: string) {
+    return (await this.provisioner(homeKey)).describe().id as ComputerRef["kind"];
   }
 
   async provision(
@@ -182,7 +183,7 @@ export class HostAwareSandbox implements SandboxProvider {
     },
     context: AdapterContext,
   ) {
-    const provider = (await this.hostEnabled()) ? this.host : this.isolated;
+    const provider = await this.provisioner(request.botId);
     const providerKind = provider.describe().id;
     return provider.provision(
       {
@@ -194,7 +195,7 @@ export class HostAwareSandbox implements SandboxProvider {
   }
 
   async isRunning(computer: ComputerRef, context: AdapterContext): Promise<boolean> {
-    const provider = (await this.hostEnabled()) ? this.host : this.isolated;
+    const provider = await this.provisioner(computer.botId);
     if (provider.describe().id !== computer.kind) return false;
     return provider.isRunning?.(computer, context) ?? false;
   }
@@ -204,12 +205,11 @@ export class HostAwareSandbox implements SandboxProvider {
   }
 
   async environment(computer: ComputerRef, context: AdapterContext) {
-    const provider = this.route(computer);
-    return provider.environment?.(computer, context);
+    return (await this.usable(computer)).environment?.(computer, context);
   }
 
-  prepare(computer: ComputerRef, context: AdapterContext) {
-    return this.route(computer).prepare(computer, context);
+  async prepare(computer: ComputerRef, context: AdapterContext) {
+    return (await this.usable(computer)).prepare(computer, context);
   }
 
   async *execute(
@@ -217,79 +217,90 @@ export class HostAwareSandbox implements SandboxProvider {
     request: CommandRequest,
     context: AdapterContext,
   ): AsyncIterable<ProcessEvent> {
-    if (computer.kind === "desktop" && !(await this.hostEnabled()))
-      throw new Error("Local computer access is disabled");
-    yield* this.route(computer).execute(computer, request, context);
+    yield* (await this.usable(computer)).execute(computer, request, context);
   }
 
-  workspaceDirectories(
+  async workspaceDirectories(
     computer: ComputerRef,
     request: WorkspaceDirectoryRequest,
     context: AdapterContext,
   ) {
-    return manageComputerWorkspaceDirectories(this.route(computer), computer, request, context);
+    return manageComputerWorkspaceDirectories(
+      await this.usable(computer),
+      computer,
+      request,
+      context,
+    );
   }
 
   cancelRunWork(computer: ComputerRef, computerId: string, runId: string, context: AdapterContext) {
     return cancelComputerRunWork(this.route(computer), computer, computerId, runId, context);
   }
 
-  connectScreen(computer: ComputerRef, request: ScreenRequest, context: AdapterContext) {
-    return this.route(computer).connectScreen(computer, request, context);
+  async connectScreen(computer: ComputerRef, request: ScreenRequest, context: AdapterContext) {
+    return (await this.usable(computer)).connectScreen(computer, request, context);
   }
 
-  connectTerminal(computer: ComputerRef, request: TerminalRequest, context: AdapterContext) {
-    const provider = this.route(computer);
-    if (!provider.connectTerminal) {
-      return Promise.reject(new Error("terminal is unavailable on this computer"));
-    }
+  async connectTerminal(computer: ComputerRef, request: TerminalRequest, context: AdapterContext) {
+    const provider = await this.usable(computer);
+    if (!provider.connectTerminal) throw new Error("terminal is unavailable on this computer");
     return provider.connectTerminal(computer, request, context);
   }
 
-  sendInput(
+  async sendInput(
     computer: ComputerRef,
     input: ComputerInput,
     lease: ControlLeaseRef,
     context: AdapterContext,
   ) {
-    return this.route(computer).sendInput(computer, input, lease, context);
+    return (await this.usable(computer)).sendInput(computer, input, lease, context);
   }
 
-  observe(computer: ComputerRef, context: AdapterContext) {
-    return this.route(computer).observe(computer, context);
+  async observe(computer: ComputerRef, context: AdapterContext) {
+    return (await this.usable(computer)).observe(computer, context);
   }
 
-  act(computer: ComputerRef, request: ComputerActionRequest, context: AdapterContext) {
-    return this.route(computer).act(computer, request, context);
+  async act(computer: ComputerRef, request: ComputerActionRequest, context: AdapterContext) {
+    return (await this.usable(computer)).act(computer, request, context);
   }
 
-  listFiles(computer: ComputerRef, path: string, context: AdapterContext) {
-    return this.route(computer).listFiles(computer, path, context);
+  async listFiles(computer: ComputerRef, path: string, context: AdapterContext) {
+    return (await this.usable(computer)).listFiles(computer, path, context);
   }
 
-  readFile(
+  async readFile(
     computer: ComputerRef,
     path: string,
     context: AdapterContext,
     options?: { maxBytes?: number },
   ) {
-    return this.route(computer).readFile(computer, path, context, options);
+    return (await this.usable(computer)).readFile(computer, path, context, options);
   }
 
-  writeFile(computer: ComputerRef, file: PortableFile, context: AdapterContext) {
-    return this.route(computer).writeFile(computer, file, context);
+  async writeFile(computer: ComputerRef, file: PortableFile, context: AdapterContext) {
+    return (await this.usable(computer)).writeFile(computer, file, context);
   }
 
   exportWorkspace(computer: ComputerRef, context: AdapterContext, limits?: WorkspaceExportLimits) {
-    return this.route(computer).exportWorkspace(computer, context, limits);
+    if (computer.kind !== "desktop")
+      return this.isolated.exportWorkspace(computer, context, limits);
+    return this.exportHostWorkspace(computer, context, limits);
   }
 
-  importWorkspace(
+  private async *exportHostWorkspace(
+    computer: ComputerRef,
+    context: AdapterContext,
+    limits?: WorkspaceExportLimits,
+  ) {
+    yield* (await this.usable(computer)).exportWorkspace(computer, context, limits);
+  }
+
+  async importWorkspace(
     computer: ComputerRef,
     files: AsyncIterable<PortableFile>,
     context: AdapterContext,
   ) {
-    return this.route(computer).importWorkspace(computer, files, context);
+    return (await this.usable(computer)).importWorkspace(computer, files, context);
   }
 
   snapshot(computer: ComputerRef, context: AdapterContext) {

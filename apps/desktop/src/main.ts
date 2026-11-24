@@ -8,6 +8,7 @@ import {
   profileSessionsReader,
 } from "@robots/adapters/browser-profile-sessions";
 import type { HostScreen } from "@robots/adapters/host-screen";
+import { createPrivateNetworkHttps } from "@robots/adapters/private-network-https";
 import { startUserDeviceClient } from "@robots/adapters/user-device-client";
 import type {
   DesktopLocalStackState,
@@ -15,6 +16,7 @@ import type {
   DesktopSetup,
   RobotsDesktopDevice,
 } from "@robots/contracts";
+import { isMacGrantId } from "@robots/contracts";
 import type { BrowserWindow, Session } from "electron";
 import {
   app,
@@ -85,6 +87,8 @@ import {
   stackDir,
   stackResourceDir,
 } from "./local-stack.js";
+import { createDesktopMacApps } from "./mac-apps.js";
+import { automationPermissionCode } from "./mac-automation-native.js";
 import { nativeStackEligible, readServerBundle } from "./mac-runtime.js";
 import {
   configureDesktopMonitoring,
@@ -95,6 +99,7 @@ import {
   reportDesktopError,
 } from "./monitoring.js";
 import { NativeStackController } from "./native-stack.js";
+import { createNetworkController } from "./network-controller.js";
 import { associatedPasskeyRpIds } from "./passkeys.js";
 import { revealSecondInstanceWindow, secondInstanceWindow } from "./second-instance.js";
 import { installServerHeaders } from "./server-request-headers.js";
@@ -472,6 +477,24 @@ async function confirmSessionImport(request: {
   const result = await (win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options));
   return result.response === 1;
 }
+async function confirmNetworkAccess(address: string) {
+  const options: Electron.MessageBoxOptions = {
+    type: "warning",
+    message: t("Let other devices open RoBots?"),
+    detail: t(
+      "Devices on your network will reach this computer's RoBots at {address}. Each one still has to sign in or pair.",
+      { address },
+    ),
+    buttons: [t("Cancel"), t("Allow")],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  };
+  const win =
+    desktop.mainWindow !== null && !desktop.mainWindow.isDestroyed() ? desktop.mainWindow : null;
+  const result = await (win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options));
+  return result.response === 1;
+}
 /** A bot asks while the person may be elsewhere, so bring the prompt to them. */
 function confirmRemoteComputerAccess(host: string) {
   if (desktop.mainWindow !== null && !desktop.mainWindow.isDestroyed()) {
@@ -638,8 +661,26 @@ app.whenReady().then(async () => {
         return { png: fitted.toPNG(), ...fitted.getSize() };
       },
     });
+  const mac =
+    process.platform === "darwin"
+      ? createDesktopMacApps({
+          home: app.getPath("home"),
+          openSettings: (url) => shell.openExternal(url),
+          automationCode: automationPermissionCode,
+        })
+      : undefined;
+  if (mac) {
+    ipcMain.handle("desktop.macApps.permissions", (event) =>
+      fromAppFrame(permissionTarget(), event) ? mac.permissions.states() : null,
+    );
+    ipcMain.handle("desktop.macApps.allow", (event, grant: unknown) =>
+      fromAppFrame(permissionTarget(), event) && isMacGrantId(grant)
+        ? mac.permissions.allow(grant)
+        : null,
+    );
+  }
   try {
-    desktop.hostComputer = await prepareHostComputer(userDataDir, hostScreen);
+    desktop.hostComputer = await prepareHostComputer(userDataDir, hostScreen, mac?.macApps);
   } catch {
     /* Local access fails closed; Docker remains available. */
   }
@@ -667,6 +708,7 @@ app.whenReady().then(async () => {
         token,
         root: path.join(userDataDir, "computers"),
         screen: hostScreen,
+        macApps: mac?.macApps,
         ...events,
       }),
   });
@@ -709,6 +751,19 @@ app.whenReady().then(async () => {
         override: process.env.ROBOTS_SERVER_BUNDLE,
       })
     : null;
+  // Who else on the network may open the stack; applied each time the stack starts.
+  const network = createNetworkController({
+    stackDir: userStackDir,
+    interfaces: () => os.networkInterfaces(),
+    https: createPrivateNetworkHttps(),
+    port: () => new URL(desktop.localStack.webUrl()).port || "80",
+    restart: async () => {
+      await desktop.localStack.stop();
+      await desktop.localStack.start();
+    },
+    confirm: confirmNetworkAccess,
+  });
+  await network.ready();
   const stacks = stackExists(userStackDir, existsSync);
   // Installed but not running keeps the Docker path; no Docker at all leaves nothing to keep.
   const dockerInstalled = resolveDockerBinary(process.platform, process.env, existsSync) !== null;
@@ -751,6 +806,7 @@ app.whenReady().then(async () => {
           randomHex,
           onState,
           importFromDocker: moving ? (target) => moveDockerStack(moveDeps, target) : undefined,
+          networkEnv: network.env,
         })
       : new LocalStackController({
           hostComputer: desktop.hostComputer?.connection,
@@ -768,6 +824,7 @@ app.whenReady().then(async () => {
           onState,
           // A confirmed reuse changes no phase; the menu must hear about it separately.
           onReuseConfirmed: () => stopStackMenu.reuseConfirmed(),
+          networkEnv: network.env,
         });
   const target = resolveStartupTarget({
     envUrl: process.env.ROBOTS_WEB_URL,
@@ -890,6 +947,13 @@ app.whenReady().then(async () => {
   ipcMain.handle("desktop.computer.revokeAccess", async (event) => {
     if (isManagedComputerRequest(event)) await revokeLocalComputerAccess();
   });
+  // Only the page of the stack this app runs may see or change who reaches it.
+  ipcMain.handle("desktop.network.state", (event) =>
+    isManagedComputerRequest(event) ? network.state() : null,
+  );
+  ipcMain.handle("desktop.network.setMode", (event, mode: unknown) =>
+    isManagedComputerRequest(event) ? network.setMode(mode) : null,
+  );
   /** The remote server's own page in the app window, never a frame or another window. */
   const remoteDeviceOrigin = (event: Electron.IpcMainInvokeEvent) => {
     const origin = remoteServerOrigin();

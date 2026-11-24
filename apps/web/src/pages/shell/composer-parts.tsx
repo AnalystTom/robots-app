@@ -4,13 +4,12 @@ import type { ComposerMention, SLASH_ACTIONS, SlashActionId } from "@robots/core
 import { mentionChipKey, truncateSlashDescription } from "@robots/core";
 import { Button } from "@robots/ui-web";
 import { ArrowUp, Box, Paperclip, Settings, Square, X } from "lucide-react";
-import type { CSSProperties, RefObject } from "react";
+import type { CSSProperties, ReactNode, RefObject } from "react";
 import type { useHoldToTalk } from "../../components/composer/HoldToTalk";
 import { HoldToTalkControls } from "../../components/composer/HoldToTalk";
 import type { PendingAttachment } from "./chat-shared";
 import { MentionOptionIcon, slashActionLabel } from "./composer-mentions";
 
-/** The files waiting to go with the next message, each with its remove button. */
 export function PendingAttachmentChips({
   attachments,
   onRemove,
@@ -53,7 +52,6 @@ export function PendingAttachmentChips({
   );
 }
 
-/** The `@` list; the message field keeps focus and points at the highlighted option. */
 export function MentionPicker({
   listboxId,
   options,
@@ -89,7 +87,6 @@ export function MentionPicker({
             aria-label={t`@${mention.name}`}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => onPick(mention)}
-            // Opening the list under a stationary pointer must not steal the keyboard highlight.
             onMouseMove={() => onHighlight(mention)}
             className={`flex w-full items-center gap-3 px-4 py-2.5 text-start hover:bg-accent ${
               highlighted ? "bg-accent" : ""
@@ -113,7 +110,6 @@ export function MentionPicker({
   );
 }
 
-/** The `/` list: skills to attach, then actions to run. */
 export function SlashPicker({
   listboxId,
   activeIndex,
@@ -193,7 +189,6 @@ export function SlashPicker({
   );
 }
 
-/** Hold-to-talk, Send, and while a reply runs, Stop. */
 export function ComposerActions({
   actionsRef,
   expanded,
@@ -204,32 +199,30 @@ export function ComposerActions({
   sendDisabled,
   stopDisabled,
   sendColors,
+  modelPicker,
   onSend,
   onStop,
 }: {
   actionsRef: RefObject<HTMLDivElement | null>;
+  modelPicker?: ReactNode;
   expanded: boolean;
   talk: ReturnType<typeof useHoldToTalk>;
   running: boolean;
-  /** Hold-to-talk shows beside Send while the draft is empty. */
   showTalk: boolean;
   talkDisabled: boolean;
   sendDisabled: boolean | undefined;
   stopDisabled: boolean;
-  /** The bot's color, as your messages to it wear it; the send button matches them. */
   sendColors?: { background: string; foreground: string };
   onSend: () => void;
   onStop: () => void;
 }) {
   const { t } = useLingui();
-  // The same chat-user colors your bubbles in this chat wear (set the same way in the transcript).
   const sendStyle = sendColors
     ? ({
         "--chat-user": sendColors.background,
         "--chat-user-foreground": sendColors.foreground,
       } as CSSProperties)
     : undefined;
-  // An empty draft keeps the quiet disabled look either way; the bot's color shows once it can go.
   const sendClassName = `size-8 shrink-0 rounded-full transition-transform active:scale-95 disabled:bg-primary-disabled disabled:text-foreground/30 disabled:opacity-100 ${sendColors ? "bg-chat-user text-chat-user-foreground hover:bg-chat-user/90" : ""}`;
   return (
     <div
@@ -238,6 +231,7 @@ export function ComposerActions({
         expanded ? "row-start-2" : ""
       }`}
     >
+      {talk.recording?.locked ? null : modelPicker}
       {talk.recording?.locked ? (
         <HoldToTalkControls talk={talk} />
       ) : running ? (

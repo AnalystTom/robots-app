@@ -1,5 +1,10 @@
 import type { BotColorDef } from "@robots/contracts";
-import { BOT_COLOR_LIST, parseBotAvatarValue } from "@robots/contracts";
+import {
+  BOT_COLOR_LIST,
+  parseBotAvatarValue,
+  parseRobotCharacter,
+  ROBOT_COLOUR_FILLS,
+} from "@robots/contracts";
 
 /** Shared identity color for Avatar Studio reset/fallback (Executive Violet). */
 export const DEFAULT_BOT_AVATAR_COLOR = BOT_COLOR_LIST.find((color) => color.id === "violet")!.hex;
@@ -32,6 +37,13 @@ export function resolvePersonaColorDef(
   explicitColor?: string | null,
 ): BotColorDef {
   if (explicitColor) {
+    const robot = parseRobotCharacter(explicitColor);
+    if (robot)
+      return {
+        id: `robot-${robot.colour}`,
+        name: robot.colour,
+        hex: ROBOT_COLOUR_FILLS[robot.colour],
+      };
     const clean = explicitColor.toLowerCase();
     const foundById = BOT_COLOR_LIST.find((c) => c.id === clean || c.name.toLowerCase() === clean);
     if (foundById) return foundById;

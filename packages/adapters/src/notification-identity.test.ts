@@ -1,4 +1,4 @@
-import { notificationAvatarSource } from "@robots/core";
+import { notificationAvatarSource, ROBOT_PRESETS, robotCharacterSvg } from "@robots/core";
 import { expect, it, vi } from "vitest";
 import { notificationIdentity } from "./notification-identity.js";
 
@@ -10,8 +10,13 @@ it.each([
   { style: "logo", avatarSet: "robots", color: "#14b8a6" },
   { style: "shape", avatarSet: null, color: "#8B5CF6::shape_3" },
   { style: "dark shape", avatarSet: null, color: "#111827::shape_5" },
+  {
+    style: "robot",
+    avatarSet: "robots",
+    color: "robot:purple.mortarboard.glasses.turtleneck.none",
+  },
 ])(
-  `sends the $style avatar at 96px and a 120px one for larger senders within the app's limit`,
+  "sends the $style avatar as a preset robot picture within the app's limit",
   async ({ avatarSet, color }) => {
     const identity = await notificationIdentity({
       id: "agent-1",
@@ -21,16 +26,33 @@ it.each([
     });
     expect(identity.name).toBe("Head of Marketing");
     const { default: sharp } = await import("sharp");
-    for (const [field, width] of [
-      ["avatar", 96],
-      ["avatarLarge", 120],
-    ] as const) {
-      const bytes = Buffer.from(identity[field]!, "base64");
-      expect(bytes.length).toBeLessThanOrEqual(MAX_AVATAR_BYTES);
-      expect(await sharp(bytes).metadata()).toMatchObject({ width, height: width, format: "png" });
-    }
+    const bytes = Buffer.from(identity.avatar!, "base64");
+    expect(bytes.length).toBeLessThanOrEqual(MAX_AVATAR_BYTES);
+    const { width, height, format } = await sharp(bytes).metadata();
+    expect(format).toBe("png");
+    expect(width).toBe(height);
+    expect([96, 64, 40]).toContain(width);
   },
 );
+
+it("draws a legacy colour as the preset robot its identity picks", async () => {
+  const identity = await notificationIdentity({
+    id: "agent-1",
+    name: "Head of Marketing",
+    color: "#14b8a6",
+    avatarSet: "robots",
+  });
+  const { default: sharp } = await import("sharp");
+  const bytes = Buffer.from(identity.avatar!, "base64");
+  const { width } = await sharp(bytes).metadata();
+  const assistant = ROBOT_PRESETS.find((preset) => preset.id === "assistant")!;
+  const expected = await sharp(Buffer.from(robotCharacterSvg(assistant.look)))
+    .resize(width!, width!, { fit: "cover" })
+    .flatten({ background: "white" })
+    .png({ palette: true, colours: 16, effort: 10 })
+    .toBuffer();
+  expect(await sharp(bytes).raw().toBuffer()).toEqual(await sharp(expected).raw().toBuffer());
+});
 
 it.each([
   { side: 96, sent: 64 },

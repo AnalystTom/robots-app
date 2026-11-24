@@ -59,6 +59,7 @@ export type MobileMe = Pick<
   | "labs"
   | "labsAvailable"
   | "botAvatarSet"
+  | "pushNotifications"
 >;
 export type MobileModel = ModelCatalogEntry;
 /** Shared DTO includes headerNames only; header values remain in the server secret. */

@@ -12,6 +12,20 @@ SIGNUP_ALLOWLIST=you@example.com,@company.com
 
 `SIGNUPS_ENABLED` and `SIGNUP_ALLOWLIST` come from the operator's environment on every start. An empty allowlist clears any old stored list; signup order never grants privileges.
 
+To open signup without email delivery, let new accounts come only through Google, Apple or OIDC:
+
+```env
+SIGNUPS_ENABLED=true
+SIGNUP_ALLOWLIST=
+AUTH_EMAIL_SIGNUP_ENABLED=false
+```
+
+`AUTH_EMAIL_SIGNUP_ENABLED=false` refuses every new account by email, whether by password or by
+emailed code, with the same answer as closed registration. Existing email accounts keep signing in
+with their password or a code. Sign-up pages then offer only the configured providers, which still
+follow `SIGNUPS_ENABLED`, the allowlist, and the provider's email verification described under
+[Google and Apple sign-in](#google-and-apple-sign-in). The default is `true`.
+
 Server configuration belongs in the operator's environment. App accounts cannot change signup policy,
 server integration credentials, or deployment updates, and cannot read deployment security logs.
 
@@ -239,7 +253,10 @@ APPLE_KEY_ID=replace-with-key-id
 APPLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nreplace-with-key\n-----END PRIVATE KEY-----"
 ```
 
-Leave a pair empty to keep that provider off. `APPLE_PRIVATE_KEY` is the contents of the Sign in
+Leave a pair empty to keep that provider off. To let users connect Google's MCP servers (Gmail,
+Calendar, Drive) without their own OAuth client, set `GOOGLE_MCP_OAUTH_CLIENT_ID` and
+`GOOGLE_MCP_OAUTH_CLIENT_SECRET` instead; they do not turn on Google sign-in. See
+[MCP servers](self-host-integrations.md#mcp-servers). `APPLE_PRIVATE_KEY` is the contents of the Sign in
 with Apple `.p8` file. A line break in the env value can be a real newline or the two characters
 `\n`. To mount the file instead, set `APPLE_PRIVATE_KEY_FILE` to its path and leave
 `APPLE_PRIVATE_KEY` empty. Set one of them, not both. In every Compose variant, this path is

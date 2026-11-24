@@ -10,6 +10,7 @@ android {
   namespace 'com.robots.notifications'
   defaultConfig {
     versionName '0.1.0'
+    testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
   }
 }
 
@@ -19,4 +20,6 @@ dependencies {
   testImplementation 'junit:junit:4.13.2'
   // The real parser: Android's own org.json is a stub in local unit tests.
   testImplementation 'org.json:json:20240303'
+  androidTestImplementation 'androidx.test:runner:1.6.2'
+  androidTestImplementation 'androidx.test.ext:junit:1.2.1'
 }

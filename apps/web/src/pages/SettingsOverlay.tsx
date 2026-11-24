@@ -26,6 +26,7 @@ import {
   UsageSettingsPanel,
 } from "./AccountSettingsOverlay";
 import { BillingSettingsPanel } from "./BillingSettingsPanel";
+import { DevicesSettingsPanel } from "./DevicesSettingsPanel";
 import { LabsSettingsPanel } from "./LabsSettingsPanel";
 import { MemorySettingsOverlay } from "./MemorySettingsOverlay";
 import { MessagingSettingsPanel } from "./MessagingSettingsPanel";
@@ -444,6 +445,7 @@ export function SettingsOverlay({
                   ) : null}
                   {section === "confirmations" ? <ApprovalRulesSettings scope="account" /> : null}
                   {section === "vault" ? <VaultSettings scope="account" /> : null}
+                  {section === "devices" ? <DevicesSettingsPanel /> : null}
                   {section === "messaging" && messagingEnabled ? <MessagingSettingsPanel /> : null}
                   {section === "wallet" && paymentWalletProvider ? (
                     <PaymentWalletSettingsPanel provider={paymentWalletProvider} />

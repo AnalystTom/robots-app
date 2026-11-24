@@ -4,7 +4,6 @@ import { native } from "../lib/native";
 
 export const LOGO_SIZE = 32;
 
-/** Styles shared by the integrations screen and its parts. */
 export function createIntegrationsStyles() {
   const destructive = mobileTokens().destructive;
   return StyleSheet.create({
@@ -56,6 +55,7 @@ export function createIntegrationsStyles() {
     grow: { flex: 1, gap: 3, minWidth: 0 },
     title: { color: native.label, fontSize: 15, fontWeight: "600" },
     secondary: { color: native.secondaryLabel, fontSize: 13 },
+    tertiary: { color: native.tertiaryLabel, fontSize: 13, marginLeft: 6 },
     pressed: { backgroundColor: native.fillPressed },
     categoryPicker: { alignSelf: "flex-start" },
     sectionHeader: {
@@ -71,41 +71,31 @@ export function createIntegrationsStyles() {
       alignItems: "center",
       gap: 8,
     },
-    accountRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 8,
-    },
-    accountLabel: {
-      flex: 1,
-      minHeight: 36,
-      borderRadius: 10,
-      backgroundColor: native.fillPressed,
-      color: native.label,
-      paddingHorizontal: 10,
-      fontSize: 13,
-    },
     link: { color: native.label, fontSize: 14, fontWeight: "600" },
     error: { color: destructive, fontSize: 14 },
     detail: { gap: 14 },
-    detailHeader: {
+    backButton: { alignSelf: "flex-start", paddingVertical: 4 },
+    hero: { flexDirection: "row", alignItems: "center", gap: 14 },
+    heroTitle: { color: native.label, fontSize: 22, fontWeight: "600" },
+    placement: { flexDirection: "row", alignItems: "center", gap: 6 },
+    groupCard: { borderRadius: 16, backgroundColor: native.fill, overflow: "hidden" },
+    groupRow: {
+      minHeight: 52,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      gap: 12,
+      gap: 10,
     },
-    detailTitleRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minWidth: 0 },
-    backButton: { paddingVertical: 4 },
-    detailTitle: { flex: 1, color: native.label, fontSize: 17, fontWeight: "600" },
-    toolsToggle: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 8,
+    groupDivider: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: native.separator,
     },
-    toolsBody: { gap: 8, paddingTop: 4 },
-    toolName: { color: native.label, fontSize: 14 },
+    rowLabel: { color: native.label, fontSize: 15 },
+    rowInput: { color: native.label, fontSize: 15, padding: 0, minHeight: 22 },
+    caption: { color: native.secondaryLabel, fontSize: 13, paddingHorizontal: 16 },
+    sheet: { flex: 1, gap: 14, paddingHorizontal: 20, backgroundColor: native.page },
+    sheetHeader: { flexDirection: "row", justifyContent: "flex-end" },
     addCustom: { alignSelf: "flex-end", padding: 12 },
   });
 }

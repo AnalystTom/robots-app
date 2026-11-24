@@ -1,6 +1,5 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-/** Listen for a main-process signal without handing the IPC event to the renderer. */
 function subscribe(channel) {
   return (listener) => {
     const handler = () => listener();
@@ -27,6 +26,10 @@ contextBridge.exposeInMainWorld("robotsDesktop", {
   server: {
     change: () => ipcRenderer.invoke("desktop.server.change"),
   },
+  network: {
+    state: () => ipcRenderer.invoke("desktop.network.state"),
+    setMode: (mode) => ipcRenderer.invoke("desktop.network.setMode", mode),
+  },
   settings: {
     onOpen: subscribe("desktop.settings.open"),
   },
@@ -44,7 +47,6 @@ contextBridge.exposeInMainWorld("robotsDesktop", {
   },
   menu: {
     onCommand: (listener) => {
-      // The IpcRendererEvent stays in the preload: the renderer only sees the command.
       const handler = (_event, command) => listener(command);
       ipcRenderer.on("desktop.menu.command", handler);
       return () => ipcRenderer.off("desktop.menu.command", handler);
@@ -56,7 +58,6 @@ contextBridge.exposeInMainWorld("robotsDesktop", {
   passkeys: {
     rpIds: () => ipcRenderer.invoke("desktop.passkeys.rpIds"),
   },
-  // Only macOS ships a system recognizer helper; elsewhere dictation keeps its provider path.
   ...(process.platform === "darwin"
     ? {
         speech: {
@@ -65,11 +66,18 @@ contextBridge.exposeInMainWorld("robotsDesktop", {
           stop: (session) => ipcRenderer.invoke("desktop.speech.stop", session),
           abort: (session) => ipcRenderer.invoke("desktop.speech.abort", session),
           onEvent: (listener) => {
-            // The IpcRendererEvent stays in the preload: the renderer only sees the payload.
             const handler = (_event, payload) => listener(payload);
             ipcRenderer.on("desktop.speech.event", handler);
             return () => ipcRenderer.off("desktop.speech.event", handler);
           },
+        },
+      }
+    : {}),
+  ...(process.platform === "darwin"
+    ? {
+        macApps: {
+          permissions: () => ipcRenderer.invoke("desktop.macApps.permissions"),
+          allow: (grant) => ipcRenderer.invoke("desktop.macApps.allow", grant),
         },
       }
     : {}),
@@ -89,7 +97,6 @@ contextBridge.exposeInMainWorld("robotsDesktop", {
     open: (url) => ipcRenderer.invoke("desktop.oauth.open", url),
     cancel: (url) => ipcRenderer.invoke("desktop.oauth.cancel", url),
     onCallback: (listener) => {
-      // The IpcRendererEvent stays in the preload: the renderer only sees the code.
       const handler = (_event, callback) => listener(callback);
       ipcRenderer.on("desktop.oauth.callback", handler);
       return () => ipcRenderer.off("desktop.oauth.callback", handler);
@@ -98,7 +105,6 @@ contextBridge.exposeInMainWorld("robotsDesktop", {
   mcpBrowser: {
     clear: (serverId) => ipcRenderer.invoke("desktop.mcpBrowser.clear", serverId),
     onOAuthCallback: (listener) => {
-      // The IpcRendererEvent stays in the preload: the renderer only sees the code.
       const handler = (_event, callback) => listener(callback);
       ipcRenderer.on("desktop.mcpBrowser.callback", handler);
       return () => ipcRenderer.off("desktop.mcpBrowser.callback", handler);

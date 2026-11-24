@@ -1,6 +1,7 @@
 # Chat apps
 
-Message your bots from Microsoft Teams, Slack, Telegram, WhatsApp, iMessage, SMS, or Feishu/Lark.
+Message your bots from Microsoft Teams, Slack, Telegram, Discord, WhatsApp, iMessage, SMS, or
+Feishu/Lark.
 Replies return to the same chat app.
 
 **Settings → Messaging** shows the chat apps configured on your server. Self-hosted operators
@@ -11,6 +12,7 @@ set them up using the [messaging setup guide](./self-host-integrations.md#messag
 | Microsoft Teams  | Yes                    | Not supported                                   |
 | Slack            | Yes, after linking DMs | Workspace channels                              |
 | Telegram         | Yes                    | Personal group linking; not broadcast channels  |
+| Discord          | Yes                    | Not supported                                   |
 | iMessage and SMS | Yes                    | iMessage only, when supported by the connection |
 | WhatsApp         | Yes                    | Not supported                                   |
 | Feishu/Lark      | Yes                    | Not supported                                   |
@@ -65,6 +67,13 @@ A [routine](./routines.md) can also start from a **Slack message**.
 Open the Telegram bot supplied by your server operator, start a chat, and send the link code.
 If your server offers several Telegram bots, each can link to a different RoBots bot.
 For groups, follow the privacy-mode instructions below.
+
+## Discord
+
+Open a direct message with the Discord bot supplied by your server operator and send the link
+code. Discord only lets you message a bot you share a server with, so join the server your operator
+invited it to first. Images and files you send reach the bot, and long replies arrive as several
+messages. Server channels are not supported: the bot ignores messages and mentions there.
 
 ## iMessage and SMS
 

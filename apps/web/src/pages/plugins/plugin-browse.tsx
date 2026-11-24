@@ -1,15 +1,30 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { ConnectionCatalogItem, PluginMarketplaceEntry } from "@robots/contracts";
-import { CATALOG_SEARCH_QUERY_MAX_LENGTH, SUBMIT_PLUGIN_URL } from "@robots/contracts";
+import type {
+  ConnectionCatalogItem,
+  MacAppConnection,
+  McpServer,
+  PluginMarketplaceEntry,
+} from "@robots/contracts";
+import {
+  CATALOG_SEARCH_QUERY_MAX_LENGTH,
+  MAC_APP_CONNECTIONS,
+  mcpServerConnection,
+  SUBMIT_PLUGIN_URL,
+} from "@robots/contracts";
+import type { RemoteMcpApp } from "@robots/core";
 import {
   CONNECTION_CATALOG_PAGE_SIZE,
   catalogItemKey,
   isRecommendedPlugin,
   managedAppFor,
+  matchesRemoteMcpApp,
   OTHER_PLUGINS,
+  REMOTE_MCP_APPS,
+  remoteMcpAppServer,
 } from "@robots/core";
 import { Button, SectionHeading, Spinner } from "@robots/ui-web";
 import { ArrowUpRight, Search } from "lucide-react";
+import { MacAppIcon } from "../../components/integrations/mac-app-icon";
 import type { PluginSelection } from "../../components/integrations/plugin-marketplace";
 import {
   PluginRow,
@@ -26,6 +41,36 @@ import type { PluginConnections } from "./use-plugin-connections";
 
 const SECTION_SIZE = 6;
 
+function RemoteMcpApps({
+  query,
+  servers,
+  onOpen,
+}: {
+  query: string;
+  servers: readonly McpServer[];
+  onOpen: (app: RemoteMcpApp) => void;
+}) {
+  const apps = REMOTE_MCP_APPS.filter((app) => matchesRemoteMcpApp(app, query));
+  if (!apps.length) return null;
+  return (
+    <div data-testid="remote-mcp-apps" className="mb-6 grid grid-cols-2 gap-2">
+      {apps.map((app) => {
+        const server = remoteMcpAppServer(app, servers);
+        return (
+          <PluginRow
+            key={app.id}
+            name={app.name}
+            description={app.description}
+            site={app.site}
+            installed={Boolean(server && mcpServerConnection(server) === "connected")}
+            onOpen={() => onOpen(app)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 /** The browse page under the search: featured apps, plugin sections or matches, and more apps. */
 export function PluginBrowse({
   browse,
@@ -33,6 +78,8 @@ export function PluginBrowse({
   tileContext,
   onOpenPlugin,
   onSearchPublic,
+  onOpenMacApp,
+  onOpenRemoteApp,
 }: {
   browse: CatalogBrowse;
   state: PluginConnections;
@@ -40,9 +87,11 @@ export function PluginBrowse({
   onOpenPlugin: (selection: PluginSelection) => void;
   /** Opens the public MCP catalog searched for the query. */
   onSearchPublic: (query: string) => void;
+  onOpenMacApp: (app: MacAppConnection) => void;
+  onOpenRemoteApp: (app: RemoteMcpApp) => void;
 }) {
   const { t } = useLingui();
-  const { catalogLoaded, catalog, pluginCatalog, pluginInstalls } = state;
+  const { catalogLoaded, catalog, pluginCatalog, pluginInstalls, mcpServers } = state;
   const {
     query,
     setVisibleCount,
@@ -266,6 +315,36 @@ export function PluginBrowse({
             </div>
           )}
         </div>
+      ) : null}
+
+      {!category ? (
+        <RemoteMcpApps
+          query={showFeatured ? "" : query}
+          servers={mcpServers}
+          onOpen={onOpenRemoteApp}
+        />
+      ) : null}
+
+      {showFeatured && !category ? (
+        <section data-testid="mac-apps" className="mb-6">
+          <SectionHeading as="h2" className="mb-2 px-2.5">
+            <Trans>On your Mac</Trans>
+          </SectionHeading>
+          <div className="grid grid-cols-2 gap-2">
+            {MAC_APP_CONNECTIONS.map((app) => (
+              <div key={app.id} className={`${ROW_SHELL} ${ROW_HOVER}`}>
+                <button type="button" className={ROW_BUTTON} onClick={() => onOpenMacApp(app)}>
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground [&_svg]:size-5">
+                    <MacAppIcon name={app.icon} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-start text-body-lg font-medium text-foreground">
+                    {app.name}
+                  </span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {catalogsReady &&

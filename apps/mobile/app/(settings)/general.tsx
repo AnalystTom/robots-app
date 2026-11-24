@@ -53,6 +53,13 @@ import { errorText } from "../../lib/user-error";
 
 let hapticsSaveVersion = 0;
 
+function savePreferences(patch: {
+  botAvatarSet?: MobileMe["botAvatarSet"];
+  pushNotifications?: boolean;
+}) {
+  return rpc("preferences/update", patch);
+}
+
 export default function General() {
   const sideInsets = useSideInsets();
   const { t } = useLingui();
@@ -85,6 +92,7 @@ export default function General() {
   const notificationQueue = useRef<ReturnType<
     typeof createQueuedSave<LiveNotificationSettings>
   > | null>(null);
+  const pushQueue = useRef<ReturnType<typeof createQueuedSave<boolean>> | null>(null);
   const [notificationPermission, setNotificationPermission] = useState<string | null>(null);
   const [notificationError, setNotificationError] = useState<string | null>(null);
 
@@ -111,7 +119,9 @@ export default function General() {
       let active = true;
       void rpc("me")
         .then((next) => {
-          if (active) setMe(next);
+          if (!active) return;
+          setMe(next);
+          pushQueue.current?.reset(next.pushNotifications);
         })
         .catch(() => undefined);
       return () => {
@@ -187,13 +197,25 @@ export default function General() {
     notificationQueue.current.update(next);
   }
 
+  function updatePushNotifications(pushNotifications: boolean) {
+    pushQueue.current ??= createQueuedSave(Boolean(me?.pushNotifications), {
+      onChange: (value) =>
+        setMe((current) => (current ? { ...current, pushNotifications: value } : current)),
+      save: async (value) => {
+        await savePreferences({ pushNotifications: value });
+      },
+      onError: () => Alert.alert(t`Push notifications`, t`Could not save`),
+    });
+    pushQueue.current.update(pushNotifications);
+  }
+
   function updateBotStyle(botAvatarSet: MobileMe["botAvatarSet"] | "") {
     if (!me || !botAvatarSet) return;
     const previous = me.botAvatarSet;
     // Only the latest tap's reply may land, so a slower earlier save can't undo it.
     const request = ++botStyleRequest.current;
     setMe((current) => (current ? { ...current, botAvatarSet } : current));
-    rpc("preferences/update", { botAvatarSet })
+    savePreferences({ botAvatarSet })
       .then((next) => {
         // Take only the style, so an older snapshot can't undo another edit.
         if (request !== botStyleRequest.current) return;
@@ -253,6 +275,13 @@ export default function General() {
             value={APP_LOCALE_LABELS[locale]}
           />
           <SettingsSwitch label={t`Haptics`} value={hapticsEnabled} onChange={updateHaptics} />
+          {me ? (
+            <SettingsSwitch
+              label={t`Push notifications`}
+              value={me.pushNotifications}
+              onChange={updatePushNotifications}
+            />
+          ) : null}
         </SettingsGroup>
 
         {Platform.OS === "android" ? (
