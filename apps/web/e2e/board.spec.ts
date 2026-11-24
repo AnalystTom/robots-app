@@ -16,8 +16,8 @@ test("board creates a ticket and opens it", async ({ page }, testInfo) => {
   await completeOnboarding(page);
   await createNamedBot(page, "Planner");
 
+  await expect(page.getByTestId("workspace-nav-tasks")).toHaveCount(0);
   await page.getByTestId("user-menu-trigger").click();
-  await expect(page.getByRole("button", { name: "Board", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   const settings = await openUserSettings(page, "labs");
   const boardLab = settings.getByTestId("lab-board-toggle");
@@ -29,28 +29,22 @@ test("board creates a ticket and opens it", async ({ page }, testInfo) => {
   await settings.getByRole("button", { name: "Close user settings" }).click();
   await expect(settings).toBeHidden();
 
-  await page.getByTestId("user-menu-trigger").click();
-  await page.getByRole("button", { name: "Board", exact: true }).click();
-  await expect(page).toHaveURL(/\/app\/board$/);
-  await expect(page.getByTestId("board-columns")).toBeVisible();
+  await page.getByTestId("workspace-nav-tasks").click();
+  await expect(page).toHaveURL(/\/app\/tasks$/);
+  await expect(page.getByTestId("task-columns")).toBeVisible();
   await expect(page.getByText("No tickets yet", { exact: true })).toBeVisible();
-  const board = page.getByTestId("board-columns");
+  const board = page.getByTestId("task-columns");
   expect(await board.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
-  await expect(page.getByRole("heading", { name: "Won't do", exact: true })).toBeInViewport();
+  await expect(page.getByTestId("task-column-done")).toBeInViewport();
   await page.setViewportSize({ width: 800, height: 900 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
-  expect(
-    await board.evaluate(
-      (node) => node.parentElement!.scrollWidth > node.parentElement!.clientWidth,
-    ),
-  ).toBe(true);
   await page.setViewportSize({ width: 1440, height: 900 });
   await captureScreenshot(page, testInfo, "board-kanban");
 
-  await page.getByRole("button", { name: "New ticket", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "New ticket" });
+  await page.getByRole("button", { name: "New task", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "New task" });
   await dialog.getByLabel("Title").fill(title);
   await dialog.getByLabel("Description").fill(description);
   const owner = dialog.getByLabel("Owner");
@@ -59,7 +53,7 @@ test("board creates a ticket and opens it", async ({ page }, testInfo) => {
   await dialog.getByRole("button", { name: "Create", exact: true }).click();
 
   await expect(dialog).toBeHidden();
-  const card = page.locator("[data-testid^='board-card-']").filter({ hasText: title });
+  const card = page.locator("[data-testid^='task-card-']").filter({ hasText: title });
   await expect(card).toBeVisible();
   await expect(card).toContainText("Planner");
   await captureScreenshot(page, testInfo, "board-ticket-created");
