@@ -110,7 +110,7 @@ test(
 );
 
 test(
-  "a new visitor opening the app lands on sign up, fits a narrow phone, and can switch to sign in",
+  "a new visitor opening the app lands on sign in, fits a narrow phone, and can switch to sign up",
   { tag: "@nightly" },
   async ({ page }, testInfo) => {
     await page.route("**/api/auth/get-session**", (route) => route.fulfill({ json: null }));
@@ -121,13 +121,13 @@ test(
     );
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto("/");
-    await expect(page).toHaveURL(/\/sign-up$/);
-    await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
-    await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 320);
-    await captureScreenshot(page, testInfo, "logged-out-sign-up-phone");
-    await page.getByRole("link", { name: "Sign in", exact: true }).click();
     await expect(page).toHaveURL(/\/sign-in$/);
     await expect(page.getByRole("heading", { name: "Sign in to RoBots" })).toBeVisible();
+    await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 320);
+    await captureScreenshot(page, testInfo, "logged-out-sign-in-phone");
+    await page.getByRole("link", { name: "Sign up", exact: true }).click();
+    await expect(page).toHaveURL(/\/sign-up$/);
+    await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
   },
 );
 
@@ -144,7 +144,7 @@ test("an unknown page offers a way home", async ({ page }, testInfo) => {
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   await captureScreenshot(page, testInfo, "not-found");
   await page.getByRole("link", { name: "Go home" }).click();
-  await expect(page).toHaveURL(/\/sign-up$/);
+  await expect(page).toHaveURL(/\/sign-in$/);
 });
 
 test("logout protects bot deep links and sign-in restores the session", async ({
