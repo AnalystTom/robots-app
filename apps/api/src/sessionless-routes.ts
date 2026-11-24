@@ -36,7 +36,7 @@ export const SESSIONLESS_ROUTES: Readonly<Record<string, string>> = {
   "GET /api/mobile-updates/manifest":
     "public: the update bundle built for one platform and runtime, the same for every caller",
   "GET /api/mobile-updates/assets/:platform/:runtime/:update/*":
-    "public: a bundle file addressed by its content hash, the same for every caller",
+    "public: a file of an exported update bundle, addressed by its path, the same for every caller",
   "GET /api/v1/assets/mermaid.js": "public: a script that is the same for every caller",
   "GET /api/v1/assets/page-runtime.js": "public: a script that is the same for every caller",
   "GET /.well-known/apple-app-site-association":
