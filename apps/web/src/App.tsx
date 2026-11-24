@@ -31,7 +31,7 @@ import { markAfterPaint, markOnce } from "./lib/performance";
 import { lazyComponent } from "./lib/preload-recovery";
 import { QueryUserProvider, setQueryUser } from "./lib/query";
 import { remoteImagesPreference } from "./lib/remote-images-preference";
-import { hasSignedInBefore, rememberSignedIn } from "./lib/returning-user";
+import { rememberSignedIn } from "./lib/returning-user";
 import { rpc } from "./lib/rpc";
 import {
   holdAnonymousGate,
@@ -205,7 +205,7 @@ function SessionApp() {
                 path="/"
                 element={
                   <Navigate
-                    to={user ? "/app" : hasSignedInBefore() ? "/sign-in" : "/sign-up"}
+                    to={user ? "/app" : "/sign-in"}
                     replace
                   />
                 }
