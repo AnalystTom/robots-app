@@ -6,7 +6,7 @@ import type {
   ThreadMessage,
   VoiceStatus,
 } from "@robots/contracts";
-import { DEFAULT_NEW_BOT_AVATAR_SET } from "@robots/contracts";
+import { DEFAULT_NEW_BOT_AVATAR_SET, hasLab } from "@robots/contracts";
 import {
   activeThreadRuns,
   answerableAskMessageIds,
@@ -1409,7 +1409,8 @@ function SpaceShell() {
           openSpaceSettings={openSpaceSettings}
           closeMobileSidebar={() => setMobileSidebarOpen(false)}
           createBot={createBot}
-          botAvatarSet={bootstrapMe?.botAvatarSet ?? DEFAULT_NEW_BOT_AVATAR_SET}
+          botAvatarSet={bootstrapMe?.botAvatarSet}
+          ownBotColors={[]}
           discardChatAttachments={composer.discardThreadAttachments}
           clearOpenThread={() => {
             thread.resetHistory();

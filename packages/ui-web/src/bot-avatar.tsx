@@ -18,6 +18,7 @@ import {
   organicAvatarPath,
   resolvePersonaColorDef,
   robotCharacterDataUri,
+  robotLookForIdentity,
   SHIPPED_BOT_AVATAR_EYES,
   SHIPPED_BOT_AVATAR_SHAPE_KEYS,
   SHIPPED_BOT_AVATAR_SHAPES,
@@ -55,12 +56,9 @@ export function parseBotAvatar(
   imageUrl?: string;
 } {
   if (!rawColor) return { color: "#F97316", isImage: false };
-  // Only data: image URLs are rendered. Arbitrary http(s)/blob values in `color`
-  // must not become <img src> (SSRF / tracking when other members view the bot).
   if (rawColor.startsWith("data:image/")) {
     return { color: "#F97316", isImage: true, imageUrl: rawColor };
   }
-  // A robot character is drawn from fixed parts; its colour is its backdrop.
   const robot = parseRobotCharacter(rawColor);
   if (robot) {
     return {
@@ -85,7 +83,6 @@ export function parseBotAvatar(
 
 const AVATAR_HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
-/** The plain colour value for an avatar; a robot character gives its backdrop. */
 export function defaultBotAvatarValue(rawColor: string): string {
   const robot = parseRobotCharacter(rawColor);
   if (robot) return ROBOT_COLOUR_FILLS[robot.colour];
@@ -105,7 +102,7 @@ export interface BotAvatarProps {
 }
 
 export const BotAvatar = memo(function BotAvatar({
-  color,
+  color: storedColor,
   avatarSet,
   activity,
   size = 36,
@@ -115,6 +112,7 @@ export const BotAvatar = memo(function BotAvatar({
 }: BotAvatarProps) {
   const id = useId().replace(/[^a-zA-Z0-9-_]/g, "");
   const isWorking = ACTIVE_RUN_STATUSES.some((s) => s === status);
+  const color = useMemo(() => robotLookForIdentity(storedColor, identity), [storedColor, identity]);
 
   const parsed = useMemo(() => parseBotAvatar(color, identity), [color, identity]);
   const effectiveId = identity || parsed.color || "agent";
@@ -231,7 +229,6 @@ export const BotAvatar = memo(function BotAvatar({
   );
 });
 
-/** A photo or a robot character, in a circle, with the working ring around it. */
 function PictureAvatar({
   src,
   size,

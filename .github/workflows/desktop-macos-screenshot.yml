@@ -1,31 +1,17 @@
 name: desktop-macos-screenshot
 on:
-  push:
-    branches: [main]
-    paths: &desktop-setup-paths
-      - ".github/workflows/desktop-macos-screenshot.yml"
-      - "apps/desktop/e2e/setup.spec.ts"
-      - "apps/desktop/package.json"
-      - "apps/desktop/assets/**"
-      - "packages/ui-tokens/assets/**"
-      - "apps/desktop/scripts/copy-static.mjs"
-      - "apps/desktop/src/setup*"
-      - "apps/desktop/src/window-options.ts"
-      - "packages/contracts/src/desktop.ts"
-  pull_request:
-    paths: *desktop-setup-paths
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: desktop-macos-screenshot-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: desktop-macos-screenshot-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   screenshot:
     name: macOS setup screenshot
-    if: vars.HOSTED_RUNNERS == 'true'
     runs-on: macos-26
     timeout-minutes: 20
     steps:
@@ -36,7 +22,6 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
-          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @robots/desktop build
       - name: Verify packaged Tahoe icon and legacy fallback

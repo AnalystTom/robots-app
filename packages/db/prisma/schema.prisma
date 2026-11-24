@@ -39,7 +39,7 @@ model User {
   createdAt                   DateTime                     @default(now())
   updatedAt                   DateTime                     @updatedAt
   avatarStyle                 String                       @default("organic")
-  botAvatarSet                String                       @default("organic")
+  botAvatarSet                String                       @default("robots")
   timezone                    String?
   locale                      String?
   labs                        String[]                     @default([])
@@ -921,7 +921,7 @@ model Bot {
   instructions      String            @default("")
   instructionHistory Json @default("[]")
   color             String
-  avatarSet         String            @default("organic")
+  avatarSet         String            @default("robots")
   avatarSetPinned   Boolean           @default(false)
   notifyOnFinish    Boolean           @default(true)
   pinned            Boolean           @default(false)

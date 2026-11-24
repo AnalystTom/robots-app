@@ -2,7 +2,7 @@
 
 import type { BotAvatarSet } from "@robots/contracts";
 import { parseBotAvatarValue, parseRobotCharacter } from "@robots/contracts";
-import { ROBOT_PRESETS, robotCharacterDataUri } from "@robots/core";
+import { ROBOT_PRESETS, robotCharacterDataUri, robotPresetValue } from "@robots/core";
 import type { ReactNode } from "react";
 import { act } from "react";
 import type { Root } from "react-dom/client";
@@ -33,6 +33,7 @@ const CHARACTER_NAMES = [
   "Hustler",
   "Host",
   "Critic",
+  "Hoodie",
 ];
 
 let container: HTMLDivElement;
@@ -59,10 +60,16 @@ afterEach(() => {
 async function render(
   onCreate: (input: CreateBotDialogInput) => Promise<void>,
   avatarSet: BotAvatarSet = "organic",
+  ownBotColors: readonly string[] = [],
 ) {
   await act(async () => {
     root.render(
-      <CreateBotDialog avatarSet={avatarSet} onCancel={() => undefined} onCreate={onCreate} />,
+      <CreateBotDialog
+        avatarSet={avatarSet}
+        ownBotColors={ownBotColors}
+        onCancel={() => undefined}
+        onCreate={onCreate}
+      />,
     );
   });
 }
@@ -100,39 +107,46 @@ describe("CreateBotDialog", () => {
     expect(button("Create").disabled).toBe(false);
   });
 
-  it.each(["organic", "robots"] as const)(
-    "starts %s accounts on a random robot character and sends it as previewed",
-    async (avatarSet) => {
-      const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
-      await render(onCreate, avatarSet);
-      expect(document.querySelector('[role="tablist"]')).toBeNull();
-      const preview = document.querySelector<HTMLImageElement>(
-        '[data-testid="create-bot-dialog"] img',
-      )!;
-      await typeName("Scout");
-      await click(button("Create"));
-      const input = onCreate.mock.lastCall![0];
-      expect(parseBotAvatarValue(input.color).kind).toBe("robot");
-      expect(preview.getAttribute("src")).toBe(
-        robotCharacterDataUri(parseRobotCharacter(input.color)!),
-      );
-      expect(input.id).toMatch(/^c[a-z0-9]{24}$/);
-      expect(input).not.toHaveProperty("avatarFamily");
-      expect(input).not.toHaveProperty("avatarSet");
-    },
-  );
+  it("preselects the robot the user's own bots wear least, and creates the one previewed", async () => {
+    const ownWorn = ROBOT_PRESETS.filter((preset) => preset.id !== "hero").map((preset) =>
+      robotPresetValue(preset.id),
+    );
+    const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
+    await render(onCreate, "robots", [...ownWorn, "#8B5CF6"]);
+    expect(button("Hero").getAttribute("aria-checked")).toBe("true");
+    const preview = document.querySelector<HTMLImageElement>(
+      '[data-testid="create-bot-dialog"] img',
+    )!;
+    expect(preview.getAttribute("src")).toBe(
+      robotCharacterDataUri(parseRobotCharacter("robot:red.antenna.aviators.cape.confetti")!),
+    );
+    await typeName("Scout");
+    await click(button("Create"));
+    expect(onCreate.mock.lastCall![0]).toEqual(
+      expect.objectContaining({ color: "robot:red.antenna.aviators.cape.confetti" }),
+    );
+  });
+
+  it("starts Original accounts on an organic body, not a robot", async () => {
+    const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
+    await render(onCreate, "organic");
+    await typeName("Scout");
+    await click(button("Create"));
+    const input = onCreate.mock.lastCall![0];
+    expect(parseBotAvatarValue(input.color ?? "").kind).toBe("color");
+    expect(input).toHaveProperty("avatarFamily");
+  });
 
   it("offers preset robots and sends the one picked", async () => {
     const onCreate = vi.fn(async (_input: CreateBotDialogInput) => undefined);
     await render(onCreate);
     for (const name of CHARACTER_NAMES) expect(button(name)).toBeDefined();
     expect(document.querySelectorAll('[role="radio"]')).toHaveLength(CHARACTER_NAMES.length);
-    expect(document.querySelector('[data-testid="robot-builder"]')).toBeNull();
     await click(button("Researcher"));
     expect(button("Researcher").getAttribute("aria-checked")).toBe("true");
     await typeName("Scout");
     await click(button("Create"));
-    expect(parseRobotCharacter(onCreate.mock.lastCall![0].color)).toEqual(
+    expect(parseRobotCharacter(onCreate.mock.lastCall![0].color ?? "")).toEqual(
       ROBOT_PRESETS.find((preset) => preset.id === "researcher")!.look,
     );
   });
@@ -169,5 +183,5 @@ it("retains the preview identity and look through rerenders and a retry", async 
   expect(first.id).toMatch(/^c[a-z0-9]{24}$/);
   expect(second.id).toBe(first.id);
   expect(second.color).toBe(first.color);
-  expect(robotCharacterDataUri(parseRobotCharacter(second.color)!)).toBe(look);
+  expect(preview()).toBe(look);
 });

@@ -20,7 +20,8 @@ interface WorkflowJob {
   needs?: string | string[];
   outputs?: Record<string, string>;
   uses?: string;
-  "runs-on"?: string;
+  "runs-on"?: string | string[];
+  "timeout-minutes"?: string | number;
   permissions?: Record<string, string>;
   strategy?: { matrix?: { arch?: string[]; include?: Array<Record<string, string>> } };
   steps: WorkflowStep[];
@@ -45,17 +46,18 @@ const publisher = parse(publisherText) as { runs: { steps: WorkflowStep[] } };
 const publicationAction = "./.github/actions/publish-image";
 
 describe("server image publish workflow", () => {
-  it("builds every architecture natively instead of emulating arm64", () => {
-    expect(workflowText).not.toContain("setup-qemu-action");
+  it("builds both architectures on the self-hosted runner, never on GitHub-hosted machines", () => {
+    expect(workflowText).not.toMatch(/ubuntu-|macos-|windows-/);
     const build = workflow.jobs.build;
-    expect(build["runs-on"]).toContain("matrix.runner");
+    expect(build["runs-on"]).toEqual(["self-hosted", "big-machine"]);
     expect(build.strategy?.matrix?.arch).toEqual(["amd64", "arm64"]);
-    const runners = Object.fromEntries(
-      (build.strategy?.matrix?.include ?? [])
-        .filter((entry) => entry.arch !== undefined)
-        .map((entry) => [entry.arch, entry.runner]),
-    );
-    expect(runners).toEqual({ amd64: "ubuntu-latest", arm64: "ubuntu-24.04-arm" });
+    expect(
+      (build.strategy?.matrix?.include ?? []).every((entry) => entry.runner === undefined),
+    ).toBe(true);
+    expect(String(build["timeout-minutes"])).toContain("matrix.arch == 'arm64'");
+    for (const job of Object.values(workflow.jobs)) {
+      expect(job["runs-on"]).toEqual(["self-hosted", "big-machine"]);
+    }
   });
 
   it("publishes Depot images in their build job and combines native architecture builds separately", () => {
@@ -91,7 +93,7 @@ describe("server image publish workflow", () => {
     expect(workflowText).toContain("project: ${{ vars.DEPOT_PROJECT_ID }}");
   });
 
-  it("rebuilds on GitHub's runners when a Depot build fails", () => {
+  it("rebuilds on the self-hosted runner when a Depot build fails", () => {
     const depot = workflow.jobs["build-depot"];
     const build = depot.steps.find((step) => step.uses?.startsWith("depot/build-push-action@"));
     expect(build?.id).toBe("build");
@@ -111,15 +113,14 @@ describe("server image publish workflow", () => {
   it("checks credentials before publishing Depot tags or making native digests available", () => {
     const nativeSteps = workflow.jobs.build.steps;
     const nativeScan = nativeSteps.findIndex((step) =>
-      step.run?.includes("check-image.sh /tmp/rootfs.tar"),
+      step.run?.includes('check-image.sh "$RUNNER_TEMP/rootfs.tar"'),
     );
-    const upload = nativeSteps.findIndex((step) =>
-      step.uses?.startsWith("actions/upload-artifact@"),
-    );
+    const store = nativeSteps.findIndex((step) => step.run?.includes('local-artifact.sh" upload'));
     expect(nativeScan).toBeGreaterThanOrEqual(0);
     const nativeBuild = nativeSteps.find((step) => step.id === "build");
-    expect(nativeBuild?.with?.outputs).toContain("type=tar,dest=/tmp/rootfs.tar");
-    expect(upload).toBeGreaterThan(nativeScan);
+    expect(nativeBuild?.with?.outputs).toContain("type=tar,dest={0}/rootfs.tar', runner.temp");
+    expect(store).toBeGreaterThan(nativeScan);
+    expect(workflowText).not.toMatch(/actions\/(upload|download)-artifact@|type=gha/);
     const depotSteps = workflow.jobs["build-depot"].steps;
     const depotScan = depotSteps.findIndex((step) => step.run?.includes("check-image.sh"));
     const publish = depotSteps.findIndex((step) => step.uses === publicationAction);
@@ -191,10 +192,9 @@ describe("server image publish workflow", () => {
     expect(workflow.jobs.publish.if).toContain("github.event_name != 'pull_request'");
     const build = validate.steps.find((step) => step.uses?.startsWith("docker/build-push-action@"));
     expect(build?.with?.push).toBe(false);
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal GitHub Actions cache scope
-    const cacheScope = "scope=pr-${{ github.event.pull_request.number }}-${{ matrix.name }}";
-    expect(build?.with?.["cache-from"]).toContain(cacheScope);
-    expect(build?.with?.["cache-to"]).toContain(cacheScope);
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal GitHub Actions expression
+    expect(build?.with?.["cache-from"]).toBe("type=local,src=${{ steps.cache.outputs.dir }}");
+    expect(build?.with?.["cache-to"]).toBeUndefined();
     for (const text of [workflowText, publisherText]) {
       for (const match of text.matchAll(/uses:\s+([^\s#]+)/g)) {
         if (match[1] === publicationAction) continue;

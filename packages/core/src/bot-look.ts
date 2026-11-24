@@ -1,5 +1,5 @@
 import type { BotAvatarSet, RobotLook } from "@robots/contracts";
-import { parseBotAvatarValue } from "@robots/contracts";
+import { BOT_COLORS, parseBotAvatarValue } from "@robots/contracts";
 import {
   ORGANIC_AVATAR_HEART_FAMILY,
   ORGANIC_AVATAR_LOOKS,
@@ -8,7 +8,8 @@ import {
 } from "./avatar-shape.js";
 import { DEFAULT_BOT_AVATAR_COLOR, resolvePersonaColorDef } from "./bot-avatar-colors.js";
 import { newClientId } from "./client-id.js";
-import { randomRobotPreset, robotPresetValue } from "./robot-character.js";
+import { pickLeastUsed } from "./least-used.js";
+import { ROBOT_PRESET_IDS, robotPresetValue, wornRobotPresetIds } from "./robot-presets.js";
 
 export const ORGANIC_PREVIEW_IDENTITIES = ORGANIC_AVATAR_LOOKS.map(organicAvatarSampleIdentity);
 
@@ -18,20 +19,44 @@ function pick<T>(options: readonly T[]): T {
 
 export interface NewBotLook {
   id: string;
-  color: string;
+  color: string | null;
   identity: string;
 }
 
-export function newBotLook(): NewBotLook {
+export function newBotLookColor(look: NewBotLook): string {
+  return look.color ?? DEFAULT_BOT_AVATAR_COLOR;
+}
+
+export function newBotLook(avatarSet: BotAvatarSet): NewBotLook {
   let id: string;
   do {
     id = `c${newClientId().replaceAll("-", "").slice(0, 24)}`;
   } while (organicAvatarFamily(id) === ORGANIC_AVATAR_HEART_FAMILY);
   return {
     id,
-    color: robotPresetValue(randomRobotPreset()),
+    color: avatarSet === "robots" ? null : pick(BOT_COLORS),
     identity: pick(ORGANIC_PREVIEW_IDENTITIES),
   };
+}
+
+export function newBotLookForSet(
+  look: NewBotLook,
+  avatarSet: BotAvatarSet,
+  wornColors: readonly string[],
+): NewBotLook {
+  if (avatarSet === "robots") {
+    return look.color !== null && botLookState(look.color).robot
+      ? look
+      : {
+          ...look,
+          color: robotPresetValue(
+            pickLeastUsed(ROBOT_PRESET_IDS, wornRobotPresetIds(wornColors), Math.random),
+          ),
+        };
+  }
+  return look.color === null || botLookState(look.color).robot
+    ? { ...look, color: pick(BOT_COLORS) }
+    : look;
 }
 
 export function newBotPreviewIdentity(avatarSet: BotAvatarSet, look: NewBotLook): string {
@@ -41,8 +66,10 @@ export function newBotPreviewIdentity(avatarSet: BotAvatarSet, look: NewBotLook)
 export function newBotLookInput(
   avatarSet: BotAvatarSet,
   look: NewBotLook,
-): { color: string; id?: string; avatarFamily?: number } {
-  if (botLookState(look.color).robot) return { color: look.color, id: look.id };
+): { color?: string; id?: string; avatarFamily?: number; avatarSet?: BotAvatarSet } {
+  if (look.color === null) return { id: look.id };
+  if (botLookState(look.color).robot)
+    return { color: look.color, id: look.id, avatarSet: "robots" };
   if (avatarSet === "robots") return { color: botLookState(look.color).color, id: look.id };
   if (botLookState(look.color).shapeIndex !== null) return { color: look.color };
   return { color: look.color, avatarFamily: organicAvatarFamily(look.identity) };

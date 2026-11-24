@@ -1,0 +1,42 @@
+name: native computer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-computer:
+    name: Native computer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Windows pnpm launcher test
+        if: runner.os == 'Windows'
+        run: node --test scripts/pnpm.test.mjs
+      - name: Worktree environment setup test
+        run: node --test scripts/setup-worktree.test.mjs
+      - uses: ./.github/actions/setup-workspace
+        with:
+          electron: "true"
+          filter: "@robots/desktop..."
+      - run: pnpm db:generate
+        env:
+          DATABASE_URL: postgres://robots:robots@127.0.0.1:5433/robots
+      - run: pnpm --filter @robots/desktop build
+      - run: pnpm exec vitest run packages/adapters/src/host-computer.test.ts packages/adapters/src/file-handle-path.test.ts packages/adapters/src/desktop-sandbox-command.test.ts packages/adapters/src/desktop-sandbox-paths.test.ts packages/adapters/src/desktop-workspace-cleanup.test.ts packages/adapters/src/computer-support.test.ts apps/desktop/src/host-computer.test.ts
+      - name: Screen control on a real Windows desktop
+        if: runner.os == 'Windows'
+        run: pnpm exec vitest run apps/desktop/src/host-screen.windows.test.ts
+      - name: Native computer in headless Electron
+        run: pnpm --filter @robots/desktop exec electron ../../node_modules/vitest/vitest.mjs run --root ../.. packages/adapters/src/host-computer.test.ts apps/desktop/src/host-computer.test.ts
+        env:
+          ELECTRON_RUN_AS_NODE: "1"

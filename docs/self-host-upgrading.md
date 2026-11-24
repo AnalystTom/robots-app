@@ -161,11 +161,11 @@ your CI cannot publish into someone else's.
 | `sha-<full-commit>`   | every main commit, release tag and manual run  | source-addressed; used by the updater sidecar |
 | `edge`                | pushes to main                                 | yes, to the newest main build                 |
 
-Every publish, including `edge` from main merges, is multi-arch (`amd64` + `arm64`): each
-architecture builds natively, on Depot when the `DEPOT_PROJECT_ID` repository variable names a
-project and on GitHub's runners otherwise, and one manifest is assembled per image. Depot builds
-publish and attest each image in the same job; native GitHub builds combine their architecture
-artifacts in a separate publication job. Main CI revisions validate independently. Publication
+Every publish, including `edge` from main merges, is multi-arch (`amd64` + `arm64`): on Depot
+when the `DEPOT_PROJECT_ID` repository variable names a project, where each architecture builds
+natively, and on the self-hosted `big-machine` runner otherwise, which builds `arm64` under QEMU.
+One manifest is assembled per image. Depot builds publish and attest each image in the same job;
+runner builds combine their architecture digests in a separate publication job. Main CI revisions validate independently. Publication
 locks are per image, and a superseded main build keeps its commit tag without moving `edge`.
 Image and release queues retain pending jobs so a slower older run cannot displace a newer one.
 Production deployment remains serialized and deploys the exact revision that passed its checks.
@@ -175,11 +175,11 @@ stable `vX.Y.Z` has been published, GHCR may only have `edge` and `sha-*` tags; 
 `latest` unless that tag exists in the registry.
 
 Building the images yourself does not need QEMU. `docker compose up --build` builds for the host's
-own architecture, and a fork publishing multi-arch images should do what `publish-server-image.yml`
-does: build each architecture on a native runner (GitHub Actions provides `ubuntu-24.04-arm` for
-public repositories) and merge the digests into one manifest. QEMU emulation
-(`docker/setup-qemu-action`, `binfmt`) still works if you have no native arm64 machine, but it is
-many times slower, hours rather than minutes for the `computer` image.
+own architecture. A fork publishing multi-arch images should build each architecture on a native
+runner when it has one (GitHub Actions provides `ubuntu-24.04-arm` for public repositories) and
+merge the digests into one manifest. QEMU emulation (`docker/setup-qemu-action`, `binfmt`), which
+`publish-server-image.yml` uses on its self-hosted runner, also works but is many times slower,
+hours rather than minutes for the `computer` image.
 
 The updater resolves the newest stable `vX.Y.Z` source tag but deploys its `sha-<full-commit>` image,
 not `latest` or a moving minor tag. A registry tag is not an OCI digest and GHCR package writers can

@@ -137,6 +137,10 @@ const CHARACTERS = [
       extra: "steam",
     },
   },
+  {
+    name: "Hoodie",
+    look: { colour: "green", headwear: "hood", face: "terminal", outfit: "hoodie", extra: "none" },
+  },
 ] as const;
 const CHARACTER_NAMES = CHARACTERS.map((character) => character.name);
 
@@ -375,7 +379,7 @@ function createdBot() {
   return mocks.rpc.mock.calls.find(([path]) => path === "bots/create")?.[1];
 }
 
-it("shows every character, draws the picked one recoloured in the preview, and creates it", async () => {
+it("shows every character and only those, draws the picked one in the preview, and creates it", async () => {
   serveRpc(() => Promise.resolve({ botAvatarSet: "robots" }));
   await render();
 
@@ -383,6 +387,7 @@ it("shows every character, draws the picked one recoloured in the preview, and c
   const startedOn = CHARACTER_NAMES.findIndex(checked);
   expect(CHARACTER_NAMES.filter(checked)).toHaveLength(1);
   expect(previewXml()).toBe(robotCharacterSvg(CHARACTERS[startedOn]!.look));
+  expect(drawsLogo()).toBe(false);
 
   for (const character of CHARACTERS) {
     await tap(radio(character.name));
@@ -392,19 +397,51 @@ it("shows every character, draws the picked one recoloured in the preview, and c
   }
 
   const chef = CHARACTERS.find((character) => character.name === "Chef")!.look;
-  const redChef = { ...chef, colour: "red" } as const;
   await tap(radio("Chef"));
-  await tap(radio("Color 2"));
-  expect(previewXml()).toBe(robotCharacterSvg(redChef));
-  expect(drawsLogo()).toBe(false);
-  expect(checked("Chef")).toBe(true);
-  expect(checked("Color 2")).toBe(true);
+  expect(previewXml()).toBe(robotCharacterSvg(chef));
+  expect(radio("Shuffle")).toBeNull();
+  expect(radio("Color 2")).toBeNull();
 
   await typeName("Gordon");
   await tap(createButton());
   await vi.waitFor(() => expect(createdBot()).toBeDefined());
   expect(createdBot()).toEqual(
-    expect.objectContaining({ name: "Gordon", color: robotCharacterValue(redChef) }),
+    expect.objectContaining({
+      name: "Gordon",
+      color: robotCharacterValue(chef),
+      avatarSet: "robots",
+    }),
+  );
+});
+
+it("creates the robot the preview preselected, so the stored bot is the one shown", async () => {
+  serveRpc(() => Promise.resolve({ botAvatarSet: "robots" }));
+  await render();
+  const startedOn = CHARACTER_NAMES.findIndex(checked);
+  await typeName("Gordon");
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  expect(createdBot()).toEqual(
+    expect.objectContaining({
+      name: "Gordon",
+      color: robotCharacterValue(CHARACTERS[startedOn]!.look),
+    }),
+  );
+});
+
+it("sends a robot picked on an Original account with the RoBots set", async () => {
+  serveRpc(() => Promise.resolve({ botAvatarSet: "organic" }));
+  await render();
+  await tap(radio("Hero"));
+  await typeName("Gordon");
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  expect(createdBot()).toEqual(
+    expect.objectContaining({
+      name: "Gordon",
+      color: "robot:red.antenna.aviators.cape.confetti",
+      avatarSet: "robots",
+    }),
   );
 });
 
@@ -449,4 +486,23 @@ it("enables Create once a retry reads the account's bot style", async () => {
   await tap(tryAgainButton());
   expect(container.textContent).not.toContain("Couldn't load your bot style.");
   expect(createButton().disabled).toBe(false);
+});
+
+it("keeps the look the user picked when the account read resolves after the pick", async () => {
+  let answer!: (me: unknown) => void;
+  serveRpc(
+    () =>
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+  );
+  await render();
+  const chef = CHARACTERS.find((character) => character.name === "Chef")!.look;
+  await tap(radio("Chef"));
+  await act(async () => answer({ botAvatarSet: "organic", userId: "user-me" }));
+  expect(CHARACTER_NAMES.filter(checked)).toEqual(["Chef"]);
+  await typeName("Gordon");
+  await tap(createButton());
+  await vi.waitFor(() => expect(createdBot()).toBeDefined());
+  expect(createdBot()).toEqual(expect.objectContaining({ color: robotCharacterValue(chef) }));
 });

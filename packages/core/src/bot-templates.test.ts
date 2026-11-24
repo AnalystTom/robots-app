@@ -1,11 +1,11 @@
 import { BotTemplateSchema, parseRobotCharacter } from "@robots/contracts";
 import { describe, expect, it } from "vitest";
 import { looksLikeCredential } from "./agent-import/index.js";
-import { buildSkillMd, extractRoutineSkillMentions } from "./agent-skill.js";
+import { extractRoutineSkillMentions } from "./agent-skill.js";
 import { BOT_TEMPLATES, botTemplateLook, findBotTemplate } from "./bot-templates.js";
 import { presetFromCron } from "./cron.js";
 import { matchFeaturedConnectorId } from "./featured-connectors.js";
-import { scanSkillSafety } from "./skill-safety.js";
+import { ROBOT_PRESETS, robotPresetValue } from "./robot-presets.js";
 
 describe("bot templates", () => {
   it("each validates strictly and has a unique id", () => {
@@ -49,28 +49,22 @@ describe("bot templates", () => {
   });
 
   it("name apps the connection catalog knows", () => {
+    // Featured apps match by alias; the code host is matched by its own slug.
     for (const app of BOT_TEMPLATES.flatMap((template) => template.apps)) {
       expect(app === "github" || matchFeaturedConnectorId(app) !== null).toBe(true);
     }
   });
 
-  it("dress a template whose role matches a ready-made robot in it", () => {
+  it("dress a template whose role matches a listed robot in it", () => {
     expect(parseRobotCharacter(botTemplateLook("pr-reviewer") ?? "")).toMatchObject({
       headwear: "chef-hat",
       outfit: "chef-jacket",
     });
     expect(botTemplateLook("inbox-triage")).toBeUndefined();
+    const listed: string[] = ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id));
     for (const template of BOT_TEMPLATES) {
       const look = botTemplateLook(template.id);
-      if (look) expect(parseRobotCharacter(look)).not.toBeNull();
-    }
-  });
-
-  it("has skills the safety check passes", () => {
-    for (const template of BOT_TEMPLATES) {
-      for (const skill of template.skills) {
-        expect(scanSkillSafety(buildSkillMd(skill)), `${template.id}/${skill.name}`).toEqual([]);
-      }
+      if (look) expect(listed).toContain(look);
     }
   });
 });

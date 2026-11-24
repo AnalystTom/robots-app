@@ -186,7 +186,13 @@ vi.mock("./api", () => ({
     }
     if (procedure === "models/setDefault") return result;
     if (procedure === "bots/get")
-      return { id: "bot-fixture", name: "Fixture", title: "", computerMode: "team" };
+      return {
+        id: "bot-fixture",
+        name: "Fixture",
+        title: "",
+        color: "#A97EFE",
+        computerMode: "team",
+      };
     if (procedure === "me")
       return {
         userId: "user-fixture",

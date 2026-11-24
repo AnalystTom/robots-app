@@ -1,14 +1,7 @@
-/**
- * The drawn parts of a robot character, ported from the RoBots desktop app. Every string is fixed
- * artwork: nothing a user types is ever put into one, so the drawing is safe as a data URI.
- * All parts share one 256x256 view box.
- */
 import type { RobotColour, RobotLook, RobotSlot } from "@robots/contracts";
 
 export interface RobotPart {
-  /** Drawn behind the head (or, for a face, on the visor). */
   back?: string;
-  /** Drawn in front of the head. */
   front?: string;
 }
 
@@ -18,7 +11,6 @@ const BOW_TIE =
 const body = (fill: string) =>
   `<path d="M24 256C24 212 68 190 128 190s104 22 104 66z" fill="${fill}"/>`;
 
-/** The antenna bulb glows in a lighter tone of the backdrop. */
 export const ROBOT_COLOUR_GLOWS: Readonly<Record<RobotColour, string>> = {
   green: "#86efac",
   red: "#fecaca",

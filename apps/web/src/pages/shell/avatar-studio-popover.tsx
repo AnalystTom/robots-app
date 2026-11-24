@@ -29,27 +29,21 @@ import { Button } from "@robots/ui-web/components/ui/button";
 import { Check, Pencil, Upload, X } from "lucide-react";
 import type { ClipboardEvent, DragEvent } from "react";
 import { useRef, useState } from "react";
-import { RobotBuilder } from "./robot-builder";
+import { RobotPresetPicker } from "./robot-presets";
 
-/**
- * A bot's look: the robot character builder first, then the earlier styles (shape grid and color
- * row) under "More styles". With `organicIdentities`, the grid also offers the organic body each
- * identity draws (for a bot that has no id yet); without them, "Default" restores the bot's own
- * organic body.
- */
 export function BotLookPicker({
   value,
   identity,
   organicIdentities,
-  avatarSet = "organic",
+  avatarSet,
   onAvatarSetChange,
   onChange,
 }: {
   value: string;
   identity?: string;
   organicIdentities?: readonly string[];
-  avatarSet?: BotAvatarSet;
-  onAvatarSetChange?: (set: BotAvatarSet, value: string) => void;
+  avatarSet: BotAvatarSet;
+  onAvatarSetChange?: (set: BotAvatarSet) => void;
   onChange: (value: string, identity?: string) => void;
 }) {
   const {
@@ -62,20 +56,17 @@ export function BotLookPicker({
 
   return (
     <div className="space-y-4">
-      <RobotBuilder look={robot} onChange={(next) => onChange(next)} />
+      <RobotPresetPicker robot={robot} onChange={onChange} />
       <Disclosure
         summary={<Trans>More styles</Trans>}
         summaryClassName="text-body-sm text-muted-foreground"
         contentClassName="space-y-4 pt-3"
         defaultOpen={robot === null}
       >
-        {/* Only one bot's own editor overrides the account's set; a new bot takes the default. */}
         {onAvatarSetChange ? (
           <Tabs
             value={avatarSet}
-            onValueChange={(next) =>
-              onAvatarSetChange(resolveBotAvatarSet(next), defaultBotAvatarValue(value))
-            }
+            onValueChange={(next) => onAvatarSetChange(resolveBotAvatarSet(next))}
           >
             <TabsList className="w-full" aria-label={t`Icon set`}>
               <TabsTrigger value="organic" className="flex-1">
@@ -140,33 +131,35 @@ export function BotLookPicker({
           </div>
         ) : null}
 
-        <div>
-          {organicIdentities ? null : (
-            <div className="mb-2 text-caption font-medium tracking-wider text-muted-foreground uppercase">
-              <Trans>Color</Trans>
+        {robot ? null : (
+          <div>
+            {organicIdentities ? null : (
+              <div className="mb-2 text-caption font-medium tracking-wider text-muted-foreground uppercase">
+                <Trans>Color</Trans>
+              </div>
+            )}
+            <div className="grid grid-cols-6 place-items-center gap-2">
+              {BOT_COLORS.map((color) => {
+                const selected = currentColor.toLowerCase() === color.toLowerCase() && !photo;
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => onChange(botLookWithColor(value, color))}
+                    aria-label={t`Color ${color}`}
+                    aria-pressed={selected}
+                    className={`size-6 rounded-full border transition-transform hover:scale-110 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring ${
+                      selected
+                        ? "scale-105 border-transparent ring-2 ring-foreground ring-offset-2 ring-offset-popover"
+                        : "border-border"
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                );
+              })}
             </div>
-          )}
-          <div className="grid grid-cols-6 place-items-center gap-2">
-            {BOT_COLORS.map((color) => {
-              const selected = currentColor.toLowerCase() === color.toLowerCase() && !photo;
-              return (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => onChange(botLookWithColor(value, color))}
-                  aria-label={t`Color ${color}`}
-                  aria-pressed={selected}
-                  className={`size-6 rounded-full border transition-transform hover:scale-110 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring ${
-                    selected
-                      ? "scale-105 border-transparent ring-2 ring-foreground ring-offset-2 ring-offset-popover"
-                      : "border-border"
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
-              );
-            })}
           </div>
-        </div>
+        )}
       </Disclosure>
     </div>
   );
@@ -176,7 +169,7 @@ export interface AvatarStudioPopoverProps {
   value: string;
   identity?: string;
   status?: string;
-  avatarSet?: BotAvatarSet;
+  avatarSet: BotAvatarSet;
   size?: number;
   onChange: (value: string, avatarSet?: BotAvatarSet) => void;
   disabled?: boolean;
@@ -186,12 +179,13 @@ export function AvatarStudioPopover({
   value,
   identity,
   status,
-  avatarSet = "organic",
+  avatarSet,
   size = 72,
   onChange,
   disabled = false,
 }: AvatarStudioPopoverProps) {
   const [open, setOpen] = useState(false);
+  const [pickedSet, setPickedSet] = useState<BotAvatarSet>(avatarSet);
   const [activeTab, setActiveTab] = useState<"bot" | "upload">("bot");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -259,7 +253,10 @@ export function AvatarStudioPopover({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setPickedSet(avatarSet);
+          setOpen(true);
+        }}
         className="group relative cursor-pointer rounded-2xl outline-none transition-transform hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-ring"
         aria-label={t`Customize bot avatar`}
         data-testid="avatar-studio-trigger"
@@ -287,7 +284,7 @@ export function AvatarStudioPopover({
               <Trans>Avatar Studio</Trans>
             </DialogTitle>
             <DialogDescription className="sr-only">
-              <Trans>Build a robot, choose another style, or upload an image</Trans>
+              <Trans>Choose a robot, another style, or upload an image</Trans>
             </DialogDescription>
             <Button
               variant="ghost"
@@ -307,7 +304,7 @@ export function AvatarStudioPopover({
               identity={identity}
               size={78}
               status={status}
-              avatarSet={avatarSet}
+              avatarSet={pickedSet}
             />
           </div>
 
@@ -343,9 +340,13 @@ export function AvatarStudioPopover({
               <BotLookPicker
                 value={value}
                 identity={identity}
-                avatarSet={avatarSet}
-                onChange={(next) => onChange(next)}
-                onAvatarSetChange={(set, next) => onChange(next, set)}
+                avatarSet={pickedSet}
+                onChange={(next) => {
+                  const set = botLookState(next).robot ? "robots" : pickedSet;
+                  setPickedSet(set);
+                  onChange(next, set);
+                }}
+                onAvatarSetChange={setPickedSet}
               />
             </TabsContent>
             <TabsContent value="upload">

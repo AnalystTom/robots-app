@@ -22,7 +22,7 @@ concurrency:
 jobs:
   triage:
     if: github.event_name == 'workflow_dispatch' || github.event.issue.user.type != 'Bot'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 15
     permissions:
       contents: read
@@ -65,7 +65,7 @@ jobs:
   label:
     needs: triage
     if: needs.triage.outputs.result != ''
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, big-machine]
     timeout-minutes: 5
     permissions:
       contents: read

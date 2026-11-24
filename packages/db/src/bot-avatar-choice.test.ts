@@ -1,24 +1,16 @@
-import {
-  BOT_COLOR_LIST,
-  BOT_COLORS,
-  isBotAvatarValue,
-  parseRobotCharacter,
-  ROBOT_PARTS,
-} from "@robots/contracts";
+import { BOT_COLOR_LIST, BOT_COLORS } from "@robots/contracts";
 import {
   ORGANIC_AVATAR_FAMILY_COUNT,
   ORGANIC_AVATAR_HEART_FAMILY,
   organicAvatarFamily,
   organicAvatarLook,
+  pickLeastUsed,
+  ROBOT_PRESETS,
+  robotPresetValue,
   seededLogoAvatarColor,
 } from "@robots/core";
 import { describe, expect, it } from "vitest";
-import {
-  BOT_ID_ATTEMPTS,
-  chooseBotAvatar,
-  chooseRobotCharacter,
-  pickLeastUsed,
-} from "./bot-avatar-choice.js";
+import { BOT_ID_ATTEMPTS, chooseBotAvatar, chooseRobotCharacter } from "./bot-avatar-choice.js";
 
 /** A repeatable stand-in for Math.random. */
 function seeded(seed: number) {
@@ -101,7 +93,11 @@ describe("chooseBotAvatar", () => {
       color: BOT_COLORS[index % 6]!,
     }));
     for (let seed = 1; seed <= 20; seed++) {
-      const chosen = chooseBotAvatar(existing, undefined, { random: seeded(seed), now: 0 });
+      const chosen = chooseBotAvatar(existing, undefined, {
+        avatarSet: "organic",
+        random: seeded(seed),
+        now: 0,
+      });
       expect(organicAvatarFamily(chosen.id)).toBe(9);
       expect(BOT_COLORS.slice(6)).toContain(chosen.color);
       expect(chosen.id).toMatch(/^c[a-z0-9]{24}$/);
@@ -118,7 +114,11 @@ describe("chooseBotAvatar", () => {
     }));
     existing.push({ id: families[11]!, color: blue.hex });
     for (let seed = 1; seed <= 20; seed++) {
-      const chosen = chooseBotAvatar(existing, undefined, { random: seeded(seed), now: 0 });
+      const chosen = chooseBotAvatar(existing, undefined, {
+        avatarSet: "organic",
+        random: seeded(seed),
+        now: 0,
+      });
       expect(chosen.color).not.toBe(blue.hex);
     }
   });
@@ -131,7 +131,11 @@ describe("chooseBotAvatar", () => {
     }));
     const random = seeded(1);
     const looks = Array.from({ length: 20 }, () =>
-      organicAvatarLook(organicAvatarFamily(chooseBotAvatar(existing, undefined, { random }).id)),
+      organicAvatarLook(
+        organicAvatarFamily(
+          chooseBotAvatar(existing, undefined, { avatarSet: "organic", random }).id,
+        ),
+      ),
     );
     // Every look is used once, so the new bot is not pushed into a second round body.
     expect(looks.some((look) => look !== 2)).toBe(true);
@@ -155,7 +159,11 @@ describe("chooseBotAvatar", () => {
       ...others.slice(1).map((id, index) => ({ id, color: spread[index % spread.length]! })),
     ];
     for (let seed = 1; seed <= 20; seed++) {
-      const chosen = chooseBotAvatar(existing, undefined, { random: seeded(seed), now: 0 });
+      const chosen = chooseBotAvatar(existing, undefined, {
+        avatarSet: "organic",
+        random: seeded(seed),
+        now: 0,
+      });
       expect(organicAvatarLook(organicAvatarFamily(chosen.id))).toBe(2);
       expect(chosen.color).toBe(elsewhere);
     }
@@ -175,7 +183,7 @@ describe("chooseBotAvatar", () => {
         { id: pictured!, color: "data:image/png;base64,AAAA" },
       ],
       undefined,
-      { random: seeded(3), now: 0 },
+      { avatarSet: "organic", random: seeded(3), now: 0 },
     );
     expect(organicAvatarFamily(chosen.id)).toBe(0);
     // The shaped bot's colour still counts; the picture has none.
@@ -187,17 +195,27 @@ describe("chooseBotAvatar", () => {
     const existing = idsForFamilies([3, 3, 3]).map((id) => ({ id, color: "#3EC5A8" }));
     for (let family = 0; family < ORGANIC_AVATAR_FAMILY_COUNT; family++) {
       for (let seed = 1; seed <= 5; seed++) {
-        const chosen = chooseBotAvatar(existing, "#8B5CF6", { random: seeded(seed), family });
+        const chosen = chooseBotAvatar(existing, "#8B5CF6", {
+          avatarSet: "organic",
+          random: seeded(seed),
+          family,
+        });
         expect(organicAvatarFamily(chosen.id)).toBe(family);
         expect(chosen.id).toMatch(/^c[a-z0-9]{24}$/);
         expect(chosen.color).toBe("#8B5CF6");
       }
     }
-    expect(organicAvatarFamily(chooseBotAvatar(existing, undefined, { family: 3 }).id)).toBe(3);
+    expect(
+      organicAvatarFamily(
+        chooseBotAvatar(existing, undefined, { avatarSet: "organic", family: 3 }).id,
+      ),
+    ).toBe(3);
   });
 
   it("keeps a colour the caller chose", () => {
-    expect(chooseBotAvatar([], "#123456", { random: seeded(4), now: 0 }).color).toBe("#123456");
+    expect(
+      chooseBotAvatar([], "#123456", { avatarSet: "organic", random: seeded(4), now: 0 }).color,
+    ).toBe("#123456");
   });
 
   it("never assigns a heart with crypto randomness, regardless of existing looks", () => {
@@ -225,7 +243,7 @@ describe("chooseBotAvatar", () => {
     }));
     for (const existing of [[], balanced, hearts, assorted, [...balanced, ...hearts]]) {
       for (let run = 0; run < 400; run++) {
-        const chosen = chooseBotAvatar(existing, undefined);
+        const chosen = chooseBotAvatar(existing, undefined, { avatarSet: "organic" });
         expect(organicAvatarFamily(chosen.id)).not.toBe(ORGANIC_AVATAR_HEART_FAMILY);
       }
     }
@@ -254,7 +272,11 @@ describe("chooseBotAvatar", () => {
     const heart = cuidForFamily(ORGANIC_AVATAR_HEART_FAMILY);
     const safe = cuidForFamily(1);
     const candidates = [...Array<string>(BOT_ID_ATTEMPTS).fill(heart), safe];
-    const chosen = chooseBotAvatar([], "#123456", { random: idStream(candidates), now: 0 });
+    const chosen = chooseBotAvatar([], "#123456", {
+      avatarSet: "organic",
+      random: idStream(candidates),
+      now: 0,
+    });
     expect(chosen.id).toBe(safe);
     expect(organicAvatarFamily(chosen.id)).not.toBe(ORGANIC_AVATAR_HEART_FAMILY);
   });
@@ -268,7 +290,7 @@ describe("chooseBotAvatar", () => {
       existing.push({ id: cuidForFamily(3), color });
     }
     const random = idStream([safe, ...Array<string>(BOT_ID_ATTEMPTS - 1).fill(heart)]);
-    const chosen = chooseBotAvatar(existing, undefined, { random, now: 0 });
+    const chosen = chooseBotAvatar(existing, undefined, { avatarSet: "organic", random, now: 0 });
     expect(chosen.id).toBe(safe);
     expect(chosen.color).not.toBe(BOT_COLORS[0]);
   });
@@ -280,12 +302,12 @@ describe("chooseBotAvatar", () => {
       calls += 1;
       return 0;
     };
-    const stuck = chooseBotAvatar([], undefined, { random, now: 0 });
+    const stuck = chooseBotAvatar([], undefined, { avatarSet: "organic", random, now: 0 });
     const family = organicAvatarFamily(stuck.id);
     // Family 0 is the only least-used pick a zero random can make; force a miss by using it up.
     const existing = idsForFamilies([family]).map((id) => ({ id, color: "#3EC5A8" }));
     calls = 0;
-    const capped = chooseBotAvatar(existing, undefined, { random, now: 0 });
+    const capped = chooseBotAvatar(existing, undefined, { avatarSet: "organic", random, now: 0 });
     expect(capped.id).toBe(stuck.id);
     expect(organicAvatarFamily(capped.id)).toBe(family);
     // One family pick, sixteen digits per try, one colour pick.
@@ -294,22 +316,26 @@ describe("chooseBotAvatar", () => {
 });
 
 describe("chooseRobotCharacter", () => {
-  it("gives a valid robot in a colour the user's robots wear least, with no extra", () => {
-    const existing = ROBOT_PARTS.colour
-      .filter((colour) => colour !== "teal")
-      .map((colour) => ({ color: `robot:${colour}.antenna.happy.vest.none` }));
-    existing.push({ color: "#2A92FE" }, { color: "data:image/png;base64,AAAA" });
+  it("gives the ready-made robot the user's bots wear least", () => {
+    const existing = ROBOT_PRESETS.filter((preset) => preset.id !== "detective").map((preset) => ({
+      color: robotPresetValue(preset.id),
+    }));
+    existing.push(
+      { color: "robot:teal.top-hat.hearts.vest.none" },
+      { color: "#2A92FE" },
+      { color: "data:image/png;base64,AAAA" },
+    );
     for (let seed = 0; seed < 20; seed++) {
-      const value = chooseRobotCharacter(existing, seeded(seed));
-      expect(isBotAvatarValue(value)).toBe(true);
-      expect(parseRobotCharacter(value)).toMatchObject({ colour: "teal", extra: "none" });
+      expect(chooseRobotCharacter(existing, seeded(seed))).toBe(robotPresetValue("detective"));
     }
   });
 
-  it("varies the parts", () => {
+  it("only ever gives a ready-made robot", () => {
+    const offered = new Set(ROBOT_PRESETS.map((preset) => robotPresetValue(preset.id)));
     const values = new Set(
-      Array.from({ length: 30 }, (_, seed) => chooseRobotCharacter([], seeded(seed))),
+      Array.from({ length: 60 }, (_, index) => chooseRobotCharacter([], () => index / 60)),
     );
-    expect(values.size).toBeGreaterThan(10);
+    for (const value of values) expect(offered.has(value)).toBe(true);
+    expect(values.size).toBeGreaterThan(5);
   });
 });
