@@ -10,7 +10,7 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "pnpm build && electron .",
-    "build": "node scripts/build.mjs && node scripts/copy-static.mjs && node scripts/build-speech.mjs",
+    "build": "node scripts/build.mjs && node scripts/copy-static.mjs && node scripts/build-speech.mjs && node scripts/package-local-stack.mjs",
     "pack": "pnpm --filter @robots/web build && pnpm build && electron-builder --mac --win --linux",
     "pack:dir": "pnpm --filter @robots/web build && pnpm build && electron-builder --dir",
     "check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.jsdom.json && tsc --noEmit -p e2e/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json",
@@ -59,7 +59,7 @@
         ]
       },
       {
-        "from": "../../infra/compose/docker-compose.images.yml",
+        "from": "build/stack/docker-compose.images.yml",
         "to": "stack/docker-compose.images.yml"
       },
       {

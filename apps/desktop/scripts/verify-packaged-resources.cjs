@@ -1,5 +1,7 @@
-const { readdir, access } = require("node:fs/promises");
+const { readFile, readdir, access } = require("node:fs/promises");
 const path = require("node:path");
+const { parse } = require("yaml");
+const published = require("../../../infra/local-release/desktop-images.json");
 const { listPackage } = require("@electron/asar");
 
 async function verifyResources(resources) {
@@ -17,6 +19,19 @@ async function verifyResources(resources) {
   if (!files.includes("/dist/main.js"))
     throw new Error("Installer is missing the desktop entry point");
   await access(path.join(resources, "web", "index.html"));
+  const compose = parse(
+    await readFile(path.join(resources, "stack", "docker-compose.images.yml"), "utf8"),
+    { merge: true, maxAliasCount: 2000 },
+  );
+  const app = `downloads.tryrobots.app/robots/app@${published.app}`;
+  const computer = `downloads.tryrobots.app/robots/computer@${published.computer}`;
+  for (const name of ["api", "web", "worker", "migrate", "supervisor", "computer"]) {
+    if (compose.services[name]?.image !== (name === "computer" ? computer : app)) {
+      throw new Error(`Installer is missing the public runtime for ${name}`);
+    }
+  }
+  if (compose.services.supervisor.environment.ROBOTS_COMPUTER_IMAGE !== computer)
+    throw new Error("Supervisor is missing the public computer image");
 }
 
 module.exports = (context) => verifyResources(context.packager.getResourcesDir(context.appOutDir));
