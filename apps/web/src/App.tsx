@@ -44,6 +44,7 @@ import {
   MCP_OAUTH_CALLBACK_PATH,
   newAccountDestination,
   SLACK_INSTALL_CALLBACK_PATH,
+  signedOutDestination,
   signInNext,
 } from "./lib/sign-in-next";
 import { syncLogOutFailure } from "./lib/sign-out";
@@ -307,7 +308,7 @@ function SessionApp() {
                     </SubscriptionGate>
                   ) : (
                     <Navigate
-                      to={`/sign-in?next=${encodeURIComponent(pathname + search)}`}
+                      to={signedOutDestination({ pathname, search }, hasSignedInBefore())}
                       replace
                     />
                   )
