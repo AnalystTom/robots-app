@@ -1,8 +1,8 @@
 import { MOBILE_APP_LINKS } from "@robots/contracts";
-import { bestEffort } from "./best-effort";
 import { useQuery } from "@tanstack/react-query";
 import * as Application from "expo-application";
 import { Linking, Platform } from "react-native";
+import { bestEffort } from "./best-effort";
 import { queryClient } from "./query";
 
 const STORE_LOOKUP_URL = "https://itunes.apple.com/lookup";
