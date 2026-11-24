@@ -5,6 +5,8 @@ export const message = `A new source file may not exceed ${SOURCE_LIMIT} lines, 
 
 export const include = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,css,py,sh,swift,kt}"];
 
+export const exclude = [".github/pr-proof/**"];
+
 /** One hit for a file over its limit. Files over it today are frozen at 1, so they may still grow. */
 export function count(text, file) {
   const limit = /(?:\.(?:test|spec)\.[^/]+|\/test_[^/]+\.py)$/.test(file)
