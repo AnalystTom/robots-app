@@ -13,6 +13,7 @@ vi.mock("@lingui/react/macro", () => {
   return { useLingui: () => ({ t }), Trans: ({ children }: { children: ReactNode }) => children };
 });
 
+import { robotPresetValue } from "@robots/core";
 import { isPrimaryBot, PrimaryBotRow, primaryBotCreateInput } from "./primary-bot";
 
 let container: HTMLDivElement;
@@ -46,6 +47,7 @@ it("knows the Primary Bot by its spawn key, whatever its name", () => {
   const input = primaryBotCreateInput("Chief");
   expect(input).toMatchObject({ name: "Chief", spawnKey: "primary", fleetManagement: true });
   expect(input.instructions).toContain("message_bot");
+  expect(input.color).toBe(robotPresetValue("assistant"));
 });
 
 it("opens the Primary Bot, or offers to set one up", async () => {

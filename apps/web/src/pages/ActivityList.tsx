@@ -185,14 +185,7 @@ export function ActivityList({
           {sections.unreadBots.map((bot) => (
             <ChatRow
               key={bot.id}
-              avatar={
-                <BotAvatar
-                  identity={bot.id}
-                  color={bot.color}
-                  avatarSet={bot.avatarSet}
-                  size={28}
-                />
-              }
+              avatar={<BotAvatar identity={bot.id} color={bot.color} size={28} />}
               name={bot.name}
               preview={bot.preview}
               updatedAt={bot.updatedAt}
@@ -443,13 +436,7 @@ export function ActivityRow({
       onClick={onOpen}
       className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-start hover:bg-accent"
     >
-      <BotAvatar
-        identity={run.botId}
-        color={bot?.color ?? ""}
-        avatarSet={bot?.avatarSet}
-        status={run.status}
-        size={28}
-      />
+      <BotAvatar identity={run.botId} color={bot?.color ?? ""} status={run.status} size={28} />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <span className="flex min-w-0 gap-2 text-body font-medium">

@@ -1,11 +1,10 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import type { Bot, BotAvatarSet, ComputerMode, ReplyMode, ThinkingLevel } from "@robots/contracts";
+import type { Bot, ComputerMode, ReplyMode, ThinkingLevel } from "@robots/contracts";
 import {
   BOT_DESCRIPTION_MAX_LENGTH,
   BOT_INSTRUCTIONS_MAX_LENGTH,
   BOT_NAME_MAX_LENGTH,
-  resolveBotAvatarSet,
 } from "@robots/contracts";
 import {
   botLookState,
@@ -79,7 +78,6 @@ export default function BotSettingsScreen() {
   const [instructions, setInstructions] = useState("");
   const [color, setColor] = useState<string>(DEFAULT_BOT_AVATAR_COLOR);
   const [computerMode, setComputerMode] = useState<ComputerMode>("team");
-  const [avatarSet, setAvatarSet] = useState<BotAvatarSet>("organic");
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(focus === "model" || pickedModel !== undefined);
   const [modelKey, setModelKey] = useState("");
@@ -228,7 +226,6 @@ export default function BotSettingsScreen() {
         setDescription(next.description ?? "");
         setInstructions(next.instructions ?? "");
         setColor(next.color);
-        setAvatarSet(resolveBotAvatarSet(next.avatarSet));
         setComputerMode(next.computerMode);
         const savedModel = {
           key:
@@ -442,7 +439,6 @@ export default function BotSettingsScreen() {
         instructions?: string;
         expectedInstructions?: string;
         color?: string;
-        avatarSet?: BotAvatarSet;
         autoSpeak?: boolean;
       } = { botId };
       if (profile.description !== (bot.description ?? "")) {
@@ -453,7 +449,6 @@ export default function BotSettingsScreen() {
         input.expectedInstructions = bot.instructions;
       }
       if (color !== bot.color) input.color = color;
-      if (avatarSet !== resolveBotAvatarSet(bot.avatarSet)) input.avatarSet = avatarSet;
       if (autoSpeak !== bot.autoSpeak) input.autoSpeak = autoSpeak;
       if (computerMode !== bot.computerMode) {
         await rpc(
@@ -494,7 +489,6 @@ export default function BotSettingsScreen() {
     (description.trim() !== (bot.description ?? "") ||
       instructions !== (bot.instructions ?? "") ||
       color !== bot.color ||
-      avatarSet !== resolveBotAvatarSet(bot.avatarSet) ||
       computerMode !== bot.computerMode ||
       autoSpeak !== bot.autoSpeak);
 
@@ -560,13 +554,7 @@ export default function BotSettingsScreen() {
               onPress={() => setAvatarOpen(true)}
               style={{ padding: 4 }}
             >
-              <BotAvatar
-                color={color}
-                avatarSet={avatarSet}
-                identity={bot.id}
-                size={64}
-                status={bot.status}
-              />
+              <BotAvatar color={color} identity={bot.id} size={64} status={bot.status} />
               <View
                 style={{
                   position: "absolute",
@@ -888,26 +876,8 @@ export default function BotSettingsScreen() {
                 </Text>
               </Pressable>
             ) : null}
-            <MenuPicker
-              label={t`Icon set`}
-              choices={[
-                { key: "organic", label: t`Original` },
-                { key: "robots", label: t`RoBots` },
-              ]}
-              value={avatarSet}
-              onChange={(next) => {
-                setAvatarSet(resolveBotAvatarSet(next));
-                setColor((current) => botLookState(current).color);
-              }}
-              plain
-            />
             {bot ? (
-              <BotLookPicker
-                value={color}
-                identity={bot.id}
-                avatarSet={avatarSet}
-                onChange={(next) => setColor(next)}
-              />
+              <BotLookPicker value={color} identity={bot.id} onChange={(next) => setColor(next)} />
             ) : null}
           </ScrollView>
         </Modal>

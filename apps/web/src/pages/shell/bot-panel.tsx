@@ -2,13 +2,12 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type {
   AgentSkillCatalogEntry,
   Bot,
-  BotAvatarSet,
   ComputerMode,
   ModelCatalogEntry,
   ReplyMode,
   ThinkingLevel,
 } from "@robots/contracts";
-import { BOT_NAME_MAX_LENGTH, isBuiltinToolName, resolveBotAvatarSet } from "@robots/contracts";
+import { BOT_NAME_MAX_LENGTH, isBuiltinToolName } from "@robots/contracts";
 import {
   chatModelChoices,
   connectedModelChoices,
@@ -68,7 +67,6 @@ type QueuedPatch = {
   name?: string;
   description?: string;
   color?: string;
-  avatarSet?: BotAvatarSet;
   notifyOnFinish?: boolean;
   fleetManagement?: boolean;
   replyMode?: ReplyMode;
@@ -111,7 +109,6 @@ export function BotSettings({
     description?: string;
     instructions?: string;
     color?: string;
-    avatarSet?: BotAvatarSet;
     notifyOnFinish?: boolean;
     computerMode?: ComputerMode;
     memoryScope?: "isolated" | "shared" | null;
@@ -143,14 +140,12 @@ export function BotSettings({
   const [description, setDescription] = useState(bot.description);
   const savedDescriptionRef = useRef(bot.description ?? "");
   const [color, setColor] = useState(bot.color);
-  const [avatarSet, setAvatarSet] = useState(() => resolveBotAvatarSet(bot.avatarSet));
   const [notifyOnFinish, setNotifyOnFinish] = useState(bot.notifyOnFinish ?? true);
   const acceptedAutomatic = useRef({
     color: bot.color,
-    avatarSet: resolveBotAvatarSet(bot.avatarSet),
     notifyOnFinish: bot.notifyOnFinish ?? true,
   });
-  const automaticRevision = useRef({ color: 0, avatarSet: 0, notifyOnFinish: 0 });
+  const automaticRevision = useRef({ color: 0, notifyOnFinish: 0 });
   const [computerMode, setComputerMode] = useState(bot.computerMode);
   const [memoryScope, setMemoryScope] = useState(bot.memoryScope);
   const [autoSpeak, setAutoSpeak] = useState(bot.autoSpeak);
@@ -199,7 +194,7 @@ export function BotSettings({
   const executeSaveRef = useRef<
     (
       patchOverrides?: QueuedPatch,
-      revisions?: { color: number; avatarSet: number; notifyOnFinish: number },
+      revisions?: { color: number; notifyOnFinish: number },
     ) => Promise<void>
   >(async () => undefined);
   const shownBotRef = useRef(bot);
@@ -213,12 +208,9 @@ export function BotSettings({
     const accepted = acceptedAutomatic.current;
     const nextNotify = bot.notifyOnFinish ?? true;
     if (color === accepted.color) setColor(bot.color);
-    const nextAvatarSet = resolveBotAvatarSet(bot.avatarSet);
-    if (avatarSet === accepted.avatarSet) setAvatarSet(nextAvatarSet);
     if (notifyOnFinish === accepted.notifyOnFinish) setNotifyOnFinish(nextNotify);
     acceptedAutomatic.current = {
       color: bot.color,
-      avatarSet: nextAvatarSet,
       notifyOnFinish: nextNotify,
     };
     if (pendingSavesRef.current > 0) return;
@@ -273,7 +265,7 @@ export function BotSettings({
 
   async function executeSave(
     patchOverrides?: QueuedPatch,
-    revisions?: { color: number; avatarSet: number; notifyOnFinish: number },
+    revisions?: { color: number; notifyOnFinish: number },
   ) {
     try {
       setSaving(true);
@@ -303,7 +295,6 @@ export function BotSettings({
         patchOverrides?.description !== undefined ? patchOverrides.description : description
       ).trim();
       const nextColor = patchOverrides?.color !== undefined ? patchOverrides.color : color;
-      const nextAvatarSet = patchOverrides?.avatarSet ?? avatarSet;
       const nextNotify =
         patchOverrides?.notifyOnFinish !== undefined
           ? patchOverrides.notifyOnFinish
@@ -315,10 +306,6 @@ export function BotSettings({
         ...(nextName && nextName !== savedNameRef.current.trim() ? { name: nextName } : {}),
         ...botProfilePatch(savedDescriptionRef.current, nextDescription),
         ...(nextColor !== acceptedAutomatic.current.color ? { color: nextColor } : {}),
-        ...(patchOverrides?.avatarSet !== undefined ||
-        nextAvatarSet !== acceptedAutomatic.current.avatarSet
-          ? { avatarSet: nextAvatarSet }
-          : {}),
         notifyOnFinish: nextNotify,
       };
       const requestedTools = patchOverrides?.disabledBuiltinTools;
@@ -352,7 +339,6 @@ export function BotSettings({
       }
       acceptedAutomatic.current = {
         color: nextColor,
-        avatarSet: nextAvatarSet,
         notifyOnFinish: nextNotify,
       };
       if (nextName) savedNameRef.current = nextName;
@@ -367,11 +353,6 @@ export function BotSettings({
         revisions?.color === automaticRevision.current.color
       )
         setColor(acceptedAutomatic.current.color);
-      if (
-        patchOverrides?.avatarSet !== undefined &&
-        revisions?.avatarSet === automaticRevision.current.avatarSet
-      )
-        setAvatarSet(acceptedAutomatic.current.avatarSet);
       if (
         patchOverrides?.notifyOnFinish !== undefined &&
         revisions?.notifyOnFinish === automaticRevision.current.notifyOnFinish
@@ -413,7 +394,6 @@ export function BotSettings({
   function enqueueSave(patchOverrides?: Omit<QueuedPatch, "baseDisabledBuiltinTools">) {
     pendingSavesRef.current += 1;
     if (patchOverrides?.color !== undefined) automaticRevision.current.color += 1;
-    if (patchOverrides?.avatarSet !== undefined) automaticRevision.current.avatarSet += 1;
     if (patchOverrides?.notifyOnFinish !== undefined) automaticRevision.current.notifyOnFinish += 1;
     const revisions = { ...automaticRevision.current };
     const queuedPatch =
@@ -438,14 +418,9 @@ export function BotSettings({
             identity={bot.id}
             status={bot.status}
             size={76}
-            avatarSet={avatarSet}
-            onChange={(newColor, nextAvatarSet) => {
+            onChange={(newColor) => {
               setColor(newColor);
-              if (nextAvatarSet !== undefined) setAvatarSet(nextAvatarSet);
-              void enqueueSave({
-                color: newColor,
-                ...(nextAvatarSet !== undefined ? { avatarSet: nextAvatarSet } : {}),
-              });
+              void enqueueSave({ color: newColor });
             }}
           />
         </div>

@@ -3,42 +3,13 @@ import { renderToString } from "react-dom/server";
 import { expect, it } from "vitest";
 import { BotAvatar } from "./bot-avatar.js";
 
-type Attributes = Record<string, string>;
-
-function tags(svg: string, name: string): Attributes[] {
-  return Array.from(svg.matchAll(new RegExp(`<${name}\\b([^>]*)>`, "g")), (tag) =>
-    Object.fromEntries(
-      Array.from(tag[1]!.matchAll(/([\w-]+)="([^"]*)"/g), (attribute) => [
-        attribute[1]!,
-        attribute[2]!,
-      ]),
-    ),
-  );
-}
-
-it.each<[string, { color: string; avatarSet?: "robots" }]>([
-  ["organic", { color: "#14b8a6" }],
-  ["shipped shape", { color: "#8B5CF6::shape_3" }],
-  ["robots", { color: "#14b8a6", avatarSet: "robots" }],
-])("draws the %s notification portrait from the chat avatar's geometry", (_, avatar) => {
-  const bot = { id: "agent-1", ...avatar };
-  const source = notificationAvatarSource(bot);
-  const portrait = decodeURIComponent(source.slice(source.indexOf(",") + 1));
-  const chat = renderToString(
-    <BotAvatar color={bot.color} identity={bot.id} avatarSet={bot.avatarSet} activity="idle" />,
-  );
-
-  const [svg] = tags(portrait, "svg");
-  expect(tags(chat, "svg")).toContainEqual(expect.objectContaining({ viewBox: svg!.viewBox }));
-  const [body] = tags(portrait, "path");
-  const bodyGeometry = bot.avatarSet === "robots" ? { d: body!.d } : body!;
-  expect(tags(chat, "path")).toContainEqual(expect.objectContaining(bodyGeometry));
-  if (bot.avatarSet === "robots") expect(chat).toContain(`data-color="${body!.fill}"`);
-  for (const transform of tags(portrait, "g").flatMap((group) => group.transform ?? [])) {
-    expect(chat).toContain(`transform="${transform}"`);
-  }
-  const eyes = [...tags(portrait, "rect"), ...tags(portrait, "ellipse")];
-  expect(eyes).toHaveLength(2);
-  const chatEyes = [...tags(chat, "rect"), ...tags(chat, "ellipse")];
-  for (const eye of eyes) expect(chatEyes).toContainEqual(expect.objectContaining(eye));
-});
+it.each(["#14b8a6", "#8B5CF6::shape_3"])(
+  "sends the push icon of a %s bot as the RoBots character its chat avatar shows",
+  (color) => {
+    const bot = { id: "agent-1", color };
+    const chat = renderToString(<BotAvatar color={bot.color} identity={bot.id} />);
+    const [, shown] = /<img src="([^"]*)"/.exec(chat) ?? [];
+    expect(shown).toMatch(/^data:image\/svg\+xml,%3Csvg/);
+    expect(notificationAvatarSource(bot)).toBe(shown);
+  },
+);

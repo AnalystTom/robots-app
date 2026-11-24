@@ -12,9 +12,6 @@ describe("logo-derived avatar prototype", () => {
       expect(renderToString(<LogoAvatar identity={identity} />)).toContain(
         `data-color="${expected}"`,
       );
-      expect(
-        renderToString(<BotAvatar color="" identity={identity} avatarSet="robots" />),
-      ).toContain(`data-color="${expected}"`);
     }
   });
   it("renders the eye-free brand body with vector eyes and an accessible name", () => {
@@ -50,14 +47,15 @@ describe("logo-derived avatar prototype", () => {
   });
 
   it("leaves an uploaded avatar intact", () => {
-    const html = renderToString(<BotAvatar color="data:image/png;base64,abc" avatarSet="robots" />);
+    const html = renderToString(<BotAvatar color="data:image/png;base64,abc" />);
     expect(html).toContain('src="data:image/png;base64,abc"');
     expect(html).not.toContain("bot-avatar-body.png");
   });
 
-  it("leaves a manually selected shape intact", () => {
-    const html = renderToString(<BotAvatar color="#8B5CF6::shape_3" avatarSet="robots" />);
-    expect(html).toContain("bot-character-eyes");
+  it("draws a manually selected shape as a RoBots character", () => {
+    const html = renderToString(<BotAvatar color="#8B5CF6::shape_3" identity="maya" />);
+    expect(html).toMatch(/<img src="data:image\/svg\+xml,%3Csvg/);
+    expect(html).not.toContain("bot-character-eyes");
     expect(html).not.toContain("bot-avatar-body.png");
   });
 

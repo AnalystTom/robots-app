@@ -2,7 +2,7 @@
 
 import { i18n } from "@lingui/core";
 import { ORPCError } from "@orpc/client";
-import type { Bot, BotAvatarSet } from "@robots/contracts";
+import type { Bot } from "@robots/contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps, ReactNode } from "react";
 import { act } from "react";
@@ -105,28 +105,17 @@ vi.mock("@robots/ui-web", () => ({
 vi.mock("./avatar-studio-popover", () => ({
   AvatarStudioPopover: ({
     value,
-    avatarSet,
     onChange,
   }: {
     value: string;
-    avatarSet?: BotAvatarSet;
-    onChange: (value: string, avatarSet?: BotAvatarSet) => void;
+    onChange: (value: string) => void;
   }) => (
-    <>
-      <button
-        type="button"
-        aria-label="Avatar color"
-        data-color={value}
-        onClick={() => onChange(value === "blue" ? "ink" : "blue")}
-      />
-      <button
-        type="button"
-        aria-label="Avatar set"
-        data-avatar-set={avatarSet}
-        data-color={value}
-        onClick={() => onChange("#F97316", avatarSet === "robots" ? "organic" : "robots")}
-      />
-    </>
+    <button
+      type="button"
+      aria-label="Avatar color"
+      data-color={value}
+      onClick={() => onChange(value === "blue" ? "ink" : "blue")}
+    />
   ),
 }));
 vi.mock("../ScratchpadSection", () => ({ ScratchpadSection: () => <h3>Open work</h3> }));
@@ -775,51 +764,6 @@ it("saves a color change back to the initial value after a successful automatic 
   await act(async () => control().click());
   await act(async () => control().click());
   expect(onSave.mock.lastCall?.[0]).toHaveProperty("color", "ink");
-});
-
-describe("BotSettings avatar set persistence", () => {
-  it("interprets a legacy missing set as Original without saving a replacement", async () => {
-    await render();
-    expect(
-      container.querySelector('[aria-label="Avatar set"]')?.getAttribute("data-avatar-set"),
-    ).toBe("organic");
-    expect(onSave).not.toHaveBeenCalled();
-  });
-
-  it("saves an explicit set switch atomically with its generated colour and retains it after reload", async () => {
-    await render("Billing", { color: "#10B981" });
-    const control = () => container.querySelector<HTMLButtonElement>('[aria-label="Avatar set"]')!;
-    await act(async () => control().click());
-    expect(onSave.mock.lastCall?.[0]).toMatchObject({ avatarSet: "robots", color: "#F97316" });
-    expect(control().getAttribute("data-avatar-set")).toBe("robots");
-    await act(async () => root.unmount());
-    root = createRoot(container);
-    await render("Billing", { color: "#F97316", avatarSet: "robots" });
-    expect(control().getAttribute("data-avatar-set")).toBe("robots");
-  });
-
-  it("restores the accepted colour and set when switching fails", async () => {
-    await render("Billing", { color: "#10B981" });
-    onSave.mockRejectedValueOnce(new Error("offline"));
-    await act(async () =>
-      container.querySelector<HTMLButtonElement>('[aria-label="Avatar set"]')!.click(),
-    );
-    const control = container.querySelector('[aria-label="Avatar set"]')!;
-    expect(control.getAttribute("data-avatar-set")).toBe("organic");
-    expect(control.getAttribute("data-color")).toBe("#10B981");
-    expect(container.textContent).toContain("offline");
-  });
-
-  it("keeps a colour edit in its existing set", async () => {
-    await render("Billing", { avatarSet: "robots" });
-    await act(async () =>
-      container.querySelector<HTMLButtonElement>('[aria-label="Avatar color"]')!.click(),
-    );
-    expect(onSave.mock.lastCall?.[0]).not.toHaveProperty("avatarSet");
-    expect(
-      container.querySelector('[aria-label="Avatar set"]')?.getAttribute("data-avatar-set"),
-    ).toBe("robots");
-  });
 });
 
 describe("BotSettings cached data", () => {

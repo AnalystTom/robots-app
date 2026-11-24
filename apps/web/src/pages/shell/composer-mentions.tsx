@@ -45,14 +45,7 @@ export function MentionOptionIcon({ mention }: { mention: ComposerMention }) {
       </span>
     );
   }
-  return (
-    <BotAvatar
-      avatarSet={mention.avatarSet}
-      color={mention.color ?? FALLBACK_BOT_COLOR}
-      identity={mention.id}
-      size={16}
-    />
-  );
+  return <BotAvatar color={mention.color ?? FALLBACK_BOT_COLOR} identity={mention.id} size={16} />;
 }
 
 function MentionCardIcon({ mention }: { mention: ComposerMention }) {
@@ -72,14 +65,7 @@ function MentionCardIcon({ mention }: { mention: ComposerMention }) {
       </span>
     );
   }
-  return (
-    <BotAvatar
-      avatarSet={mention.avatarSet}
-      color={mention.color ?? FALLBACK_BOT_COLOR}
-      identity={mention.id}
-      size={12}
-    />
-  );
+  return <BotAvatar color={mention.color ?? FALLBACK_BOT_COLOR} identity={mention.id} size={12} />;
 }
 
 export function ComposerMentionHighlights({

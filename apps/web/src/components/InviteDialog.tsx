@@ -1,6 +1,6 @@
 import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import type { BillingStatus } from "@robots/contracts";
-import { DEFAULT_NEW_BOT_AVATAR_SET, INVITED_TRIAL_WEEKS } from "@robots/contracts";
+import { INVITED_TRIAL_WEEKS } from "@robots/contracts";
 import { INVITE_AVATAR_COLORS } from "@robots/core";
 import {
   BotAvatar,
@@ -38,7 +38,6 @@ export function InviteDialog({
               key={color}
               identity={`invite-${index}`}
               color={color}
-              avatarSet={DEFAULT_NEW_BOT_AVATAR_SET}
               size={index === 2 ? 64 : 48}
             />
           ))}

@@ -25,7 +25,7 @@ import { formatRelativeTime } from "../../lib/relative-time";
 import { errorText } from "../../lib/user-error";
 import { WorkspaceLayout } from "./WorkspaceLayout";
 
-type BotLook = Pick<Bot, "id" | "color" | "avatarSet">;
+type BotLook = Pick<Bot, "id" | "color">;
 
 /**
  * The mail the caller's bots received at their addresses and the mail they sent. The selected
@@ -153,15 +153,7 @@ function Failed({ error }: { error: unknown }) {
 
 function Avatar({ bots, botId, size }: { bots: readonly BotLook[]; botId: string; size: number }) {
   const bot = bots.find((candidate) => candidate.id === botId);
-  return (
-    <BotAvatar
-      color={bot?.color ?? ""}
-      avatarSet={bot?.avatarSet}
-      identity={botId}
-      size={size}
-      className="shrink-0"
-    />
-  );
+  return <BotAvatar color={bot?.color ?? ""} identity={botId} size={size} className="shrink-0" />;
 }
 
 /** No bot has an address yet: say where mail arrives and offer each bot one. */

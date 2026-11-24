@@ -1,5 +1,5 @@
 import { t } from "@lingui/core/macro";
-import type { BotAvatarSet, ProductEvent, ThreadMessage, ThreadSnapshot } from "@robots/contracts";
+import type { ProductEvent, ThreadMessage, ThreadSnapshot } from "@robots/contracts";
 import type { CallExchange } from "@robots/core";
 import {
   CALL_FAREWELL_TIMEOUT_MS,
@@ -43,7 +43,6 @@ export interface CallState {
   botId: string;
   botName: string;
   botColor: string;
-  botAvatarSet?: BotAvatarSet;
   /** When the call picked up; null while it is still ringing. */
   connectedAt: number | null;
   phase: CallPhase;
@@ -154,7 +153,6 @@ export function startCall(call: {
   botId: string;
   botName: string;
   botColor?: string;
-  botAvatarSet?: BotAvatarSet;
   transcribe?: boolean;
   /** The bot called and the user picked up: no ringing, and the bot speaks first. */
   answered?: { callId: string; opening: string };
@@ -176,7 +174,6 @@ export function startCall(call: {
     botId: call.botId,
     botName: call.botName,
     botColor: call.botColor ?? "",
-    botAvatarSet: call.botAvatarSet,
     connectedAt: null,
     phase: "ringing",
     muted: false,

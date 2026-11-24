@@ -1,41 +1,34 @@
 // @vitest-environment jsdom
 
-import type { BotAvatarSet } from "@robots/contracts";
-import { DEFAULT_BOT_AVATAR_COLOR } from "@robots/ui-web";
+import { parseRobotCharacter } from "@robots/contracts";
+import { robotCharacterDataUri } from "@robots/core";
 import type { ReactNode } from "react";
 import { act, useState } from "react";
 import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@lingui/react/macro", () => ({
-  Trans: ({ children }: { children: ReactNode }) => children,
-}));
+vi.mock("@lingui/react/macro", () => {
+  const t = (parts: TemplateStringsArray, ...values: unknown[]) =>
+    parts.reduce((text, part, index) => `${text}${index > 0 ? values[index - 1] : ""}${part}`, "");
+  return { useLingui: () => ({ t }), Trans: ({ children }: { children: ReactNode }) => children };
+});
 
 import { AvatarStudioPopover } from "./avatar-studio-popover";
 
 let container: HTMLDivElement;
 let root: Root;
-const changed = vi.fn<(value: string, avatarSet?: BotAvatarSet) => void>();
+const changed = vi.fn<(value: string) => void>();
 
-function Harness({
-  value: initial,
-  avatarSet: initialSet,
-}: {
-  value: string;
-  avatarSet?: BotAvatarSet;
-}) {
+function Harness({ value: initial }: { value: string }) {
   const [value, setValue] = useState(initial);
-  const [avatarSet, setAvatarSet] = useState(initialSet);
   return (
     <AvatarStudioPopover
       value={value}
       identity="sample-bot"
-      avatarSet={avatarSet}
-      onChange={(next, nextSet) => {
-        changed(next, nextSet);
+      onChange={(next) => {
+        changed(next);
         setValue(next);
-        if (nextSet !== undefined) setAvatarSet(nextSet);
       }}
     />
   );
@@ -68,49 +61,75 @@ function button(name: string) {
 async function click(name: string) {
   await act(async () => button(name).click());
 }
-async function render(value: string, avatarSet?: BotAvatarSet, key = "initial") {
-  await act(async () => root.render(<Harness key={key} value={value} avatarSet={avatarSet} />));
+async function render(value: string) {
+  await act(async () => root.render(<Harness key={value} value={value} />));
 }
 
-describe("selectable bot icon sets", () => {
-  it("keeps a legacy appearance on open, saves a RoBots switch, and restores the saved set on reload", async () => {
-    await render("#10B981");
+describe("the robot-only picker", () => {
+  it.each([
+    ["a plain hex", "#10B981"],
+    ["an organic shape", "#8B5CF6::shape_2"],
+  ] as const)("draws %s as a robot preset and offers no Original style", async (_label, value) => {
+    await render(value);
+    expect(document.querySelector(".robots-organic-avatar")).toBeNull();
+    expect(document.querySelector(".robots-logo-avatar")).toBeNull();
+    expect(document.querySelector('img[src^="data:image/svg+xml"]')).not.toBeNull();
     await click("Customize bot avatar");
-    expect(button("Original").getAttribute("aria-selected")).toBe("true");
-    expect(document.querySelector(".robots-organic-avatar")).not.toBeNull();
+    expect(document.body.textContent).not.toContain("Original");
+    expect(document.body.textContent).not.toContain("More styles");
+    expect(document.querySelector('[role="tab"][aria-selected]')).not.toBeNull();
+    expect(document.querySelectorAll('[role="radio"]')).toHaveLength(15);
     expect(changed).not.toHaveBeenCalled();
-    await click("RoBots");
-    expect(changed).toHaveBeenLastCalledWith("#10B981", "robots");
-    expect(document.querySelector(".robots-logo-avatar")).not.toBeNull();
-    await render("#10B981", "robots", "reload");
-    await click("Customize bot avatar");
-    expect(button("RoBots").getAttribute("aria-selected")).toBe("true");
-    await click("Original");
-    expect(changed).toHaveBeenLastCalledWith("#10B981", "organic");
-    expect(document.querySelector(".robots-organic-avatar")).not.toBeNull();
-    expect(button("wedge")).toBeDefined();
   });
 
-  it("leaves a photo intact until the user explicitly selects another set", async () => {
+  it("replaces a photo only when a robot is picked", async () => {
     const photo = "data:image/png;base64,abc";
     await render(photo);
-    expect(document.querySelector(`img[src="${photo}"]`)).not.toBeNull();
     await click("Customize bot avatar");
     expect(changed).not.toHaveBeenCalled();
     expect(document.querySelector(`img[src="${photo}"]`)).not.toBeNull();
-    await click("RoBots");
-    expect(changed).toHaveBeenLastCalledWith(DEFAULT_BOT_AVATAR_COLOR, "robots");
+    await click("Hero");
+    expect(changed).toHaveBeenCalledTimes(1);
     expect(document.querySelector(`img[src="${photo}"]`)).toBeNull();
   });
 
-  it("keeps explicit original shapes and their chosen set while changing colour", async () => {
-    await render("#8B5CF6::shape_2", "organic");
+  it("keeps a legacy robot the bot wears, lists only the listed robots, and saves only a picked one", async () => {
+    const legacyRobot = "robot:teal.top-hat.hearts.cape.none";
+    const detective = "robot:purple.deerstalker.magnifier.cape.none";
+    await render(legacyRobot);
+    const legacyUri = robotCharacterDataUri(parseRobotCharacter(legacyRobot)!);
+    expect([...document.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toContain(
+      legacyUri,
+    );
     await click("Customize bot avatar");
+    const checked = () =>
+      [...document.querySelectorAll('[role="radio"][aria-checked="true"]')].map((node) =>
+        node.getAttribute("aria-label"),
+      );
+    const listed = [...document.querySelectorAll('[role="radio"]')].map((node) =>
+      node.getAttribute("aria-label"),
+    );
+    expect(listed).toEqual([
+      "Assistant",
+      "Researcher",
+      "Coder",
+      "Writer",
+      "Analyst",
+      "Creator",
+      "Chef",
+      "Hero",
+      "Hoodie",
+      "Critic",
+      "Professor",
+      "Detective",
+      "Keynote",
+      "Hustler",
+      "Host",
+    ]);
+    expect(checked()).toEqual([]);
     expect(changed).not.toHaveBeenCalled();
-    await click("Color #00C972");
-    expect(changed).toHaveBeenLastCalledWith("#00C972::shape_2", undefined);
-    expect(button("Original").getAttribute("aria-selected")).toBe("true");
-    await click("RoBots");
-    expect(changed).toHaveBeenLastCalledWith("#00C972", "robots");
+    await click("Detective");
+    expect(changed).toHaveBeenLastCalledWith(detective);
+    expect(checked()).toEqual(["Detective"]);
   });
 });

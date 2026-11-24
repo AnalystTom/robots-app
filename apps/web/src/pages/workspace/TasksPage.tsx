@@ -185,7 +185,7 @@ function TaskCard({ ticket, bot, onOpen }: { ticket: Ticket; bot?: Bot; onOpen: 
       <span className="flex w-full items-center gap-1.5 text-label text-muted-foreground">
         {bot ? (
           <>
-            <BotAvatar identity={bot.id} color={bot.color} avatarSet={bot.avatarSet} size={16} />
+            <BotAvatar identity={bot.id} color={bot.color} size={16} />
             <span className="min-w-0 truncate">{bot.name}</span>
           </>
         ) : (

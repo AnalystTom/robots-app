@@ -172,14 +172,7 @@ export function ActivitySection({
                 onPress={() =>
                   openChat({ pathname: "/thread", params: { botId: bot.id, name: bot.name } })
                 }
-                avatar={
-                  <BotAvatar
-                    identity={bot.id}
-                    color={bot.color}
-                    avatarSet={bot.avatarSet}
-                    motion="lazy"
-                  />
-                }
+                avatar={<BotAvatar identity={bot.id} color={bot.color} motion="lazy" />}
                 {...actions}
               />
             )),
@@ -251,7 +244,6 @@ function ActivityRow({
         <BotAvatar
           identity={run.botId}
           color={bot?.color ?? FALLBACK_COLOR}
-          avatarSet={bot?.avatarSet}
           status={run.status}
           motion="lazy"
         />

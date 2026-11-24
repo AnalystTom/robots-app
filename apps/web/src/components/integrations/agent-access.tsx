@@ -1,5 +1,4 @@
 import { Trans } from "@lingui/react/macro";
-import type { BotAvatarSet } from "@robots/contracts";
 import {
   BotAvatar,
   Button,
@@ -13,7 +12,7 @@ import { ChevronDown } from "lucide-react";
 
 export type AgentAccess = { allBots: boolean; botIds: string[] };
 
-type AccessBot = { id: string; name: string; color: string; avatarSet?: BotAvatarSet };
+type AccessBot = { id: string; name: string; color: string };
 
 const SHOWN_AVATARS = 4;
 
@@ -46,13 +45,7 @@ export function AgentAccessControl({
     <>
       <span className="flex gap-0.5">
         {picked.slice(0, SHOWN_AVATARS).map((bot) => (
-          <BotAvatar
-            key={bot.id}
-            color={bot.color}
-            avatarSet={bot.avatarSet}
-            identity={bot.id}
-            size={18}
-          />
+          <BotAvatar key={bot.id} color={bot.color} identity={bot.id} size={18} />
         ))}
       </span>
       {picked.length > SHOWN_AVATARS ? (
@@ -97,7 +90,7 @@ export function AgentAccessControl({
               checked={chosen.includes(bot.id)}
               onCheckedChange={() => toggle(bot.id)}
             >
-              <BotAvatar color={bot.color} avatarSet={bot.avatarSet} identity={bot.id} size={18} />
+              <BotAvatar color={bot.color} identity={bot.id} size={18} />
               {bot.name}
             </DropdownMenuCheckboxItem>
           ))}

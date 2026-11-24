@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { ROBOT_PRESETS, robotCharacterSvg } from "@robots/core";
 import type { ReactNode } from "react";
 import { act, createElement } from "react";
 import type { Root } from "react-dom/client";
@@ -39,6 +40,7 @@ vi.mock("react-native-svg", () => {
     Mask: element("Mask"),
     Path: element("Path"),
     Rect: element("Rect"),
+    SvgXml: element("SvgXml"),
     Text: element("Text"),
   };
 });
@@ -128,21 +130,14 @@ describe("GroupSeats", () => {
     expect(seats[0]!.querySelector("svg-path")!.getAttribute("data-stroke")).toBe("tertiary");
   });
 
-  it("gives a drawn face the same eye ink as the bot's own avatar", () => {
+  it("draws each member as the RoBots character their avatar shows", () => {
     act(() =>
-      root.render(
-        <GroupSeats
-          members={[
-            { botId: "bot-a", name: "A", color: "#3EC5A8" },
-            { botId: "bot-b", name: "B", color: "#F5A03C" },
-          ]}
-        />,
-      ),
+      root.render(<GroupSeats members={[{ botId: "bot-a", name: "A", color: "#3EC5A8" }]} />),
     );
-    const eyes = Array.from(container.querySelectorAll("svg-g[data-fill]"), (group) =>
-      group.getAttribute("data-fill"),
+    const preset = ROBOT_PRESETS.find((candidate) => candidate.id === "coder");
+    const drawn = Array.from(container.querySelectorAll("svg-svgxml"), (node) =>
+      node.getAttribute("data-xml"),
     );
-    // Both bodies are pale, so their eyes stay dark on a light page, as on the bot's own avatar.
-    expect(eyes).toEqual(["#141414", "#141414"]);
+    expect(drawn).toEqual([robotCharacterSvg(preset!.look)]);
   });
 });

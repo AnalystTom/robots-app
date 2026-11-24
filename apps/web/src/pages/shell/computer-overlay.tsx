@@ -88,13 +88,7 @@ export function ComputerOverlay({
           }
         >
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <BotAvatar
-              avatarSet={bot.avatarSet}
-              color={bot.color}
-              identity={bot.id}
-              size={28}
-              status={bot.status}
-            />
+            <BotAvatar color={bot.color} identity={bot.id} size={28} status={bot.status} />
             {recordingSkill ? (
               <TeachRecordingChrome
                 recording={recordingSkill}

@@ -626,9 +626,9 @@ function Home({ embedded, onSelectSpace, onShareSelect }: InboxPaneProps & { emb
     (spaceId?: string) =>
       openCreate({
         pathname: "/new-bot",
-        params: { avatarSet: me?.botAvatarSet, ...(spaceId ? { spaceId } : {}) },
+        params: spaceId ? { spaceId } : {},
       }),
-    [me?.botAvatarSet, openCreate],
+    [openCreate],
   );
 
   const runCreateAction = useCallback(

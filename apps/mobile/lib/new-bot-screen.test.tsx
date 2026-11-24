@@ -78,6 +78,20 @@ const CHARACTERS = [
     },
   },
   {
+    name: "Hoodie",
+    look: { colour: "green", headwear: "hood", face: "terminal", outfit: "hoodie", extra: "none" },
+  },
+  {
+    name: "Critic",
+    look: {
+      colour: "red",
+      headwear: "chef-hat",
+      face: "grumpy",
+      outfit: "chef-jacket",
+      extra: "steam",
+    },
+  },
+  {
     name: "Professor",
     look: {
       colour: "teal",
@@ -125,16 +139,6 @@ const CHARACTERS = [
       face: "happy",
       outfit: "tuxedo",
       extra: "confetti",
-    },
-  },
-  {
-    name: "Critic",
-    look: {
-      colour: "red",
-      headwear: "chef-hat",
-      face: "grumpy",
-      outfit: "chef-jacket",
-      extra: "steam",
     },
   },
 ] as const;
@@ -375,13 +379,17 @@ function createdBot() {
   return mocks.rpc.mock.calls.find(([path]) => path === "bots/create")?.[1];
 }
 
-it("shows every character, draws the picked one recoloured in the preview, and creates it", async () => {
+it("offers exactly the listed robots, draws the picked one in the preview, and creates it", async () => {
   serveRpc(() => Promise.resolve({ botAvatarSet: "robots" }));
   await render();
 
-  for (const name of CHARACTER_NAMES) expect(radio(name)).not.toBeNull();
-  const startedOn = CHARACTER_NAMES.findIndex(checked);
+  const radioNames = () =>
+    [...container.querySelectorAll<HTMLButtonElement>('[data-role="radio"]')].map((button) =>
+      button.getAttribute("aria-label"),
+    );
+  expect(radioNames()).toEqual(CHARACTER_NAMES);
   expect(CHARACTER_NAMES.filter(checked)).toHaveLength(1);
+  const startedOn = CHARACTER_NAMES.findIndex(checked);
   expect(previewXml()).toBe(robotCharacterSvg(CHARACTERS[startedOn]!.look));
 
   for (const character of CHARACTERS) {
@@ -389,22 +397,16 @@ it("shows every character, draws the picked one recoloured in the preview, and c
     expect(CHARACTER_NAMES.filter(checked)).toEqual([character.name]);
     expect(previewXml()).toBe(robotCharacterSvg(character.look));
     expect(drawsLogo()).toBe(false);
+    expect(radioNames()).toEqual(CHARACTER_NAMES);
   }
 
-  const chef = CHARACTERS.find((character) => character.name === "Chef")!.look;
-  const redChef = { ...chef, colour: "red" } as const;
-  await tap(radio("Chef"));
-  await tap(radio("Color 2"));
-  expect(previewXml()).toBe(robotCharacterSvg(redChef));
-  expect(drawsLogo()).toBe(false);
-  expect(checked("Chef")).toBe(true);
-  expect(checked("Color 2")).toBe(true);
-
+  const critic = CHARACTERS.find((character) => character.name === "Critic")!.look;
+  await tap(radio("Critic"));
   await typeName("Gordon");
   await tap(createButton());
   await vi.waitFor(() => expect(createdBot()).toBeDefined());
   expect(createdBot()).toEqual(
-    expect.objectContaining({ name: "Gordon", color: robotCharacterValue(redChef) }),
+    expect.objectContaining({ name: "Gordon", color: robotCharacterValue(critic) }),
   );
 });
 
@@ -418,11 +420,9 @@ it("keeps Create off until the account's bot style is known", async () => {
   );
   await render();
   await typeName("Gordon");
-  expect(radio("Shape 1")).not.toBeNull();
   expect(createButton().disabled).toBe(true);
 
   await act(async () => answer({ botAvatarSet: "robots" }));
-  expect(radio("Shape 1")).toBeNull();
   expect(createButton().disabled).toBe(false);
 });
 

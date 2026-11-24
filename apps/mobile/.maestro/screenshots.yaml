@@ -82,13 +82,11 @@ tags:
 - assertVisible: "Name your Bot"
 - takeScreenshot: "08b-new-bot"
 - tapOn: "Chef"
-- tapOn: "Color 2"
 - assertVisible:
     text: "Chef"
     checked: true
-- assertVisible:
-    text: "Color 2"
-    checked: true
+- assertNotVisible: "Shuffle"
+- assertNotVisible: "Color 2"
 - takeScreenshot: "08c-new-bot-robot"
 
 - openLink: "robots:///new-space"

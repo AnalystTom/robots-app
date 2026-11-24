@@ -8,9 +8,8 @@ import {
   botLookWithShape,
   newBotLook,
   newBotLookInput,
-  newBotPreviewIdentity,
 } from "./bot-look.js";
-import { robotPresetOf, robotPresetValue } from "./robot-character.js";
+import { robotPresetOf, robotPresetValue } from "./robot-presets.js";
 
 describe("newBotLook", () => {
   it("reserves a valid id that never draws the heart body", () => {
@@ -27,23 +26,17 @@ describe("newBotLook", () => {
     const robot = botLookState(look.color).robot;
     expect(robot).not.toBeNull();
     expect(look.color).toBe(robotPresetValue(robotPresetOf(robot!)!));
-    for (const set of ["organic", "robots"] as const) {
-      expect(newBotLookInput(set, look)).toEqual({ color: look.color, id: look.id });
-    }
+    expect(newBotLookInput(look)).toEqual({ color: look.color, id: look.id });
   });
 
   it("keeps the preview's look through creation", () => {
     const look = { id: "c".padEnd(25, "a"), color: "#2A92FE", identity: "look-3-0" };
-    expect(newBotPreviewIdentity("robots", look)).toBe(look.id);
-    expect(newBotLookInput("robots", look)).toEqual({ color: look.color, id: look.id });
-    expect(newBotPreviewIdentity("organic", look)).toBe(look.identity);
-    expect(newBotLookInput("organic", look)).toEqual({
+    expect(newBotLookInput(look)).toEqual({
       color: look.color,
       avatarFamily: organicAvatarFamily(look.identity),
     });
     const shaped = { ...look, color: "#2A92FE::shape_2" };
-    expect(newBotLookInput("organic", shaped)).toEqual({ color: shaped.color });
-    expect(newBotLookInput("robots", shaped)).toEqual({ color: look.color, id: look.id });
+    expect(newBotLookInput(shaped)).toEqual({ color: shaped.color });
   });
 });
 

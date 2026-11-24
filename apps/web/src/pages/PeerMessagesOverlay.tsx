@@ -1,6 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { ChatMarkdown } from "@robots/chat-ui/web";
-import type { BotAvatarSet } from "@robots/contracts";
 import {
   loadPeerHistory,
   newestPageCards,
@@ -37,21 +36,17 @@ export function PeerMessagesOverlay({
   botId,
   botName,
   botColor,
-  botAvatarSet,
   peerBotId,
   peerBotName: initialPeerBotName,
   peerBotColor,
-  peerBotAvatarSet,
   onClose,
 }: {
   botId: string;
   botName: string;
   botColor: string;
-  botAvatarSet?: BotAvatarSet;
   peerBotId: string;
   peerBotName: string;
   peerBotColor: string;
-  peerBotAvatarSet?: BotAvatarSet;
   onClose: () => void;
 }) {
   const { t } = useLingui();
@@ -117,19 +112,14 @@ export function PeerMessagesOverlay({
             className="flex min-w-0 max-w-full items-center justify-self-center gap-2 rounded-full bg-muted px-4 py-2 text-body-sm font-medium"
             dir="auto"
           >
-            <BotAvatar avatarSet={botAvatarSet} color={botColor} identity={botId} size={20} />
+            <BotAvatar color={botColor} identity={botId} size={20} />
             <span className="truncate" style={{ color: botColor }}>
               {botName}
             </span>
             <span className="text-muted-foreground" aria-hidden="true">
               ⇄
             </span>
-            <BotAvatar
-              avatarSet={peerBotAvatarSet}
-              color={peerBotColor}
-              identity={peerBotId}
-              size={20}
-            />
+            <BotAvatar color={peerBotColor} identity={peerBotId} size={20} />
             <span className="truncate" style={{ color: peerBotColor }}>
               {peerBotName}
             </span>

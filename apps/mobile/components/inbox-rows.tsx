@@ -277,7 +277,6 @@ export const PinnedTiles = memo(function PinnedTiles({
             {chat.kind === "bot" ? (
               <BotAvatar
                 color={chat.bot.color || FALLBACK_COLOR}
-                avatarSet={chat.bot.avatarSet}
                 identity={chat.bot.id}
                 size={avatarSize}
                 status={chat.bot.status}
@@ -382,7 +381,6 @@ export function ChatSwipe({
           target.kind === "bot" ? (
             <BotAvatar
               color={target.chat.color || FALLBACK_COLOR}
-              avatarSet={target.chat.avatarSet}
               identity={target.chat.id}
               size={32}
             />
@@ -458,7 +456,6 @@ export const BotRow = memo(function BotRow({
         <AvatarRow id={bot.id}>
           <BotAvatar
             color={bot.color || FALLBACK_COLOR}
-            avatarSet={bot.avatarSet}
             identity={bot.id}
             size={INBOX_ROW.avatarSize}
             status={bot.status}

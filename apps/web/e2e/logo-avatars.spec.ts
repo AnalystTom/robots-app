@@ -33,8 +33,9 @@ test("renders the real logo in every requested pose in both themes", async ({ pa
         ),
       );
     expect(smallAnimations).toEqual([]);
-    await expect(page.locator(".robots-bot-avatar-picture img")).toBeVisible();
-    await expect(page.locator(".bot-character-eyes")).toBeVisible();
+    const robotPictures = page.locator(".robots-bot-avatar-picture img");
+    await expect(robotPictures).toHaveCount(2);
+    await expect(robotPictures.first()).toBeVisible();
     await captureScreenshot(page, testInfo, `logo-avatar-study-${theme}`);
   }
   expect(errors).toEqual([]);
@@ -796,26 +797,20 @@ test("seed colours persist through rerenders and reloads at actual avatar sizes"
 }, testInfo) => {
   for (const theme of ["light", "dark"]) {
     await page.goto(`/e2e/fixtures/logo-avatars.html?seeded=1&count=18&theme=${theme}`);
-    const avatars = page.getByTestId("seeded-fleet").locator(".robots-logo-avatar");
+    const fleet = page.getByTestId("seeded-fleet");
+    const avatars = fleet.locator(".robots-bot-avatar");
     await expect(avatars).toHaveCount(72);
-    const before = await avatars.evaluateAll((nodes) =>
-      nodes.map((node) => node.getAttribute("data-color")),
-    );
-    // Seeds pick from the shared palette, so 18 bots can share colours but never all one.
+    const colourLabels = fleet.locator("article > p.text-caption");
+    const before = await colourLabels.allTextContents();
+    expect(before).toHaveLength(18);
     for (const color of before) expect(BOT_COLORS).toContain(color);
     expect(new Set(before).size).toBeGreaterThan(1);
-    for (let index = 0; index < 18; index++)
-      expect(new Set(before.slice(index * 4, index * 4 + 4)).size).toBe(1);
     await page.getByRole("button", { name: "Rerender fleet" }).click();
     await expect(page.locator("main")).toHaveAttribute("data-renders", "1");
-    expect(
-      await avatars.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-color"))),
-    ).toEqual(before);
+    expect(await colourLabels.allTextContents()).toEqual(before);
     await page.reload();
     await expect(avatars).toHaveCount(72);
-    expect(
-      await avatars.evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-color"))),
-    ).toEqual(before);
+    expect(await colourLabels.allTextContents()).toEqual(before);
     await captureScreenshot(page, testInfo, `seeded-avatar-colours-${theme}`);
   }
 });

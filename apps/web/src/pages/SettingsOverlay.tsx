@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import type { BotAvatarSet, LabFeature, SpaceMemoryConfig, UsageSummary } from "@robots/contracts";
+import type { LabFeature, SpaceMemoryConfig, UsageSummary } from "@robots/contracts";
 import {
   Button,
   Dialog,
@@ -54,8 +54,6 @@ export function SettingsOverlay({
   onNameSaved,
   timezone,
   onTimezoneChange,
-  botAvatarSet,
-  onBotAvatarSetChange,
   onAccountImported,
   onImportAgent,
   labs,
@@ -90,8 +88,6 @@ export function SettingsOverlay({
   onNameSaved?: () => Promise<void>;
   timezone: string | null;
   onTimezoneChange: (timezone: string) => Promise<void>;
-  botAvatarSet?: BotAvatarSet;
-  onBotAvatarSetChange?: (set: BotAvatarSet) => Promise<void>;
   onAccountImported?: () => Promise<void>;
   onImportAgent?: () => void;
   labs: readonly LabFeature[];
@@ -400,8 +396,6 @@ export function SettingsOverlay({
                         onNameSaved={onNameSaved}
                         timezone={timezone}
                         onTimezoneChange={onTimezoneChange}
-                        botAvatarSet={botAvatarSet}
-                        onBotAvatarSetChange={onBotAvatarSetChange}
                         onAccountImported={onAccountImported}
                         onImportAgent={onImportAgent}
                       />

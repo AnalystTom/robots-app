@@ -1,6 +1,5 @@
 import type {
   Bot,
-  BotAvatarSet,
   LabFeature,
   Me,
   Space,
@@ -150,7 +149,7 @@ export function SettingsOverlays({
   peerConversation: { peerBotId: string; peerBotName: string } | null;
   setPeerConversation: (peer: null) => void;
   active: Bot | undefined;
-  peerBot: (botId: string) => { color: string; avatarSet?: BotAvatarSet } | undefined;
+  peerBot: (botId: string) => { color: string } | undefined;
 }) {
   const usageQuery = useQuery({ ...queries.usage.summary.queryOptions(), enabled: false });
   const usage: UsageSummary | null = usageQuery.data ?? null;
@@ -197,14 +196,6 @@ export function SettingsOverlays({
             const nextMe = await rpc.preferences.update({ timezone });
             setBootstrapMe((prev) => (prev ? { ...prev, timezone: nextMe.timezone } : nextMe));
           }}
-          botAvatarSet={bootstrapMe?.botAvatarSet}
-          onBotAvatarSetChange={async (botAvatarSet) => {
-            const nextMe = await rpc.preferences.update({ botAvatarSet });
-            setBootstrapMe((prev) =>
-              prev ? { ...prev, botAvatarSet: nextMe.botAvatarSet } : nextMe,
-            );
-            void refreshSpaces().catch(() => undefined);
-          }}
           labs={parseLabs(bootstrapMe?.labs)}
           labsAvailable={parseLabs(bootstrapMe?.labsAvailable)}
           onLabsChange={async (labs) => {
@@ -248,11 +239,9 @@ export function SettingsOverlays({
           botId={active.id}
           botName={active.name}
           botColor={active.color}
-          botAvatarSet={active.avatarSet}
           peerBotId={peerConversation.peerBotId}
           peerBotName={peerConversation.peerBotName}
           peerBotColor={peerBot(peerConversation.peerBotId)?.color ?? FALLBACK_BOT_COLOR}
-          peerBotAvatarSet={peerBot(peerConversation.peerBotId)?.avatarSet}
           onClose={() => setPeerConversation(null)}
         />
       ) : null}

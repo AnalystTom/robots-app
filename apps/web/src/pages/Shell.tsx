@@ -6,7 +6,6 @@ import type {
   ThreadMessage,
   VoiceStatus,
 } from "@robots/contracts";
-import { DEFAULT_NEW_BOT_AVATAR_SET } from "@robots/contracts";
 import {
   activeThreadRuns,
   answerableAskMessageIds,
@@ -249,7 +248,6 @@ function SpaceShell() {
       botId: bot.id,
       botName: bot.name,
       botColor: bot.color,
-      botAvatarSet: bot.avatarSet,
       transcribe: voiceStatus ? Boolean(voiceStatus.transcribe) : undefined,
     });
   };
@@ -677,7 +675,6 @@ function SpaceShell() {
     return {
       botId: run.botId,
       color: bot?.color ?? FALLBACK_BOT_COLOR,
-      avatarSet: bot?.avatarSet,
       name: bot?.name,
       status: run.status,
     };
@@ -1409,7 +1406,6 @@ function SpaceShell() {
           openSpaceSettings={openSpaceSettings}
           closeMobileSidebar={() => setMobileSidebarOpen(false)}
           createBot={createBot}
-          botAvatarSet={bootstrapMe?.botAvatarSet ?? DEFAULT_NEW_BOT_AVATAR_SET}
           discardChatAttachments={composer.discardThreadAttachments}
           clearOpenThread={() => {
             thread.resetHistory();

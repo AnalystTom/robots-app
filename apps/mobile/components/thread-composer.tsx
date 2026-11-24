@@ -880,7 +880,6 @@ function MentionOptionIcon({ mention }: { mention: ComposerMention }) {
     return (
       <BotAvatar
         color={mention.color ?? tokens.mutedForeground}
-        avatarSet={mention.avatarSet}
         identity={mention.id}
         size={MENTION_AVATAR_SIZE}
       />

@@ -1,4 +1,3 @@
-import type { BotAvatarSet } from "@robots/contracts";
 import { avatarPhotoDot } from "@robots/core";
 import { MAX_FONT_SCALE, typeScale } from "@robots/ui-tokens";
 import { useEffect, useState } from "react";
@@ -23,7 +22,6 @@ import { BotAvatar } from "./bot-avatar";
 export type ActivityMarkBot = {
   id: string;
   color: string;
-  avatarSet?: BotAvatarSet;
   status?: string;
   composing?: boolean;
 };
@@ -105,7 +103,6 @@ export function ActivityMark({
           ) : (
             <BotAvatar
               color={bot.color}
-              avatarSet={bot.avatarSet}
               identity={bot.id}
               size={MARK_SIZE}
               status={bot.status}

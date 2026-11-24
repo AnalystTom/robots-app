@@ -239,7 +239,6 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
           id: bot.id,
           name: bot.name,
           color: bot.color,
-          avatarSet: bot.avatarSet,
         })),
         groups: mentionGroups.map((group) => ({ id: group.id, name: group.name })),
         routines: mentionRoutines.map((routine) => ({
@@ -525,7 +524,6 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
             id: titleBot.id,
             name: titleBot.name,
             color: titleBot.color,
-            avatarSet: titleBot.avatarSet,
             status: currentBotStatus,
           },
         ]
@@ -534,7 +532,6 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
             id: bot.botId,
             name: bot.name,
             color: bot.color,
-            avatarSet: bot.avatarSet,
             status: bot.status,
           }))
         : [];
