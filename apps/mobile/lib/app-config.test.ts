@@ -105,18 +105,16 @@ describe("mobile app config", () => {
   });
 
   it.each([
-    "http://app.example.com",
-    "https://localhost:3100",
-    "https://192.168.1.20",
-    "https://[::1]",
-    "not a url",
-  ])("skips passkey domains for %s", (url) => {
+    ["http://app.example.com", undefined],
+    ["https://localhost:3100", updatesFor("https://localhost:3100")],
+    ["https://192.168.1.20", updatesFor("https://192.168.1.20")],
+    ["https://[::1]", updatesFor("https://[::1]")],
+    ["not a url", undefined],
+  ])("skips passkey domains for %s", (url, expectedUpdates) => {
     vi.stubEnv("EAS_BUILD_PROFILE", "development");
     vi.stubEnv("EXPO_PUBLIC_API_URL", url);
     vi.stubEnv("GOOGLE_SERVICES_JSON", undefined);
 
-    const result = appConfig(context(config));
-    expect(result.ios).toEqual(config.ios);
-    expect(result.extra).toEqual(config.extra);
+    expect(appConfig(context(config))).toEqual({ ...config, updates: expectedUpdates });
   });
 });
