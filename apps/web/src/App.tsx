@@ -31,7 +31,7 @@ import { markAfterPaint, markOnce } from "./lib/performance";
 import { lazyComponent } from "./lib/preload-recovery";
 import { QueryUserProvider, setQueryUser } from "./lib/query";
 import { remoteImagesPreference } from "./lib/remote-images-preference";
-import { rememberSignedIn } from "./lib/returning-user";
+import { hasSignedInBefore, rememberSignedIn } from "./lib/returning-user";
 import { rpc } from "./lib/rpc";
 import {
   holdAnonymousGate,
