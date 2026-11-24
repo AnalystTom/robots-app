@@ -16,6 +16,7 @@ loadRootEnv();
 
 if (!process.env.VERIFY_PROVIDERS) pinLocalSecretStore();
 
+const INTEGRATION_MAX_WORKERS = 4;
 const integration = process.argv.includes("--integration");
 const e2e = process.argv.includes("--e2e");
 const sandboxArg = process.argv.find((arg) => arg.startsWith("--sandbox="));
@@ -148,7 +149,14 @@ async function main() {
       // Files run in parallel, each on its own copy of the migrated database (pin-test-env.ts).
       await runProcess(
         "pnpm",
-        ["exec", "vitest", "run", ...(shard ? ["--shard", shard] : []), ...selected],
+        [
+          "exec",
+          "vitest",
+          "run",
+          `--maxWorkers=${INTEGRATION_MAX_WORKERS}`,
+          ...(shard ? ["--shard", shard] : []),
+          ...selected,
+        ],
         {
           ...process.env,
           COPY_TEST_DATABASE: "1",
