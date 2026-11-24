@@ -33,6 +33,10 @@ export const SESSIONLESS_ROUTES: Readonly<Record<string, string>> = {
   "GET /api/v1/pages/shared/:token": "public to anyone holding the page's share link",
   "GET /api/v1/integration-claims": "public: approved claims",
   "POST /api/v1/plugin-submissions": "public: anyone may submit a plugin, limited per address",
+  "GET /api/mobile-updates/manifest":
+    "public: the update bundle built for one platform and runtime, the same for every caller",
+  "GET /api/mobile-updates/assets/:platform/:runtime/:update/*":
+    "public: a bundle file addressed by its content hash, the same for every caller",
   "GET /api/v1/assets/mermaid.js": "public: a script that is the same for every caller",
   "GET /api/v1/assets/page-runtime.js": "public: a script that is the same for every caller",
   "GET /.well-known/apple-app-site-association":
