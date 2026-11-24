@@ -201,15 +201,7 @@ function SessionApp() {
         <div className="h-full" data-robots-app-state="ready">
           <Suspense fallback={<PageLoading />}>
             <Routes>
-              <Route
-                path="/"
-                element={
-                  <Navigate
-                    to={user ? "/app" : "/sign-in"}
-                    replace
-                  />
-                }
-              />
+              <Route path="/" element={<Navigate to={user ? "/app" : "/sign-in"} replace />} />
               {["/sign-in", "/sign-in/email"].map((path) => (
                 <Route
                   key={path}

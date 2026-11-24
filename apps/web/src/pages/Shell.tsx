@@ -6,7 +6,6 @@ import type {
   ThreadMessage,
   VoiceStatus,
 } from "@robots/contracts";
-import { DEFAULT_NEW_BOT_AVATAR_SET, hasLab } from "@robots/contracts";
 import {
   activeThreadRuns,
   answerableAskMessageIds,

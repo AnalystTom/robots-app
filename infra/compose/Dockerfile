@@ -44,8 +44,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lo
 
 FROM manifests AS build
 # Only what the image runs (api, worker, web, supervisor) and the root build tools, with
-# native binaries for this image's platform alone. Mobile, desktop and the marketing site
-# never run here.
+# native binaries for this image's platform alone. Mobile and desktop never run here.
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile \
   --store-dir=/pnpm/store --cpu=current --os=current \
   --filter=. --filter="@robots/api..." --filter="@robots/worker..." \
