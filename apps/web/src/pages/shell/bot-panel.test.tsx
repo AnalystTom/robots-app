@@ -103,7 +103,13 @@ vi.mock("@robots/ui-web", () => ({
   ),
 }));
 vi.mock("./avatar-studio-popover", () => ({
-  AvatarStudioPopover: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
+  AvatarStudioPopover: ({
+    value,
+    onChange,
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+  }) => (
     <button
       type="button"
       aria-label="Avatar color"

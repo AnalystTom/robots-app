@@ -1,6 +1,6 @@
 import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { DEFAULT_NEW_BOT_AVATAR_SET, INVITED_TRIAL_WEEKS } from "@robots/contracts";
+import { INVITED_TRIAL_WEEKS } from "@robots/contracts";
 import { INVITE_AVATAR_COLORS } from "@robots/core";
 import { typeScale } from "@robots/ui-tokens";
 import { useRouter } from "expo-router";
