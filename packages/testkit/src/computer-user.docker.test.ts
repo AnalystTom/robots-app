@@ -79,10 +79,13 @@ describe.skipIf(process.env.RUN_COMPUTER_REPLAY_DOCKER !== "1")(
           );
           expect(browser).toMatch(/Chrome|Chromium/);
         } finally {
-          execFileSync("docker", ["rm", "--force", name], { stdio: "pipe", timeout: 30_000 });
+          execFileSync("docker", ["rm", "--force", "--volumes", name], {
+            stdio: "pipe",
+            timeout: 90_000,
+          });
         }
       },
-      120_000,
+      240_000,
     );
   },
 );
