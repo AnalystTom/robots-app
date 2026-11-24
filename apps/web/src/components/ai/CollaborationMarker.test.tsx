@@ -19,7 +19,7 @@ describe("collaboration transcript markers", () => {
     expect(html).toContain('class="flex min-w-0 max-w-full justify-center"');
     expect(html).toContain('class="inline-flex max-w-full');
     expect(html).toContain("truncate font-medium");
-    expect(html).toContain("robots-organic-avatar");
+    expect(html).toContain("robots-bot-avatar-picture");
     expect(html).toContain("Message from Research");
     expect(html).not.toContain("{peer}");
     expect(html).not.toContain("peer-replies-toggle");
@@ -35,6 +35,6 @@ describe("collaboration transcript markers", () => {
 
     expect(html).toContain('role="status"');
     expect(html).toContain('data-working="true"');
-    expect(html).toContain("robots-organic-avatar-body-working");
+    expect(html).toContain("robots-bot-avatar-ring-working");
   });
 });
