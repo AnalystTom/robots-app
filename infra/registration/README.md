@@ -74,3 +74,12 @@ Both Chromium journeys passed in 32.6 seconds against the private preview and th
 | End the test subscription in Settings | Billing showed **Active** before cancellation. Ending the subscription brought back **Subscribe**, and the workspace API returned HTTP 402. |
 
 Verification covered Chromium on Linux and a repeat install on the existing Docker test stack. Live charges, monthly renewals, model execution and installation on a clean operating system were outside this run.
+
+## Test a Stripe-hosted checkout
+
+The `stripe-test` profile runs a separate database and Docker project on localhost port 5195. The public website continues to offer the hosted waitlist. The sandbox uses the application's Checkout, billing portal, signed webhook and account access checks.
+
+1. In your Stripe sandbox, create a recurring **US$20 per month** price for one hosted workspace. Enable the customer portal for that sandbox and allow cancellations.
+2. Forward sandbox events with Stripe CLI using `stripe listen --forward-to http://localhost:5195/api/v1/billing/webhook`. Use that listener's signing secret for this run.
+3. Inject the sandbox key, signing secret and price ID as `ROBOTS_STRIPE_TEST_SECRET_KEY`, `ROBOTS_STRIPE_TEST_WEBHOOK_SECRET` and `ROBOTS_STRIPE_TEST_PRICE_ID`. Run `bash infra/registration/start-preview.sh stripe-test`. The API checks the price and currency with Stripe before accepting traffic.
+4. Open [private test registration](http://localhost:5195/api/registration), create a test account, choose Subscribe, and complete Stripe Checkout with a sandbox card. Check workspace access, cancellation in the sandbox customer portal, and loss of access when the paid period ends.

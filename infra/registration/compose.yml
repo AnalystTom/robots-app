@@ -1,13 +1,13 @@
 name: robots-registration-preview
 x-runtime: &runtime
-  DATABASE_URL: postgres://robots_app:${PREVIEW_RUNTIME_PASSWORD:?}@registration-db:5432/registration_preview
+  DATABASE_URL: postgres://robots_app:${PREVIEW_RUNTIME_PASSWORD:?}@registration-db:5432/${PREVIEW_DATABASE:-registration_preview}
   DATA_DIR: /data
   ENCRYPTION_KEY: ${PREVIEW_ENCRYPTION_KEY:?}
   BETTER_AUTH_SECRET: ${PREVIEW_AUTH_SECRET:?}
   SCREEN_PROXY_SECRET: ${PREVIEW_SCREEN_SECRET:?}
-  BETTER_AUTH_URL: http://localhost:5194
-  WEB_ORIGIN: http://localhost:5194
-  API_URL: http://localhost:5194
+  BETTER_AUTH_URL: http://localhost:${PREVIEW_PORT:-5194}
+  WEB_ORIGIN: http://localhost:${PREVIEW_PORT:-5194}
+  API_URL: http://localhost:${PREVIEW_PORT:-5194}
   SANDBOX_PROVIDER: none
   WAKEUP_DRIVER: graphile
   AGENT_RUNTIME: pi
@@ -19,20 +19,20 @@ services:
     image: robots-registration/postgres:16
     environment:
       POSTGRES_USER: preview
-      POSTGRES_DB: registration_preview
+      POSTGRES_DB: ${PREVIEW_DATABASE:-registration_preview}
       POSTGRES_PASSWORD: ${PREVIEW_DB_PASSWORD:?}
     volumes:
       - db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "preview", "-d", "registration_preview"]
+      test: ["CMD", "pg_isready", "-U", "preview", "-d", "${PREVIEW_DATABASE:-registration_preview}"]
       interval: 2s
       timeout: 3s
       retries: 30
   migrate:
     image: robots-registration/app:local
     environment:
-      DATABASE_URL: postgres://robots_app:${PREVIEW_RUNTIME_PASSWORD:?}@registration-db:5432/registration_preview
-      DATABASE_MIGRATION_URL: postgres://preview:${PREVIEW_DB_PASSWORD:?}@registration-db:5432/registration_preview
+      DATABASE_URL: postgres://robots_app:${PREVIEW_RUNTIME_PASSWORD:?}@registration-db:5432/${PREVIEW_DATABASE:-registration_preview}
+      DATABASE_MIGRATION_URL: postgres://preview:${PREVIEW_DB_PASSWORD:?}@registration-db:5432/${PREVIEW_DATABASE:-registration_preview}
     working_dir: /app/apps/api
     command: ["node", "dist/cli/migrate-database.js"]
     depends_on:
@@ -43,7 +43,10 @@ services:
     environment:
       <<: *runtime
       API_HOST: 0.0.0.0
-      ROBOTS_REGISTRATION_MODE: private-test
+      ROBOTS_REGISTRATION_MODE: ${PREVIEW_BILLING_MODE:-private-test}
+      STRIPE_SECRET_KEY: ${PREVIEW_STRIPE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${PREVIEW_STRIPE_WEBHOOK:-}
+      STRIPE_PRICE_ID: ${PREVIEW_STRIPE_PRICE:-}
     command: ["node", "/app/apps/api/dist/registration-preview/serve.js"]
     volumes:
       - appdata:/data
@@ -81,7 +84,7 @@ services:
       RAYON_NUM_THREADS: "4"
       SCREEN_PROXY_SECRET: ${PREVIEW_SCREEN_SECRET:?}
     ports:
-      - "127.0.0.1:5194:5173"
+      - "127.0.0.1:${PREVIEW_PORT:-5194}:5173"
     depends_on:
       api:
         condition: service_healthy

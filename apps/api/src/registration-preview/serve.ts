@@ -2,30 +2,44 @@ import { createReadStream, statSync } from "node:fs";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { serve } from "@hono/node-server";
+import { createWorkspaceTestBilling } from "@robots/adapters/workspace-test-billing";
 import { organizationForMember, runAsTenant } from "@robots/db";
 import { createApp } from "../app.js";
+import { BILLING_WEBHOOK_PATH } from "../billing-webhook.js";
 import { loadEnv } from "../env.js";
 import { checkoutPage, localArchive, localPage, registrationPath, setupPage } from "./pages.js";
-import { RegistrationTestBilling } from "./provider.js";
+import { hostingPrice, RegistrationTestBilling } from "./provider.js";
 
 const env = loadEnv();
-const origin = "http://localhost:5194";
+const mode = process.env.ROBOTS_REGISTRATION_MODE;
+const sandbox = mode === "stripe-test";
+const origin = sandbox ? "http://localhost:5195" : "http://localhost:5194";
 const database = new URL(env.databaseUrl);
 if (
-  process.env.ROBOTS_REGISTRATION_MODE !== "private-test" ||
+  (!sandbox && mode !== "private-test") ||
   env.webOrigin !== origin ||
   env.authUrl !== origin ||
   database.hostname !== "registration-db" ||
-  database.pathname !== "/registration_preview" ||
-  env.stripeSecretKey ||
-  env.stripeWebhookSecret ||
-  env.stripePriceId
+  database.pathname !== (sandbox ? "/registration_stripe" : "/registration_preview") ||
+  (!sandbox && (env.stripeSecretKey || env.stripeWebhookSecret || env.stripePriceId))
 ) {
-  throw new Error("Registration requires the isolated private-test stack");
+  throw new Error("Registration requires its isolated test stack");
 }
 const archive = join("/downloads", localArchive);
 const bytes = statSync(archive).size;
-const provider = new RegistrationTestBilling(join(env.dataDir, "test-payments.sqlite"), origin);
+const simulator = sandbox
+  ? undefined
+  : new RegistrationTestBilling(join(env.dataDir, "test-payments.sqlite"), origin);
+const provider =
+  simulator ??
+  (await createWorkspaceTestBilling(
+    {
+      secretKey: env.stripeSecretKey ?? "",
+      webhookSecret: env.stripeWebhookSecret ?? "",
+      priceId: env.stripePriceId,
+    },
+    hostingPrice,
+  ));
 const { app, prisma, stop } = await createApp({ ...env, billing: provider });
 const accountRoutes = new Set([
   "/api/auth/capabilities",
@@ -52,7 +66,7 @@ function rpc(request: Request, path: string) {
   return app.request(`/rpc/${path}`, { method: "POST", headers, body: '{"json":{}}' });
 }
 
-async function checkout(request: Request, token: string) {
+async function checkout(request: Request, token: string, provider: RegistrationTestBilling) {
   if (request.method !== "GET" && request.method !== "POST")
     return new Response(null, { status: 405 });
   if (request.method === "POST" && request.headers.get("origin") !== origin)
@@ -84,7 +98,7 @@ async function checkout(request: Request, token: string) {
 
 async function handle(request: Request) {
   const { pathname } = new URL(request.url);
-  if (pathname === registrationPath && request.method === "GET") return setupPage();
+  if (pathname === registrationPath && request.method === "GET") return setupPage(sandbox);
   if (pathname === `${registrationPath}/local` && request.method === "GET") return localPage();
   if (
     pathname === `${registrationPath}/${localArchive}` &&
@@ -104,7 +118,9 @@ async function handle(request: Request) {
     );
   }
   const token = /^\/api\/registration\/checkout\/([a-f0-9-]{36})$/.exec(pathname)?.[1];
-  if (token) return checkout(request, token);
+  if (token && simulator) return checkout(request, token, simulator);
+  if (sandbox && pathname === BILLING_WEBHOOK_PATH && request.method === "POST")
+    return app.fetch(request);
   if (accountRoutes.has(pathname)) return app.fetch(request);
   const status = await rpc(request, "billing/status");
   if (!status.ok) return status;
@@ -117,6 +133,6 @@ const server = serve({ hostname: env.apiHost, port: env.port, fetch: handle });
 process.once("SIGTERM", () =>
   server.close(async () => {
     await stop();
-    provider.close();
+    simulator?.close();
   }),
 );

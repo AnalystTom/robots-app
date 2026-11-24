@@ -56,7 +56,7 @@ function page(title: string, content: string) {
   );
 }
 
-export const setupPage = () =>
+export const setupPage = (sandbox: boolean) =>
   page(
     "Choose your setup",
     `<section>
@@ -66,7 +66,7 @@ export const setupPage = () =>
     </section>
     <section>
       <div class="row"><h2>Hosted workspace</h2><strong>US${price} / month</strong></div>
-      <p>Use your own model account. Checkout is simulated during private testing.</p>
+      <p>Use your own model account. ${sandbox ? "Use a test card at checkout." : "Checkout is simulated during private testing."}</p>
       <a href="/sign-up">Create a hosted account</a>
     </section>
     <footer>Already registered? <a href="/sign-in">Sign in</a></footer>`,
