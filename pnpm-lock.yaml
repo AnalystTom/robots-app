@@ -321,12 +321,6 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@robots/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@robots/logging':
-        specifier: workspace:*
-        version: link:../../packages/logging
       '@sentry/electron':
         specifier: 8.3.0
         version: 8.3.0(@babel/core@7.29.13(supports-color@8.1.1))
@@ -337,15 +331,24 @@ importers:
         specifier: 3.3.7
         version: 3.3.7
     devDependencies:
+      '@electron/asar':
+        specifier: 3.4.1
+        version: 3.4.1
       '@playwright/test':
         specifier: 1.64.1
         version: 1.64.1
       '@robots/adapters':
         specifier: workspace:*
         version: link:../../packages/adapters
+      '@robots/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@robots/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@robots/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@robots/ui-tokens':
         specifier: workspace:*
         version: link:../../packages/ui-tokens
