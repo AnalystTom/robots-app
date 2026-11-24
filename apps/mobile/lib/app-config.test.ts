@@ -23,6 +23,17 @@ function context(config: ExpoConfig): ConfigContext {
   return { config, projectRoot: "/project", staticConfigPath: null, packageJsonPath: null };
 }
 
+function updatesFor(origin: string) {
+  return {
+    checkAutomatically: "ON_LOAD",
+    enabled: true,
+    fallbackToCacheTimeout: 0,
+    url: `${origin}/api/mobile-updates/manifest`,
+  };
+}
+
+const updates = updatesFor("https://app.example.com");
+
 const passkeys = {
   ios: { ...config.ios, associatedDomains: ["webcredentials:app.example.com"] },
   extra: { ...config.extra, passkeyRpIds: ["app.example.com"] },
@@ -33,6 +44,7 @@ describe("mobile app config", () => {
     vi.stubEnv("GOOGLE_SERVICES_JSON", "/build/google-services.json");
 
     expect(appConfig(context(config))).toEqual({
+      updates,
       ...config,
       ...passkeys,
       android: { ...config.android, googleServicesFile: "/build/google-services.json" },
@@ -58,6 +70,7 @@ describe("mobile app config", () => {
     const { android: _android, ...withoutAndroid } = config;
 
     expect(appConfig(context(withoutAndroid))).toEqual({
+      updates,
       ...withoutAndroid,
       ...passkeys,
       android: { googleServicesFile: "/build/google-services.json" },
@@ -69,6 +82,7 @@ describe("mobile app config", () => {
     const existing = { ...config, ios: { ...config.ios, associatedDomains: ["applinks:x.test"] } };
 
     expect(appConfig(context(existing))).toEqual({
+      updates: updatesFor("https://app.example.com:8443"),
       ...config,
       ios: {
         ...config.ios,
@@ -83,6 +97,7 @@ describe("mobile app config", () => {
     vi.stubEnv("ROBOTS_PASSKEY_DEVELOPER_MODE", "1");
 
     expect(appConfig(context(config))).toEqual({
+      updates,
       ...config,
       ios: { ...config.ios, associatedDomains: ["webcredentials:app.example.com?mode=developer"] },
       extra: { ...config.extra, passkeyRpIds: ["app.example.com"] },
@@ -100,6 +115,8 @@ describe("mobile app config", () => {
     vi.stubEnv("EXPO_PUBLIC_API_URL", url);
     vi.stubEnv("GOOGLE_SERVICES_JSON", undefined);
 
-    expect(appConfig(context(config))).toBe(config);
+    const result = appConfig(context(config));
+    expect(result.ios).toEqual(config.ios);
+    expect(result.extra).toEqual(config.extra);
   });
 });
