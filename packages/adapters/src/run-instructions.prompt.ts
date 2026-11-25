@@ -7,7 +7,6 @@ import type { UserComputerState } from "./run-tools-user-computer.js";
 import { SCHEDULE_TOOL_NAMES } from "./schedule-tools.js";
 import { DESKTOP_HELD_FOR_TAKEOVER_MESSAGE } from "./takeover-resume.prompt.js";
 
-/** Added to the turn prompt when the user spoke this message on a live voice call. */
 const VOICE_CALL_BASE_INSTRUCTION =
   "You are on a live voice call. Reply in one to three short spoken sentences. No markdown, lists, links, or option cards; do not use ask_user unless you truly cannot proceed. Answer directly from what you already know when you can; use tools or subagents only when the answer requires them.";
 
@@ -19,14 +18,12 @@ export function voiceCallInstruction(disabled?: ReadonlySet<string>): string {
     : VOICE_CALL_BASE_INSTRUCTION;
 }
 
-/** Opens the computer guidance on every run that has a computer. */
 export const COMPUTER_USE_INSTRUCTION =
   "Use the computer only when the task needs files, commands, a browser, or an installed application. Answer directly from the conversation when sufficient; use connected tools for app data. A website with no connected app is still yours to use in the computer's browser, now and in scheduled routines, so a missing connection alone is never a reason to decline. Do not inspect the computer just to prepare for an unrelated task. If what you are about to buy, send or submit differs from what the user confirmed, such as a changed item or total, show the difference and confirm again first.";
 
 export const PRIVATE_WORKSPACE_INSTRUCTION =
   "This entire computer workspace is your private home. Relative file paths and shell working directories start at its root.";
 
-/** Where commands run when the computer is a host with its own shell rather than a sandbox. */
 export function hostComputerInstruction(
   computerKind: string | undefined,
   host: { home: unknown; shell: unknown; platform: string },
@@ -37,7 +34,6 @@ export function hostComputerInstruction(
     : `Commands run on the user's ${host.platform} computer with their account permissions. ${shell} Local files outside the bot workspace can be accessed through commands. App launching is available through OS commands; graphical screen control is unavailable.`;
 }
 
-/** Cap the roster so a large Space cannot flood the prompt. */
 export const BOT_DIRECTORY_LIMIT = 40;
 
 const GRAPHICAL_COMPUTER_INSTRUCTION =
@@ -148,8 +144,6 @@ export function dockerComputerToolInstruction(
   const parts = [
     "For Python CLI tools, use `uv tool install <package>`; it installs without sudo and keeps tools under this computer's persistent home. GitHub's `gh` CLI is installed. `pdftotext`, `pandoc`, and `openpyxl` are available to extract text from PDFs, documents, and spreadsheets.",
   ];
-  // Tool selection can drop shell (creation intro, background helpers) while bot
-  // settings leave it enabled, so the shell guidance follows the tools the run offers.
   const shellOffered = offeredToolNames
     ? offeredToolNames.has("shell")
     : builtinOffered(disabled, "shell");
@@ -241,7 +235,6 @@ function secretGuidance(disabled?: ReadonlySet<string>): string[] {
   } else if (uses.length > 0) {
     clauses.push(`Use ${englishList(uses)}.`);
   }
-  // Shell can still take a pasted credential after every secret tool is off.
   if (clauses.length > 0 || builtinOffered(disabled, "shell")) {
     clauses.push("Never ask for a raw credential in chat or inject it into shell commands.");
   }
@@ -261,11 +254,6 @@ function scratchpadClause(disabled?: ReadonlySet<string>): string | undefined {
   return `Use ${pads.join(" / ")} for open work that should outlive this turn${reminder}.`;
 }
 
-/**
- * Open loops get one follow-up the bot sets itself. The follow-up runs as a routine, which
- * cannot see the chat, so the scratchpad item is what tells it whether the loop has closed;
- * the item keeps the routine's id so closing the loop cancels it and a later turn sees it.
- */
 const FOLLOW_UP_INSTRUCTION =
   "Do not wait to be asked about open loops. When something is left open until a known time, you may schedule_create one one-shot follow-up for then that checks the scratchpad item and stays silent if it is done, and record the follow-up's routineId in that item's notes. When the item is resolved, complete it and schedule_cancel its follow-up. Never follow up on something the user declined.";
 
@@ -275,7 +263,6 @@ function spawnBotClause(disabled?: ReadonlySet<string>): string | undefined {
   return `spawn_bot creates a lasting regular bot (own chat, computer, memory) that appears in the user's bot list. If the user asked to create a bot, call spawn_bot once and stop.${demo}`;
 }
 
-/** The fleet rules, naming only the tools the run was offered; none without a write tool. */
 function fleetClause(offered: readonly string[] | undefined): string | undefined {
   const names = new Set(offered);
   if (!FLEET_WRITE_TOOL_NAMES.some((name) => names.has(name))) return undefined;
@@ -342,7 +329,6 @@ function toolUsageLine(parts: {
   return `${parts.computerInstruction} ${clauses.join(" ")}`;
 }
 
-// Ordering matters: stable blocks first, volatile ones last, so the prefix stays cacheable.
 export function userTurnInstructions(parts: {
   botInstructions: string;
   groupContext: string | undefined;
@@ -363,11 +349,8 @@ export function userTurnInstructions(parts: {
   taughtSkillsLine: string | undefined;
   replyGuidance: string;
   disabledBuiltinTools?: ReadonlySet<string>;
-  /** The fleet tools the run was offered (see offeredFleetTools). */
   offeredFleetTools?: readonly string[];
-  /** The run can set its own follow-ups (see followUpsOffered). */
   followUpsOffered?: boolean;
-  /** Whether this turn may start a background helper (only in the bot's own app chat). */
   backgroundHelpersAllowed?: boolean;
   userComputer?: UserComputerState;
   macApps?: boolean;
@@ -462,15 +445,12 @@ export function threadContextForRun<T extends { id?: string; role: string }>(
   messagingChannelRun: boolean,
   sourceMessageId?: string | null,
 ) {
-  // The current reaction is supplied with its target in the prompt, once.
   if (trigger === "reaction" && sourceMessageId) {
     context = {
       ...context,
       messages: context.messages.filter((message) => message.id !== sourceMessageId),
     };
   }
-  // Routine runs stay isolated from thread history. The creation intro does
-  // too: a message that arrives during it waits and is answered afterward.
   if (!runReadsThreadHistory(trigger)) {
     return {
       messages: [] as T[],
@@ -484,7 +464,6 @@ export function threadContextForRun<T extends { id?: string; role: string }>(
     : { ...context, includeSemanticRecall: true };
 }
 
-/** The bot's own address, which it may give out, and the inbox tools this run has. */
 export function botEmailInstruction(
   address: string,
   tools: { read: boolean; send: boolean; delete: boolean },
@@ -499,7 +478,6 @@ export function botEmailInstruction(
     .join(" ");
 }
 
-/** Profile fields the creation intro is asked to explain. Other runs keep the prior identity line. */
 export function runIdentityInstruction(
   bot: {
     name: string;

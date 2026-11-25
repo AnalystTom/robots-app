@@ -36,7 +36,6 @@ export function primaryBotCreateInput(name: string): CreateBotInput {
   };
 }
 
-/** RoBot pinned at the top of the sidebar, or a button to set it up. In the rail it is a tile. */
 export function PrimaryBotRow({
   bot,
   current,
@@ -50,7 +49,6 @@ export function PrimaryBotRow({
   current: boolean;
   mini: boolean;
   creating: boolean;
-  /** The ⌘-number that opens it, shown in the rail while the modifier is held. */
   shortcut?: string;
   onOpen: (bot: Bot) => void;
   onSetUp: () => void;
@@ -132,7 +130,6 @@ export function PrimaryBotRow({
   );
 }
 
-/** A "⌘2"-style badge on a rail item; visible only while the shortcut modifier is held. */
 export function ShortcutHint({
   label,
   className = "-end-2 -top-2",
