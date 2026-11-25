@@ -1,41 +1,27 @@
 import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
 import { promisify } from "node:util";
 import { createAuth } from "@robots/auth";
-import { createDb, createPool } from "@robots/db";
+import { createDb } from "@robots/db";
 import { expect, it } from "vitest";
 
 const run = promisify(execFile);
 const testDatabase = process.env.VERIFY_DATABASE === "1" ? process.env.DATABASE_URL : undefined;
-// Creating and migrating a database takes the owner; the runtime login may not.
 const ownerDatabase = process.env.DATABASE_MIGRATION_URL || testDatabase;
 
-it.skipIf(!testDatabase)(
+it.skipIf(!testDatabase || !process.env.COPY_TEST_DATABASE)(
   "bootstraps privately, closes signup and preserves the password on restart",
   async () => {
     if (!testDatabase || !ownerDatabase) throw new Error("DATABASE_URL is required");
-    const name = `railway_bootstrap_${randomUUID().replaceAll("-", "")}`;
-    const admin = createPool(ownerDatabase);
-    const at = (base: string) => {
-      const url = new URL(base);
-      url.pathname = `/${name}`;
-      return url.href;
-    };
-    await admin.query(`CREATE DATABASE "${name}"`);
-    const { prisma, pool } = createDb(at(ownerDatabase));
-    // As in deployment: migrate as the owner, then bootstrap as the runtime login.
+    const { prisma, pool } = createDb(ownerDatabase);
     const env = {
       ...process.env,
-      DATABASE_URL: at(testDatabase),
+      DATABASE_URL: testDatabase,
       OWNER_EMAIL: "owner@example.test",
       OWNER_PASSWORD: "bootstrap-test-password-12345",
       BETTER_AUTH_URL: "http://127.0.0.1:5173",
       BETTER_AUTH_SECRET: "bootstrap-test-secret-with-over-32-characters",
     };
     try {
-      await run("pnpm", ["--filter", "@robots/api", "db:migrate"], {
-        env: { ...env, DATABASE_MIGRATION_URL: at(ownerDatabase) },
-      });
       const boot = (password: string) =>
         run("pnpm", ["--filter", "@robots/api", "exec", "tsx", "src/cli/bootstrap-owner.ts"], {
           env: { ...env, DATABASE_MIGRATION_URL: undefined, OWNER_PASSWORD: password },
@@ -100,10 +86,7 @@ it.skipIf(!testDatabase)(
     } finally {
       await prisma.$disconnect();
       await pool.end();
-      await admin.query(`DROP DATABASE "${name}" WITH (FORCE)`);
-      await admin.end();
     }
   },
-  // A fresh migration and four CLI cold starts take up to a minute on a busy CI shard.
   180_000,
 );

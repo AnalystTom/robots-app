@@ -78,11 +78,12 @@ describe("selectable bot icon sets", () => {
     await render("#10B981");
     await click("Customize bot avatar");
     expect(button("Original").getAttribute("aria-selected")).toBe("true");
-    expect(document.querySelector(".robots-organic-avatar")).not.toBeNull();
+    expect(document.querySelector(".robots-organic-avatar")).toBeNull();
+    expect(document.querySelector(".robots-bot-avatar-picture img")).not.toBeNull();
     expect(changed).not.toHaveBeenCalled();
     await click("RoBots");
     expect(changed).not.toHaveBeenCalled();
-    expect(document.querySelector(".robots-logo-avatar")).not.toBeNull();
+    expect(document.querySelector(".robots-bot-avatar-picture img")).not.toBeNull();
     await click("Color #00C972");
     expect(changed).toHaveBeenLastCalledWith("#00C972", "robots");
     await render("#00C972", "robots", "reload");

@@ -19,7 +19,7 @@ msgstr "（未读）"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "(No subject)"
-msgstr ""
+msgstr "(无主题)"
 
 #. placeholder {0}: servers.length
 #: apps/web/src/pages/plugins/manage-view.tsx
@@ -202,7 +202,7 @@ msgstr "今天已花费 {amount}"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "{at} by {by}"
-msgstr ""
+msgstr "{by} 于 {at}"
 
 #: apps/mobile/lib/thread-voice.ts
 msgid "{bot} here."
@@ -724,7 +724,7 @@ msgstr "{vcpus} vCPU、{memoryGb} GB、每月 {hours} 小时电脑时长"
 
 #: apps/web/src/pages/workspace/DocsPage.tsx
 msgid "{when} by {editor}"
-msgstr ""
+msgstr "{editor} 于 {when}"
 
 #. placeholder {0}: mention.name
 #: apps/web/src/pages/shell/composer-parts.tsx
@@ -890,7 +890,7 @@ msgstr "什么都做一点"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "A chat app"
-msgstr ""
+msgstr "聊天应用"
 
 #: apps/web/src/pages/routine-editor/trigger-cards.tsx
 msgid "A command's output"
@@ -898,12 +898,12 @@ msgstr "命令的输出"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "A doc with that name already exists."
-msgstr ""
+msgstr "已存在同名文档。"
 
 #: apps/mobile/app/(settings)/labs.tsx
 #: apps/web/src/pages/LabsSettingsPanel.tsx
 msgid "A kanban board of tasks your bots can work on"
-msgstr ""
+msgstr "可供你的 Bot 处理任务的看板"
 
 #: apps/mobile/components/approval-settings-rows.tsx
 #: apps/web/src/components/ApprovalRulesSettings.tsx
@@ -912,7 +912,7 @@ msgstr "由模型批准常规操作，其余操作会询问你。"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "A routine"
-msgstr ""
+msgstr "例行任务"
 
 #: apps/mobile/app/(settings)/model-connection.tsx
 msgid "A sign-in page opened — enter this code there:"
@@ -930,7 +930,7 @@ msgstr "订阅凭据已安全存储。"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "A webhook"
-msgstr ""
+msgstr "Webhook"
 
 #: apps/mobile/lib/bot-template-copy.ts
 #: apps/web/src/components/bot-templates/bot-template-copy.ts
@@ -950,7 +950,7 @@ msgstr "关于{label}"
 #. placeholder {1}: message.id
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "About the email \"{0}\" (id {1}):"
-msgstr ""
+msgstr "关于邮件“{0}”(ID {1}):"
 
 #: apps/web/src/components/ComputerProviderSettings.tsx
 msgid "Access key ID"
@@ -998,15 +998,15 @@ msgstr "账户"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Action"
-msgstr ""
+msgstr "操作"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Action name"
-msgstr ""
+msgstr "操作名称"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Action to test"
-msgstr ""
+msgstr "要测试的操作"
 
 #. placeholder {0}: bot.name
 #. placeholder {0}: group.spaceName
@@ -1511,7 +1511,7 @@ msgstr "集成工具"
 
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Analyst"
-msgstr ""
+msgstr "分析师"
 
 #. js-lingui-explicit-id
 #: packages/i18n/src/vault.ts
@@ -1534,7 +1534,7 @@ msgstr "其他助手"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Another bot"
-msgstr ""
+msgstr "另一个 Bot"
 
 #: apps/mobile/components/IncomingCall.tsx
 #: apps/mobile/lib/incoming-calls.ts
@@ -1559,7 +1559,7 @@ msgstr "已回答：{answer}"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Antenna"
-msgstr ""
+msgstr "天线"
 
 #: apps/web/src/pages/onboarding/use-onboarding-model.ts
 msgid "Anthropic API"
@@ -1573,7 +1573,7 @@ msgstr "Anthropic Messages"
 #. placeholder {0}: rule.matchValue
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Any {0} action"
-msgstr ""
+msgstr "任意 {0} 操作"
 
 #: apps/web/src/pages/Paywall.tsx
 msgid "Any model, with your own key"
@@ -1581,7 +1581,7 @@ msgstr "任意模型，使用你自己的密钥"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Anyone"
-msgstr ""
+msgstr "任何人"
 
 #: apps/mobile/components/routine-email-trigger.tsx
 msgid "Anyone at @{domain}"
@@ -1641,11 +1641,11 @@ msgstr "API URL"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "App"
-msgstr ""
+msgstr "应用"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "App name"
-msgstr ""
+msgstr "应用名称"
 
 #: apps/mobile/app/(settings)/general.tsx
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
@@ -1753,11 +1753,11 @@ msgstr "询问"
 #. placeholder {0}: mailbox.botName
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Ask {0}"
-msgstr ""
+msgstr "询问 {0}"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Ask a bot"
-msgstr ""
+msgstr "询问 Bot"
 
 #. js-lingui-explicit-id
 #: packages/i18n/src/vault.ts
@@ -1786,7 +1786,7 @@ msgstr "休眠中"
 
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Assistant"
-msgstr ""
+msgstr "助手"
 
 #. placeholder {0}: preset.time
 #: apps/web/src/lib/cron.ts
@@ -1896,7 +1896,7 @@ msgstr "头像工作室"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Aviators"
-msgstr ""
+msgstr "飞行员墨镜"
 
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/mobile/app/new-group.tsx
@@ -1934,11 +1934,11 @@ msgstr "返回聊天"
 
 #: apps/web/src/pages/workspace/WorkspaceLayout.tsx
 msgid "Back to chats"
-msgstr ""
+msgstr "返回聊天"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Back to docs"
-msgstr ""
+msgstr "返回文档"
 
 #: apps/mobile/app/sign-in.tsx
 #: apps/web/src/pages/Auth.tsx
@@ -1947,7 +1947,7 @@ msgstr "返回登录"
 
 #: apps/web/src/pages/workspace/DocsPage.tsx
 msgid "Background files"
-msgstr ""
+msgstr "后台文件"
 
 #: apps/web/src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Base URL"
@@ -2013,7 +2013,7 @@ msgstr "已阻塞"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Blue"
-msgstr ""
+msgstr "蓝色"
 
 #: apps/mobile/app/_layout.tsx
 #: apps/mobile/app/(settings)/account.tsx
@@ -2122,7 +2122,7 @@ msgstr "在你更改每条导入登录信息的 Bot 设置之前，Bot 都可以
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Bots get their own addresses once the server's admin turns on email."
-msgstr ""
+msgstr "服务器管理员开启邮件后,Bot 将获得各自的地址。"
 
 #: apps/web/src/components/SharedSpaceRules.tsx
 msgid "Bots use the accounts of whoever messages them"
@@ -2130,7 +2130,7 @@ msgstr "Bot 使用给它发消息的人的账号"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Bots will no longer see it."
-msgstr ""
+msgstr "Bot 将不再看到它。"
 
 #: apps/mobile/app/paywall.tsx
 msgid "Bots with their own computer"
@@ -2160,7 +2160,7 @@ msgstr "浏览 MCP 服务器"
 
 #: apps/web/src/pages/shell/avatar-studio-popover.tsx
 msgid "Build a robot, choose another style, or upload an image"
-msgstr ""
+msgstr "创建机器人、选择其他风格或上传图片"
 
 #: apps/web/src/pages/KnowledgeSection.tsx
 #: apps/web/src/pages/shell/agent-import-plan.tsx
@@ -2347,7 +2347,7 @@ msgstr "已取消的试用没有电脑时长。"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Cape"
-msgstr ""
+msgstr "披风"
 
 #: apps/mobile/lib/secret-destination.ts
 #: apps/mobile/lib/vault.ts
@@ -2377,7 +2377,7 @@ msgstr "类别"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Cc"
-msgstr ""
+msgstr "抄送"
 
 #: apps/web/src/pages/ModelRoleSettings.tsx
 msgid "Change {name}"
@@ -2413,7 +2413,7 @@ msgstr "正在修改…"
 
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Character"
-msgstr ""
+msgstr "角色"
 
 #: apps/web/src/pages/shell/message-cards.tsx
 msgid "Chart failed to render: {error}"
@@ -2525,19 +2525,19 @@ msgstr "正在检查…"
 
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Chef"
-msgstr ""
+msgstr "厨师"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Chef's hat"
-msgstr ""
+msgstr "厨师帽"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Chef's jacket"
-msgstr ""
+msgstr "厨师服"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Choose a message to read it."
-msgstr ""
+msgstr "选择一封邮件阅读。"
 
 #: apps/mobile/app/(settings)/models.tsx
 #: apps/web/src/pages/ModelSettingsOverlay.tsx
@@ -2766,7 +2766,7 @@ msgstr "验证码"
 
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Coder"
-msgstr ""
+msgstr "程序员"
 
 #. placeholder {0}: headerName(group)
 #: apps/web/src/pages/shell/sidebar-roster.tsx
@@ -2792,7 +2792,7 @@ msgstr "颜色 {number}"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Colour"
-msgstr ""
+msgstr "颜色"
 
 #: apps/web/src/components/markdown-copy.tsx
 msgid "column {index}"
@@ -2917,7 +2917,7 @@ msgstr "此服务器未开启电脑。"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Confetti"
-msgstr ""
+msgstr "彩纸"
 
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/web/src/pages/plugins/plugin-browse.tsx
@@ -3034,7 +3034,7 @@ msgstr "连接 OAuth"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Connect this computer to your private network first."
-msgstr ""
+msgstr "请先将这台电脑连接到你的专用网络。"
 
 #: apps/web/src/lib/agent-import-errors.ts
 msgid "Connect this model's provider first."
@@ -3150,7 +3150,7 @@ msgstr "包含零宽字符"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Content"
-msgstr ""
+msgstr "内容"
 
 #: apps/mobile/app/(settings)/model-settings.tsx
 #: apps/web/src/pages/model-settings/model-settings-panel.tsx
@@ -3347,7 +3347,7 @@ msgstr "无法切换语言"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Could not change network access."
-msgstr ""
+msgstr "无法更改网络访问权限。"
 
 #: apps/mobile/app/(settings)/change-password.tsx
 #: apps/mobile/lib/api-auth.ts
@@ -3782,7 +3782,7 @@ msgstr "无法加载例行任务"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Could not load rules"
-msgstr ""
+msgstr "无法加载规则"
 
 #: apps/mobile/components/routine-run-history.tsx
 #: apps/web/src/pages/RoutineRunHistory.tsx
@@ -3889,7 +3889,7 @@ msgstr "无法打开此 PDF。"
 #: apps/web/src/lib/device-pairing.ts
 #: apps/web/src/pages/PairPage.tsx
 msgid "Could not pair this device"
-msgstr ""
+msgstr "无法配对此设备"
 
 #: apps/mobile/app/pages.tsx
 msgid "Could not pin the page."
@@ -4103,7 +4103,7 @@ msgstr "无法保存规则"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Could not save rules"
-msgstr ""
+msgstr "无法保存规则"
 
 #: apps/mobile/app/(settings)/skill.tsx
 #: apps/web/src/components/teach/SkillDraftCard.tsx
@@ -4188,7 +4188,7 @@ msgstr "无法发送"
 
 #: apps/web/src/pages/Shell.tsx
 msgid "Could not set up RoBot"
-msgstr ""
+msgstr "无法设置 RoBot"
 
 #: apps/mobile/components/audio-attachment.tsx
 msgid "Could not share file"
@@ -4449,7 +4449,7 @@ msgstr "创建 Bot"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Create code"
-msgstr ""
+msgstr "创建代码"
 
 #: apps/web/src/pages/GroupPanel.tsx
 msgid "Create group"
@@ -4500,7 +4500,7 @@ msgstr "正在创建…"
 
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Creator"
-msgstr ""
+msgstr "创建者"
 
 #: apps/web/src/pages/plugins/source-form.tsx
 msgid "Credential"
@@ -4620,7 +4620,7 @@ msgstr "数据"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Date"
-msgstr ""
+msgstr "日期"
 
 #: apps/mobile/lib/cron.ts
 #: apps/web/src/lib/billing.ts
@@ -4656,7 +4656,7 @@ msgstr "解码隐藏内容并运行"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Deerstalker"
-msgstr ""
+msgstr "猎鹿帽"
 
 #: apps/mobile/app/bot-settings.tsx
 #: apps/mobile/components/bot-look-picker.tsx
@@ -4773,7 +4773,7 @@ msgstr "要删除 {name} 吗？"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Delete {title}?"
-msgstr ""
+msgstr "删除 {title}?"
 
 #: apps/mobile/app/(settings)/profile.tsx
 #: apps/mobile/app/paywall.tsx
@@ -4806,7 +4806,7 @@ msgstr "删除例行任务"
 #. placeholder {0}: index + 1
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Delete rule {0}"
-msgstr ""
+msgstr "删除规则 {0}"
 
 #: apps/mobile/components/bot-organize-modal.tsx
 #: apps/mobile/components/inbox-render-item.tsx
@@ -4919,7 +4919,7 @@ msgstr "开发"
 
 #: apps/web/src/lib/device-pairing.ts
 msgid "Device"
-msgstr ""
+msgstr "设备"
 
 #: apps/mobile/app/bot-settings.tsx
 msgid "Device voice"
@@ -4927,7 +4927,7 @@ msgstr "设备语音"
 
 #: apps/web/src/pages/settings-nav.ts
 msgid "Devices"
-msgstr ""
+msgstr "设备"
 
 #: apps/mobile/components/mermaid-diagram.tsx
 msgid "Diagram"
@@ -5069,7 +5069,7 @@ msgstr "显示名称"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Doc name"
-msgstr ""
+msgstr "文档名称"
 
 #: apps/web/src/pages/HostComputerPrompt.tsx
 msgid "Docker"
@@ -5170,7 +5170,7 @@ msgstr "复制"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Each bot can receive mail at its own address, which you can also find in its settings."
-msgstr ""
+msgstr "每个 Bot 都可以通过自己的地址接收邮件,你也可以在其设置中找到该地址。"
 
 #: apps/web/src/pages/McpServerForm.tsx
 msgid "Each name can be used once."
@@ -5192,7 +5192,7 @@ msgstr "编辑"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Edit {title}"
-msgstr ""
+msgstr "编辑 {title}"
 
 #: apps/mobile/app/bot-settings.tsx
 msgid "Edit avatar"
@@ -5217,20 +5217,20 @@ msgstr "编辑例行任务"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Edited {when}"
-msgstr ""
+msgstr "{when} 编辑"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Edited {when} by {editor}"
-msgstr ""
+msgstr "{editor} 于 {when} 编辑"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Effect"
-msgstr ""
+msgstr "效果"
 
 #. placeholder {0}: index + 1
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Effect of rule {0}"
-msgstr ""
+msgstr "规则 {0} 的效果"
 
 #: apps/mobile/app/(settings)/labs.tsx
 #: apps/mobile/app/bot-profile.tsx
@@ -5280,7 +5280,7 @@ msgstr "内置"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Empty"
-msgstr ""
+msgstr "空"
 
 #. placeholder {0}: humanizeTool(toolName)
 #: apps/web/src/pages/shell/bot-settings-sections.tsx
@@ -5544,7 +5544,7 @@ msgstr "外部对话"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Extra"
-msgstr ""
+msgstr "额外"
 
 #: apps/mobile/lib/thinking-level.ts
 msgid "Extra high"
@@ -5557,7 +5557,7 @@ msgstr "极高"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Face"
-msgstr ""
+msgstr "面部"
 
 #: apps/mobile/components/thread/special-message-card.tsx
 #: apps/web/src/components/CloudAgentCard.tsx
@@ -5700,7 +5700,7 @@ msgstr "正在完成 MCP 连接…"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Fleece vest"
-msgstr ""
+msgstr "抓绒背心"
 
 #: apps/web/src/pages/shell/keyboard-shortcuts-dialog.tsx
 msgid "Focus message"
@@ -5863,7 +5863,7 @@ msgstr "GraphQL 端点"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Green"
-msgstr ""
+msgstr "绿色"
 
 #: apps/web/src/pages/shell/agent-import.tsx
 msgid "Grok Bot"
@@ -5914,7 +5914,7 @@ msgstr "Bot 少于两个的群组也会被删除，包括其中的消息、文�
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Grumpy"
-msgstr ""
+msgstr "生气"
 
 #: apps/mobile/app/computer.tsx
 #: apps/web/src/pages/shell/computer-release-actions.tsx
@@ -5937,7 +5937,7 @@ msgstr "请挂断，然后输入屏幕上的代码。"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Happy"
-msgstr ""
+msgstr "开心"
 
 #: apps/mobile/app/(settings)/general.tsx
 msgid "Haptics"
@@ -5981,7 +5981,7 @@ msgstr "请求头"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Headwear"
-msgstr ""
+msgstr "头饰"
 
 #: apps/mobile/app/(settings)/voice.tsx
 #: apps/web/src/pages/VoiceSettingsOverlay.tsx
@@ -5990,7 +5990,7 @@ msgstr "试听"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Heart eyes"
-msgstr ""
+msgstr "爱心眼"
 
 #: apps/mobile/lib/thread-voice.ts
 msgid "Hello {name}, {bot} here."
@@ -6002,7 +6002,7 @@ msgstr "你好，我是 {bot}。"
 
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Hero"
-msgstr ""
+msgstr "英雄"
 
 #: apps/mobile/app/bot-settings.tsx
 msgid "Hi, I'm {name}."
@@ -6036,7 +6036,7 @@ msgstr "隐藏聊天"
 
 #: apps/web/src/pages/workspace/TasksPage.tsx
 msgid "Hide closed"
-msgstr ""
+msgstr "隐藏已关闭"
 
 #: apps/web/src/pages/routine-editor/trigger-cards.tsx
 msgid "Hide key"
@@ -6069,7 +6069,7 @@ msgstr "高"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "History"
-msgstr ""
+msgstr "历史记录"
 
 #: apps/web/src/components/composer/HoldToTalk.tsx
 msgid "Hold to talk"
@@ -6086,11 +6086,11 @@ msgstr "家"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Hood and headphones"
-msgstr ""
+msgstr "连帽衫与耳机"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Hoodie"
-msgstr ""
+msgstr "连帽衫"
 
 #: apps/mobile/lib/cron.ts
 #: apps/web/src/lib/cron.ts
@@ -6235,7 +6235,7 @@ msgstr "未启用"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Inbox"
-msgstr ""
+msgstr "收件箱"
 
 #: apps/web/src/pages/shell/message-cards.tsx
 msgid "Inbox & email"
@@ -6272,7 +6272,7 @@ msgstr "输入"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Install and sign in to your private network on this computer first."
-msgstr ""
+msgstr "请先在这台电脑上安装并登录你的专用网络。"
 
 #: apps/web/src/components/skill-safety.tsx
 msgid "Install anyway"
@@ -6479,7 +6479,7 @@ msgstr "类型"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Kind of action"
-msgstr ""
+msgstr "操作类型"
 
 #: apps/mobile/components/login-fields-editor.tsx
 #: apps/mobile/components/vault-item-editor.tsx
@@ -6717,7 +6717,7 @@ msgstr "访问本机电脑需要最新版桌面应用。"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Local network"
-msgstr ""
+msgstr "本地网络"
 
 #: apps/web/src/components/AccountMenu.tsx
 #: apps/web/src/components/SidebarFooter.tsx
@@ -6773,11 +6773,11 @@ msgstr "由 Bot 创建"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Magnifier"
-msgstr ""
+msgstr "放大镜"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Mailboxes"
-msgstr ""
+msgstr "邮箱"
 
 #: apps/mobile/app/(settings)/models.tsx
 #: apps/web/src/pages/ModelSettingsOverlay.tsx
@@ -6786,7 +6786,7 @@ msgstr "主模型"
 
 #: apps/web/src/pages/shell/primary-bot.tsx
 msgid "Main point of contact"
-msgstr ""
+msgstr "主要联系人"
 
 #: apps/web/src/pages/BillingSettingsPanel.tsx
 #: apps/web/src/pages/SettingsOverlay.tsx
@@ -6858,7 +6858,7 @@ msgstr "营销"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Match"
-msgstr ""
+msgstr "匹配"
 
 #: apps/mobile/lib/thinking-level.ts
 msgid "Max"
@@ -7156,7 +7156,7 @@ msgstr "周一"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Monocle"
-msgstr ""
+msgstr "单片眼镜"
 
 #: apps/web/src/lib/billing.ts
 msgid "month"
@@ -7205,7 +7205,7 @@ msgstr "更多应用"
 
 #: apps/web/src/pages/shell/avatar-studio-popover.tsx
 msgid "More styles"
-msgstr ""
+msgstr "更多风格"
 
 #: apps/mobile/lib/bot-template-copy.ts
 #: apps/web/src/components/bot-templates/bot-template-copy.ts
@@ -7214,7 +7214,7 @@ msgstr "晨间简报"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Mortarboard"
-msgstr ""
+msgstr "学士帽"
 
 #: apps/mobile/components/model-role-settings.tsx
 #: apps/web/src/pages/ModelRoleSettings.tsx
@@ -7224,12 +7224,12 @@ msgstr "下移"
 #. placeholder {0}: index + 1
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Move rule {0} down"
-msgstr ""
+msgstr "将规则 {0} 下移"
 
 #. placeholder {0}: index + 1
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Move rule {0} up"
-msgstr ""
+msgstr "将规则 {0} 上移"
 
 #: apps/web/src/pages/shell/dialogs.tsx
 msgid "Move them to your shared memory."
@@ -7369,7 +7369,7 @@ msgstr "需要：{names}"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Network access"
-msgstr ""
+msgstr "网络访问"
 
 #: apps/mobile/components/approval-settings-rows.tsx
 #: apps/web/src/components/ApprovalRulesSettings.tsx
@@ -7403,7 +7403,7 @@ msgstr "新建银行卡"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "New code"
-msgstr ""
+msgstr "新代码"
 
 #: apps/web/src/components/ComputerProviderSettings.tsx
 msgid "New computers run on"
@@ -7415,7 +7415,7 @@ msgstr "新建联系人"
 
 #: apps/web/src/pages/workspace/DocsPage.tsx
 msgid "New doc"
-msgstr ""
+msgstr "新建文档"
 
 #: apps/web/src/pages/GroupPanel.tsx
 msgid "New group"
@@ -7471,7 +7471,7 @@ msgstr "新建例行任务"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "New rule"
-msgstr ""
+msgstr "新规则"
 
 #: apps/mobile/components/bot-organize-modal.tsx
 #: apps/mobile/components/inbox-swipe-row.ios.tsx
@@ -7494,7 +7494,7 @@ msgstr "新建空间"
 #: apps/web/src/pages/board/TicketDialog.tsx
 #: apps/web/src/pages/workspace/TasksPage.tsx
 msgid "New task"
-msgstr ""
+msgstr "新任务"
 
 #: apps/web/src/pages/Board.tsx
 msgid "New ticket"
@@ -7575,7 +7575,7 @@ msgstr "没有匹配的 Bot"
 
 #: apps/web/src/pages/workspace/DocsPage.tsx
 msgid "No docs yet"
-msgstr ""
+msgstr "还没有文档"
 
 #: apps/mobile/components/thread/message-bubble.tsx
 #: apps/web/src/components/AskCard.tsx
@@ -7585,11 +7585,11 @@ msgstr "已停用"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "No mail yet."
-msgstr ""
+msgstr "还没有邮件。"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "No mailboxes yet"
-msgstr ""
+msgstr "还没有邮箱"
 
 #: apps/mobile/app/(settings)/approval-rule-add.tsx
 #: apps/web/src/components/ApprovalRulesSettings.tsx
@@ -7702,7 +7702,7 @@ msgstr "无行"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "No rule matches. The approval mode decides."
-msgstr ""
+msgstr "没有匹配的规则,由审批模式决定。"
 
 #: apps/web/src/pages/ActivityList.tsx
 msgid "No runs match these filters."
@@ -7838,7 +7838,7 @@ msgstr "未发送。轻点重试"
 
 #: apps/web/src/pages/workspace/TasksPage.tsx
 msgid "Not started"
-msgstr ""
+msgstr "未开始"
 
 #: apps/web/src/pages/shell/agent-import-plan.tsx
 #: apps/web/src/pages/shell/import-status.ts
@@ -7866,7 +7866,7 @@ msgstr "尚未保存任何内容。"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Nothing sent yet."
-msgstr ""
+msgstr "还没有发送任何内容。"
 
 #: apps/mobile/app/(settings)/general.tsx
 msgid "Notification settings"
@@ -7951,7 +7951,7 @@ msgstr "按钮上的金额"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "On the other device, open this server's address and choose Pair with a code."
-msgstr ""
+msgstr "在另一台设备上,打开此服务器的地址并选择“使用代码配对”。"
 
 #: apps/mobile/lib/cron.ts
 #: apps/web/src/lib/cron.ts
@@ -7989,7 +7989,7 @@ msgstr "只有此账户的所有者可以选择方案。"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Only this computer"
-msgstr ""
+msgstr "仅此电脑"
 
 #: apps/mobile/app/page-share.tsx
 #: apps/web/src/components/pages/SharePopover.tsx
@@ -8148,7 +8148,7 @@ msgstr "或粘贴 API 密钥"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Orange"
-msgstr ""
+msgstr "橙色"
 
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/mobile/app/(settings)/account.tsx
@@ -8189,7 +8189,7 @@ msgstr "其他模型…"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Outfit"
-msgstr ""
+msgstr "装扮"
 
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
 msgid "Output"
@@ -8275,43 +8275,43 @@ msgstr "此群组为你创建的页面会显示在这里。请它做一个仪表
 
 #: apps/web/src/pages/PairPage.tsx
 msgid "Pair"
-msgstr ""
+msgstr "配对"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Pair a device"
-msgstr ""
+msgstr "配对设备"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Pair it again with a new code to sign back in."
-msgstr ""
+msgstr "使用新代码重新配对即可重新登录。"
 
 #: apps/web/src/pages/PairPage.tsx
 msgid "Pair this device"
-msgstr ""
+msgstr "配对此设备"
 
 #: apps/web/src/pages/Auth.tsx
 msgid "Pair with a code"
-msgstr ""
+msgstr "使用代码配对"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Paired devices"
-msgstr ""
+msgstr "已配对设备"
 
 #: apps/web/src/pages/PairPage.tsx
 msgid "Pairing code"
-msgstr ""
+msgstr "配对码"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Pairing link"
-msgstr ""
+msgstr "配对链接"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Pairing QR code"
-msgstr ""
+msgstr "配对二维码"
 
 #: apps/web/src/pages/PairPage.tsx
 msgid "Pairing…"
-msgstr ""
+msgstr "正在配对…"
 
 #: apps/mobile/app/(settings)/profile.tsx
 #: apps/web/src/components/PasskeySettings.tsx
@@ -8472,7 +8472,7 @@ msgstr "选择聊天"
 
 #: apps/web/src/pages/workspace/DocsPage.tsx
 msgid "Pick a doc to read"
-msgstr ""
+msgstr "选择要阅读的文档"
 
 #: apps/web/src/lib/model-connection-preflight.ts
 msgid "Pick a model from the catalog."
@@ -8496,7 +8496,7 @@ msgstr "置顶"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Pink"
-msgstr ""
+msgstr "粉色"
 
 #: apps/mobile/app/pages.tsx
 #: apps/mobile/lib/inbox-spaces.ts
@@ -8536,7 +8536,7 @@ msgstr "请重试。"
 #. placeholder {0}: doc.path
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Please update the doc {0}: "
-msgstr ""
+msgstr "请更新文档 {0}: "
 
 #: apps/web/src/pages/KnowledgeSection.tsx
 msgid "Plugin"
@@ -8622,7 +8622,7 @@ msgstr "私有"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Private network (HTTPS)"
-msgstr ""
+msgstr "专用网络 (HTTPS)"
 
 #: apps/web/src/pages/shell/bot-picker.tsx
 msgid "Private workspace with its own bots and groups."
@@ -8685,11 +8685,11 @@ msgstr "拉取请求"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Purchases"
-msgstr ""
+msgstr "购物"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Purple"
-msgstr ""
+msgstr "紫色"
 
 #: apps/mobile/app/paywall.tsx
 msgid "Put your bots to work"
@@ -8731,7 +8731,7 @@ msgstr "朗读回复"
 #: apps/mobile/app/(settings)/labs.tsx
 #: apps/web/src/pages/LabsSettingsPanel.tsx
 msgid "Read the mail your bots' email addresses receive"
-msgstr ""
+msgstr "读取你的 Bot 邮件地址收到的邮件"
 
 #: apps/web/src/components/skill-safety.tsx
 msgid "Reads credential files"
@@ -8874,7 +8874,7 @@ msgstr "招聘与人事"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Red"
-msgstr ""
+msgstr "红色"
 
 #: apps/web/src/pages/McpServerForm.tsx
 msgid "Redirect URI"
@@ -9202,7 +9202,7 @@ msgstr "调研和写作"
 
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Researcher"
-msgstr ""
+msgstr "研究员"
 
 #: apps/mobile/app/(settings)/team-conversation.tsx
 #: apps/mobile/components/computer-maintenance-actions.tsx
@@ -9285,7 +9285,7 @@ msgstr "重启后更新"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Restarting…"
-msgstr ""
+msgstr "正在重启…"
 
 #: apps/mobile/app/bot-settings.tsx
 #: apps/mobile/components/archived-bot-list.ios.tsx
@@ -9406,7 +9406,7 @@ msgstr "向右"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Ring light"
-msgstr ""
+msgstr "环形补光灯"
 
 #: apps/web/src/components/skill-safety.tsx
 msgid "Risky content found"
@@ -9414,11 +9414,11 @@ msgstr "发现有风险的内容"
 
 #: apps/mobile/components/bot-look-picker.tsx
 msgid "Robot"
-msgstr ""
+msgstr "机器人"
 
 #: apps/web/src/pages/Shell.tsx
 msgid "RoBot"
-msgstr ""
+msgstr "RoBot"
 
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/mobile/app/(settings)/integrations.tsx
@@ -9459,7 +9459,7 @@ msgstr "轮换密钥"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Round glasses"
-msgstr ""
+msgstr "圆框眼镜"
 
 #: apps/mobile/app/_layout.tsx
 #: apps/mobile/app/routine.tsx
@@ -9500,13 +9500,13 @@ msgstr "第 {line} 行"
 #. placeholder {0}: verdict.index + 1
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Rule {0} is invalid, so this asks."
-msgstr ""
+msgstr "规则 {0} 无效,因此需要询问。"
 
 #. placeholder {0}: verdict.index + 1
 #. placeholder {1}: labels.effectLabel(verdict.effect)
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Rule {0} matches: {1}."
-msgstr ""
+msgstr "规则 {0} 匹配:{1}。"
 
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/mobile/components/approval-settings-rows.tsx
@@ -9819,7 +9819,7 @@ msgstr "按域名搜索"
 
 #: apps/web/src/pages/workspace/DocsPage.tsx
 msgid "Search docs"
-msgstr ""
+msgstr "搜索文档"
 
 #: apps/web/src/components/integrations/IntegrationSetup.tsx
 msgid "Search integrations.sh"
@@ -9974,7 +9974,7 @@ msgstr "已发送"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Sent mail"
-msgstr ""
+msgstr "已发送邮件"
 
 #: apps/web/src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Serenity endpoint is required."
@@ -10018,11 +10018,11 @@ msgstr "设置"
 
 #: apps/web/src/pages/shell/primary-bot.tsx
 msgid "Set up RoBot"
-msgstr ""
+msgstr "设置 RoBot"
 
 #: apps/web/src/pages/shell/primary-bot.tsx
 msgid "Setting up…"
-msgstr ""
+msgstr "正在设置…"
 
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/mobile/components/CallCard.tsx
@@ -10130,7 +10130,7 @@ msgstr "共享记忆"
 #: apps/mobile/app/(settings)/labs.tsx
 #: apps/web/src/pages/LabsSettingsPanel.tsx
 msgid "Shared notes and documents your bots read and write"
-msgstr ""
+msgstr "你的 Bot 读写的共享笔记和文档"
 
 #: apps/mobile/components/vault-item-sheet.tsx
 #: apps/web/src/components/vault/VaultItemDetail.tsx
@@ -10151,7 +10151,7 @@ msgstr "显示全部"
 #. placeholder {0}: cards.length
 #: apps/web/src/pages/workspace/TasksPage.tsx
 msgid "Show all {0}"
-msgstr ""
+msgstr "显示全部 {0}"
 
 #: apps/web/src/pages/shell/sidebar-header.tsx
 msgid "Show bots"
@@ -10163,7 +10163,7 @@ msgstr "显示聊天"
 
 #: apps/web/src/pages/workspace/TasksPage.tsx
 msgid "Show closed"
-msgstr ""
+msgstr "显示已关闭"
 
 #: apps/web/src/pages/routine-editor/trigger-cards.tsx
 msgid "Show key"
@@ -10175,7 +10175,7 @@ msgstr "显示键盘"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Show latest"
-msgstr ""
+msgstr "显示最新"
 
 #: apps/web/src/pages/Artifacts.tsx
 msgid "Show list"
@@ -10214,7 +10214,7 @@ msgstr "显示文字记录"
 #: apps/mobile/components/bot-look-picker.tsx
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Shuffle"
-msgstr ""
+msgstr "随机"
 
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
 msgid "Sidebar density"
@@ -10261,11 +10261,11 @@ msgstr "在 <0>{0}</0> 登录，然后将代码粘贴到这里。"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Sign in on a phone, tablet or another computer"
-msgstr ""
+msgstr "在手机、平板或另一台电脑上登录"
 
 #: apps/web/src/pages/settings-nav.ts
 msgid "Sign in on your other devices."
-msgstr ""
+msgstr "在你的其他设备上登录。"
 
 #: apps/mobile/app/sign-in.tsx
 msgid "Sign in to continue to RoBots"
@@ -10299,20 +10299,20 @@ msgstr "退出登录"
 #. placeholder {0}: pairedDeviceLabel(confirm)
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Sign out \"{0}\"?"
-msgstr ""
+msgstr "退出登录“{0}”?"
 
 #. placeholder {0}: pairedDeviceLabel(device)
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Sign out {0}"
-msgstr ""
+msgstr "退出登录 {0}"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Sign out all"
-msgstr ""
+msgstr "全部退出登录"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Sign out all other paired devices?"
-msgstr ""
+msgstr "退出所有其他已配对设备的登录?"
 
 #: apps/mobile/lib/unsent-send-warning.ts
 msgid "Sign out anyway"
@@ -10450,7 +10450,7 @@ msgstr "未启用 Slack"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Slate"
-msgstr ""
+msgstr "石板灰"
 
 #: apps/web/src/components/composer/HoldToTalk.tsx
 msgid "Slide up to lock"
@@ -10661,7 +10661,7 @@ msgstr "延迟 {count} 分钟开始"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Started by"
-msgstr ""
+msgstr "发起人"
 
 #: apps/mobile/lib/activity.ts
 #: apps/web/src/pages/ActivityList.tsx
@@ -10689,7 +10689,7 @@ msgstr "状态"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Steam"
-msgstr ""
+msgstr "蒸汽"
 
 #: apps/web/src/components/teach/SkillDraftCard.tsx
 msgid "Steps"
@@ -10859,7 +10859,7 @@ msgstr "系统"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "T-shirt"
-msgstr ""
+msgstr "T 恤"
 
 #: apps/mobile/components/computer-keyboard-bar.tsx
 msgid "Tab"
@@ -10893,7 +10893,7 @@ msgstr "目标"
 #: apps/web/src/pages/workspace/TasksPage.tsx
 #: apps/web/src/pages/workspace/workspace-nav.tsx
 msgid "Tasks"
-msgstr ""
+msgstr "任务"
 
 #: apps/web/src/components/teach/TeachComputerOverlay.tsx
 msgid "Teach a task"
@@ -10905,7 +10905,7 @@ msgstr "正在示范，发送新消息前请先停止示范。"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Teal"
-msgstr ""
+msgstr "青色"
 
 #: apps/mobile/components/computer-mode-picker.tsx
 #: apps/web/src/pages/shell/bot-settings-sections.tsx
@@ -10942,7 +10942,7 @@ msgstr "模板"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Terminal"
-msgstr ""
+msgstr "终端"
 
 #: apps/mobile/app/paywall.tsx
 msgid "Terms"
@@ -10954,7 +10954,7 @@ msgstr "测试"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Test a rule"
-msgstr ""
+msgstr "测试规则"
 
 #: apps/web/src/components/ModelConnectionPreflightNotice.tsx
 msgid "Test API key"
@@ -10996,7 +10996,7 @@ msgstr "该地址缺少主机名"
 
 #: apps/web/src/pages/VoiceSettingsOverlay.tsx
 msgid "That voice isn't offered by this server, so it used {served} instead."
-msgstr ""
+msgstr "此服务器不提供该语音,因此改用了 {served}。"
 
 #: apps/mobile/components/failed-send-bubble.tsx
 #: apps/web/src/pages/shell/composer-error.tsx
@@ -11177,7 +11177,7 @@ msgstr "此账户已停用"
 
 #: apps/web/src/lib/device-pairing.ts
 msgid "This address is not allowed to sign in."
-msgstr ""
+msgstr "不允许此地址登录。"
 
 #: apps/mobile/lib/user-error.ts
 #: apps/web/src/lib/user-error.ts
@@ -11268,7 +11268,7 @@ msgstr "此操作无法撤销。"
 
 #: apps/web/src/lib/device-pairing.ts
 msgid "This code is not valid. Create a new one."
-msgstr ""
+msgstr "编辑时此文档已发生变化。"
 
 #: apps/web/src/pages/HostComputerPrompt.tsx
 msgid "this computer"
@@ -11305,11 +11305,11 @@ msgstr "本设备"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "This doc changed while you were editing."
-msgstr ""
+msgstr "编辑时此文档已发生变化。请复制你的更改,然后放弃以查看最新内容。"
 
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "This doc changed while you were editing. Copy your changes, then discard to see the latest."
-msgstr ""
+msgstr "此服务器不接收邮件"
 
 #: apps/web/src/lib/agent-import-errors.ts
 msgid "This export is newer than RoBots can read. Update RoBots and try again."
@@ -11469,7 +11469,7 @@ msgstr "此服务器未请求浏览器授权。"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "This server doesn't receive email"
-msgstr ""
+msgstr "此代码无效。请创建新代码。"
 
 #: apps/web/src/pages/McpServersOverlay.tsx
 msgid "This server is already connected. Disconnect it first to authorize again."
@@ -11585,7 +11585,7 @@ msgstr "尝试次数过多。请过几分钟再试。"
 
 #: apps/web/src/lib/device-pairing.ts
 msgid "Too many tries. Wait a few minutes."
-msgstr ""
+msgstr "尝试次数过多。请等待几分钟。"
 
 #: apps/mobile/lib/thread-feedback.ts
 msgid "Too many unsent messages"
@@ -11616,7 +11616,7 @@ msgstr "工具"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Top hat"
-msgstr ""
+msgstr "大礼帽"
 
 #: apps/mobile/lib/bot-template-copy.ts
 #: apps/web/src/components/bot-templates/bot-template-copy.ts
@@ -11757,19 +11757,19 @@ msgstr "开启"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Turn on HTTPS names for your private network first."
-msgstr ""
+msgstr "请先为你的专用网络开启 HTTPS 名称。"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Turtleneck"
-msgstr ""
+msgstr "高领毛衣"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Tuxedo"
-msgstr ""
+msgstr "燕尾服"
 
 #: apps/web/src/pages/shell/robot-builder.tsx
 msgid "Tweed and bow tie"
-msgstr ""
+msgstr "粗花呢与领结"
 
 #: apps/mobile/components/vault-item-editor.tsx
 #: apps/mobile/components/vault-item-sheet.tsx
@@ -11864,7 +11864,7 @@ msgstr "不支持的文件类型：{0}"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Unverified sender"
-msgstr ""
+msgstr "未验证的发件人"
 
 #: apps/mobile/components/computer-keyboard-bar.tsx
 msgid "Up"
@@ -12192,7 +12192,7 @@ msgstr "版本"
 #. placeholder {0}: viewing.revision
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Version {0}"
-msgstr ""
+msgstr "版本 {0}"
 
 #: apps/mobile/app/artifact.tsx
 msgid "Versions"
@@ -12423,7 +12423,7 @@ msgstr "你的 Bot 使用哪些 LLM。"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Who can open RoBots"
-msgstr ""
+msgstr "谁可以打开 RoBots"
 
 #: apps/web/src/components/pages/SharePopover.tsx
 msgid "Who can open this page"
@@ -12477,7 +12477,7 @@ msgstr "工作指令"
 
 #: apps/web/src/pages/workspace/TasksPage.tsx
 msgid "Working on it"
-msgstr ""
+msgstr "处理中"
 
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/mobile/app/sign-in.tsx
@@ -12493,7 +12493,7 @@ msgstr "处理中…"
 
 #: apps/web/src/components/DevicePairingSettings.tsx
 msgid "Works once. Expires in {minutes}:{seconds}."
-msgstr ""
+msgstr "仅可使用一次。{minutes}:{seconds} 后过期。"
 
 #: apps/mobile/app/(settings)/bot-template.tsx
 #: apps/web/src/components/bot-templates/bot-templates-dialog.tsx
@@ -12520,7 +12520,7 @@ msgstr "写下此例行任务要做的事。"
 
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Writer"
-msgstr ""
+msgstr "作家"
 
 #: apps/web/src/lib/billing.ts
 msgid "year"
@@ -12564,7 +12564,7 @@ msgstr "可以关闭此窗口。"
 
 #: apps/web/src/pages/shell/create-bot-dialog.tsx
 msgid "You can fine-tune the look later in the bot's settings."
-msgstr ""
+msgstr "你之后可以在 Bot 的设置中微调外观。"
 
 #: apps/mobile/lib/ai-consent.ts
 msgid "You can turn this off in Account → AI data sharing."
@@ -12581,7 +12581,7 @@ msgstr "对方用新卡开始试用后，你将获得一个月免费。"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "You in the app"
-msgstr ""
+msgstr "你(在应用中)"
 
 #: apps/mobile/app/paywall.tsx
 msgid "You're all set"
@@ -12686,7 +12686,7 @@ msgstr "试用结束后，你的方案将变为 {tierTargetLabel}。"
 
 #: apps/web/src/pages/DevicesSettingsPanel.tsx
 msgid "Your private network's HTTPS address already serves something else."
-msgstr ""
+msgstr "你的专用网络的 HTTPS 地址已被其他服务占用。"
 
 #: apps/mobile/lib/ai-consent.ts
 msgid "Your recordings are sent for transcription, and text you play is sent to generate speech."

@@ -58,6 +58,7 @@ test("launches with a narrow preload bridge and an isolated renderer", async () 
       "menu",
       "monitoring",
       "nativeWindowFrame",
+      "network",
       "oauth",
       "passkeys",
       "platform",

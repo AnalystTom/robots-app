@@ -126,7 +126,7 @@ function browserRunningFunction(profile: string, pidFile: string) {
     // Match the configured flag in either NUL-separated argv or Chromium's one-line
     // setproctitle. Searching for the whole flag keeps spaces and " --" inside the path.
     "  cmdline_text() {",
-    "    tr '\\0' '\\n' <\"/proc/$1/cmdline\" 2>/dev/null || true",
+    "    { tr '\\0' '\\n' <\"/proc/$1/cmdline\"; } 2>/dev/null || true",
     "  }",
     "  has_arg() {",
     '    text=$(cmdline_text "$1")',
@@ -170,9 +170,11 @@ function browserRunningFunction(profile: string, pidFile: string) {
     '    if browser_matches "$pid"; then return 0; fi',
     "  done",
     "  if [ -d /proc ]; then",
-    "    for proc_dir in /proc/[0-9]*; do",
+    `    for cmdline_file in $(grep -lFa -e ${flag} /proc/[0-9]*/cmdline 2>/dev/null || true); do`,
     // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
-    '      pid="${proc_dir#/proc/}"',
+    '      pid="${cmdline_file#/proc/}"',
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: shell parameter expansion
+    '      pid="${pid%/cmdline}"',
     '      if browser_matches "$pid"; then return 0; fi',
     "    done",
     "  fi",

@@ -164,7 +164,11 @@
       }
     },
     {
-      "includes": ["packages/logging/src/console-sink.ts", "packages/logging/src/sink-guard.ts"],
+      "includes": [
+        "packages/logging/src/best-effort-client.ts",
+        "packages/logging/src/console-sink.ts",
+        "packages/logging/src/sink-guard.ts"
+      ],
       "linter": {
         "rules": {
           "suspicious": {

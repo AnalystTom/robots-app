@@ -38,7 +38,11 @@ vi.mock("expo-router", () => ({
 vi.mock("./api-server", () => ({}));
 vi.mock("./api-auth", () => ({}));
 vi.mock("./api-live", () => ({}));
+vi.mock("./session", () => ({ currentSessionGeneration: () => 0 }));
 vi.mock("./api", () => ({
+  currentApiBase: () => "http://api.test",
+  captureApiRequestContext: async () => ({}),
+  selectedSpaceId: () => "space-1",
   rpc: (proc: string, ...args: unknown[]) =>
     proc === "marketplace/catalog" ? state.marketplace() : state.rpc(proc, ...args),
 }));
@@ -424,7 +428,7 @@ it("persists a completed connection before refreshing", async () => {
     catalog: [item],
     connections: [account],
   });
-  expect(container.textContent).toContain("Example appAdded");
+  expect(container.textContent).toContain("Example appCloudAlways onAccessConnected");
   expect(container.textContent).toContain("Could not load integrations");
   expect(container.textContent).not.toContain("Could not connect");
 });
