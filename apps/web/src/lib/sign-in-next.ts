@@ -23,3 +23,12 @@ export function signInNext(next: string | null): string | null {
 export function newAccountDestination(next: string | null): string {
   return next && INVITE_PATH.test(next) ? next : "/onboarding";
 }
+
+export function signedOutDestination(
+  location: { pathname: string; search: string },
+  returning: boolean,
+): string {
+  const next = encodeURIComponent(location.pathname + location.search);
+  const entry = location.pathname === "/app" && !returning;
+  return `${entry ? "/sign-up" : "/sign-in"}?next=${next}`;
+}

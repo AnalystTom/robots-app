@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { newAccountDestination, signInNext } from "./sign-in-next.js";
+import { newAccountDestination, signedOutDestination, signInNext } from "./sign-in-next.js";
 
 it("returns to integration setup, plugin admin, MCP sign-in, invite and app links only", () => {
   expect(signInNext("/integrations/setup")).toBe("/integrations/setup");
@@ -27,4 +27,12 @@ it("starts a new account in onboarding unless it came for an invite", () => {
   expect(newAccountDestination("/invite/abc_DEF-123")).toBe("/invite/abc_DEF-123");
   expect(newAccountDestination("/integrations/setup")).toBe("/onboarding");
   expect(newAccountDestination(null)).toBe("/onboarding");
+});
+
+it("sends a first-time visitor of the app entry to sign-up and everyone else to sign-in", () => {
+  const entry = { pathname: "/app", search: "" };
+  expect(signedOutDestination(entry, false)).toBe("/sign-up?next=%2Fapp");
+  expect(signedOutDestination(entry, true)).toBe("/sign-in?next=%2Fapp");
+  const deep = { pathname: "/app/bot-1", search: "?tab=files" };
+  expect(signedOutDestination(deep, false)).toBe("/sign-in?next=%2Fapp%2Fbot-1%3Ftab%3Dfiles");
 });

@@ -89,7 +89,7 @@ test("choose your own key or monthly credits, then add a one-time top-up", async
   ).toBeVisible();
   const planSelect = page.getByRole("combobox", { name: "Monthly credits" });
   await expect(planSelect).toHaveCSS("height", "48px");
-  await expect(planSelect).toContainText("$30 / month");
+  await expect(planSelect).toContainText("$20 / month");
   await planSelect.click();
   const options = page.locator('[data-slot="select-content"]');
   await expect
@@ -103,7 +103,7 @@ test("choose your own key or monthly credits, then add a one-time top-up", async
   expect(optionsBox!.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height);
   await captureScreenshot(page, testInfo, "billing-credit-options");
   await page.keyboard.press("Escape");
-  await expect(page.getByText("All $30 goes to model usage.", { exact: true })).toBeVisible();
+  await expect(page.getByText("All $20 goes to model usage.", { exact: true })).toBeVisible();
   await captureScreenshot(page, testInfo, "billing-credit-choice");
   // Leaving before choosing a plan: log out or delete the account, without reaching settings.
   await page.getByRole("button", { name: "Account", exact: true }).click();
@@ -133,20 +133,20 @@ test("choose your own key or monthly credits, then add a one-time top-up", async
       access: true,
       creditPurchasesEnabled: true,
       funding: "credits",
-      balanceUsd: 30,
-      monthlyAmountCents: 3000,
+      balanceUsd: 20,
+      monthlyAmountCents: 2000,
       state: "active",
       hasCustomer: true,
-      price: { ...price, amount: 3000 },
+      price: { ...price, amount: 2000 },
       computerHoursLeft: 13,
     });
     await route.fulfill({ json: { json: { url: new URL("/app", page.url()).href } } });
   });
   await page.getByRole("button", { name: "Subscribe to credits", exact: true }).click();
   await expect(page.getByText("Chief").first()).toBeVisible();
-  expect(purchase).toEqual({ amountCents: 3000, monthly: true });
+  expect(purchase).toEqual({ amountCents: 2000, monthly: true });
   const settings = await openUserSettings(page, "billing");
-  await expect(settings.getByText("$30.00", { exact: true })).toBeVisible();
+  await expect(settings.getByText("$20.00", { exact: true })).toBeVisible();
   await expect(settings.getByText("Computer hours left", { exact: true })).toBeVisible();
   await expect(settings.getByText("13", { exact: true })).toBeVisible();
   await captureScreenshot(page, testInfo, "billing-credit-balance");
@@ -371,7 +371,7 @@ test("start a bigger tier's trial from the tiers layout", async ({ page }, testI
   await expect(page.getByText("A 2× more powerful computer for your bot")).toBeVisible();
   await expect(page.getByText("$49", { exact: true })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Monthly credits" })).toContainText(
-    "$30 / month",
+    "$20 / month",
   );
   await captureScreenshot(page, testInfo, "billing-plan-tiers");
   let selected: unknown;

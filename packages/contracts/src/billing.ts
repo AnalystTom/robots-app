@@ -86,7 +86,7 @@ export const PlanLayoutSchema = z.enum(EXPERIMENTS["plan-layout"]);
 
 export const ByokIntervalSchema = z.enum(["month", "year"]);
 export type ByokInterval = z.infer<typeof ByokIntervalSchema>;
-export const DEFAULT_MONTHLY_CREDIT_AMOUNT = 3000;
+export const DEFAULT_MONTHLY_CREDIT_AMOUNT = 2000;
 export const ModelCreditAmountSchema = z.union(
   MODEL_CREDIT_AMOUNTS.map((amount) => z.literal(amount)),
 );
