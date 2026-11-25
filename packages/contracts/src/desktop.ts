@@ -1,11 +1,6 @@
 import type { BrowserProfileSummary, BrowserSessionsReadResult } from "./browser-sessions.js";
 import type { MacGrantId, MacGrantState } from "./mac-apps.js";
 
-/**
- * `unsupported` covers an unpackaged build and a repository with no published releases, which is
- * the normal state for a fork. It is not an error the user needs to act on. Automatic checks stay
- * frozen after an empty feed; a manual check may retry when the install itself supports updates.
- */
 export type DesktopUpdatePhase =
   | "idle"
   | "checking"
