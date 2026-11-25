@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { SessionVaultScope } from "@robots/adapters";
-import { importBrowserSessions, sessionItemBots, syncBotBrowserSessions } from "@robots/adapters";
+import { importBrowserSessions, syncBotBrowserSessions } from "@robots/adapters";
 import type { ImportSessionsInput, ImportSessionsResult } from "@robots/contracts";
 import { retry } from "@robots/core";
 import { recordSecurityEvent } from "@robots/db";
@@ -52,14 +52,6 @@ export async function importSessions(
   });
   syncSessionBots(deps, input.botIds);
   return { sites, bots: input.botIds.map((botId) => ({ botId, delivery: "pending" as const })) };
-}
-
-export function removedSessionBots(
-  deps: Pick<RouterDeps, "prisma">,
-  scope: SessionVaultScope,
-  name: string,
-): Promise<string[]> {
-  return sessionItemBots(deps.prisma, scope, name);
 }
 
 export function syncSessionBots(deps: SessionDeps, botIds: readonly string[]): void {

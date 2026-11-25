@@ -84,7 +84,7 @@ import { exportBotPackageFor } from "../bot-package-export.js";
 import { loadBotForRemoval } from "../bot-removal.js";
 import { changedBotSettings } from "../bot-setting-analytics.js";
 import { createBotFromTemplate, listBotTemplates } from "../bot-templates.js";
-import { importSessions, removedSessionBots, syncSessionBots } from "../browser-session-import.js";
+import { importSessions, syncSessionBots } from "../browser-session-import.js";
 import { requireIdentityConfirmation } from "../identity-confirmation.js";
 import { managedAppCatalog } from "../onboarding.js";
 import { isPrimaryBot, startPrimaryBot } from "../primary-bot-intro.js";
@@ -1063,7 +1063,7 @@ export function botsRoutes(ctx: RouterContext) {
       }),
       remove: authed.vault.remove.handler(async ({ context, input }) => {
         const scope = vaultScope(context.actor, input.scope);
-        const signedInBots = await removedSessionBots(deps, scope, input.name);
+        const signedInBots = await sessionItemBots(deps.prisma, scope, input.name);
         await forgetBotSecret(deps.prisma, scope, input.name);
         syncSessionBots(deps, signedInBots);
         return { ok: true as const };
