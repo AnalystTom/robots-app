@@ -1,5 +1,5 @@
-import type { MacGrantId, MacGrantState } from "./mac-apps.js";
 import type { BrowserProfileSummary, BrowserSessionsReadResult } from "./browser-sessions.js";
+import type { MacGrantId, MacGrantState } from "./mac-apps.js";
 
 /**
  * `unsupported` covers an unpackaged build and a repository with no published releases, which is
