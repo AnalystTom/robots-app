@@ -95,12 +95,12 @@ test("create group from + and see two bots in one transcript", async ({ page }, 
     .getByRole("button", { name: /^Draft team/ })
     .locator(".robots-group-avatar");
   await expect(groupAvatar).toBeVisible();
-  await expect(groupAvatar.locator(".robots-organic-avatar")).toHaveCount(2);
+  await expect(groupAvatar.locator(".robots-bot-avatar-picture")).toHaveCount(2);
   const workingAvatar = groupAvatar.locator('[data-working="true"]');
   await expect(workingAvatar).toHaveCount(1);
-  await expect(workingAvatar.locator(".robots-organic-avatar-body-working")).toHaveCSS(
+  await expect(workingAvatar.locator(".robots-bot-avatar-picture")).toHaveCSS(
     "animation-name",
-    /robots-organic-/,
+    /robots-avatar-breathe/,
   );
   await captureScreenshot(page, testInfo, "group-avatar-active");
   await page.unroute("**/rpc/groups/list");

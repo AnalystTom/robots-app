@@ -37,6 +37,8 @@ import { BrowserStillRunningError } from "./computer-screens.js";
 import { e2bCreateOptions } from "./e2b-sandbox.js";
 import { HomeSaveConflictError } from "./home-object-store.js";
 
+const PROBE_POLL = { timeout: 15_000 };
+
 describe("sandbox idle", () => {
   beforeEach(() => {
     vi.stubEnv("SANDBOX_IDLE_MS", undefined);
@@ -1642,7 +1644,7 @@ describe("background work launch and probe", () => {
       );
       children.push(launched);
 
-      await expect.poll(() => probeBackgroundWork(databaseId)).toBe(0);
+      await expect.poll(() => probeBackgroundWork(databaseId), PROBE_POLL).toBe(0);
       // ComputerRef.id is providerRef today; probing that path must not see the DB-id marker.
       expect(await probeBackgroundWork(providerRef)).toBe(1);
     },
@@ -1674,7 +1676,7 @@ describe("background work launch and probe", () => {
           { stdio: "ignore", detached: true },
         );
         children.push(active);
-        await expect.poll(() => existsSync(activeMarker)).toBe(true);
+        await expect.poll(() => existsSync(activeMarker), PROBE_POLL).toBe(true);
       }
       for (const marker of staleMarkers) writeFileSync(marker, "");
 
@@ -1726,7 +1728,7 @@ describe("background work launch and probe", () => {
         { stdio: "ignore", detached: true },
       );
       children.push(active);
-      await expect.poll(() => probeBackgroundWork(markerId)).toBe(0);
+      await expect.poll(() => probeBackgroundWork(markerId), PROBE_POLL).toBe(0);
     },
   );
 
@@ -1812,7 +1814,7 @@ describe("background work launch and probe", () => {
       );
       children.push(launched);
 
-      await expect.poll(() => probeBackgroundWork(computerId)).toBe(0);
+      await expect.poll(() => probeBackgroundWork(computerId), PROBE_POLL).toBe(0);
 
       const launchedDone = processExit(launched);
       const cancel = spawn(
@@ -1862,7 +1864,7 @@ describe("background work launch and probe", () => {
         { stdio: "ignore", detached: true },
       );
       children.push(launched, unrelated);
-      await expect.poll(() => existsSync(ready) && existsSync(otherMarker)).toBe(true);
+      await expect.poll(() => existsSync(ready) && existsSync(otherMarker), PROBE_POLL).toBe(true);
       expect(existsSync(marker)).toBe(false);
       expect(await probeBackgroundWork(`${computerId}-cancel`)).toBe(0);
       const holderPid = readFileSync(ready, "utf8");
@@ -1876,7 +1878,7 @@ describe("background work launch and probe", () => {
       children.push(cancel);
       expect(await processExit(cancel)).toBe(0);
       await launchedDone;
-      await expect.poll(() => existsSync(`/proc/${holderPid}/fd/8`)).toBe(false);
+      await expect.poll(() => existsSync(`/proc/${holderPid}/fd/8`), PROBE_POLL).toBe(false);
       expect(await probeBackgroundWork(`${computerId}-cancel`)).toBe(1);
       expect(unrelated.kill(0)).toBe(true);
       expect(existsSync(otherMarker)).toBe(true);

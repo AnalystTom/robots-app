@@ -1,5 +1,6 @@
 // Import just the classifier: monitoring loads before the app, ahead of the full core barrel.
 import { isAbandonedRequest, isConnectionFailure } from "@robots/core/user-error";
+import { installBestEffortSink } from "@robots/logging/best-effort";
 import type { ClientOperation, MonitoringConfig } from "@robots/logging/monitoring";
 import {
   createClientErrorReporter,
@@ -71,9 +72,17 @@ export function reportMobileError(
   tags?: Record<string, string>,
 ): void {
   // A request that lost its connection, timed out or was cancelled is the network, not a bug.
-  if (operation === "rpc.transport" && isConnectionFailure(error)) return;
+  if (
+    (operation === "rpc.transport" || operation === "mobile.best-effort") &&
+    isConnectionFailure(error)
+  )
+    return;
   errors.capture(error, operation, tags);
 }
+
+installBestEffortSink((message, error) =>
+  reportMobileError(error, "mobile.best-effort", { message }),
+);
 
 /** A coarse screen name, so an out-of-memory report says what was open; never route params. */
 export function setMobileMonitoringScreen(next: string | undefined): void {

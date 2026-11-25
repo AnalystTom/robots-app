@@ -58,51 +58,47 @@ async function mount(status?: string) {
         <div data-testid="live">
           <BotAvatar identity="bot-a" color="#10B981" avatarSet="robots" status={status} />
         </div>
-        <BotAvatar identity="old-bot" color="#8B5CF6" />
-        <BotAvatar identity="photo" color="data:image/png;base64,YQ==" avatarSet="robots" />
-        <BotAvatar identity="shape" color="#8B5CF6::shape_2" avatarSet="robots" />
-        <BotAvatar identity="explicit" color="#F97316" avatarSet="robots" activity="reading" />
+        <div data-testid="legacy">
+          <BotAvatar identity="old-bot" color="#8B5CF6" />
+        </div>
+        <div data-testid="photo">
+          <BotAvatar identity="photo" color="data:image/png;base64,YQ==" avatarSet="robots" />
+        </div>
+        <div data-testid="shape">
+          <BotAvatar identity="shape" color="#8B5CF6::shape_2" avatarSet="robots" />
+        </div>
       </BotAvatarActivityProvider>,
     ),
   );
 }
-const live = () => container.querySelector<SVGSVGElement>('[data-testid="live"] svg')!;
-it("projects production feed events into the live avatar and subscribes only live RoBots consumers", async () => {
+const picture = (testId: string) =>
+  container.querySelector<HTMLImageElement>(
+    `[data-testid="${testId}"] .robots-bot-avatar-picture img`,
+  );
+const avatar = (testId: string) =>
+  container.querySelector<HTMLElement>(`[data-testid="${testId}"] .robots-bot-avatar`);
+it("draws every bot as a robot picture and never subscribes to feed activity", async () => {
   const subscribe = vi.spyOn(webLogoAvatarActivity, "subscribe");
   await mount();
-  expect(subscribe).toHaveBeenCalledTimes(1);
-  expect(live().dataset.activity).toBe("idle");
-  await act(async () => webLogoAvatarActivity.hydrate("chat", snapshot));
-  const steps = [
-    [event(1, "thread.meta", { activity: { thinking: true } }), "thinking"],
-    [event(2, "agent.tool.called", { name: "read_file", executionId: "read" }), "reading"],
-    [event(3, "agent.tool.called", { name: "computer_act", executionId: "screen" }), "computer"],
-    [event(4, "agent.tool.completed", { executionId: "screen" }), "reading"],
-    [event(5, "agent.tool.completed", { executionId: "read" }), "working"],
-    [event(6, "thread.meta", { activity: { thinking: true } }), "thinking"],
-    [event(7, "thread.progress", { streaming: true, delta: "A reply" }), "writing"],
-    [event(8, "thread.message.created", { role: "bot" }), "working"],
-    [event(9, "thread.meta", { activity: { thinking: true } }), "thinking"],
-    [event(10, "thread.meta", { activity: { thinking: false } }), "working"],
-    [event(11, "run.waiting_input"), "waiting"],
-    [event(12, "run.failed"), "error"],
-    [event(13, "run.started", { trigger: "user" }, "run-b"), "working"],
-    [event(14, "thread.meta", { activity: { thinking: true } }, "run-b"), "thinking"],
-    [event(15, "run.completed", {}, "run-b"), "idle"],
-    [event(16, "thread.meta", { activity: { thinking: true } }, "run-b"), "idle"],
-    [event(17, "run.started", { trigger: "user" }, "run-c"), "working"],
-    [event(18, "thread.meta", { activity: { thinking: true } }, "run-c"), "thinking"],
-    [event(19, "run.cancelled", {}, "run-c"), "idle"],
-  ] as const;
-  for (const [message, expected] of steps) {
-    await act(async () => webLogoAvatarActivity.apply("chat", message));
-    expect(live().dataset.activity).toBe(expected);
-    expect(live().dataset.working).toBe(String(expected !== "idle" && expected !== "error"));
+  for (const testId of ["live", "legacy", "shape"]) {
+    expect(picture(testId)!.getAttribute("src")).toMatch(/^data:image\/svg\+xml/);
   }
-  expect(subscribe).toHaveBeenCalledTimes(1);
+  expect(picture("photo")!.getAttribute("src")).toBe("data:image/png;base64,YQ==");
+  expect(container.querySelector(".robots-logo-avatar")).toBeNull();
+  expect(container.querySelector(".robots-organic-avatar")).toBeNull();
+  await act(async () => webLogoAvatarActivity.hydrate("chat", snapshot));
+  await act(async () =>
+    webLogoAvatarActivity.apply("chat", event(1, "agent.tool.called", { name: "read_file" })),
+  );
+  expect(subscribe).not.toHaveBeenCalled();
+  expect(avatar("live")!.dataset.working).toBe("false");
 });
-it("retains the live pose through overlapping feed hydration, hidden updates and reconnect", async () => {
-  await mount();
+it("lights the working ring from the status alone, through hydration, hidden tabs and reconnect", async () => {
+  await mount("running");
+  expect(avatar("live")!.dataset.working).toBe("true");
+  expect(
+    container.querySelector('[data-testid="live"] .robots-bot-avatar-ring-working'),
+  ).not.toBeNull();
   await act(async () => {
     webLogoAvatarActivity.hydrate("chat", snapshot);
     webLogoAvatarActivity.apply(
@@ -110,68 +106,54 @@ it("retains the live pose through overlapping feed hydration, hidden updates and
       event(1, "agent.tool.called", { name: "read_file", executionId: "read" }),
     );
   });
-  await act(async () => webLogoAvatarActivity.hydrate("call", { ...snapshot, cursor: 1 }));
-  expect(live().dataset.activity).toBe("reading");
+  expect(avatar("live")!.dataset.working).toBe("true");
   const hidden = vi.spyOn(document, "hidden", "get").mockReturnValue(true);
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
-  expect(live().dataset.paused).toBe("true");
-  await act(async () =>
-    webLogoAvatarActivity.apply(
-      "chat",
-      event(2, "thread.progress", { streaming: true, delta: "Reply" }),
-    ),
-  );
-  // A still-open tool remains the most specific activity while the tab is hidden.
-  expect(live().dataset.activity).toBe("reading");
+  expect(avatar("live")!.dataset.working).toBe("true");
   hidden.mockReturnValue(false);
   await act(async () => document.dispatchEvent(new Event("visibilitychange")));
-  expect(live().dataset.paused).toBe("false");
   await act(async () => {
     webLogoAvatarActivity.resetSource("chat");
-    webLogoAvatarActivity.resetSource("call");
     webLogoAvatarActivity.hydrate("reconnect", { ...snapshot, cursor: 2 });
-    webLogoAvatarActivity.apply(
-      "reconnect",
-      event(1, "agent.tool.called", { name: "read_file", executionId: "read" }),
-    );
   });
-  expect(live().dataset.activity).toBe("working");
+  expect(avatar("live")!.dataset.working).toBe("true");
+  expect(avatar("legacy")!.dataset.working).toBe("false");
 });
 
-it("keeps static SVG artwork mounted through rapid live activity changes", async () => {
-  await act(async () =>
-    root.render(
-      <BotAvatarActivityProvider source={webLogoAvatarActivity}>
-        <BotAvatar identity="bot-a" color="#10B981" avatarSet="robots" size={22} status="running" />
-      </BotAvatarActivityProvider>,
-    ),
-  );
-  await act(async () => webLogoAvatarActivity.hydrate("chat", snapshot));
-  const body = container.querySelector(".logo-avatar-art");
-  const definition = body!.querySelector("defs");
-  for (let seq = 1; seq <= 40; seq++) {
-    await act(async () =>
-      webLogoAvatarActivity.apply(
-        "chat",
-        event(seq, "thread.meta", { activity: { thinking: seq % 2 === 0 } }),
+it("keeps the same robot picture mounted through rapid status changes", async () => {
+  const render = (status: string) =>
+    act(async () =>
+      root.render(
+        <BotAvatarActivityProvider source={webLogoAvatarActivity}>
+          <BotAvatar
+            identity="bot-a"
+            color="#10B981"
+            avatarSet="robots"
+            size={22}
+            status={status}
+          />
+        </BotAvatarActivityProvider>,
       ),
     );
-    expect(container.querySelector(".robots-logo-avatar")!.getAttribute("data-activity")).toBe(
-      seq % 2 === 0 ? "thinking" : "working",
+  await render("running");
+  const image = container.querySelector(".robots-bot-avatar-picture img");
+  expect(image).not.toBeNull();
+  for (let step = 1; step <= 40; step++) {
+    await render(step % 2 === 0 ? "running" : "idle");
+    expect(container.querySelector(".robots-bot-avatar")!.getAttribute("data-working")).toBe(
+      String(step % 2 === 0),
     );
-    expect(container.querySelector(".logo-avatar-art")).toBe(body);
-    expect(body!.querySelector("defs")).toBe(definition);
-    expect(container.querySelectorAll("[data-logo-layer]")).toHaveLength(1);
+    expect(container.querySelector(".robots-bot-avatar-picture img")).toBe(image);
+    expect(container.querySelectorAll(".robots-bot-avatar-picture")).toHaveLength(1);
   }
 });
 
-it("renders generic work elsewhere when the open chat is idle, preserving live detail", async () => {
+it("shows work from the status elsewhere even when the open chat is idle", async () => {
   await mount("running");
   await act(async () =>
     webLogoAvatarActivity.hydrate("dm", { threadId: "dm", cursor: 0, botId: "bot-a", run: null }),
   );
-  expect(live().dataset.activity).toBe("working");
-  expect(live().dataset.working).toBe("true");
+  expect(avatar("live")!.dataset.working).toBe("true");
   await act(async () => {
     webLogoAvatarActivity.hydrate("group", snapshot);
     webLogoAvatarActivity.apply(
@@ -179,10 +161,9 @@ it("renders generic work elsewhere when the open chat is idle, preserving live d
       event(1, "agent.tool.called", { name: "read_file", executionId: "read" }),
     );
   });
-  expect(live().dataset.activity).toBe("reading");
+  expect(avatar("live")!.dataset.working).toBe("true");
   await act(async () => webLogoAvatarActivity.resetSource("group"));
-  expect(live().dataset.activity).toBe("working");
+  expect(avatar("live")!.dataset.working).toBe("true");
   await mount("idle");
-  expect(live().dataset.activity).toBe("idle");
-  expect(live().dataset.working).toBe("false");
+  expect(avatar("live")!.dataset.working).toBe("false");
 });

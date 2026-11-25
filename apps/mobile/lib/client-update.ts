@@ -5,7 +5,7 @@ import {
   formatClientBuild,
   MOBILE_APP_LINKS,
 } from "@robots/contracts";
-import { bestEffort } from "@robots/logging";
+import { bestEffort } from "@robots/logging/best-effort";
 import * as Updates from "expo-updates";
 import type { AppStateStatus } from "react-native";
 import { Alert, AppState, Linking, Platform } from "react-native";

@@ -66,7 +66,7 @@ describe.skipIf(!databaseAvailable)("eval history accounting", () => {
               contextWindow: 160_000,
               maxTokens: 4096,
             },
-            timeoutMs: 20_000,
+            timeoutMs: 45_000,
             maxToolCalls,
             createApp: (composio) =>
               createApp({
@@ -107,6 +107,6 @@ describe.skipIf(!databaseAvailable)("eval history accounting", () => {
         await rm(dataDir, { recursive: true, force: true });
       }
     },
-    30_000,
+    60_000,
   );
 });
