@@ -1,5 +1,6 @@
 import type { AgentRunRequest, AgentRuntimeEvent, BackgroundJob } from "@robots/adapter-kit";
 import type { MessageBlock } from "@robots/contracts";
+import { PRIMARY_BOT_SPAWN_KEY } from "@robots/contracts";
 import type { AppendEventInput, Prisma } from "@robots/db";
 import {
   appendEventInTransaction,
@@ -14,6 +15,7 @@ import type * as ComputerLifecycleModule from "./computer-lifecycle.js";
 import { createRunExecutor } from "./executor.js";
 import { createJobReconciler } from "./job-reconciler.js";
 import type * as ModelVisionModule from "./model-vision.js";
+import { PRIMARY_BOT_OPERATING_MODEL } from "./primary-bot.prompt.js";
 import type * as RunNotificationsModule from "./run-notifications.js";
 import { notifyRun } from "./run-notifications.js";
 import {
@@ -89,6 +91,7 @@ async function runTurn(
     directChat?: boolean;
     /** The peer message answers a request this bot sent, so the user reads the reply. */
     repliesToRequest?: boolean;
+    bot?: { spawnKey?: string | null; instructions?: string };
   } = {},
 ) {
   vi.mocked(loadBotMessageContext).mockResolvedValue({
@@ -191,6 +194,7 @@ async function runTurn(
         memoryScope: null,
         replyMode: options.replyMode ?? "chat",
         computer: { id: "computer-1", scope: "dedicated" },
+        ...options.bot,
       })),
       findMany: vi.fn(async () => []),
     },
@@ -2195,5 +2199,34 @@ describe("completion pushes", () => {
     vi.mocked(notifyRun).mockClear();
     await runTurn("Done.", false, "I will check.", [], "fyi", { trigger: "user" });
     expect(completionPushes()).toHaveLength(1);
+  });
+});
+
+describe("the primary bot's operating model", () => {
+  async function instructionsFor(
+    trigger: string,
+    bot: { spawnKey?: string | null; instructions?: string },
+  ) {
+    const result = await runTurn("Done.", false, "I will check.", [], "fyi", { trigger, bot });
+    return result.runtimeRun.mock.calls[0]![0].instructions ?? "";
+  }
+
+  it("reaches the model on user, routine and follow-up runs, beside edited instructions", async () => {
+    for (const trigger of ["user", "routine", "follow_up"]) {
+      const instructions = await instructionsFor(trigger, {
+        spawnKey: PRIMARY_BOT_SPAWN_KEY,
+        instructions: "Only talk about the garden.",
+      });
+      expect(instructions).toContain(PRIMARY_BOT_OPERATING_MODEL);
+      expect(instructions).toContain("Only talk about the garden.");
+    }
+  });
+
+  it("never reaches any other bot", async () => {
+    for (const spawnKey of [null, "tool-call-1"]) {
+      const instructions = await instructionsFor("user", { spawnKey, instructions: "Sort mail." });
+      expect(instructions).toContain("Sort mail.");
+      expect(instructions).not.toContain(PRIMARY_BOT_OPERATING_MODEL);
+    }
   });
 });
