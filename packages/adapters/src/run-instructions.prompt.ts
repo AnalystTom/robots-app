@@ -1,6 +1,7 @@
 import { FLEET_WRITE_TOOL_NAMES } from "@robots/contracts";
 import { runReadsThreadHistory, toolRequiresExplicitApproval } from "@robots/core";
 import { MODEL_CANNOT_SEE_MESSAGE } from "./model-vision.prompt.js";
+import { primaryBotOperatingModel } from "./primary-bot.prompt.js";
 import { replyGuidanceForOfferedTools } from "./run-replies.prompt.js";
 import type { UserComputerState } from "./run-tools-user-computer.js";
 import { SCHEDULE_TOOL_NAMES } from "./schedule-tools.js";
@@ -504,18 +505,20 @@ export function runIdentityInstruction(
     name: string;
     description?: string | null;
     instructions?: string | null;
+    spawnKey?: string | null;
   },
   trigger: string,
 ): string {
   const description = bot.description?.trim() ?? "";
   const rawInstructions = bot.instructions ?? "";
   const instructions = rawInstructions.trim();
+  const operatingModel = primaryBotOperatingModel(bot);
   if (trigger !== "created") {
     const identity = description ? `${bot.name}\n${description}` : bot.name;
-    // Older bots saved one text as both fields; do not repeat it.
-    if (!instructions || instructions === description) return identity;
+    const framed = [identity, operatingModel].filter(Boolean).join("\n");
+    if (!instructions || instructions === description) return framed;
     return [
-      identity,
+      framed,
       "Teammates see only the profile above. These instructions are private to you:",
       instructions,
     ].join("\n");
@@ -524,5 +527,8 @@ export function runIdentityInstruction(
     `Name: ${bot.name.trim() || "(none)"}`,
     `Description: ${description || "(none)"}`,
     instructions ? `Instructions:\n${instructions}` : "Instructions: (none)",
-  ].join("\n");
+    operatingModel,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
