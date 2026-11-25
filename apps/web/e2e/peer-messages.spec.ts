@@ -55,7 +55,7 @@ test("shows peer lines in transcript and opens view-only peer chat", async ({ pa
   await expect(chip).toHaveAccessibleName(
     /Messaged Researcher|Message from Researcher|messages with Researcher/,
   );
-  await expect(chip.locator(".robots-organic-avatar")).toBeVisible();
+  await expect(chip.locator(".robots-bot-avatar-picture")).toBeVisible();
   await expect(chip).not.toContainText("{peer}");
   await expect(chip).not.toContainText("peer-exchange-alpha");
   await expect(transcript.getByText(/^Here's what Researcher found: /)).toBeVisible({

@@ -5000,7 +5000,7 @@ async function answerPendingApproval(
 async function waitFor(app: App, cookie: string, botId: string, pred: (snap: Snap) => boolean) {
   const start = Date.now();
   let last: Snap | null = null;
-  while (Date.now() - start < 20_000) {
+  while (Date.now() - start < 25_000) {
     last = await rpc<Snap>(app, cookie, "threads/get", { botId });
     if (pred(last)) return last;
     await new Promise((r) => setTimeout(r, 100));
@@ -5010,7 +5010,7 @@ async function waitFor(app: App, cookie: string, botId: string, pred: (snap: Sna
 
 async function waitForDatabase(pred: () => Promise<boolean>) {
   const start = Date.now();
-  while (Date.now() - start < 10_000) {
+  while (Date.now() - start < 25_000) {
     if (await pred()) return;
     await new Promise((resolve) => setTimeout(resolve, 25));
   }

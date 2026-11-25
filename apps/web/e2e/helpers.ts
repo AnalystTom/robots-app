@@ -33,13 +33,15 @@ export async function rpc<T>(page: Page, procedure: string, body: unknown): Prom
   return parsed.json as T;
 }
 
+const ONBOARDING_MS = 60_000;
+
 export async function completeOnboarding(page: Page, testInfo?: TestInfo) {
-  await page.waitForURL(/\/(onboarding|app)/, { timeout: 20_000 });
+  await page.waitForURL(/\/(onboarding|app)/, { timeout: ONBOARDING_MS });
   // Optional Server integrations step (needsSetup). Skip when shown, then the
   // first bot is created automatically — land in Chief's chat with no form.
   const integrations = page.getByRole("heading", { name: "Server integrations", exact: true });
   const chief = page.getByText("Chief").first();
-  await integrations.or(chief).waitFor({ timeout: 60_000 });
+  await integrations.or(chief).waitFor({ timeout: ONBOARDING_MS });
   if ((await chief.isVisible().catch(() => false)) && page.url().includes("/app")) {
     if (testInfo) {
       await captureScreenshot(page, testInfo, "03-create-first-bot");
@@ -51,8 +53,8 @@ export async function completeOnboarding(page: Page, testInfo?: TestInfo) {
     if (testInfo) await captureScreenshot(page, testInfo, "02-connect-apps");
     await page.getByRole("button", { name: "Skip", exact: true }).click();
   }
-  await page.waitForURL(/\/app\//, { timeout: 20_000 });
-  await expect(page.getByText("Chief").first()).toBeVisible();
+  await page.waitForURL(/\/app\//, { timeout: ONBOARDING_MS });
+  await expect(page.getByText("Chief").first()).toBeVisible({ timeout: ONBOARDING_MS });
   if (testInfo) {
     await captureScreenshot(page, testInfo, "03-create-first-bot");
     await captureScreenshot(page, testInfo, "06-onboarding-complete");

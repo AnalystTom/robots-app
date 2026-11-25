@@ -602,6 +602,33 @@ describe("mobile monitoring", () => {
     expect(sdk.init).toHaveBeenCalledTimes(2);
   });
 
+  it("reports best-effort failures to the native SDK except lost connections", async () => {
+    const monitor = await import("./monitoring");
+    const { bestEffort } = await import("@robots/logging/best-effort");
+    await monitor.configureMobileMonitoring(
+      "https://app.example.com",
+      {},
+      response({ dsn: "https://key@errors.example.com/8" }),
+    );
+    await bestEffort(
+      "foreground update check",
+      Promise.reject(
+        new Error("fetch failed: java.net.UnknownHostException: Unable to resolve host"),
+      ),
+    );
+    expect(sdk.captureException).not.toHaveBeenCalled();
+
+    const bug = new TypeError("store listing is malformed");
+    await expect(bestEffort("open store listing", Promise.reject(bug))).resolves.toBeUndefined();
+    expect(sdk.captureException).toHaveBeenCalledExactlyOnceWith(bug, {
+      tags: {
+        message: "best effort failed: open store listing",
+        operation: "mobile.best-effort",
+        surface: "mobile",
+      },
+    });
+  });
+
   it("keeps lost connections and cancelled requests out of error reports", async () => {
     const monitor = await import("./monitoring");
     await monitor.configureMobileMonitoring(

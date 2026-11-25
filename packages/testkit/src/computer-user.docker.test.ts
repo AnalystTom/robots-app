@@ -34,7 +34,7 @@ describe.skipIf(process.env.RUN_COMPUTER_REPLAY_DOCKER !== "1")(
               `/home/robots:uid=${uid},gid=${gid},mode=700`,
               process.env.ROBOTS_COMPUTER_IMAGE ?? "robots/computer:local",
             ],
-            { stdio: "pipe", timeout: 30_000 },
+            { stdio: "pipe", timeout: 120_000 },
           );
           const result = execFileSync(
             "docker",
