@@ -5,7 +5,15 @@ Rendered with runIdentityInstruction, the identity block every run's system prom
 ## Input
 
 ```json
-{"trigger":"user","bot":{"name":"RoBot","spawnKey":"primary","description":"","instructions":"Only talk about the garden."}}
+{
+  "trigger": "user",
+  "bot": {
+    "name": "RoBot",
+    "spawnKey": "primary",
+    "description": "",
+    "instructions": "Only talk about the garden."
+  }
+}
 ```
 
 ## This branch
@@ -29,7 +37,10 @@ Only talk about the garden.
 ## Input
 
 ```json
-{"trigger":"routine","bot":{"name":"RoBot","spawnKey":"primary","description":"","instructions":""}}
+{
+  "trigger": "routine",
+  "bot": { "name": "RoBot", "spawnKey": "primary", "description": "", "instructions": "" }
+}
 ```
 
 ## This branch
@@ -51,7 +62,15 @@ Your operating model as the primary bot. It always applies; any instructions bel
 ## Input
 
 ```json
-{"trigger":"user","bot":{"name":"Ada","spawnKey":null,"description":"Reads mail.","instructions":"Sort it."}}
+{
+  "trigger": "user",
+  "bot": {
+    "name": "Ada",
+    "spawnKey": null,
+    "description": "Reads mail.",
+    "instructions": "Sort it."
+  }
+}
 ```
 
 ## This branch
@@ -63,4 +82,3 @@ Reads mail.
 Teammates see only the profile above. These instructions are private to you:
 Sort it.
 ```
-
