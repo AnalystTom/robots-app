@@ -112,6 +112,7 @@ jobs:
         id: playwright_tests
         env:
           SHARD: ${{ matrix.shard }}/6
+          TMPDIR: ${{ runner.temp }}
           E2E_SKIP_NIGHTLY: ${{ !inputs.nightly && '1' || '' }}
           E2E_SKIP_HEAVY: "1"
         run: pnpm test:e2e -- --shard="$SHARD"
@@ -165,6 +166,7 @@ jobs:
         env:
           E2E_SKIP_NIGHTLY: ${{ !inputs.nightly && '1' || '' }}
           E2E_WORKERS: ${{ matrix.workers }}
+          TMPDIR: ${{ runner.temp }}
         run: pnpm test:e2e -- --spec="${{ matrix.spec }}.spec.ts"
       - name: Keep heavy results on the runner
         if: always() && steps.areas.outputs.e2e != 'false'
