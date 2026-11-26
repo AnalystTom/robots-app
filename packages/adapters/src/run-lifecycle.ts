@@ -211,13 +211,13 @@ export function providerOutageRetryDelay(priorFailures: number): number {
 export async function startNextWaitingRun(
   deps: ExecutorDeps,
   botId: string,
-  releasedBy: string,
+  releasedBy?: string,
 ): Promise<void> {
   const next = await deps.prisma.run.findFirst({
     where: {
       botId,
       status: "queued",
-      id: { not: releasedBy },
+      ...(releasedBy ? { id: { not: releasedBy } } : {}),
       OR: [{ wakeAt: null }, { wakeAt: { lte: new Date() } }],
     },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -346,7 +346,7 @@ export async function requeueComputerRun(
   fence: number,
   resumeCheckpoint: TakeoverResumeCheckpoint | null,
   heldForTakeover = false,
-  untilReleased = false,
+  untilReleased?: { computerId: string; botId: string },
 ): Promise<void> {
   const retryAt = new Date(Date.now() + computerRetryDelay(fence));
   const released = await writeComputerRunRequeue(
@@ -359,8 +359,21 @@ export async function requeueComputerRun(
     null,
     untilReleased ? null : retryAt,
   );
-  if (!released || untilReleased) return;
-  await wakeRun(deps.jobs, runId, { at: retryAt });
+  if (!released) return;
+  if (!untilReleased) {
+    await wakeRun(deps.jobs, runId, { at: retryAt });
+    return;
+  }
+  const stillHeld = await deps.prisma.computerExecutionLease.findFirst({
+    where: {
+      computerId: untilReleased.computerId,
+      botId: untilReleased.botId,
+      runId: { not: runId },
+      expiresAt: { gt: new Date() },
+    },
+    select: { id: true },
+  });
+  if (!stillHeld) await startNextWaitingRun(deps, untilReleased.botId);
 }
 
 /**

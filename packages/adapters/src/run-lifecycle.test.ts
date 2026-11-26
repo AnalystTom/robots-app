@@ -2,7 +2,7 @@ import { runContinueJob } from "@robots/adapter-kit";
 import { describe, expect, it, vi } from "vitest";
 import { returnHelperOutcome } from "./background-helpers.js";
 import type { ExecutorDeps } from "./executor-deps.js";
-import { failRunBeforeTurn, startNextWaitingRun } from "./run-lifecycle.js";
+import { failRunBeforeTurn, requeueComputerRun, startNextWaitingRun } from "./run-lifecycle.js";
 import { notifyRun } from "./run-notifications.js";
 
 vi.mock("./run-notifications.js", () => ({ notifyRun: vi.fn(async () => undefined) }));
@@ -72,5 +72,39 @@ describe("failing a run before its turn", () => {
     await failRunBeforeTurn(deps, run("user"), "Chief", lease, "model not connected");
     expect(notifyRun).toHaveBeenCalledOnce();
     expect(returnHelperOutcome).toHaveBeenCalledOnce();
+  });
+});
+
+describe("queueing a run until its bot's computer is released", () => {
+  function requeueDeps(heldBy: { id: string } | null) {
+    const updateMany = vi.fn(async () => ({ count: 1 }));
+    const findFirst = vi.fn(async () => ({ id: "waiting" }));
+    const enqueue = vi.fn(async () => undefined);
+    const lease = vi.fn(async () => heldBy);
+    return {
+      deps: {
+        prisma: { run: { updateMany, findFirst }, computerExecutionLease: { findFirst: lease } },
+        jobs: { enqueue },
+      } as unknown as ExecutorDeps,
+      enqueue,
+    };
+  }
+
+  it("starts the run itself when the holder released before it was queued", async () => {
+    const f = requeueDeps(null);
+    await requeueComputerRun(f.deps, "waiting", "worker", 1, null, false, {
+      computerId: "computer",
+      botId: "bot",
+    });
+    expect(f.enqueue).toHaveBeenCalledExactlyOnceWith(runContinueJob("waiting"));
+  });
+
+  it("leaves the run for the holder's release when the computer is still held", async () => {
+    const f = requeueDeps({ id: "lease" });
+    await requeueComputerRun(f.deps, "waiting", "worker", 1, null, false, {
+      computerId: "computer",
+      botId: "bot",
+    });
+    expect(f.enqueue).not.toHaveBeenCalled();
   });
 });
