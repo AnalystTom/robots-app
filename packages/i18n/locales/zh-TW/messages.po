@@ -64,6 +64,8 @@ msgid "{0, plural, one {# space} other {# spaces}}"
 msgstr "{0, plural, other {# 個空間}}"
 
 #. placeholder {0}: server.health.toolCount
+#. placeholder {0}: tools.length
+#: apps/web/src/components/integrations/connection-page.tsx
 #: apps/web/src/pages/McpServersOverlay.tsx
 msgid "{0, plural, one {# tool} other {# tools}}"
 msgstr "{0, plural, other {# 個工具}}"
@@ -96,6 +98,13 @@ msgstr "{0}（超過 {1}）"
 msgid "{0} {unitLabel}"
 msgstr "{0} {unitLabel}"
 
+#. placeholder {0}: app.name
+#. placeholder {0}: item.name
+#: apps/web/src/pages/plugins/connector-detail.tsx
+#: apps/web/src/pages/plugins/remote-mcp-app-detail.tsx
+msgid "{0} account"
+msgstr ""
+
 #. placeholder {0}: block.name
 #: apps/web/src/pages/shell/message-cards.tsx
 msgid "{0} connection"
@@ -110,6 +119,16 @@ msgstr "{0} GB"
 #: apps/web/src/pages/ExternalConversationSettings.tsx
 msgid "{0} handling"
 msgstr "{0} 處理方式"
+
+#. placeholder {0}: entry.name
+#. placeholder {0}: input.profile.name
+#. placeholder {0}: profile.name
+#. placeholder {1}: entry.browser
+#. placeholder {1}: input.profile.browser
+#. placeholder {1}: profile.browser
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "{0} in {1}"
+msgstr ""
 
 #. placeholder {0}: bot.name
 #: apps/web/src/components/call/IncomingCall.tsx
@@ -205,6 +224,21 @@ msgstr "今天已花費 {amount}"
 msgid "{at} by {by}"
 msgstr "{by} 於 {at}"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "{bot} asks before each {things}"
+msgstr ""
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "{bot} drafts each post and publishes it only after you approve it."
+msgstr ""
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "{bot} goes ahead without asking"
+msgstr ""
+
 #: apps/mobile/lib/thread-voice.ts
 msgid "{bot} here."
 msgstr "我是 {bot}。"
@@ -212,6 +246,26 @@ msgstr "我是 {bot}。"
 #: apps/mobile/lib/thread-voice.ts
 msgid "{bot} here. Hi {name}."
 msgstr "我是 {bot}。你好 {name}。"
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "{bot} shows each payment and pays only after you approve it."
+msgstr ""
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "{bot} shows what it will delete and waits for your approval."
+msgstr ""
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "{bot} writes each email and sends it only after you approve it."
+msgstr ""
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "{bot} writes each message and sends it only after you approve it."
+msgstr ""
 
 #: apps/web/src/pages/shell/dialogs.tsx
 msgid "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}"
@@ -430,6 +484,10 @@ msgstr "{name}（超過 {limit}）"
 msgid "{name} (permission denied)"
 msgstr "{name}（未授予權限）"
 
+#: apps/mobile/lib/organizations.ts
+msgid "{name} (Personal)"
+msgstr ""
+
 #: apps/mobile/app/(settings)/plugin.tsx
 #: apps/web/src/components/integrations/plugin-marketplace.tsx
 msgid "{name} (same name as a built-in skill)"
@@ -438,6 +496,10 @@ msgstr "{name}（與內建技能同名）"
 #: apps/mobile/lib/thread-attachments.ts
 msgid "{name} (unsupported type)"
 msgstr "{name}（不支援的類型）"
+
+#: apps/mobile/components/integration-detail.tsx
+msgid "{name} account"
+msgstr ""
 
 #: apps/mobile/lib/activity.ts
 #: apps/web/src/lib/activity-list-filters.ts
@@ -706,7 +768,6 @@ msgid "{title}, saved as {savedAs}"
 msgstr "{title}，儲存為 {savedAs}"
 
 #: apps/web/src/components/ToolActivityDisclosure.tsx
-#: apps/web/src/pages/plugins/connector-detail.tsx
 msgid "{toolCount, plural, one {# tool} other {# tools}}"
 msgstr "{toolCount, plural, one {# 個工具} other {# 個工具}}"
 
@@ -911,6 +972,11 @@ msgstr "可供你的機器人處理任務的看板"
 msgid "A model approves routine actions and asks you about the rest."
 msgstr "由模型核准例行操作，其餘的再詢問你。"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "A model checks each one and asks you when unsure"
+msgstr ""
+
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "A routine"
 msgstr "例行工作"
@@ -953,6 +1019,15 @@ msgstr "關於 {label}"
 msgid "About the email \"{0}\" (id {1}):"
 msgstr "關於電子郵件「{0}」(ID {1}):"
 
+#: apps/mobile/components/integration-detail.tsx
+#: apps/mobile/components/mac-app-detail.tsx
+#: apps/web/src/pages/mcp-server-page.tsx
+#: apps/web/src/pages/plugins/connector-detail.tsx
+#: apps/web/src/pages/plugins/mac-app-detail.tsx
+#: apps/web/src/pages/plugins/remote-mcp-app-detail.tsx
+msgid "Access"
+msgstr ""
+
 #: apps/web/src/components/ComputerProviderSettings.tsx
 msgid "Access key ID"
 msgstr "存取金鑰 ID"
@@ -992,10 +1067,6 @@ msgstr "帳號標籤"
 #: apps/web/src/components/SidebarFooter.tsx
 msgid "Account menu for {name}"
 msgstr "{name} 的帳號選單"
-
-#: apps/mobile/components/integration-detail.tsx
-msgid "Accounts"
-msgstr "帳號"
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Action"
@@ -1285,6 +1356,7 @@ msgstr "將新增"
 
 #: apps/mobile/app/bot-settings.tsx
 #: apps/mobile/components/compatible-endpoint-form.tsx
+#: apps/mobile/components/composer-model-menu.tsx
 #: apps/mobile/components/routine-schedule-editor.tsx
 #: apps/web/src/lib/cron.ts
 #: apps/web/src/pages/McpServerForm.tsx
@@ -1293,6 +1365,7 @@ msgstr "將新增"
 #: apps/web/src/pages/onboarding/model-step.tsx
 #: apps/web/src/pages/routine-editor/model-settings.tsx
 #: apps/web/src/pages/shell/bot-panel.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
 msgid "Advanced"
 msgstr "進階"
 
@@ -1368,11 +1441,24 @@ msgstr "不限時間"
 msgid "Allow"
 msgstr "允許"
 
-#: apps/mobile/lib/ai-consent.ts
 #: apps/web/src/components/ActionRulesSettings.tsx
 #: apps/web/src/components/ApprovalRulesSettings.tsx
+#: apps/web/src/components/integrations/permission-dialog.tsx
+#: apps/web/src/pages/plugins/mac-app-detail.tsx
 msgid "Allow"
 msgstr "允許"
+
+#. placeholder {0}: tool.label
+#: apps/mobile/components/permission-sheet.tsx
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "Allow {0}"
+msgstr ""
+
+#. placeholder {0}: action[capability]
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "Allow {bot} to {0}"
+msgstr ""
 
 #: apps/mobile/app/(settings)/ai-data-sharing.tsx
 msgid "Allow {name} on mobile"
@@ -1405,6 +1491,10 @@ msgstr "允許一次"
 msgid "Allow RoBots to use Speech Recognition and the microphone in System Settings."
 msgstr "請在系統設定中允許 RoBots 使用語音辨識和麥克風。"
 
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Allow RoBots to use the browser's key when your computer asks, then try again."
+msgstr ""
+
 #: apps/mobile/lib/call-session.ts
 #: apps/mobile/lib/composer-dictation.ts
 #: apps/mobile/lib/thread-voice.ts
@@ -1414,6 +1504,12 @@ msgstr "請在設定中允許語音辨識，或連接支援轉寫的語音服務
 #: apps/web/src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Allow writing"
 msgstr "允許寫入"
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/connection-page.tsx
+#: apps/web/src/components/integrations/use-mac-grants.ts
+msgid "Allowed"
+msgstr ""
 
 #: apps/mobile/components/thread/message-bubble.tsx
 #: apps/web/src/components/AskCard.tsx
@@ -1476,6 +1572,11 @@ msgstr "一律允許"
 msgid "Always ask"
 msgstr "一律詢問"
 
+#: apps/mobile/components/integration-detail.tsx
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "Always on"
+msgstr ""
+
 #: apps/mobile/app/_layout.tsx
 #: apps/web/src/components/markdown-link-prompt.tsx
 msgid "Always open {site}"
@@ -1510,6 +1611,7 @@ msgstr "無法使用匯入的 API 金鑰。請取消勾選後再試一次。"
 msgid "An integration tool"
 msgstr "整合工具"
 
+#: apps/mobile/components/bot-look-picker.tsx
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Analyst"
 msgstr "分析師"
@@ -1557,10 +1659,6 @@ msgstr "已回答"
 #: apps/web/src/components/AskCard.tsx
 msgid "Answered: {answer}"
 msgstr "已回答：{answer}"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Antenna"
-msgstr "天線"
 
 #: apps/web/src/pages/onboarding/use-onboarding-model.ts
 msgid "Anthropic API"
@@ -1679,6 +1777,7 @@ msgid "Approvals"
 msgstr "核准"
 
 #: apps/mobile/app/(settings)/messaging.tsx
+#: apps/mobile/components/ai-consent-screen.tsx
 #: apps/mobile/components/McpApprovalCard.tsx
 #: apps/web/src/pages/MessagingSettingsPanel.tsx
 #: apps/web/src/pages/PluginSubmissionsPanel.tsx
@@ -1760,6 +1859,11 @@ msgstr "詢問 {0}"
 msgid "Ask a bot"
 msgstr "詢問機器人"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "Ask each time"
+msgstr ""
+
 #. js-lingui-explicit-id
 #: packages/i18n/src/vault.ts
 msgid "Ask first"
@@ -1774,6 +1878,11 @@ msgstr "在聊天中請此機器人設定一個例行任務。"
 msgid "Asks before sending, spending or changing anything in your apps."
 msgstr "在你的應用程式中傳送、花費或變更任何內容前先詢問。"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "Asks once"
+msgstr ""
+
 #: apps/mobile/components/approval-settings-rows.tsx
 #: apps/web/src/components/ApprovalRulesSettings.tsx
 msgid "Asks only before purchases and the first use of your computer. Only Block rules apply."
@@ -1785,6 +1894,7 @@ msgstr "只在購物及首次使用你的電腦前詢問。僅套用封鎖規則
 msgid "Asleep"
 msgstr "休眠中"
 
+#: apps/mobile/components/bot-look-picker.tsx
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Assistant"
 msgstr "助理"
@@ -1864,9 +1974,16 @@ msgid "Authorize this server so agents can use its tools. A popup opens."
 msgstr "授權此伺服器，讓代理程式使用它的工具。接著會開啟彈出視窗。"
 
 #: apps/mobile/components/approval-settings-rows.tsx
+#: apps/mobile/components/composer-model-menu.tsx
 #: apps/web/src/components/ApprovalRulesSettings.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
 msgid "Auto"
 msgstr "自動"
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "Auto review"
+msgstr ""
 
 #: apps/mobile/app/(settings)/team-conversation.tsx
 #: apps/web/src/pages/ExternalConversationSettings.tsx
@@ -1895,17 +2012,15 @@ msgstr "Shell 命令可透過 {commandVariable} 使用"
 msgid "Avatar Studio"
 msgstr "頭像工作室"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Aviators"
-msgstr "飛行員墨鏡"
-
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/mobile/app/new-group.tsx
 #: apps/mobile/app/sign-in.tsx
 #: apps/mobile/components/add-custom-integration.tsx
 #: apps/mobile/components/integration-detail.tsx
+#: apps/mobile/components/mac-app-detail.tsx
 #: apps/mobile/components/vault-item-sheet.tsx
 #: apps/web/src/components/bot-templates/bot-templates-dialog.tsx
+#: apps/web/src/components/integrations/connection-page.tsx
 #: apps/web/src/components/integrations/plugin-marketplace.tsx
 #: apps/web/src/components/integrations/skills-dialog.tsx
 #: apps/web/src/components/SettingsPageHeader.tsx
@@ -1916,7 +2031,6 @@ msgstr "飛行員墨鏡"
 #: apps/web/src/pages/Board.tsx
 #: apps/web/src/pages/McpServerForm.tsx
 #: apps/web/src/pages/NavLinkPage.tsx
-#: apps/web/src/pages/plugins/connector-detail.tsx
 #: apps/web/src/pages/plugins/parts.tsx
 #: apps/web/src/pages/RoutineEditor.tsx
 #: apps/web/src/pages/SettingsOverlay.tsx
@@ -2012,10 +2126,6 @@ msgstr "封鎖"
 msgid "Blocked"
 msgstr "受阻"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Blue"
-msgstr "藍色"
-
 #: apps/mobile/app/_layout.tsx
 #: apps/mobile/app/(settings)/account.tsx
 #: apps/web/src/components/SidebarFooter.tsx
@@ -2105,6 +2215,7 @@ msgstr "兩者都有"
 #: apps/mobile/components/vault-item-sheet.tsx
 #: apps/web/src/components/vault/VaultItemAccess.tsx
 #: apps/web/src/components/vault/VaultItemDetail.tsx
+#: apps/web/src/components/vault/VaultSessionImport.tsx
 msgid "Bots"
 msgstr "機器人"
 
@@ -2159,9 +2270,9 @@ msgstr "瀏覽"
 msgid "Browse MCP servers"
 msgstr "瀏覽 MCP 伺服器"
 
-#: apps/web/src/pages/shell/avatar-studio-popover.tsx
-msgid "Build a robot, choose another style, or upload an image"
-msgstr "打造機器人、選擇其他風格或上傳圖片"
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Browser profile"
+msgstr ""
 
 #: apps/web/src/pages/KnowledgeSection.tsx
 #: apps/web/src/pages/shell/agent-import-plan.tsx
@@ -2346,10 +2457,6 @@ msgstr "已取消"
 msgid "Cancelled trials have no computer hours."
 msgstr "已取消的試用沒有電腦時數。"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Cape"
-msgstr "披風"
-
 #: apps/mobile/lib/secret-destination.ts
 #: apps/mobile/lib/vault.ts
 #: apps/web/src/components/vault/kinds.tsx
@@ -2520,21 +2627,15 @@ msgstr "正在檢查連線…"
 #: apps/mobile/app/server.tsx
 #: apps/web/src/components/ComputersUnavailableHint.tsx
 #: apps/web/src/components/DesktopUpdates.tsx
+#: apps/web/src/components/integrations/use-mac-grants.ts
 #: apps/web/src/pages/HostComputerPrompt.tsx
 msgid "Checking…"
 msgstr "正在檢查…"
 
+#: apps/mobile/components/bot-look-picker.tsx
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Chef"
 msgstr "廚師"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Chef's hat"
-msgstr "廚師帽"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Chef's jacket"
-msgstr "廚師服"
 
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Choose a message to read it."
@@ -2561,6 +2662,10 @@ msgstr "選擇方案"
 #: apps/web/src/pages/onboarding/model-step.tsx
 msgid "Choose a provider"
 msgstr "選擇供應商"
+
+#: apps/web/src/pages/shell/avatar-studio-popover.tsx
+msgid "Choose a robot, another style, or upload an image"
+msgstr ""
 
 #: apps/web/src/pages/shell/agent-import.tsx
 msgid "Choose backup"
@@ -2735,6 +2840,10 @@ msgstr "關閉技能"
 msgid "Close table"
 msgstr "關閉表格"
 
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Close the browser, then try again."
+msgstr ""
+
 #: apps/web/src/pages/SettingsOverlay.tsx
 msgid "Close user settings"
 msgstr "關閉使用者設定"
@@ -2744,6 +2853,8 @@ msgstr "關閉使用者設定"
 msgid "Close voice settings"
 msgstr "關閉語音設定"
 
+#: apps/mobile/components/integration-detail.tsx
+#: apps/web/src/components/integrations/connection-page.tsx
 #: apps/web/src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Cloud"
 msgstr "雲端"
@@ -2765,6 +2876,7 @@ msgctxt "email sign-in"
 msgid "Code"
 msgstr "驗證碼"
 
+#: apps/mobile/components/bot-look-picker.tsx
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Coder"
 msgstr "程式設計師"
@@ -2790,10 +2902,6 @@ msgstr "顏色 {color}"
 #: apps/mobile/components/bot-look-picker.tsx
 msgid "Color {number}"
 msgstr "顏色 {number}"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Colour"
-msgstr "顏色"
 
 #: apps/web/src/components/markdown-copy.tsx
 msgid "column {index}"
@@ -2916,10 +3024,6 @@ msgstr "電腦已可使用。請重新載入或開啟機器人以繼續。"
 msgid "Computers are off on this server."
 msgstr "此伺服器未開啟電腦。"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Confetti"
-msgstr "彩紙"
-
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/web/src/pages/plugins/plugin-browse.tsx
 msgid "Configure a plugin catalog on the server to connect apps."
@@ -2952,6 +3056,7 @@ msgstr "請確認此瀏覽器工作階段可以存取該 URL，然後重新測�
 #: apps/mobile/app/(settings)/messaging.tsx
 #: apps/mobile/app/(settings)/plugin.tsx
 #: apps/mobile/app/(settings)/voice.tsx
+#: apps/mobile/components/integration-detail.tsx
 #: apps/mobile/components/model-picker-list.tsx
 #: apps/mobile/lib/app-connect.ts
 #: apps/web/src/components/integrations/IntegrationSetup.tsx
@@ -2963,6 +3068,9 @@ msgstr "請確認此瀏覽器工作階段可以存取該 URL，然後重新測�
 #: apps/web/src/pages/MessagingSettingsPanel.tsx
 #: apps/web/src/pages/model-settings/role-model-picker.tsx
 #: apps/web/src/pages/PaymentWalletSettingsPanel.tsx
+#: apps/web/src/pages/plugins/connector-detail.tsx
+#: apps/web/src/pages/plugins/mac-app-detail.tsx
+#: apps/web/src/pages/plugins/remote-mcp-app-detail.tsx
 #: apps/web/src/pages/shell/message-cards.tsx
 #: apps/web/src/pages/VoiceSettingsOverlay.tsx
 msgid "Connect"
@@ -2971,6 +3079,7 @@ msgstr "連線"
 #: apps/mobile/app/(settings)/wallet.tsx
 #: apps/mobile/components/add-custom-integration.tsx
 #: apps/mobile/components/AppConnectCard.tsx
+#: apps/mobile/components/integration-detail.tsx
 msgid "Connect {name}"
 msgstr "連結 {name}"
 
@@ -2996,6 +3105,15 @@ msgstr "執行機器人前，請先在設定中連接模型。"
 #: apps/mobile/app/(settings)/voice.tsx
 msgid "Connect a voice provider first."
 msgstr "請先連線語音供應商。"
+
+#: apps/mobile/components/integration-detail.tsx
+msgid "Connect an account so {bot} can use {name}."
+msgstr ""
+
+#. placeholder {0}: item.name
+#: apps/web/src/pages/plugins/connector-detail.tsx
+msgid "Connect an account so {botName} can use {0}."
+msgstr ""
 
 #: apps/mobile/app/(settings)/model-connection.tsx
 #: apps/web/src/pages/model-settings/connection-controls.tsx
@@ -3055,6 +3173,7 @@ msgstr "請在「模型」中連接你自己的 API 金鑰，或在「帳務」�
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/mobile/app/(settings)/model-connection.tsx
 #: apps/mobile/app/(settings)/plugin.tsx
+#: apps/mobile/components/integration-detail.tsx
 #: apps/mobile/lib/app-connect.ts
 #: apps/web/src/components/bot-templates/bot-templates-dialog.tsx
 #: apps/web/src/components/ComputerDeviceSettings.tsx
@@ -3062,7 +3181,9 @@ msgstr "請在「模型」中連接你自己的 API 金鑰，或在「帳務」�
 #: apps/web/src/components/integrations/plugin-marketplace.tsx
 #: apps/web/src/pages/McpOAuthCallback.tsx
 #: apps/web/src/pages/MemorySettingsOverlay.tsx
+#: apps/web/src/pages/plugins/connector-detail.tsx
 #: apps/web/src/pages/plugins/parts.tsx
+#: apps/web/src/pages/plugins/remote-mcp-app-detail.tsx
 #: apps/web/src/pages/shell/message-cards.tsx
 #: apps/web/src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected"
@@ -3084,6 +3205,7 @@ msgstr "已連線。"
 #: apps/web/src/pages/memory-providers/HonchoSettingsForm.tsx
 #: apps/web/src/pages/memory-providers/SerenitySettingsForm.tsx
 #: apps/web/src/pages/memory-providers/SupermemorySettingsForm.tsx
+#: apps/web/src/pages/plugins/connector-detail.tsx
 #: apps/web/src/pages/plugins/source-form.tsx
 #: apps/web/src/pages/shell/message-cards.tsx
 #: apps/web/src/pages/VoiceSettingsOverlay.tsx
@@ -3356,6 +3478,12 @@ msgstr "無法變更網路存取權。"
 msgid "Could not change password"
 msgstr "無法修改密碼"
 
+#: apps/mobile/app/bot-settings.tsx
+#: apps/mobile/components/composer-model-menu.tsx
+#: apps/web/src/pages/Shell.tsx
+msgid "Could not change the model"
+msgstr ""
+
 #: apps/mobile/components/space-availability.tsx
 #: apps/web/src/components/integrations/space-availability.tsx
 msgid "Could not change where this is available"
@@ -3416,8 +3544,10 @@ msgstr "無法完成更新，請再試一次。"
 msgid "Could not connect"
 msgstr "無法連線"
 
+#. placeholder {0}: app.name
 #. placeholder {0}: registration.name
 #: apps/web/src/pages/MemorySettingsOverlay.tsx
+#: apps/web/src/pages/plugins/remote-mcp-app-detail.tsx
 msgid "Could not connect {0}"
 msgstr "無法連線 {0}"
 
@@ -3638,6 +3768,10 @@ msgstr "沒有聽清。"
 msgid "Could not import"
 msgstr "無法匯入"
 
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Could not import sign-ins"
+msgstr ""
+
 #: apps/web/src/pages/PluginsOverlay.tsx
 msgid "Could not install connector"
 msgstr "無法安裝連接器"
@@ -3764,6 +3898,11 @@ msgstr "無法載入模型設定"
 #: apps/mobile/app/pages.tsx
 msgid "Could not load pages."
 msgstr "無法載入頁面。"
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/use-tool-permissions.ts
+msgid "Could not load permissions"
+msgstr ""
 
 #: apps/mobile/app/(settings)/ai-data-sharing.tsx
 msgid "Could not load permissions."
@@ -4052,6 +4191,8 @@ msgstr "無法執行例行任務"
 #: apps/mobile/app/(settings)/memory-note.tsx
 #: apps/mobile/app/(settings)/team-conversation.tsx
 #: apps/mobile/components/vault-item-editor.tsx
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/use-tool-permissions.ts
 #: apps/web/src/pages/ExternalConversationSettings.tsx
 #: apps/web/src/pages/KnowledgeSection.tsx
 #: apps/web/src/pages/McpServersOverlay.tsx
@@ -4378,6 +4519,10 @@ msgstr "無法載入提交記錄"
 msgid "Couldn't load this page. Try again."
 msgstr "無法載入此頁面。請再試一次。"
 
+#: apps/mobile/app/new-bot.tsx
+msgid "Couldn't load your bot style."
+msgstr ""
+
 #: apps/web/src/pages/PaymentWalletSettingsPanel.tsx
 msgid "Couldn't load your wallet"
 msgstr "無法載入你的錢包"
@@ -4499,6 +4644,7 @@ msgstr "已建立"
 msgid "Creating…"
 msgstr "正在建立…"
 
+#: apps/mobile/components/bot-look-picker.tsx
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Creator"
 msgstr "建立者"
@@ -4532,6 +4678,11 @@ msgstr "額度"
 msgid "Credits ($)"
 msgstr "額度（美元）"
 
+#: apps/mobile/components/bot-look-picker.tsx
+#: apps/web/src/pages/shell/robot-presets.tsx
+msgid "Critic"
+msgstr ""
+
 #: apps/mobile/lib/cron.ts
 #: apps/web/src/lib/cron.ts
 msgid "Cron"
@@ -4546,6 +4697,11 @@ msgstr "Cron 表示式"
 #: apps/web/src/components/SpendingLimitSettings.tsx
 msgid "Currency"
 msgstr "幣別"
+
+#: apps/mobile/components/bot-look-picker.tsx
+#: apps/web/src/pages/shell/robot-presets.tsx
+msgid "Current look"
+msgstr ""
 
 #: apps/mobile/app/(settings)/change-password.tsx
 #: apps/mobile/components/account-deletion.tsx
@@ -4655,10 +4811,6 @@ msgstr "拒絕"
 msgid "Decodes hidden content and runs it"
 msgstr "解碼隱藏內容並執行"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Deerstalker"
-msgstr "獵鹿帽"
-
 #: apps/mobile/app/bot-settings.tsx
 #: apps/mobile/components/bot-look-picker.tsx
 #: apps/mobile/components/model-role-settings.tsx
@@ -4711,6 +4863,7 @@ msgstr "預設範圍"
 #: apps/web/src/pages/Artifacts.tsx
 #: apps/web/src/pages/BotContextMenu.tsx
 #: apps/web/src/pages/KnowledgeSection.tsx
+#: apps/web/src/pages/mcp-server-page.tsx
 #: apps/web/src/pages/McpServersOverlay.tsx
 #: apps/web/src/pages/OrganizationSettingsPanel.tsx
 #: apps/web/src/pages/RoutineEditor.tsx
@@ -4826,6 +4979,11 @@ msgstr "刪除空間"
 msgid "Delete the exported file now. It holds your passwords unencrypted."
 msgstr "請立即刪除匯出的檔案。其中的密碼未加密。"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "delete things"
+msgstr ""
+
 #: apps/mobile/app/routine.tsx
 #: apps/mobile/app/routines.tsx
 msgid "Delete this routine?"
@@ -4869,6 +5027,11 @@ msgstr "刪除整個磁碟或主資料夾"
 msgid "Deleting…"
 msgstr "正在刪除…"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "deletion"
+msgstr ""
+
 #: apps/mobile/components/account-deletion.tsx
 #: apps/web/src/components/AccountAccess.tsx
 msgid "Deletion code"
@@ -4879,6 +5042,7 @@ msgstr "刪除驗證碼"
 msgid "Denied"
 msgstr "已拒絕"
 
+#: apps/mobile/components/ai-consent-screen.tsx
 #: apps/mobile/lib/ask-action-label.ts
 #: apps/web/src/components/ActionRulesSettings.tsx
 #: apps/web/src/components/AskCard.tsx
@@ -4912,6 +5076,11 @@ msgstr "桌面版更新"
 #: apps/web/src/pages/shell/composer-error.tsx
 msgid "Details"
 msgstr "詳細資訊"
+
+#: apps/mobile/components/bot-look-picker.tsx
+#: apps/web/src/pages/shell/robot-presets.tsx
+msgid "Detective"
+msgstr ""
 
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/web/src/pages/plugins/use-catalog-browse.ts
@@ -4990,6 +5159,7 @@ msgstr "捨棄錄製內容"
 #: apps/mobile/app/(settings)/voice.tsx
 #: apps/mobile/app/(settings)/wallet.tsx
 #: apps/mobile/components/model-providers.tsx
+#: apps/web/src/pages/mcp-server-page.tsx
 #: apps/web/src/pages/McpServersOverlay.tsx
 #: apps/web/src/pages/MemorySettingsOverlay.tsx
 #: apps/web/src/pages/MessagingSettingsPanel.tsx
@@ -5101,6 +5271,7 @@ msgstr "還沒有帳號？"
 #: apps/mobile/app/bot-settings.tsx
 #: apps/mobile/components/ComputerCard.tsx
 #: apps/mobile/components/ImportSetupCard.tsx
+#: apps/mobile/components/permission-sheet.tsx
 #: apps/mobile/components/select-text-sheet.tsx
 #: apps/mobile/components/thread/ask-block.tsx
 #: apps/mobile/components/vault-item-sheet.tsx
@@ -5110,6 +5281,7 @@ msgstr "還沒有帳號？"
 #: apps/web/src/components/ComputerCard.tsx
 #: apps/web/src/components/ToolActivityDisclosure.tsx
 #: apps/web/src/components/vault/VaultImport.tsx
+#: apps/web/src/components/vault/VaultSessionImport.tsx
 #: apps/web/src/lib/ticket-status.ts
 #: apps/web/src/pages/ActivityList.tsx
 #: apps/web/src/pages/shell/avatar-studio-popover.tsx
@@ -5185,6 +5357,7 @@ msgstr "每個名稱只能使用一次。"
 #: apps/web/src/components/SpendingLimitSettings.tsx
 #: apps/web/src/components/vault/VaultItemDetail.tsx
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
+#: apps/web/src/pages/mcp-server-page.tsx
 #: apps/web/src/pages/McpServersOverlay.tsx
 #: apps/web/src/pages/MemorySettingsOverlay.tsx
 #: apps/web/src/pages/workspace/doc-reader.tsx
@@ -5232,6 +5405,11 @@ msgstr "效果"
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "Effect of rule {0}"
 msgstr "規則 {0} 的效果"
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "email"
+msgstr ""
 
 #: apps/mobile/app/(settings)/labs.tsx
 #: apps/mobile/app/bot-profile.tsx
@@ -5543,10 +5721,6 @@ msgstr "從 CRM 匯出本週名單並放到共享資料夾"
 msgid "External conversation"
 msgstr "外部對話"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Extra"
-msgstr "額外"
-
 #: apps/mobile/lib/thinking-level.ts
 msgid "Extra high"
 msgstr "極高"
@@ -5555,10 +5729,6 @@ msgstr "極高"
 #: apps/web/src/lib/model-catalog.ts
 msgid "Extra high"
 msgstr "極高"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Face"
-msgstr "臉部"
 
 #: apps/mobile/components/thread/special-message-card.tsx
 #: apps/web/src/components/CloudAgentCard.tsx
@@ -5646,6 +5816,11 @@ msgstr "財務"
 msgid "Find a page"
 msgstr "尋找頁面"
 
+#: apps/mobile/components/integration-detail.tsx
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "Find and read"
+msgstr ""
+
 #: apps/web/src/pages/shell/chat-find-bar.tsx
 #: apps/web/src/pages/shell/keyboard-shortcuts-dialog.tsx
 msgid "Find in chat"
@@ -5699,13 +5874,14 @@ msgstr "已完成。"
 msgid "Finishing MCP connection…"
 msgstr "正在完成 MCP 連線…"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Fleece vest"
-msgstr "刷毛背心"
-
 #: apps/web/src/pages/shell/keyboard-shortcuts-dialog.tsx
 msgid "Focus message"
 msgstr "移至訊息欄"
+
+#: apps/mobile/components/composer-model-menu.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
+msgid "For everyday use"
+msgstr ""
 
 #: apps/mobile/app/sign-in.tsx
 #: apps/web/src/pages/Auth.tsx
@@ -5862,10 +6038,6 @@ msgstr "正在授予…"
 msgid "GraphQL endpoint"
 msgstr "GraphQL 端點"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Green"
-msgstr "綠色"
-
 #: apps/web/src/pages/shell/agent-import.tsx
 msgid "Grok Bot"
 msgstr "Grok Bot"
@@ -5913,10 +6085,6 @@ msgstr "群組更新"
 msgid "Groups left with fewer than two bots are deleted too, including their messages, files, and pages."
 msgstr "機器人少於兩個的群組也會被刪除，包括其中的訊息、檔案和頁面。"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Grumpy"
-msgstr "生氣"
-
 #: apps/mobile/app/computer.tsx
 #: apps/web/src/pages/shell/computer-release-actions.tsx
 msgid "Hand back control"
@@ -5935,10 +6103,6 @@ msgstr "請先結束通話，再輸入螢幕上的驗證碼。"
 #: apps/web/src/lib/call-session.ts
 msgid "Hang up, then enter the code on screen."
 msgstr "請結束通話，再輸入螢幕上的驗證碼。"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Happy"
-msgstr "開心"
 
 #: apps/mobile/app/(settings)/general.tsx
 msgid "Haptics"
@@ -5980,18 +6144,10 @@ msgstr "標頭值"
 msgid "Headers"
 msgstr "標頭"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Headwear"
-msgstr "頭飾"
-
 #: apps/mobile/app/(settings)/voice.tsx
 #: apps/web/src/pages/VoiceSettingsOverlay.tsx
 msgid "Hear a sample"
 msgstr "試聽"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Heart eyes"
-msgstr "愛心眼"
 
 #: apps/mobile/lib/thread-voice.ts
 msgid "Hello {name}, {bot} here."
@@ -6001,6 +6157,7 @@ msgstr "你好 {name}，我是 {bot}。"
 msgid "Hello, {bot} here."
 msgstr "你好，我是 {bot}。"
 
+#: apps/mobile/components/bot-look-picker.tsx
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Hero"
 msgstr "英雄"
@@ -6085,13 +6242,15 @@ msgstr "按住說話，放開傳送"
 msgid "Home"
 msgstr "住家"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Hood and headphones"
-msgstr "連帽衫與耳機"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
+#: apps/mobile/components/bot-look-picker.tsx
+#: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Hoodie"
 msgstr "連帽衫"
+
+#: apps/mobile/components/bot-look-picker.tsx
+#: apps/web/src/pages/shell/robot-presets.tsx
+msgid "Host"
+msgstr ""
 
 #: apps/mobile/lib/cron.ts
 #: apps/web/src/lib/cron.ts
@@ -6155,6 +6314,11 @@ msgstr "https://example.com/mcp"
 msgid "https://example.com/openapi.json"
 msgstr "https://example.com/openapi.json"
 
+#: apps/mobile/components/bot-look-picker.tsx
+#: apps/web/src/pages/shell/robot-presets.tsx
+msgid "Hustler"
+msgstr ""
+
 #: apps/mobile/app/computer.tsx
 #: apps/mobile/components/ComputerCard.tsx
 #: apps/web/src/components/ComputerCard.tsx
@@ -6197,6 +6361,7 @@ msgstr "圖片上傳區域"
 #: apps/mobile/app/(settings)/vault.tsx
 #: apps/web/src/components/AccountDataSettings.tsx
 #: apps/web/src/components/vault/VaultImport.tsx
+#: apps/web/src/components/vault/VaultSessionImport.tsx
 msgid "Import"
 msgstr "匯入"
 
@@ -6204,6 +6369,10 @@ msgstr "匯入"
 #: apps/web/src/pages/shell/agent-import.tsx
 msgid "Import an agent"
 msgstr "匯入代理程式"
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Import browser sign-ins"
+msgstr ""
 
 #: apps/mobile/app/(settings)/vault.tsx
 #: apps/web/src/components/vault/VaultImport.tsx
@@ -6214,6 +6383,19 @@ msgstr "匯入 CSV"
 #: apps/web/src/components/AccountDataSettings.tsx
 msgid "Import data"
 msgstr "匯入資料"
+
+#: apps/web/src/components/VaultSettings.tsx
+msgid "Import sign-ins"
+msgstr ""
+
+#: apps/mobile/components/vault-item-sheet.tsx
+#: apps/web/src/components/vault/VaultItemDetail.tsx
+msgid "Imported from"
+msgstr ""
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Importing…"
+msgstr ""
 
 #: apps/mobile/lib/board.ts
 #: apps/web/src/lib/ticket-status.ts
@@ -6468,6 +6650,11 @@ msgstr "金鑰選項"
 msgid "Keyboard shortcuts"
 msgstr "鍵盤快速鍵"
 
+#: apps/mobile/components/bot-look-picker.tsx
+#: apps/web/src/pages/shell/robot-presets.tsx
+msgid "Keynote"
+msgstr ""
+
 #: apps/mobile/app/(settings)/vault.tsx
 #: apps/web/src/components/vault/kinds.tsx
 msgid "Keys"
@@ -6558,9 +6745,22 @@ msgstr "退出空間"
 msgid "Left"
 msgstr "向左"
 
+#: apps/mobile/components/mac-app-detail.tsx
+msgid "Let {bot} use {name}"
+msgstr ""
+
+#. placeholder {0}: app.name
+#: apps/web/src/pages/plugins/mac-app-detail.tsx
+msgid "Let {botName} use {0}"
+msgstr ""
+
 #: apps/web/src/components/ComputerDeviceSettings.tsx
 msgid "Let bots use this computer"
 msgstr "允許機器人使用這部電腦"
+
+#: apps/web/src/pages/mcp-server-page.tsx
+msgid "Lets {botName} use this server"
+msgstr ""
 
 #: apps/mobile/app/(settings)/general.tsx
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
@@ -6612,6 +6812,11 @@ msgstr "聆聽中"
 #: apps/web/src/components/composer/HoldToTalk.tsx
 msgid "Listening…"
 msgstr "聆聽中…"
+
+#: apps/mobile/components/composer-model-menu.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
+msgid "Lite"
+msgstr ""
 
 #: apps/mobile/app/(settings)/general.tsx
 msgid "Live update settings"
@@ -6752,6 +6957,24 @@ msgstr "長按可置頂或移動到分組"
 msgid "Long press to pin, move, or silence notifications"
 msgstr "長按可置頂、移動或靜音通知"
 
+#. placeholder {0}: item.name
+#: apps/web/src/pages/plugins/connector-detail.tsx
+msgid "Look things up and take actions in {0}."
+msgstr ""
+
+#: apps/mobile/components/integration-detail.tsx
+msgid "Look things up and take actions in {name}."
+msgstr ""
+
+#. placeholder {0}: item.name
+#: apps/web/src/pages/plugins/connector-detail.tsx
+msgid "Look things up in {0}."
+msgstr ""
+
+#: apps/mobile/components/integration-detail.tsx
+msgid "Look things up in {name}."
+msgstr ""
+
 #: apps/web/src/pages/shell/agent-import-plan.tsx
 msgid "Looks like it contains a key"
 msgstr "似乎包含金鑰"
@@ -6772,10 +6995,6 @@ msgstr "低"
 msgid "Made by bots"
 msgstr "由機器人建立"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Magnifier"
-msgstr "放大鏡"
-
 #: apps/web/src/pages/workspace/EmailPage.tsx
 msgid "Mailboxes"
 msgstr "信箱"
@@ -6788,6 +7007,11 @@ msgstr "主模型"
 #: apps/web/src/pages/shell/primary-bot.tsx
 msgid "Main point of contact"
 msgstr "主要聯絡人"
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "make payments"
+msgstr ""
 
 #: apps/web/src/pages/BillingSettingsPanel.tsx
 #: apps/web/src/pages/SettingsOverlay.tsx
@@ -6976,6 +7200,11 @@ msgstr "提及 OpenClaw 功能"
 msgid "Mentions: {mentions}"
 msgstr "提及：{mentions}"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "message"
+msgstr ""
+
 #: apps/mobile/lib/search-sheet.ts
 #: apps/mobile/lib/thread-message-text.ts
 #: apps/web/src/pages/shell/chat-shared.ts
@@ -7085,6 +7314,11 @@ msgstr "分鐘"
 msgid "Missed call"
 msgstr "未接來電"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "Mixed"
+msgstr ""
+
 #: apps/web/src/components/ApprovalRulesSettings.tsx
 msgid "Mode"
 msgstr "模式"
@@ -7094,12 +7328,14 @@ msgstr "模式"
 #: apps/mobile/app/(settings)/model-picker.tsx
 #: apps/mobile/app/bot-settings.tsx
 #: apps/mobile/components/compatible-endpoint-form.tsx
+#: apps/mobile/components/composer-model-menu.tsx
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
 #: apps/web/src/pages/model-settings/compatible-model-fields.tsx
 #: apps/web/src/pages/onboarding/model-step.tsx
 #: apps/web/src/pages/routine-editor/model-settings.tsx
 #: apps/web/src/pages/shell/agent-import-plan.tsx
 #: apps/web/src/pages/shell/bot-settings-sections.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
 msgid "Model"
 msgstr "模型"
 
@@ -7125,6 +7361,16 @@ msgstr "模型選項"
 #: apps/mobile/components/run-error-sheet.tsx
 msgid "Model provider"
 msgstr "模型供應商"
+
+#. placeholder {0}: selectedModel.modelLabel ?? selectedModel.label
+#: apps/mobile/components/composer-model-menu.tsx
+msgid "Model: {0}"
+msgstr ""
+
+#: apps/mobile/components/composer-model-menu.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
+msgid "Model: {label}"
+msgstr ""
 
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/mobile/app/(settings)/account.tsx
@@ -7154,10 +7400,6 @@ msgstr "模型清單正常。{modelCount, plural, one {# 個模型} other {# 個
 #: apps/web/src/lib/cron.ts
 msgid "Monday"
 msgstr "週一"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Monocle"
-msgstr "單片眼鏡"
 
 #: apps/web/src/lib/billing.ts
 msgid "month"
@@ -7213,10 +7455,6 @@ msgstr "更多風格"
 msgid "Morning briefing"
 msgstr "晨間簡報"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Mortarboard"
-msgstr "學士帽"
-
 #: apps/mobile/components/model-role-settings.tsx
 #: apps/web/src/pages/ModelRoleSettings.tsx
 msgid "Move down"
@@ -7262,7 +7500,6 @@ msgstr "已靜音"
 msgid "My computers"
 msgstr "我的電腦"
 
-#: apps/mobile/app/(settings)/organization.tsx
 #: apps/mobile/app/bot-settings.tsx
 #: apps/mobile/app/group-settings.tsx
 #: apps/mobile/app/new-bot.tsx
@@ -7281,7 +7518,6 @@ msgstr "我的電腦"
 #: apps/web/src/pages/GroupPanel.tsx
 #: apps/web/src/pages/McpServerForm.tsx
 #: apps/web/src/pages/model-settings/providers-section.tsx
-#: apps/web/src/pages/OrganizationSettingsPanel.tsx
 #: apps/web/src/pages/plugins/source-form.tsx
 #: apps/web/src/pages/RoutineEditor.tsx
 #: apps/web/src/pages/shell/agent-import-plan.tsx
@@ -7452,6 +7688,11 @@ msgstr "新的手機端操作不會向這些服務傳送資料。正在執行的
 msgid "New open-work item"
 msgstr "新的待辦"
 
+#: apps/mobile/app/(settings)/organization.tsx
+#: apps/web/src/pages/OrganizationSettingsPanel.tsx
+msgid "New organization"
+msgstr ""
+
 #: apps/mobile/app/(settings)/change-password.tsx
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
 #: apps/web/src/pages/Auth.tsx
@@ -7573,6 +7814,10 @@ msgstr "沒有機器人"
 #: apps/web/src/pages/shell/bot-picker.tsx
 msgid "No bots match"
 msgstr "沒有符合的機器人"
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "No browser sign-ins found on this computer."
+msgstr ""
 
 #: apps/web/src/pages/workspace/DocsPage.tsx
 msgid "No docs yet"
@@ -7736,10 +7981,6 @@ msgstr "尚無工作項目"
 msgid "No tickets yet."
 msgstr "還沒有工單。"
 
-#: apps/mobile/components/integration-detail.tsx
-msgid "No tools available."
-msgstr "尚無可用工具。"
-
 #: apps/web/src/pages/RoutineList.tsx
 msgid "No trigger"
 msgstr "無觸發器"
@@ -7755,7 +7996,6 @@ msgstr "找不到網站欄和密碼欄。"
 #: apps/mobile/components/vault-item-editor.tsx
 #: apps/web/src/components/SpendingLimitSettings.tsx
 #: apps/web/src/components/vault/VaultItemEditor.tsx
-#: apps/web/src/pages/shell/robot-builder.tsx
 msgid "None"
 msgstr "無"
 
@@ -7775,6 +8015,14 @@ msgstr "未新增：{0}"
 #: apps/mobile/app/(settings)/plugin.tsx
 msgid "Not added: {list}"
 msgstr "未新增：{list}"
+
+#: apps/web/src/components/integrations/use-mac-grants.ts
+msgid "Not allowed yet"
+msgstr ""
+
+#: apps/web/src/components/integrations/use-mac-grants.ts
+msgid "Not available on this Mac"
+msgstr ""
 
 #: apps/web/src/components/McpServerHealthLine.tsx
 msgid "Not checked yet"
@@ -7799,7 +8047,6 @@ msgid "Not in the plugin catalog"
 msgstr "不在外掛程式目錄中"
 
 #: apps/mobile/components/McpApprovalCard.tsx
-#: apps/mobile/lib/ai-consent.ts
 #: apps/mobile/lib/composer-dictation.ts
 #: apps/mobile/lib/passkey.ts
 #: apps/mobile/lib/thread-voice.ts
@@ -7869,6 +8116,10 @@ msgstr "尚未儲存任何內容。"
 msgid "Nothing sent yet."
 msgstr "尚未寄出任何內容。"
 
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Nothing to import from those sites."
+msgstr ""
+
 #: apps/mobile/app/(settings)/general.tsx
 msgid "Notification settings"
 msgstr "通知設定"
@@ -7913,8 +8164,15 @@ msgstr "OAuth 客戶端金鑰（選填）"
 msgid "OAuth connection failed"
 msgstr "OAuth 連線失敗"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "Off"
+msgstr ""
+
 #: apps/mobile/app/(settings)/computers.tsx
+#: apps/mobile/components/mac-app-detail.tsx
 #: apps/web/src/components/ComputerDeviceSettings.tsx
+#: apps/web/src/pages/plugins/mac-app-detail.tsx
 msgid "Offline"
 msgstr "離線"
 
@@ -7954,6 +8212,16 @@ msgstr "按鈕上的金額"
 msgid "On the other device, open this server's address and choose Pair with a code."
 msgstr "在另一台裝置上,開啟此伺服器的地址並選擇「以代碼配對」。"
 
+#: apps/mobile/components/mac-app-detail.tsx
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "On this Mac"
+msgstr ""
+
+#: apps/mobile/app/(settings)/integrations.tsx
+#: apps/web/src/pages/plugins/plugin-browse.tsx
+msgid "On your Mac"
+msgstr ""
+
 #: apps/mobile/lib/cron.ts
 #: apps/web/src/lib/cron.ts
 msgid "One-time"
@@ -7962,6 +8230,11 @@ msgstr "一次性"
 #: apps/web/src/components/ModelCredits.tsx
 msgid "One-time purchase. Credits do not expire."
 msgstr "單次購買，額度不會到期。"
+
+#: apps/mobile/components/mac-app-detail.tsx
+#: apps/web/src/pages/plugins/mac-app-detail.tsx
+msgid "Online"
+msgstr ""
 
 #: apps/web/src/components/SecretAskCard.tsx
 msgid "Only enter a code {codeHost} sent you."
@@ -8082,11 +8355,25 @@ msgstr "開啟連結"
 msgid "Open navigation"
 msgstr "開啟導覽"
 
+#: apps/mobile/lib/client-update.ts
+msgid "Open on the web"
+msgstr ""
+
 #: apps/web/src/components/pages/PublicPageShell.tsx
 #: apps/web/src/pages/Invite.tsx
 #: apps/web/src/pages/SharedPage.tsx
 msgid "Open RoBots"
 msgstr "開啟 RoBots"
+
+#: apps/mobile/components/mac-app-detail.tsx
+#: apps/web/src/components/integrations/use-mac-grants.ts
+msgid "Open RoBots on your Mac to allow"
+msgstr ""
+
+#: apps/mobile/components/mac-app-detail.tsx
+#: apps/web/src/pages/plugins/mac-app-detail.tsx
+msgid "Open RoBots on your Mac to connect"
+msgstr ""
 
 #: apps/mobile/lib/composer-dictation.ts
 #: apps/mobile/lib/thread-voice.ts
@@ -8147,10 +8434,6 @@ msgstr "或連線 API 金鑰"
 msgid "Or paste an API key"
 msgstr "或貼上 API 金鑰"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Orange"
-msgstr "橙色"
-
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/mobile/app/(settings)/account.tsx
 #: apps/web/src/components/ComputerProviderSettings.tsx
@@ -8161,6 +8444,11 @@ msgstr "組織"
 #: apps/web/src/pages/memory-providers/SupermemorySettingsForm.tsx
 msgid "Organization API key"
 msgstr "組織 API 金鑰"
+
+#: apps/mobile/app/(settings)/organization.tsx
+#: apps/web/src/pages/OrganizationSettingsPanel.tsx
+msgid "Organization name"
+msgstr ""
 
 #: apps/mobile/app/(settings)/general.tsx
 #: apps/mobile/app/bot-settings.tsx
@@ -8187,10 +8475,6 @@ msgstr "OTA {id}，{date}"
 #: apps/web/src/pages/model-settings/compatible-model-fields.tsx
 msgid "Other model…"
 msgstr "其他模型…"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Outfit"
-msgstr "服裝"
 
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
 msgid "Output"
@@ -8409,12 +8693,26 @@ msgstr "暫停"
 msgid "Paused"
 msgstr "已暫停"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "payment"
+msgstr ""
+
 #: apps/mobile/app/(settings)/messaging.tsx
 #: apps/web/src/pages/AdminAccessPage.tsx
 #: apps/web/src/pages/MessagingSettingsPanel.tsx
 #: apps/web/src/pages/PluginSubmissionsPanel.tsx
 msgid "Pending"
 msgstr "待處理"
+
+#. placeholder {0}: tool.label
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "Permission for {0}"
+msgstr ""
+
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "Permission for finding and reading"
+msgstr ""
 
 #: apps/mobile/app/bot-settings.tsx
 #: apps/web/src/pages/shell/bot-settings-sections.tsx
@@ -8431,6 +8729,7 @@ msgstr "人設"
 
 #: apps/mobile/app/(settings)/signup-survey.tsx
 #: apps/mobile/app/index.tsx
+#: apps/web/src/components/OrganizationName.tsx
 #: apps/web/src/components/SignupSurvey.tsx
 msgid "Personal"
 msgstr "個人"
@@ -8495,10 +8794,6 @@ msgstr "選擇要檢查的工具"
 msgid "Pin"
 msgstr "置頂"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Pink"
-msgstr "粉紅色"
-
 #: apps/mobile/app/pages.tsx
 #: apps/mobile/lib/inbox-spaces.ts
 #: apps/web/src/components/pages/PagesList.tsx
@@ -8559,9 +8854,19 @@ msgstr "外掛提交"
 msgid "Plugins"
 msgstr "外掛"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "post"
+msgstr ""
+
 #: apps/web/src/pages/routine-editor/trigger-cards.tsx
 msgid "Post a chat message when a check finds no changes. The routine won't run."
 msgstr "檢查未發現變化時發送一則聊天訊息。例行任務不會執行。"
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "post for you"
+msgstr ""
 
 #: apps/mobile/lib/bot-template-copy.ts
 #: apps/web/src/components/bot-templates/bot-template-copy.ts
@@ -8612,7 +8917,7 @@ msgstr "隱私權"
 msgid "Privacy policies"
 msgstr "隱私權政策"
 
-#: apps/mobile/lib/ai-consent.ts
+#: apps/mobile/components/ai-consent-screen.tsx
 msgid "Privacy policy"
 msgstr "隱私權政策"
 
@@ -8629,10 +8934,20 @@ msgstr "私人網路 (HTTPS)"
 msgid "Private workspace with its own bots and groups."
 msgstr "擁有專屬機器人與群組的私人工作空間。"
 
+#: apps/mobile/components/composer-model-menu.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
+msgid "Pro"
+msgstr ""
+
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/web/src/pages/plugins/use-catalog-browse.ts
 msgid "Productivity"
 msgstr "生產力"
+
+#: apps/mobile/components/bot-look-picker.tsx
+#: apps/web/src/pages/shell/robot-presets.tsx
+msgid "Professor"
+msgstr ""
 
 #: apps/mobile/app/_layout.tsx
 #: apps/mobile/components/chat-header-title.tsx
@@ -8660,8 +8975,10 @@ msgid "Protocol"
 msgstr "通訊協定"
 
 #: apps/mobile/app/(settings)/voice.tsx
+#: apps/mobile/components/composer-model-menu.tsx
 #: apps/web/src/pages/MemorySettingsOverlay.tsx
 #: apps/web/src/pages/onboarding/model-step.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
 #: apps/web/src/pages/VoiceSettingsOverlay.tsx
 msgid "Provider"
 msgstr "供應商"
@@ -8669,6 +8986,11 @@ msgstr "供應商"
 #: apps/mobile/components/run-error-sheet.tsx
 msgid "Provider message"
 msgstr "供應商訊息"
+
+#. placeholder {0}: provider.label
+#: apps/mobile/components/composer-model-menu.tsx
+msgid "Provider: {0}"
+msgstr ""
 
 #: apps/mobile/components/model-providers.tsx
 #: apps/web/src/pages/model-settings/providers-section.tsx
@@ -8688,9 +9010,9 @@ msgstr "Pull request"
 msgid "Purchases"
 msgstr "購物"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Purple"
-msgstr "紫色"
+#: apps/mobile/app/(settings)/general.tsx
+msgid "Push notifications"
+msgstr ""
 
 #: apps/mobile/app/paywall.tsx
 msgid "Put your bots to work"
@@ -8873,10 +9195,6 @@ msgstr "正在重建電腦"
 msgid "Recruiting & HR"
 msgstr "招募與人力資源"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Red"
-msgstr "紅色"
-
 #: apps/web/src/pages/McpServerForm.tsx
 msgid "Redirect URI"
 msgstr "重新導向 URI"
@@ -9009,6 +9327,10 @@ msgstr "移除 {name}？"
 #: apps/web/src/components/vault/VaultItemDetail.tsx
 msgid "Remove {secretName}? Bots will no longer be able to use it."
 msgstr "要移除 {secretName} 嗎？機器人將無法再使用它。"
+
+#: apps/web/src/components/vault/VaultItemDetail.tsx
+msgid "Remove {secretName}? Its bots' browsers will be signed out of it."
+msgstr ""
 
 #: apps/web/src/components/TrustedLinkSitesSettings.tsx
 msgid "Remove {site}"
@@ -9201,6 +9523,7 @@ msgstr "請求"
 msgid "Research & writing"
 msgstr "調研和寫作"
 
+#: apps/mobile/components/bot-look-picker.tsx
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Researcher"
 msgstr "研究員"
@@ -9382,6 +9705,10 @@ msgstr "返回收件匣"
 msgid "Return to RoBots"
 msgstr "返回 RoBots"
 
+#: apps/mobile/components/ai-consent-screen.tsx
+msgid "Review again"
+msgstr ""
+
 #: apps/web/src/lib/model-connection-preflight.ts
 msgid "Review provider settings and test again."
 msgstr "請檢查供應商設定並重新測試。"
@@ -9404,10 +9731,6 @@ msgstr "已撤銷"
 #: apps/mobile/components/computer-keyboard-bar.tsx
 msgid "Right"
 msgstr "向右"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Ring light"
-msgstr "環形補光燈"
 
 #: apps/web/src/components/skill-safety.tsx
 msgid "Risky content found"
@@ -9437,10 +9760,22 @@ msgstr "RoBot 範本"
 msgid "RoBots"
 msgstr "RoBots"
 
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "RoBots can't read this browser's sign-ins."
+msgstr ""
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "RoBots couldn't find this browser's key on this computer."
+msgstr ""
+
 #: apps/mobile/app/(settings)/billing.tsx
 #: apps/web/src/pages/onboarding/use-onboarding-model.ts
 msgid "RoBots credits"
 msgstr "RoBots 額度"
+
+#: apps/mobile/components/ai-consent-screen.tsx
+msgid "RoBots needs this to work"
+msgstr ""
 
 #: apps/web/src/pages/shell/agent-import.tsx
 msgid "RoBots package"
@@ -9457,10 +9792,6 @@ msgstr "根檔案系統"
 #: apps/web/src/pages/routine-editor/trigger-cards.tsx
 msgid "Rotate key"
 msgstr "輪換金鑰"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Round glasses"
-msgstr "圓框眼鏡"
 
 #: apps/mobile/app/_layout.tsx
 #: apps/mobile/app/routine.tsx
@@ -9586,6 +9917,16 @@ msgstr "與 {botName} 相同"
 msgid "Same as main model"
 msgstr "與主模型相同"
 
+#: apps/mobile/components/composer-model-menu.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
+msgid "Same speed, cheaper"
+msgstr ""
+
+#: apps/mobile/components/composer-model-menu.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
+msgid "Same speed, smarter"
+msgstr ""
+
 #: apps/mobile/lib/cron.ts
 #: apps/web/src/lib/cron.ts
 msgid "Saturday"
@@ -9594,6 +9935,7 @@ msgstr "週六"
 #: apps/mobile/app/(settings)/memory-note.tsx
 #: apps/mobile/app/(settings)/model-connection.tsx
 #: apps/mobile/app/(settings)/model-settings.tsx
+#: apps/mobile/app/(settings)/organization.tsx
 #: apps/mobile/app/(settings)/profile.tsx
 #: apps/mobile/app/(settings)/skill.tsx
 #: apps/mobile/app/(settings)/spending-limit.tsx
@@ -9632,8 +9974,8 @@ msgstr "週六"
 #: apps/web/src/pages/model-settings/model-settings-panel.tsx
 #: apps/web/src/pages/model-settings/providers-section.tsx
 #: apps/web/src/pages/ModelSettingsOverlay.tsx
+#: apps/web/src/pages/OrganizationSettingsPanel.tsx
 #: apps/web/src/pages/RoutineEditor.tsx
-#: apps/web/src/pages/shell/bot-panel.tsx
 #: apps/web/src/pages/shell/dialogs.tsx
 #: apps/web/src/pages/workspace/doc-reader.tsx
 msgid "Save"
@@ -9720,6 +10062,7 @@ msgstr "儲存中…"
 
 #: apps/mobile/app/(settings)/model-connection.tsx
 #: apps/mobile/app/(settings)/model-settings.tsx
+#: apps/mobile/app/(settings)/organization.tsx
 #: apps/mobile/app/bot-settings.tsx
 #: apps/mobile/app/group-settings.tsx
 #: apps/web/src/components/SecretAskCard.tsx
@@ -9735,6 +10078,7 @@ msgstr "儲存中…"
 #: apps/web/src/pages/model-settings/model-settings-panel.tsx
 #: apps/web/src/pages/model-settings/providers-section.tsx
 #: apps/web/src/pages/ModelSettingsOverlay.tsx
+#: apps/web/src/pages/OrganizationSettingsPanel.tsx
 #: apps/web/src/pages/RoutineEditor.tsx
 #: apps/web/src/pages/shell/dialogs.tsx
 msgid "Saving…"
@@ -9928,6 +10272,10 @@ msgstr "請在 10 分鐘內從 {linkApp} 傳送 <0>{linkCode}</0>。"
 msgid "Send <0>{linkCode}</0> to <1>{linkAddress}</1> from {linkApp} within 10 minutes."
 msgstr "請在 10 分鐘內從 {linkApp} 將 <0>{linkCode}</0> 傳送到 <1>{linkAddress}</1>。"
 
+#: apps/web/src/pages/Auth.tsx
+msgid "Send a new link"
+msgstr ""
+
 #: apps/mobile/components/thread/ask-block.tsx
 msgid "Send answer"
 msgstr "傳送回答"
@@ -9941,6 +10289,16 @@ msgstr "以檔案傳送"
 #: apps/web/src/components/AccountAccess.tsx
 msgid "Send deletion code"
 msgstr "傳送刪除驗證碼"
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "send email"
+msgstr ""
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "send messages"
+msgstr ""
 
 #: apps/web/src/components/composer/HoldToTalk.tsx
 msgid "Send recording"
@@ -10101,7 +10459,7 @@ msgstr "分享「{title}」"
 msgid "Share {name}"
 msgstr "分享 {name}"
 
-#: apps/mobile/lib/ai-consent.ts
+#: apps/mobile/components/ai-consent-screen.tsx
 msgid "Share data with {name}?"
 msgstr "與 {name} 分享資料？"
 
@@ -10212,11 +10570,6 @@ msgstr "顯示工具活動"
 msgid "Show transcript"
 msgstr "顯示文字紀錄"
 
-#: apps/mobile/components/bot-look-picker.tsx
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Shuffle"
-msgstr "隨機"
-
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
 msgid "Sidebar density"
 msgstr "側邊欄密度"
@@ -10267,6 +10620,11 @@ msgstr "在手機、平板或另一台電腦上登入"
 #: apps/web/src/pages/settings-nav.ts
 msgid "Sign in on your other devices."
 msgstr "在你的其他裝置上登入。"
+
+#. placeholder {0}: server.name
+#: apps/web/src/pages/mcp-server-page.tsx
+msgid "Sign in to {0}"
+msgstr ""
 
 #: apps/mobile/app/sign-in.tsx
 msgid "Sign in to continue to RoBots"
@@ -10328,6 +10686,13 @@ msgstr "註冊"
 msgid "Sign up for RoBots"
 msgstr "註冊 RoBots"
 
+#: apps/mobile/components/vault-item-sheet.tsx
+#: apps/mobile/lib/vault.ts
+#: apps/web/src/components/vault/kinds.tsx
+#: apps/web/src/components/vault/VaultItemDetail.tsx
+msgid "Sign-in"
+msgstr ""
+
 #: apps/web/src/pages/PluginsOverlay.tsx
 msgid "Sign-in cancelled. Retry in Manage MCP servers."
 msgstr "已取消登入。請在「管理 MCP 伺服器」中重試。"
@@ -10342,17 +10707,53 @@ msgstr "登入已取消。請重試。"
 msgid "Sign-in did not return a session"
 msgstr "登入未返回工作階段"
 
+#: apps/mobile/app/(settings)/vault.tsx
+#: apps/web/src/components/vault/kinds.tsx
+msgid "Sign-ins"
+msgstr ""
+
 #: apps/mobile/lib/api-auth.ts
 msgid "Sign-up did not return a session"
 msgstr "註冊未返回工作階段"
+
+#. js-lingui-explicit-id
+#: packages/i18n/src/vault.ts
+msgid "Signed in"
+msgstr ""
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Signed in"
+msgstr ""
 
 #: apps/mobile/lib/unsent-send-warning.ts
 msgid "Signing in deletes unsent messages."
 msgstr "登入將刪除未傳送的訊息。"
 
+#. js-lingui-explicit-id
+#: packages/i18n/src/vault.ts
+msgid "Signing in…"
+msgstr ""
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Signing in…"
+msgstr ""
+
+#: apps/mobile/app/(settings)/vault.tsx
+#: apps/web/src/components/VaultSettings.tsx
+msgid "Signing out"
+msgstr ""
+
 #: apps/mobile/lib/unsent-send-warning.ts
 msgid "Signing out deletes unsent messages."
 msgstr "登出將刪除未傳送的訊息。"
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Signs in when its computer next starts"
+msgstr ""
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Signs in when its computer starts"
+msgstr ""
 
 #: apps/mobile/components/bot-organize-modal.tsx
 #: apps/mobile/components/inbox-swipe-row.ios.tsx
@@ -10365,6 +10766,10 @@ msgstr "靜音通知"
 #: apps/web/src/components/vault/VaultItemEditor.tsx
 msgid "Site"
 msgstr "網站"
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Sites"
+msgstr ""
 
 #: apps/mobile/app/computer.tsx
 #: apps/web/src/pages/shell/computer-overlay.tsx
@@ -10448,10 +10853,6 @@ msgstr "Slack 訊息"
 #: apps/web/src/pages/routine-editor/add-trigger-menu.tsx
 msgid "Slack not enabled"
 msgstr "未啟用 Slack"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Slate"
-msgstr "石板灰"
 
 #: apps/web/src/components/composer/HoldToTalk.tsx
 msgid "Slide up to lock"
@@ -10556,10 +10957,17 @@ msgstr "{name} 的空間操作"
 msgid "Space created"
 msgstr "空間已建立"
 
+#: apps/mobile/components/composer-model-menu.tsx
 #: apps/mobile/lib/chat-model.ts
 #: apps/web/src/pages/shell/bot-panel.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
 msgid "Space default"
 msgstr "空間預設"
+
+#: apps/mobile/lib/chat-model.ts
+#: apps/web/src/pages/shell/bot-panel.tsx
+msgid "Space default · {defaultModelLabel}"
+msgstr ""
 
 #: apps/web/src/pages/SettingsOverlay.tsx
 msgid "Spaces"
@@ -10687,10 +11095,6 @@ msgstr "州或地區"
 #: apps/web/src/pages/board/TicketDialog.tsx
 msgid "Status"
 msgstr "狀態"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Steam"
-msgstr "蒸汽"
 
 #: apps/web/src/components/teach/SkillDraftCard.tsx
 msgid "Steps"
@@ -10858,10 +11262,6 @@ msgstr "正在切換…"
 msgid "System"
 msgstr "系統"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "T-shirt"
-msgstr "T 恤"
-
 #: apps/mobile/components/computer-keyboard-bar.tsx
 msgid "Tab"
 msgstr "Tab"
@@ -10904,10 +11304,6 @@ msgstr "示範任務"
 msgid "Teaching in progress. Stop teaching before sending a new message."
 msgstr "正在示範，傳送新訊息前請先停止示範。"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Teal"
-msgstr "青色"
-
 #: apps/mobile/components/computer-mode-picker.tsx
 #: apps/web/src/pages/shell/bot-settings-sections.tsx
 msgid "Team"
@@ -10941,10 +11337,6 @@ msgstr "範本"
 msgid "Templates"
 msgstr "範本"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Terminal"
-msgstr "終端機"
-
 #: apps/mobile/app/paywall.tsx
 msgid "Terms"
 msgstr "條款"
@@ -10962,6 +11354,7 @@ msgid "Test API key"
 msgstr "測試 API 金鑰"
 
 #: apps/web/src/components/ModelConnectionPreflightNotice.tsx
+#: apps/web/src/pages/mcp-server-page.tsx
 #: apps/web/src/pages/McpServersOverlay.tsx
 msgid "Test connection"
 msgstr "測試連線"
@@ -10978,6 +11371,10 @@ msgstr "正在測試…"
 #: apps/web/src/components/BotEmailAddressField.tsx
 msgid "That address isn't available"
 msgstr "此地址無法使用"
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "That browser profile is gone."
+msgstr ""
 
 #: apps/mobile/lib/endpoint.ts
 msgid "That doesn’t look like a URL"
@@ -11180,6 +11577,11 @@ msgstr "此帳戶已停用"
 msgid "This address is not allowed to sign in."
 msgstr "不允許此地址登入。"
 
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "This also shows in Settings › Approvals."
+msgstr ""
+
 #: apps/mobile/lib/user-error.ts
 #: apps/web/src/lib/user-error.ts
 msgid "This app needs its own sign-in setup to connect."
@@ -11223,6 +11625,11 @@ msgstr "此機器人套件需要較新版本的 RoBots。請更新 RoBots 後再
 msgid "This bot runs on this computer, not a Linux desktop. Shell and files use your home folder."
 msgstr "此機器人執行在這臺電腦上，而不是 Linux 桌面。Shell 和檔案使用你的主目錄。"
 
+#: apps/mobile/components/composer-model-menu.tsx
+#: apps/web/src/pages/shell/composer-model-picker.tsx
+msgid "This bot's model"
+msgstr ""
+
 #: apps/mobile/lib/run-error-presentation.ts
 msgid "This bot's reply stopped at its key's daily limit. Your own key has its own limits."
 msgstr "此機器人的回覆因其金鑰達到每日限額而停止。你自己的金鑰有獨立的限額。"
@@ -11246,6 +11653,14 @@ msgstr "此瀏覽器無法偵測你何時停止說話。請使用 Chrome、桌�
 #: apps/web/src/lib/dictation.ts
 msgid "This browser has no on-device dictation. Connect a voice provider with transcription, or use Chrome / the desktop app."
 msgstr "此瀏覽器不支援裝置端語音輸入。請連線至支援轉錄的語音供應商，或使用 Chrome／桌面應用程式。"
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "This browser locks its sign-ins to itself, so they can't be imported."
+msgstr ""
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "This browser's key didn't open its sign-ins."
+msgstr ""
 
 #: apps/mobile/lib/incoming-calls.ts
 #: apps/mobile/lib/user-error.ts
@@ -11359,6 +11774,11 @@ msgstr "此設定只限制此空間的機器人。你的其他空間各自決定
 #: apps/web/src/pages/HostComputerPrompt.tsx
 msgid "this Mac"
 msgstr "這臺 Mac"
+
+#: apps/mobile/components/mac-app-detail.tsx
+#: apps/web/src/pages/plugins/mac-app-detail.tsx
+msgid "This Mac"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: packages/i18n/src/run-error.ts
@@ -11500,6 +11920,10 @@ msgstr "此訂閱登入在 RoBots 中尚不可用。請使用部署憑證或選�
 msgid "This template was just updated. Check it again."
 msgstr "此範本剛剛更新，請重新查看。"
 
+#: apps/mobile/lib/client-update.ts
+msgid "This version of RoBots is no longer supported, and an update is not in the app store yet."
+msgstr ""
+
 #: apps/web/src/pages/Artifacts.tsx
 msgid "This week"
 msgstr "本週"
@@ -11610,14 +12034,10 @@ msgstr "工具名稱"
 
 #: apps/mobile/components/integration-detail.tsx
 #: apps/web/src/components/ApprovalRulesSettings.tsx
-#: apps/web/src/pages/plugins/connector-detail.tsx
+#: apps/web/src/components/integrations/connection-page.tsx
 #: apps/web/src/pages/shell/bot-settings-sections.tsx
 msgid "Tools"
 msgstr "工具"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Top hat"
-msgstr "高禮帽"
 
 #: apps/mobile/lib/bot-template-copy.ts
 #: apps/web/src/components/bot-templates/bot-template-copy.ts
@@ -11690,6 +12110,7 @@ msgstr "受信任的網站"
 
 #: apps/mobile/app/(settings)/archived-bots.tsx
 #: apps/mobile/app/computer.tsx
+#: apps/mobile/app/new-bot.tsx
 #: apps/mobile/app/paywall.tsx
 #: apps/mobile/app/peer-chat.tsx
 #: apps/mobile/app/routines.tsx
@@ -11760,17 +12181,9 @@ msgstr "開啟"
 msgid "Turn on HTTPS names for your private network first."
 msgstr "請先為你的私人網路開啟 HTTPS 名稱。"
 
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Turtleneck"
-msgstr "高領毛衣"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Tuxedo"
-msgstr "燕尾服"
-
-#: apps/web/src/pages/shell/robot-builder.tsx
-msgid "Tweed and bow tie"
-msgstr "粗花呢與領結"
+#: apps/web/src/components/integrations/use-mac-grants.ts
+msgid "Turned off in System Settings"
+msgstr ""
 
 #: apps/mobile/components/vault-item-editor.tsx
 #: apps/mobile/components/vault-item-sheet.tsx
@@ -11819,6 +12232,10 @@ msgstr "單位"
 #: apps/web/src/pages/MessagingSettingsPanel.tsx
 msgid "Unlink"
 msgstr "取消關聯"
+
+#: apps/web/src/components/vault/VaultSessionImport.tsx
+msgid "Unlock your keyring, then try again."
+msgstr ""
 
 #: apps/mobile/components/CallCard.tsx
 #: apps/web/src/components/call/CallCard.tsx
@@ -12234,6 +12651,11 @@ msgstr "語音請求逾時。"
 msgid "Wait a moment and test again."
 msgstr "請稍候並重新測試。"
 
+#: apps/mobile/components/integration-detail.tsx
+#: apps/web/src/pages/plugins/connector-detail.tsx
+msgid "Waiting for sign-in"
+msgstr ""
+
 #: apps/mobile/app/(settings)/model-connection.tsx
 msgid "Waiting for sign-in — the code expires in about {minutes} minutes."
 msgstr "等待登入中 — 驗證碼將在約 {minutes} 分鐘後失效。"
@@ -12393,6 +12815,14 @@ msgstr "完成任務或需要輸入時"
 msgid "When something changes"
 msgstr "發生變化時"
 
+#: apps/mobile/lib/tool-permissions.ts
+msgid "When this is off, {bot} can't do it even if you ask."
+msgstr ""
+
+#: apps/web/src/components/integrations/permission-dialog.tsx
+msgid "When this is off, {botName} can't do it even if you ask."
+msgstr ""
+
 #: apps/mobile/app/routine.tsx
 #: apps/web/src/pages/RoutineEditor.tsx
 msgid "When to run"
@@ -12438,6 +12868,11 @@ msgstr "誰可以啟動"
 #: apps/mobile/app/page-share.tsx
 msgid "Who can view"
 msgstr "誰可以檢視"
+
+#. js-lingui-explicit-id
+#: packages/i18n/src/vault.ts
+msgid "Will sign in at next start"
+msgstr ""
 
 #: apps/mobile/app/(settings)/ai-data-sharing.tsx
 msgid "Withdraw"
@@ -12496,6 +12931,11 @@ msgstr "處理中…"
 msgid "Works once. Expires in {minutes}:{seconds}."
 msgstr "僅能使用一次。{minutes}:{seconds} 後到期。"
 
+#: apps/mobile/components/mac-app-detail.tsx
+#: apps/web/src/components/integrations/connection-page.tsx
+msgid "Works while it's online"
+msgstr ""
+
 #: apps/mobile/app/(settings)/bot-template.tsx
 #: apps/web/src/components/bot-templates/bot-templates-dialog.tsx
 msgid "Works with"
@@ -12519,6 +12959,7 @@ msgstr "工作空間"
 msgid "Write what this routine should do."
 msgstr "寫下此例行任務要做的事。"
 
+#: apps/mobile/components/bot-look-picker.tsx
 #: apps/web/src/pages/shell/robot-presets.tsx
 msgid "Writer"
 msgstr "作家"
@@ -12563,11 +13004,7 @@ msgstr "如果沒有自動重新導向，可以關閉此分頁。"
 msgid "You can close this window."
 msgstr "可以關閉此視窗。"
 
-#: apps/web/src/pages/shell/create-bot-dialog.tsx
-msgid "You can fine-tune the look later in the bot's settings."
-msgstr "你之後可以在機器人的設定中微調外觀。"
-
-#: apps/mobile/lib/ai-consent.ts
+#: apps/mobile/components/ai-consent-screen.tsx
 msgid "You can turn this off in Account → AI data sharing."
 msgstr "你可以在帳號 → AI 資料分享中關閉此功能。"
 
@@ -12579,6 +13016,11 @@ msgstr "你已拒絕"
 #: apps/web/src/components/InviteDialog.tsx
 msgid "You get a free month when they start their trial with a new card."
 msgstr "對方用新卡開始試用後，你將獲得一個月免費。"
+
+#: apps/mobile/lib/tool-permissions.ts
+#: apps/web/src/components/integrations/use-tool-permissions.ts
+msgid "You have too many approval rules. Remove some in Settings to change this."
+msgstr ""
 
 #: apps/web/src/components/ActionRulesSettings.tsx
 msgid "You in the app"
@@ -12601,6 +13043,15 @@ msgstr "你的 Anthropic"
 #: apps/web/src/pages/plugins/manage-view.tsx
 msgid "Your apps"
 msgstr "你的應用程式"
+
+#: apps/mobile/app/(settings)/integrations.tsx
+#: apps/web/src/components/integrations/use-bot-name.ts
+msgid "Your bot"
+msgstr ""
+
+#: apps/mobile/components/ai-consent-screen.tsx
+msgid "Your bots can't reply until you allow sharing with {name}."
+msgstr ""
 
 #: apps/web/src/components/ModelCredits.tsx
 msgid "Your card is charged {annualPrice} today, less the unused part of this month."
