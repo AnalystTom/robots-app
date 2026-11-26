@@ -72,6 +72,12 @@ export type ColorTokens = {
   pageTile: string;
   pageTileEdge: string;
   pageTileLine: string;
+  brand: string;
+  brandSoft: string;
+  brandInk: string;
+  successSoft: string;
+  warningSoft: string;
+  destructiveSoft: string;
 };
 
 export const darkTokens = {
@@ -124,6 +130,12 @@ export const darkTokens = {
   pageTile: "#343434",
   pageTileEdge: "#414141",
   pageTileLine: "#626262",
+  brand: "#3AA6B7",
+  brandSoft: "#12343B",
+  brandInk: "#6DCAD7",
+  successSoft: "#173A2A",
+  warningSoft: "#3B2C12",
+  destructiveSoft: "#43201D",
 } as const satisfies ColorTokens;
 
 export const lightTokens = {
@@ -176,12 +188,19 @@ export const lightTokens = {
   pageTile: "#ECECEE",
   pageTileEdge: "#DADADD",
   pageTileLine: "#A1A1A6",
+  brand: "#15788A",
+  brandSoft: "#D6ECEE",
+  brandInk: "#0F6575",
+  successSoft: "#DFF1E6",
+  warningSoft: "#FDEFD5",
+  destructiveSoft: "#FBE2DF",
 } as const satisfies ColorTokens;
 
 /** Web and Electron only: the primary fill's hover and disabled states. Mobile has no hover. */
 export type WebColorTokens = ColorTokens & {
   primaryHover: string;
   primaryDisabled: string;
+  shadowCard: string;
 };
 
 /**
@@ -230,6 +249,7 @@ export const webDarkOverrides = {
   overlay: "#000000B2",
   scrollbar: "#F5F5F538",
   scrollbarHover: "#F5F5F580",
+  shadowCard: "none",
 } as const satisfies Partial<WebColorTokens>;
 
 export const webLightOverrides = {
@@ -269,6 +289,7 @@ export const webLightOverrides = {
   overlay: "#00000080",
   scrollbar: "#1C1C1C3D",
   scrollbarHover: "#1C1C1C85",
+  shadowCard: "0 1px 2px #2a20100d, 0 12px 32px -12px #2a201029",
 } as const satisfies Partial<WebColorTokens>;
 
 export const webDarkTokens: WebColorTokens = { ...darkTokens, ...webDarkOverrides };
@@ -278,6 +299,8 @@ export const webLightTokens: WebColorTokens = { ...lightTokens, ...webLightOverr
 export const tokens = darkTokens;
 
 export const RADIUS = "0.75rem";
+
+export const radii = { ctl: "10px", card: "16px", sheet: "20px", pill: "999px" } as const;
 
 export const fontWeight = { regular: "400", medium: "500", semibold: "600" } as const;
 
@@ -497,11 +520,15 @@ export function cssVariableName(token: keyof WebColorTokens): string {
   return `--${token.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`;
 }
 
+const radiusLines = (Object.keys(radii) as (keyof typeof radii)[])
+  .map((name) => `  --radius-${name}: ${radii[name]};`)
+  .join("\n");
+
 function renderBlock(selector: string, colorScheme: ResolvedAppearance, palette: WebColorTokens) {
   const lines = (Object.keys(palette) as (keyof WebColorTokens)[]).map(
     (token) => `  ${cssVariableName(token)}: ${palette[token].toLowerCase()};`,
   );
-  return `${selector} {\n  color-scheme: ${colorScheme};\n${lines.join("\n")}\n  --radius: ${RADIUS};\n}`;
+  return `${selector} {\n  color-scheme: ${colorScheme};\n${lines.join("\n")}\n  --radius: ${RADIUS};\n${radiusLines}\n}`;
 }
 
 /** The CSS in `tokens.css` (web and Electron). Generated from the web palettes so both stay in sync. */
