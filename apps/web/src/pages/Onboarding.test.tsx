@@ -35,6 +35,12 @@ vi.mock("../lib/rpc", () => ({
     },
   },
 }));
+vi.mock("../lib/auth", () => ({
+  authClient: {
+    useSession: () => ({ data: { user: { email: "person@example.test" } } }),
+    signOut: vi.fn(async () => ({ error: null })),
+  },
+}));
 vi.mock("@lingui/react/macro", () => {
   const t = (parts: TemplateStringsArray, ...values: unknown[]) => String.raw(parts, ...values);
   return {
