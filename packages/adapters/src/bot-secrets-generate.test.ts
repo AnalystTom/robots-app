@@ -259,6 +259,7 @@ describe("a sign-in item is not shown to a bot", () => {
         name: "session-example-com",
         origin: "https://example.com",
         auth: { type: "session" },
+        ciphertext: "sealed-session-cookies",
         policy: "allow",
       },
     });
