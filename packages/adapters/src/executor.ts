@@ -434,7 +434,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           fence,
           resumeCheckpoint,
           heldForTakeover,
-          Boolean(heldByAnotherRun),
+          heldByAnotherRun ? { computerId: leaseTarget.computerId, botId: run.botId } : undefined,
         );
         return;
       }

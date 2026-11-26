@@ -1,0 +1,14 @@
+name: Image namespace
+description: Lowercased GHCR namespace for this repository's server images.
+outputs:
+  namespace:
+    description: ghcr.io/<owner>/<repo>, lowercased as registries require.
+    value: ${{ steps.compute.outputs.namespace }}
+runs:
+  using: composite
+  steps:
+    - id: compute
+      shell: bash
+      env:
+        REPOSITORY: ${{ github.repository }}
+      run: echo "namespace=ghcr.io/${REPOSITORY,,}" >> "$GITHUB_OUTPUT"

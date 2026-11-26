@@ -1,0 +1,10 @@
+Two sends in a row under 16 CPU burners, pnpm test:integration --spec=search.test.ts, 12 runs each
+base:        10 of 12 pass, 2 leave the second run queued
+this branch: 12 of 12 pass
+
+pnpm test:integration --spec=run-lifecycle.postgres
+base:        1 of 2 fail (run stays queued after the holder released first)
+this branch: 2 of 2 pass
+
+pnpm exec vitest run infra/updater/src/publish-workflow.test.ts
+this branch: 9 of 9 pass

@@ -3,6 +3,10 @@ import { expect, test } from "@playwright/test";
 import type { BillingStatus } from "@robots/contracts";
 import { captureScreenshot, completeOnboarding, openUserSettings, rpc, signup } from "./helpers";
 
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+});
+
 const price = { amount: 1200, currency: "usd", interval: "month", intervalCount: 1 } as const;
 
 function billingStatus(overrides: Partial<BillingStatus>): BillingStatus {

@@ -134,7 +134,7 @@ export function workspaceSaveFindCommand(): string {
       return `\\( ${type}-regex ${shellQuote(`./${pattern}`)} \\)`;
     })
     .join(" -o ");
-  const find = "find . -regextype posix-extended";
+  const find = "env LC_ALL=C find . -regextype posix-extended";
   const script = [
     // Errors only cost a missed tag, which saves that directory; the second walk reports them.
     // Like isTaggedCacheDirectory, only a tag that starts with the signature counts.

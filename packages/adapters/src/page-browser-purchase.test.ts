@@ -55,6 +55,7 @@ function page(html: string) {
   // jsdom has no layout: every element is a 10 px square.
   (win.Element.prototype as unknown as { getBoundingClientRect: unknown }).getBoundingClientRect =
     () => ({ width: 10, height: 10, top: 0, left: 0, right: 10, bottom: 10, x: 0, y: 0 });
+  (win as unknown as { performance: { now: () => number } }).performance.now = () => 0;
   Object.defineProperty(win.HTMLElement.prototype, "innerText", {
     get(this: HTMLElement) {
       return this.textContent ?? "";
@@ -745,11 +746,9 @@ describe("a key on the screen", () => {
   });
 
   it("finds the order summary at the end of a long page", () => {
-    const { intent, win } = page(`<div>${"<span>Item</span>".repeat(8000)}</div>
+    const { intent } = page(`<div>${"<span>Item</span>".repeat(8000)}</div>
       <p><span>Bananas × 6</span> <span>$3.00</span></p>
       <p>Total: $3.00</p><button>Place order</button>`);
-    // jsdom is slow over so many elements: the clock stands still, so the time budget is not what is tested.
-    (win as unknown as { performance: { now: () => number } }).performance.now = () => 0;
     expect(intent("Place order")?.items).toEqual([{ name: "Bananas × 6", amount: "$3.00" }]);
   });
 
