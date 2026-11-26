@@ -14,7 +14,7 @@ import {
   cardExpiry,
   isIdentityConfirmationRequired,
   newVaultImportRows,
-  VAULT_KINDS,
+  VAULT_NEW_KINDS,
   vaultImportCounts,
   vaultImportProblems,
   vaultKind,
@@ -25,6 +25,7 @@ import {
   vaultImportProblemLines,
   vaultImportText,
   vaultSaveNotice,
+  vaultSubtitleWithSignIn,
 } from "@robots/i18n/vault";
 import { useQuery } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
@@ -50,6 +51,7 @@ import type { MobileBot } from "../../lib/mobile-types";
 import { native, useResolvedAppearance, useThemedStyles } from "../../lib/native";
 import { iosAtLeast } from "../../lib/native-controls";
 import { queryClient, rpcQuery } from "../../lib/query";
+import { useSpaceChanges } from "../../lib/roster-signals";
 import { settingsRpc, settingsTarget } from "../../lib/settings-target";
 import { useSideInsets } from "../../lib/side-insets";
 import { errorText } from "../../lib/user-error";
@@ -102,6 +104,21 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
   );
   const listQuery = useQuery(listRead, queryClient);
   const { refetch: refetchList } = listQuery;
+  const signingOutRead = rpcQuery(
+    "vault/signingOut",
+    { scope },
+    target.scope === "space" ? target.spaceId : undefined,
+  );
+  const signingOutQuery = useQuery(signingOutRead, queryClient);
+  const { refetch: refetchSigningOut } = signingOutQuery;
+  const signingOut = signingOutQuery.data ?? [];
+  useSpaceChanges(
+    "vault",
+    () => {
+      void refetchSigningOut();
+    },
+    true,
+  );
   // Null until the first read lands.
   const items = listQuery.data ?? null;
   const loadError = listQuery.error
@@ -124,7 +141,10 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
   // A read that started before a change never shows what the change replaced.
   const beforeChange = () => queryClient.cancelQueries({ queryKey: listRead.queryKey });
   // Read again after every change, also a failed one, which may have saved some of it.
-  const afterChange = () => void queryClient.invalidateQueries({ queryKey: listRead.queryKey });
+  const afterChange = () => {
+    void queryClient.invalidateQueries({ queryKey: listRead.queryKey });
+    void queryClient.invalidateQueries({ queryKey: signingOutRead.queryKey });
+  };
   // A value that arrives after the screen lost focus is dropped instead of shown.
   const focused = useRef(false);
   const { withIdentityConfirmation, identityDialog } = useIdentityConfirmation();
@@ -142,7 +162,8 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
     useCallback(() => {
       setError(null);
       void refetchList();
-    }, [refetchList]),
+      void refetchSigningOut();
+    }, [refetchList, refetchSigningOut]),
   );
 
   useEffect(() => {
@@ -231,7 +252,7 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
           icon: { type: "sfSymbol" as const, name: "plus" },
           menu: {
             items: [
-              ...VAULT_KINDS.map((kind) => ({
+              ...VAULT_NEW_KINDS.map((kind) => ({
                 type: "action" as const,
                 label: vaultKindLabel(kind),
                 icon: { type: "sfSymbol" as const, name: vaultKindSymbol(kind).ios as never },
@@ -485,7 +506,7 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
             colorScheme={colorScheme}
             title={t`New item`}
             actions={[
-              ...VAULT_KINDS.map((kind) => ({ id: kind, title: vaultKindLabel(kind) })),
+              ...VAULT_NEW_KINDS.map((kind) => ({ id: kind, title: vaultKindLabel(kind) })),
               { id: IMPORT, title: t`Import CSV`, attributes: { disabled: !listed } },
             ]}
             onPressAction={({ nativeEvent }) =>
@@ -536,7 +557,7 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
                 <LongPressMenu
                   key={item.name}
                   actions={[
-                    ...(readable
+                    ...(readable && readable.auth.type !== "session"
                       ? [{ id: "edit", title: t`Edit`, attributes: { disabled: pending } }]
                       : []),
                     {
@@ -562,7 +583,10 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
                       }}
                       onLongPress={onLongPress}
                       title={item.title}
-                      detail={vaultItemSubtitle(item) || undefined}
+                      detail={
+                        vaultSubtitleWithSignIn(vaultItemSubtitle(item), item.signInDelivery) ||
+                        undefined
+                      }
                       chevron="right"
                       leading={
                         <VaultTile
@@ -581,6 +605,19 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
                 </LongPressMenu>
               );
             })}
+          </SettingsGroup>
+        ) : null}
+        {signingOut.length ? (
+          <SettingsGroup>
+            {signingOut.map((site) => (
+              <SettingsRow
+                key={`signing-out-${site}`}
+                testID="vault-signing-out-row"
+                title={site}
+                detail={t`Signing out`}
+                dimmed
+              />
+            ))}
           </SettingsGroup>
         ) : null}
         {scope === "account" ? <BotEmailAddressesGroup /> : null}
@@ -631,6 +668,7 @@ function VaultItems({ spaceId }: { spaceId: string | undefined }) {
     if (kind === "card") return t`Cards`;
     if (kind === "contact") return t`Contacts`;
     if (kind === "api_key") return t`Keys`;
+    if (kind === "session") return t`Sign-ins`;
     return t`Variables`;
   }
 }

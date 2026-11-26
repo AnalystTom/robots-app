@@ -2,10 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { buildApprovalAskBlock } from "./approval-ask.js";
 import { relabelVaultItem, resolveLoginFill, storeBotSecret } from "./bot-secrets.js";
 import { fakeDatabase } from "./bot-secrets.test-support.js";
+import { LOGIN_CODE_FIELD } from "./login-code-field.js";
 import type { ToolRequest } from "./run-tool-request.js";
 import { prepareToolRequest } from "./run-tool-request.js";
 import { EncryptedSecretStore } from "./secrets.js";
-import { LOGIN_CODE_FIELD, vaultLoginUseOf } from "./vault-card-use.js";
+import { vaultLoginUseOf } from "./vault-card-use.js";
 
 // RFC 6238's test key, written in pieces so it never reads as a saved secret.
 const TEST_KEY = ("GEZDGNBV" + "GY3TQOJQ").repeat(2);

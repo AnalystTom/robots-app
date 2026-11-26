@@ -29,6 +29,11 @@
       "development": "./src/node/load-root-env.ts",
       "default": "./src/node/load-root-env.ts"
     },
+    "./node/browser-store-key": {
+      "types": "./src/node/browser-store-key.ts",
+      "development": "./src/node/browser-store-key.ts",
+      "default": "./src/node/browser-store-key.ts"
+    },
     "./node/shutdown-signals": {
       "types": "./src/node/shutdown-signals.ts",
       "development": "./src/node/shutdown-signals.ts",

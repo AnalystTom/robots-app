@@ -21,13 +21,13 @@ import { fakeDatabase } from "./bot-secrets.test-support.js";
 import { ComputerBrowserProvider } from "./computer-browser.js";
 import { resolveBotWorkspacePath } from "./computer-support.js";
 import { FakeBrowserProvider } from "./fake-browser.js";
+import { LOGIN_CODE_FIELD } from "./login-code-field.js";
 import type * as PurchaseServiceModule from "./purchase-service.js";
 import { computerTools, pageBrowserTool } from "./run-tools-computer.js";
 import { PERSON_HANDED_BACK } from "./screen-turn.js";
 import { EncryptedSecretStore } from "./secrets.js";
 import { DESKTOP_HELD_FOR_TAKEOVER_MESSAGE } from "./takeover-resume.prompt.js";
 import { totpCode } from "./totp.js";
-import { LOGIN_CODE_FIELD } from "./vault-card-use.js";
 
 // Authenticator keys (the first is RFC 6238's), written in pieces so they never read as saved secrets.
 const TEST_KEY = ("GEZDGNBV" + "GY3TQOJQ").repeat(2);

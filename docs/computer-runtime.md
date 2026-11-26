@@ -149,6 +149,10 @@ It starts the full API, provisions a real E2B desktop, serves a deterministic pa
 
 Build the computer image, then run `VERIFY_DOCKER_TEAM_SCREENS=1 pnpm exec vitest run infra/sandboxes/supervisor/src/team-desktops.docker.test.ts`. Set `ROBOTS_COMPUTER_IMAGE` to select a prebuilt image. The test uses an isolated Docker container with networking disabled and fake browser state; it verifies parallel Chrome desktops visiting local fixture sites, independent cookies, profile persistence after release, transport teardown, and rejection of old view/control tokens after slot reuse. It runs both Docker supervision and the command path used by remote providers. Default unit tests exercise profile persistence, allocation, and lease fencing offline without Docker.
 
+### Browser sign-in storage
+
+The computer's browser keeps cookies under a per-computer key written to `/tmp/robots/browser-store-key` in the computer at every start, never into the bot's home. That file is readable by the computer's user, which runs the bot's commands, so the key protects the profile at rest, not from the bot. The supervisor derives it from `DATA_DIR/secrets/browser-store.key`; providers that run the computer image themselves derive it the same way from `ENCRYPTION_KEY`, so a restarted computer gets the same key. `robots-browser` serves it through an in-container keyring and starts Chromium with `--password-store=gnome-libsecret`. Cookies saved under the old public key are resealed on the profile's first start; the saved-passwords database is not resealed and keeps Chromium's public key. Without its key, a sealed profile is not opened. Build the computer image, then run `VERIFY_DOCKER_BROWSER_SESSIONS=1 pnpm exec vitest run infra/sandboxes/supervisor/src/browser-sessions.docker.test.ts` to check migration, an imported sign-in surviving a browser kill, removal, and that the public key no longer opens the profile.
+
 ## Computer maintenance
 
 Update and recovery run as durable background jobs. A computer-wide reservation

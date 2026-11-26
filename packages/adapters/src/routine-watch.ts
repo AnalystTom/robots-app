@@ -63,7 +63,7 @@ export type RoutineWatchDeps = {
   dataDir?: string;
   connector?: ConnectorProvider;
   commandRefusal?: (command: string) => string | undefined;
-  secretStore?: SecretStore;
+  secretStore: SecretStore;
   paymentWallet?: PaymentWalletProvider | null;
   http?: Pick<SafeWebFetchOptions, "fetch" | "resolveHostname">;
 };

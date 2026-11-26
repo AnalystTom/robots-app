@@ -23,6 +23,9 @@ const SPACE_CHANGE_PROCEDURES: Record<string, readonly SpaceChangeKind[]> = {
   "bots.restore": ["runs", "routines", "email"],
   "bots.remove": ["runs", "routines", "email"],
   "bots.claimEmailAddress": ["email"],
+  "vault.put": ["vault"],
+  "vault.remove": ["vault"],
+  "vault.importSessions": ["vault"],
 };
 
 export function spaceChangesFor(path: readonly string[]): readonly SpaceChangeKind[] {

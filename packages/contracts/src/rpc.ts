@@ -61,6 +61,7 @@ import {
   CreateBotFromTemplateInput,
   CreateBotFromTemplateOutput,
 } from "./bot-template.js";
+import { ImportSessionsInput, ImportSessionsResult, SessionSite } from "./browser-sessions.js";
 import {
   ComputerModeSchema,
   ComputerProviderSettingsSchema,
@@ -298,7 +299,14 @@ const threadSendWithRoutinesInput = threadSendFields.safeExtend({
   routineIds: z.array(Id).min(1).max(64),
 });
 
-export const SpaceChangeKind = z.enum(["computerUpdates", "runs", "routines", "email", "memory"]);
+export const SpaceChangeKind = z.enum([
+  "computerUpdates",
+  "runs",
+  "routines",
+  "email",
+  "memory",
+  "vault",
+]);
 export type SpaceChangeKind = z.infer<typeof SpaceChangeKind>;
 
 const spaceName = z.string().trim().min(1).max(60);
@@ -1583,9 +1591,11 @@ export const appContract = {
   },
   vault: {
     list: oc.input(settingsScopeInput.optional()).output(z.array(BotSecretMetadata)),
+    signingOut: oc.input(settingsScopeInput.optional()).output(z.array(SessionSite)),
     put: oc.input(VaultPutInput).output(BotSecretMetadata),
     reveal: oc.input(VaultRevealInput).output(VaultRevealed),
     import: oc.input(VaultImportInput).output(VaultImportResult),
+    importSessions: oc.input(ImportSessionsInput).output(ImportSessionsResult),
     activity: oc
       .input(settingsScopeInput.extend({ name: StoredBotSecretName }))
       .output(z.array(VaultUse).max(VAULT_ACTIVITY_LIMIT)),

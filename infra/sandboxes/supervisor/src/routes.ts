@@ -8,6 +8,7 @@ import type Docker from "dockerode";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
+import { computerStoreKeyId, deliverBrowserStoreKey } from "./browser-store-key.js";
 import { computerControlEndpoint, controlDesktop } from "./computer-control.js";
 import {
   computerLocaleFields,
@@ -270,6 +271,11 @@ app.post("/computers", async (c) => {
         ) {
           const started = !info.State.Running;
           if (started) await existing.start();
+          await deliverBrowserStoreKey(
+            existing,
+            dataDir,
+            computerStoreKeyId(info.Config.Labels, existing.id),
+          );
           return c.json({
             id: existing.id,
             image: COMPUTER_IMAGE,
@@ -363,6 +369,11 @@ app.post("/computers", async (c) => {
           await createdNetwork?.remove().catch(() => undefined);
           throw error;
         }
+        await deliverBrowserStoreKey(
+          container,
+          dataDir,
+          computerStoreKeyId(options.Labels, container.id),
+        );
         return c.json({
           id: container.id,
           image: COMPUTER_IMAGE,
@@ -510,8 +521,23 @@ app.post("/computers/:id/exec", async (c) => {
   });
 });
 
-// The bot's folder in the computer's home that files its page downloads, and PDFs its tabs show, are saved to.
 const downloadFolder = z.string().min(1).max(1024).optional();
+const SESSIONS_TIMEOUT_MS = 60_000;
+const sessionSite = z
+  .string()
+  .max(253)
+  .regex(/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/);
+const sessionCookie = z.object({
+  name: z.string().min(1).max(256),
+  value: z.string().max(4096),
+  domain: z.string().min(1).max(253),
+  hostOnly: z.boolean(),
+  path: z.string().min(1).max(1024).startsWith("/"),
+  secure: z.boolean(),
+  httpOnly: z.boolean(),
+  sameSite: z.enum(["Strict", "Lax", "None"]).optional(),
+  expires: z.number().int().positive().optional(),
+});
 
 app.post("/computers/:id/browser", async (c) => {
   const headers = identityHeaders(c);
@@ -537,6 +563,19 @@ app.post("/computers/:id/browser", async (c) => {
         command: z.literal("snapshot"),
         query: z.string().max(200).optional(),
         downloads: downloadFolder,
+      }),
+      z.object({
+        command: z.literal("sessions"),
+        sites: z
+          .array(
+            z.object({
+              site: sessionSite,
+              cookies: z.array(sessionCookie).min(1),
+            }),
+          )
+          .max(50),
+        clear: z.array(sessionSite).max(200),
+        reseal: z.boolean().optional(),
       }),
       z.object({
         command: z.literal("purchase_check"),
@@ -628,7 +667,8 @@ app.post("/computers/:id/browser", async (c) => {
   }
   const body = parsed.data;
   const carriesSavedLogin =
-    body.command === "act" && body.actions.some((step) => "origin" in step && step.origin);
+    body.command === "sessions" ||
+    (body.command === "act" && body.actions.some((step) => "origin" in step && step.origin));
   const screen = (reuseRecent: boolean) =>
     managedScreen(
       c.req.param("id"),
@@ -663,7 +703,7 @@ app.post("/computers/:id/browser", async (c) => {
             ? [`ROBOTS_BROWSER_UPLOAD_MAX_BYTES=${process.env.ROBOTS_BROWSER_UPLOAD_MAX_BYTES}`]
             : []),
         ],
-        timeoutMs: 25_000,
+        timeoutMs: body.command === "sessions" ? SESSIONS_TIMEOUT_MS : 25_000,
         signal,
         stdin: `${JSON.stringify(body)}\n`,
       },

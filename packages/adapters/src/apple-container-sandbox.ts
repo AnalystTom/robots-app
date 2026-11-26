@@ -41,6 +41,7 @@ const BOT_ID_LABEL = "robots.bot-id";
 const KIND = "local-vm";
 
 export interface AppleContainerSandboxOptions {
+  browserStoreSecret?: string;
   /** The `container` CLI. The desktop app points this at its bundled copy. */
   cli?: string;
   computerImage?: string;
@@ -100,7 +101,7 @@ export class AppleContainerSandboxProvider implements SandboxProvider {
   private readonly cpus: string;
   private readonly memory: string;
   private readonly readyTimeoutMs: number;
-  private readonly shell = new ExecComputer((...exec) => this.execRaw(...exec), "VM");
+  private readonly shell: ExecComputer;
 
   private readonly desktops = new LinuxDesktop({
     environment: async () => ({
@@ -118,6 +119,11 @@ export class AppleContainerSandboxProvider implements SandboxProvider {
   });
 
   constructor(options: AppleContainerSandboxOptions = {}) {
+    this.shell = new ExecComputer(
+      (...exec) => this.execRaw(...exec),
+      "VM",
+      options.browserStoreSecret,
+    );
     this.cli = options.cli?.trim() || "container";
     this.computerImage = options.computerImage?.trim() || DEFAULT_COMPUTER_IMAGE;
     this.cpus = options.cpus?.trim() || DEFAULT_CPUS;

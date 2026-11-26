@@ -8,8 +8,9 @@ import { ComputerBrowserProvider } from "./computer-browser.js";
 import { DesktopSandboxProvider } from "./desktop-sandbox.js";
 import { DockerSandboxProvider } from "./docker-sandbox.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
-import { createRunSandbox, HostAwareSandbox, sandboxKindForBot } from "./host-aware-sandbox.js";
+import { createRunSandbox, HostAwareSandbox } from "./host-aware-sandbox.js";
 import { HostComputerSandbox } from "./host-computer-sandbox.js";
+import { sandboxKindForBot } from "./sandbox-kind-for-bot.js";
 
 const ctx = {
   operationId: "1",
@@ -114,11 +115,7 @@ describe("host-aware sandbox", () => {
   });
 
   it("does not expose page commands when neither provider supports them", () => {
-    const sandbox = new HostAwareSandbox(
-      new FakeSandboxProvider(),
-      new DesktopSandboxProvider(),
-      async () => false,
-    );
+    const sandbox = new HostAwareSandbox({} as never, {} as never, async () => false);
     expect(sandbox.pageBrowser).toBeUndefined();
   });
 

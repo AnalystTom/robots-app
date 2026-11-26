@@ -8,7 +8,7 @@ import {
   otherSitesText,
   vaultKind,
 } from "@robots/contracts";
-import { vaultBotsLine } from "@robots/i18n/vault";
+import { vaultBotsLine, vaultSignInStateLabel } from "@robots/i18n/vault";
 import * as Clipboard from "expo-clipboard";
 import { useState } from "react";
 import { Modal, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -98,7 +98,7 @@ export function VaultItemSheet({
     } else if (entry.auth.type === "command") {
       add(t`Variable`, `$${commandVariableName(entry.name)}`);
       list.push({ label: t`Value`, ...hidden });
-    } else {
+    } else if (entry.auth.type !== "session") {
       add(t`Site`, entry.origin);
       add(
         t`Type`,
@@ -110,7 +110,7 @@ export function VaultItemSheet({
       );
       list.push({ label: t`Value`, ...hidden });
     }
-    add(t`When to use`, entry.note);
+    add(entry.auth.type === "session" ? t`Imported from` : t`When to use`, entry.note);
     add(
       t`Bots`,
       vaultBotsLine({
@@ -121,6 +121,12 @@ export function VaultItemSheet({
         unusedHere: ownVault,
       }),
     );
+    if (entry.signInDelivery?.length) {
+      add(
+        t`Sign-in`,
+        entry.signInDelivery.map((delivery) => vaultSignInStateLabel(delivery.state)).join(", "),
+      );
+    }
     return list;
   }
 
@@ -146,7 +152,7 @@ export function VaultItemSheet({
           ) : (
             <NativeActionButton label={t`Done`} onPress={onClose} prominence="plain" />
           )}
-          {readable && !usesOpen ? (
+          {readable && readable.auth.type !== "session" && !usesOpen ? (
             <NativeActionButton
               disabled={busy}
               fill={false}

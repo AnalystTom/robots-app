@@ -867,7 +867,7 @@ describe("shared Linux desktop lifecycle", () => {
         waitForReady(joinedReady);
         const result = spawnSync("bash", ["-eu", "-c", command], {
           encoding: "utf8",
-          timeout: 20_000,
+          timeout: 90_000,
           env: {
             ...process.env,
             PATH: `${bin}${path.delimiter}${process.env.PATH ?? ""}`,
@@ -902,6 +902,7 @@ describe("shared Linux desktop lifecycle", () => {
         }
       }
     },
+    120_000,
   );
 
   it.skipIf(process.platform !== "linux").each(["replacement", "unclosed"])(

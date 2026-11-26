@@ -17,6 +17,7 @@ const vault = vi.hoisted(() => ({
   reveal: vi.fn(),
   activity: vi.fn(),
   import: vi.fn(),
+  signingOut: vi.fn(async (): Promise<unknown[]> => []),
 }));
 // No bot has an email address unless a test gives it one.
 const bots = vi.hoisted(() => ({

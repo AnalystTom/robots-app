@@ -10,6 +10,7 @@ import {
   isSandboxGoneError,
   SandboxUnsafeStopError,
 } from "./sandbox-errors.js";
+import { testSecretStore } from "./secret-store.test-support.js";
 
 const native = vi.hoisted(() => ({
   desktop: { create: vi.fn(), connect: vi.fn() },
@@ -126,6 +127,7 @@ describe("unsafe computer stop", () => {
     await expect(
       provisionComputer(
         {
+          secretStore: testSecretStore,
           prisma,
           sandbox: api,
           home: {} as AgentHomeStore,

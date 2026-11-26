@@ -1,0 +1,137 @@
+import { EventEmitter } from "node:events";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import { linuxCookieKeys } from "@robots/adapters/browser-cookie-crypto";
+import { encryptCookieForTest } from "@robots/adapters/browser-cookie-crypto.test-support";
+import {
+  platformKeySource,
+  profileSessionsReader,
+} from "@robots/adapters/browser-profile-sessions";
+import type { IpcMainInvokeEvent, WebContents } from "electron";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createBrowserSessionsHandlers } from "./browser-sessions.js";
+
+const frame = { url: "https://app.example.com/app/settings" };
+const contents = Object.assign(new EventEmitter(), {
+  mainFrame: frame,
+  isDestroyed: () => false,
+}) as unknown as WebContents;
+const appEvent = { sender: contents, senderFrame: frame } as IpcMainInvokeEvent;
+const subframeEvent = {
+  sender: contents,
+  senderFrame: { url: "https://app.example.com/embed" },
+} as unknown as IpcMainInvokeEvent;
+const target = { webContents: contents, url: "https://app.example.com" };
+
+let home: string;
+
+beforeEach(async () => {
+  listed.length = 0;
+  asked.length = 0;
+  home = await mkdtemp(join(tmpdir(), "robots-desktop-sessions-"));
+  const userDataDir = join(home, ".config", "google-chrome");
+  await mkdir(join(userDataDir, "Default", "Network"), { recursive: true });
+  await writeFile(
+    join(userDataDir, "Local State"),
+    JSON.stringify({ profile: { info_cache: { Default: { name: "Work" } } } }),
+  );
+  const db = new DatabaseSync(join(userDataDir, "Default", "Network", "Cookies"));
+  db.exec(`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
+    CREATE TABLE cookies (host_key TEXT, top_frame_site_key TEXT, name TEXT, value TEXT,
+      encrypted_value BLOB, path TEXT, expires_utc INTEGER, is_secure INTEGER, is_httponly INTEGER,
+      is_persistent INTEGER, samesite INTEGER)`);
+  db.exec("INSERT INTO meta VALUES ('version', '24')");
+  const encrypted = encryptCookieForTest(
+    "fixture-token",
+    { hostKey: ".x.com", dbVersion: 24, version: "v10" },
+    linuxCookieKeys([]),
+  );
+  db.prepare(
+    "INSERT INTO cookies VALUES ('.x.com', '', 'auth_token', '', ?, '/', 0, 1, 1, 0, 0)",
+  ).run(encrypted);
+  db.close();
+});
+
+afterEach(async () => {
+  await rm(home, { recursive: true, force: true });
+});
+
+const asked: Array<{ server: string; profile: string; sites: readonly string[] }> = [];
+const listed: string[] = [];
+
+function handlers(answer = true, allowListing = true) {
+  return createBrowserSessionsHandlers(
+    () => target,
+    profileSessionsReader(
+      { platform: "linux", home, env: {} },
+      platformKeySource("linux", async () => {
+        throw new Error("a v10 profile never asks the keyring");
+      }),
+    ),
+    async (server) => {
+      listed.push(server);
+      return allowListing;
+    },
+    async ({ server, profile, sites }) => {
+      asked.push({ server, profile: `${profile.name} ${profile.browser}`, sites });
+      return answer;
+    },
+  );
+}
+
+describe("desktop browser sessions bridge", () => {
+  it("lists the local profile and reads only the chosen site for the app page", async () => {
+    const bridge = handlers();
+    expect(await bridge.profiles(appEvent)).toEqual([
+      {
+        id: "chrome/0/Default",
+        name: "Work",
+        browser: "Chrome",
+        sites: [{ site: "x.com", cookies: 1 }],
+      },
+    ]);
+    expect(listed).toEqual(["app.example.com"]);
+    const read = await bridge.read(appEvent, "chrome/0/Default", ["x.com"]);
+    expect(read).toMatchObject({
+      ok: true,
+      sessions: [{ site: "x.com", cookies: [{ name: "auth_token", value: "fixture-token" }] }],
+    });
+    expect(asked.at(-1)).toEqual({
+      server: "app.example.com",
+      profile: "Work Chrome",
+      sites: ["x.com"],
+    });
+  });
+
+  it("lists nothing when the person declines the listing prompt", async () => {
+    expect(await handlers(true, false).profiles(appEvent)).toBeNull();
+    expect(listed).toEqual(["app.example.com"]);
+  });
+
+  it("reads nothing when the person declines the native prompt", async () => {
+    expect(await handlers(false).read(appEvent, "chrome/0/Default", ["x.com"])).toEqual({
+      ok: false,
+      code: "cancelled",
+      error: "The import was cancelled.",
+    });
+  });
+
+  it("answers nothing to a subframe or a malformed request", async () => {
+    const bridge = handlers();
+    expect(await bridge.profiles(subframeEvent)).toBeNull();
+    expect(await bridge.read(subframeEvent, "chrome/0/Default", ["x.com"])).toBeNull();
+    expect(await bridge.read(appEvent, "chrome/0/Default", ["not a site"])).toBeNull();
+    expect(await bridge.read(appEvent, "chrome/0/Default", [])).toBeNull();
+    expect(await bridge.read(appEvent, 7, ["x.com"])).toBeNull();
+  });
+
+  it("turns a refusal into a code the page can explain", async () => {
+    expect(await handlers().read(appEvent, "chromium/0/Default", ["x.com"])).toEqual({
+      ok: false,
+      code: "profile_not_found",
+      error: "That browser profile is gone.",
+    });
+  });
+});

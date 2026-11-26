@@ -243,7 +243,7 @@ export async function runComputerReplace(
   }
   try {
     await replaceComputer(
-      deps,
+      { ...deps, secretStore: deps.secrets },
       bot.computer.id,
       mode,
       {

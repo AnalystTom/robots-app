@@ -152,7 +152,8 @@ A contact is a name, address, phone or email, the user's own or someone else's, 
 Owners can manage what is saved without asking the bot. Open **Settings → Vault** on web, the
 desktop app or mobile. It lists every item by its title, which the owner can change (a card without
 one shows as "Visa ·· 4242", a login as its site), with a line from the item: a login's username, a
-card's expiry, a contact's name and city. New adds a login, card, contact, API key or variable.
+card's expiry, a contact's name and city. New adds a login, card, contact, API key or variable,
+and can import sign-ins (below).
 Opening an item shows its fields; protected values show only after you confirm it's you. From
 there you can edit an item, add a note on when the bot should use it, which `list_secrets` shows
 the bot, or remove it after confirming. Remove deletes the saved value immediately. Asking the bot
@@ -226,6 +227,8 @@ site. Authenticator keys aren't imported; add
 one in the login's editor where a bot must sign in on its own. A file whose quotes are broken is
 not read at all, so no password is read differently from the export. Delete the export file
 afterwards: it holds your passwords unencrypted.
+
+**Import sign-ins** in the New menu of the desktop app copies the sign-ins for sites you pick from a Chrome or Chromium profile on that computer. The app asks before it lists the sites, and again before it imports, showing the profile and the sites. Each site becomes a Session item for the bots you pick; a running computer gets the sign-in at once, and otherwise at its next start. Removing the item signs those bots out of the site.
 
 A sign-in without a password, such as an ID number and phone number, uses the same login card. CAPTCHA and passkeys still use `request_takeover`, as does any sign-in you prefer to do yourself.
 

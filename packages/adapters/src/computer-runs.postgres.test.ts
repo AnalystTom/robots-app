@@ -18,6 +18,7 @@ import { sleepComputerIfIdle } from "./computer-idle.js";
 import { provisionComputer } from "./computer-lifecycle.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
 import { LocalAgentHomeStore } from "./home.js";
+import { testSecretStore } from "./secret-store.test-support.js";
 
 const url = process.env.DATABASE_URL;
 const describePostgres = process.env.VERIFY_DATABASE === "1" && url ? describe : describe.skip;
@@ -82,7 +83,10 @@ describePostgres("computer runs (PostgreSQL)", () => {
       signal: new AbortController().signal,
     };
     // Starts run in the signed-in user's request, so they also prove the tenant policy.
-    const start = () => runAsTenant(tenant, () => provisionComputer(deps, computer.id, context));
+    const start = () =>
+      runAsTenant(tenant, () =>
+        provisionComputer({ ...deps, secretStore: testSecretStore }, computer.id, context),
+      );
     const sleep = () => runAsSystem("idle job", () => sleepComputerIfIdle(deps, computer.id));
     const runs = () =>
       system.computerRun.findMany({

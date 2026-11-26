@@ -7,6 +7,7 @@ import type {
   ModelApiProtocol,
   PurchaseCardField,
   SandboxKind,
+  SiteSession,
   VoiceAccountErrorCode,
 } from "@robots/contracts";
 
@@ -1510,7 +1511,8 @@ export type PageBrowserCommand =
       enter?: boolean;
       points?: BrowserPurchaseCheckRequest["points"];
       unplaced?: boolean;
-    };
+    }
+  | { command: "sessions"; sites: SiteSession[]; clear: string[]; reseal?: boolean };
 
 export type PageBrowserResult = Partial<BrowserSnapshotResult & BrowserActResult> & {
   ok: boolean;

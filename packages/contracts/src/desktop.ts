@@ -1,10 +1,6 @@
+import type { BrowserProfileSummary, BrowserSessionsReadResult } from "./browser-sessions.js";
 import type { MacGrantId, MacGrantState } from "./mac-apps.js";
 
-/**
- * `unsupported` covers an unpackaged build and a repository with no published releases, which is
- * the normal state for a fork. It is not an error the user needs to act on. Automatic checks stay
- * frozen after an empty feed; a manual check may retry when the install itself supports updates.
- */
 export type DesktopUpdatePhase =
   | "idle"
   | "checking"
@@ -146,6 +142,10 @@ export interface RobotsDesktop {
     requestAccess: () => Promise<boolean>;
     revokeAccess: () => Promise<void>;
     onConfigure: (listener: () => void) => () => void;
+  };
+  browserSessions?: {
+    profiles: () => Promise<BrowserProfileSummary[] | null>;
+    read: (profileId: string, sites: string[]) => Promise<BrowserSessionsReadResult | null>;
   };
   /** Optional for compatibility with older desktop releases. */
   device?: {

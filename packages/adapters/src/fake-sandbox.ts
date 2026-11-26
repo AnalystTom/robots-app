@@ -6,6 +6,8 @@ import type {
   ComputerInput,
   ComputerRef,
   ControlLeaseRef,
+  PageBrowserCommand,
+  PageBrowserResult,
   PortableFile,
   ProcessEvent,
   SandboxProvider,
@@ -13,6 +15,7 @@ import type {
   ScreenSession,
   TerminalRequest,
 } from "@robots/adapter-kit";
+import type { SiteSession } from "@robots/contracts";
 import { canReleaseScreenLease, canTakeScreenLease } from "@robots/core";
 import { ComputerScreenUnavailableError, screenSessionKey } from "./computer-screens.js";
 import {
@@ -36,6 +39,7 @@ export interface FakeBox {
 
 export class FakeSandboxProvider implements SandboxProvider {
   readonly boxes = new Map<string, FakeBox>();
+  readonly signIns = new Map<string, Map<string, SiteSession["cookies"]>>();
   private readonly terminals = new FakeTerminalGateway();
   private readonly screenServer = new FakeScreenServer();
 
@@ -87,6 +91,21 @@ export class FakeSandboxProvider implements SandboxProvider {
   }
 
   async prepare(_computer: ComputerRef, _context: AdapterContext): Promise<void> {}
+
+  async pageBrowser(
+    computer: ComputerRef,
+    request: PageBrowserCommand,
+    _context: AdapterContext,
+  ): Promise<PageBrowserResult> {
+    if (request.command !== "sessions") {
+      return { ok: false, error: "The fake computer answers page commands in process." };
+    }
+    const sites = this.signIns.get(computer.id) ?? new Map<string, SiteSession["cookies"]>();
+    for (const site of request.clear) sites.delete(site);
+    for (const session of request.sites) sites.set(session.site, session.cookies);
+    this.signIns.set(computer.id, sites);
+    return { ok: true };
+  }
 
   async *execute(
     computer: ComputerRef,

@@ -11,6 +11,7 @@ import {
   parseVaultCsv,
   VAULT_IMPORT_FILE_LIMIT,
   VAULT_KINDS,
+  VAULT_NEW_KINDS,
   vaultKind,
 } from "@robots/contracts";
 import { vaultBotsChoosable } from "@robots/core";
@@ -26,8 +27,9 @@ import {
   ListSearchInput,
 } from "@robots/ui-web";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, FileUp, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, FileUp, Globe, Plus } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
+import { desktopBridge } from "../lib/desktop";
 import { useSpaceQueries } from "../lib/query";
 import { useSpaceRpc } from "../lib/space-rpc";
 import { errorCode, errorText } from "../lib/user-error";
@@ -39,6 +41,7 @@ import { VaultImportPage } from "./vault/VaultImport";
 import { VaultItemDetail } from "./vault/VaultItemDetail";
 import type { VaultEditorInitial, VaultEditorResult } from "./vault/VaultItemEditor";
 import { VaultItemEditorPage } from "./vault/VaultItemEditor";
+import { VaultSessionImportPage } from "./vault/VaultSessionImport";
 
 export { REVEAL_MS } from "./vault/VaultItemDetail";
 
@@ -62,6 +65,9 @@ export function VaultSettings({
   const queryClient = useQueryClient();
   const list = queries.vault.list.queryOptions({ input: { scope } });
   const listQuery = useQuery({ ...list, refetchOnMount: "always" });
+  const signingOut = queries.vault.signingOut.queryOptions({ input: { scope } });
+  const signingOutQuery = useQuery({ ...signingOut, refetchOnMount: "always" });
+  const signingOutSites = signingOutQuery.data ?? [];
   // Bots are chosen in the Space they're in, and a Space with its own vault never uses the
   // account's.
   const overrides = useQuery({
@@ -90,6 +96,8 @@ export function VaultSettings({
   const revealAttempt = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState<{ read: number; csv: VaultCsv } | null>(null);
+  const [importingSessions, setImportingSessions] = useState(false);
+  const browserSessions = desktopBridge()?.browserSessions;
   // Counts file picks: only the last one's read is shown, whichever finishes first.
   const reads = useRef(0);
 
@@ -100,7 +108,7 @@ export function VaultSettings({
 
   async function refresh() {
     try {
-      await fetchFresh(queryClient, list);
+      await Promise.all([fetchFresh(queryClient, list), fetchFresh(queryClient, signingOut)]);
       return true;
     } catch {
       return false;
@@ -275,6 +283,9 @@ export function VaultSettings({
           text.toLowerCase().includes(needle),
         )),
   );
+  const signingOutShown = signingOutSites.filter(
+    (site) => !needle || site.toLowerCase().includes(needle),
+  );
   const openedItem = items?.find((item) => item.name === opened);
 
   // Bots are offered once it's known this Space can use them, even in an editor already open.
@@ -301,6 +312,7 @@ export function VaultSettings({
                   contact: t`New contact`,
                   api_key: t`New API key`,
                   variable: t`New variable`,
+                  session: one.session,
                 }[editing.kind]
           }
           initial={editingInitial}
@@ -330,6 +342,17 @@ export function VaultSettings({
             reads.current += 1;
             setImporting(null);
           }}
+        />
+      </section>
+    );
+  if (importingSessions && browserSessions)
+    return (
+      <section data-testid="vault">
+        <VaultSessionImportPage
+          scope={scope}
+          browserSessions={browserSessions}
+          onBack={() => setImportingSessions(false)}
+          onImported={() => void refresh()}
         />
       </section>
     );
@@ -399,7 +422,7 @@ export function VaultSettings({
             <ChevronDown />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-44">
-            {VAULT_KINDS.map((kind) => (
+            {VAULT_NEW_KINDS.map((kind) => (
               <Fragment key={kind}>
                 {kind === "api_key" ? <DropdownMenuSeparator /> : null}
                 <DropdownMenuItem
@@ -421,6 +444,15 @@ export function VaultSettings({
               <FileUp className="text-muted-foreground" />
               <Trans>Import CSV</Trans>
             </DropdownMenuItem>
+            {browserSessions ? (
+              <DropdownMenuItem
+                data-testid="vault-import-sessions"
+                onClick={() => setImportingSessions(true)}
+              >
+                <Globe className="text-muted-foreground" />
+                <Trans>Import sign-ins</Trans>
+              </DropdownMenuItem>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
         <input
@@ -441,7 +473,7 @@ export function VaultSettings({
           <Trans>Could not load credentials.</Trans>
         </p>
       ) : null}
-      {shown.length ? (
+      {shown.length || signingOutShown.length ? (
         <ul data-testid="vault-card" className="overflow-hidden rounded-xl bg-muted/50">
           {shown.map((item) => {
             const kind = item.auth ? vaultKind(item.auth.type) : null;
@@ -484,8 +516,27 @@ export function VaultSettings({
               </li>
             );
           })}
+          {signingOutShown.map((site) => (
+            <li
+              key={`signing-out-${site}`}
+              data-testid="vault-signing-out-row"
+              className="border-t border-border first:border-t-0"
+            >
+              <div className="flex w-full items-center gap-3 px-3.5 py-2.5">
+                <VaultTile kind="session" title={site} origin={`https://${site}`} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-body font-medium text-foreground">
+                    {site}
+                  </span>
+                  <span className="block truncate text-body-sm text-muted-foreground">
+                    <Trans>Signing out</Trans>
+                  </span>
+                </span>
+              </div>
+            </li>
+          ))}
         </ul>
-      ) : needle && items?.length ? (
+      ) : needle && (items?.length || signingOutSites.length) ? (
         <p className="py-6 text-center text-body-sm text-muted-foreground">
           <Trans>No matches</Trans>
         </p>

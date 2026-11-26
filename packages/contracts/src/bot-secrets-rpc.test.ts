@@ -64,6 +64,7 @@ describe("botSecrets rpc contract", () => {
       "origin",
       "policy",
       "preview",
+      "signInDelivery",
       "title",
       "updatedAt",
     ]);

@@ -40,6 +40,7 @@ describe("followSpaceChanges", () => {
       "routines",
       "email",
       "memory",
+      "vault",
     ]);
 
     const next = iterator.next();
@@ -103,6 +104,7 @@ describe("followSpaceChanges", () => {
       "routines",
       "email",
       "memory",
+      "vault",
     ]);
     await iterator.return(undefined);
   });

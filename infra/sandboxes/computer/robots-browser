@@ -452,7 +452,25 @@ case "$language" in
     LANGUAGE_FLAGS="--accept-lang=$languages"
     ;;
 esac
-FLAGS="--test-type --no-sandbox --disable-dev-shm-usage --disable-gpu --enable-unsafe-swiftshader $LANGUAGE_FLAGS --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=basic --restore-last-session --start-maximized --remote-debugging-address=127.0.0.1 --remote-debugging-port=$DEBUG_PORT"
+ACTUAL_PORT="$DEBUG_PORT"
+for arg in "$@"; do
+  case "$arg" in
+    --remote-debugging-port=*) ACTUAL_PORT="${arg#*=}" ;;
+  esac
+done
+mkdir -p /tmp/robots "$ACTUAL_PROFILE" 2>/dev/null || true
+KEYRING="$(command -v robots-browser-keyring || true)"
+if [ -z "$KEYRING" ] || ! "$KEYRING" 2>>/tmp/robots/browser-keyring.log; then
+  echo "Browser could not start securely - try restarting the computer" >&2
+  exit 1
+fi
+if [ -z "$live_pid" ] && ! profile_lock_is_live "$ACTUAL_PROFILE"; then
+  /usr/bin/python3 -I /usr/local/lib/robots/browser_sessions.py finish-migration "$ACTUAL_PROFILE" \
+    >>/tmp/robots/browser-reseal.log 2>&1 </dev/null || true
+fi
+nohup /usr/bin/python3 -I /usr/local/lib/robots/browser_sessions.py reseal "$ACTUAL_PROFILE" "$ACTUAL_PORT" \
+  >>/tmp/robots/browser-reseal.log 2>&1 </dev/null &
+FLAGS="--test-type --no-sandbox --disable-dev-shm-usage --disable-gpu --enable-unsafe-swiftshader $LANGUAGE_FLAGS --no-first-run --no-default-browser-check --disable-session-crashed-bubble --hide-crash-restore-bubble --password-store=gnome-libsecret --restore-last-session --start-maximized --remote-debugging-address=127.0.0.1 --remote-debugging-port=$DEBUG_PORT"
 if [ "$USER_DATA_DIR_SET" -eq 0 ]; then
   exec "$BIN" $FLAGS --user-data-dir="$PROFILE" "$@"
 fi

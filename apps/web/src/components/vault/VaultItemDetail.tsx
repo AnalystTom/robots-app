@@ -8,7 +8,7 @@ import {
   otherSitesText,
   vaultKind,
 } from "@robots/contracts";
-import { vaultBotsLine } from "@robots/i18n/vault";
+import { vaultBotsLine, vaultSignInStateLabel } from "@robots/i18n/vault";
 import { Button } from "@robots/ui-web";
 import { Check, Copy, Eye, EyeOff } from "lucide-react";
 import type { ReactNode } from "react";
@@ -339,7 +339,7 @@ export function VaultItemDetail({
   }
   if (item.note)
     rows.push(
-      <DetailRow key="note" label={t`When to use`}>
+      <DetailRow key="note" label={kind === "session" ? t`Imported from` : t`When to use`}>
         {item.note}
       </DetailRow>,
     );
@@ -360,6 +360,20 @@ export function VaultItemDetail({
     rows.push(
       <DetailRow key="access" label={t`Bots`} testId="vault-item-access-detail">
         {access}
+      </DetailRow>,
+    );
+  if (item.signInDelivery?.length)
+    rows.push(
+      <DetailRow key="delivery" label={t`Sign-in`} testId="vault-item-delivery">
+        {item.signInDelivery.map((entry) => {
+          const name = bots?.find((bot) => bot.id === entry.botId)?.name;
+          const state = vaultSignInStateLabel(entry.state);
+          return (
+            <span key={entry.botId} className="block" data-state={entry.state}>
+              {name ? `${name}: ${state}` : state}
+            </span>
+          );
+        })}
       </DetailRow>,
     );
 
@@ -397,7 +411,11 @@ export function VaultItemDetail({
       {confirmingRemove ? (
         <div className="flex flex-col gap-2">
           <p className="text-body-sm text-foreground">
-            <Trans>Remove {secretName}? Bots will no longer be able to use it.</Trans>
+            {kind === "session" ? (
+              <Trans>Remove {secretName}? Its bots' browsers will be signed out of it.</Trans>
+            ) : (
+              <Trans>Remove {secretName}? Bots will no longer be able to use it.</Trans>
+            )}
           </p>
           <div className="flex gap-2">
             <Button
@@ -421,7 +439,7 @@ export function VaultItemDetail({
         </div>
       ) : (
         <div className="flex gap-2">
-          {auth ? (
+          {auth && kind !== "session" ? (
             <Button
               type="button"
               variant="secondary"

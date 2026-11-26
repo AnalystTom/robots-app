@@ -3,6 +3,10 @@ import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import {
+  platformKeySource,
+  profileSessionsReader,
+} from "@robots/adapters/browser-profile-sessions";
 import type { HostScreen } from "@robots/adapters/host-screen";
 import { createPrivateNetworkHttps } from "@robots/adapters/private-network-https";
 import { startUserDeviceClient } from "@robots/adapters/user-device-client";
@@ -51,6 +55,7 @@ import type { ElectronAutoUpdater } from "./auto-update.js";
 import { DesktopUpdateController } from "./auto-update.js";
 import { createBadgeHandler } from "./badge.js";
 import { openBrowserAuth } from "./browser-auth.js";
+import { createBrowserSessionsHandlers } from "./browser-sessions.js";
 import { createClipboardHandler } from "./clipboard.js";
 import { appWindowTargets, desktop } from "./desktop-state.js";
 import { launchDockerApp, resolveDockerBinary, runDocker } from "./docker-cli.js";
@@ -433,7 +438,45 @@ async function confirmComputerAccess(detail: string) {
   const result = await (win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options));
   return result.response === 1;
 }
-/** The trust boundary for opening the stack to the network: only a click on Allow here does. */
+async function confirmSessionListing(server: string) {
+  const options: Electron.MessageBoxOptions = {
+    type: "question",
+    title: t("Look at browser sign-ins?"),
+    message: t("Let {server} see which sites have sign-ins in your browsers?", { server }),
+    buttons: [t("Cancel"), t("Continue")],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  };
+  const win =
+    desktop.mainWindow !== null && !desktop.mainWindow.isDestroyed() ? desktop.mainWindow : null;
+  const result = await (win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options));
+  return result.response === 1;
+}
+async function confirmSessionImport(request: {
+  server: string;
+  profile: { name: string; browser: string };
+  sites: readonly string[];
+}) {
+  const options: Electron.MessageBoxOptions = {
+    type: "question",
+    title: t("Import browser sign-ins?"),
+    message: t("Give {server} your sign-ins from {profile} in {browser}?", {
+      server: request.server,
+      profile: request.profile.name,
+      browser: request.profile.browser,
+    }),
+    detail: request.sites.join("\n"),
+    buttons: [t("Cancel"), t("Import")],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+  };
+  const win =
+    desktop.mainWindow !== null && !desktop.mainWindow.isDestroyed() ? desktop.mainWindow : null;
+  const result = await (win ? dialog.showMessageBox(win, options) : dialog.showMessageBox(options));
+  return result.response === 1;
+}
 async function confirmNetworkAccess(address: string) {
   const options: Electron.MessageBoxOptions = {
     type: "warning",
@@ -944,6 +987,17 @@ app.whenReady().then(async () => {
     "desktop.badge.set",
     createBadgeHandler(permissionTarget, (count) => app.setBadgeCount(count)),
   );
+  const browserSessions = createBrowserSessionsHandlers(
+    permissionTarget,
+    profileSessionsReader(
+      { platform: process.platform, home: app.getPath("home"), env: process.env },
+      platformKeySource(process.platform),
+    ),
+    confirmSessionListing,
+    confirmSessionImport,
+  );
+  ipcMain.handle("desktop.browserSessions.profiles", browserSessions.profiles);
+  ipcMain.handle("desktop.browserSessions.read", browserSessions.read);
   if (process.platform === "darwin") {
     // Installed builds ship the helper as an extra resource; `pnpm build` compiles it for development.
     const helper = app.isPackaged

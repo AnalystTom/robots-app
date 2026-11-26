@@ -23,6 +23,7 @@ import { FakeSandboxProvider } from "./fake-sandbox.js";
 import { LocalAgentHomeStore } from "./home.js";
 import { machineCleanupRecords, retryMachineCleanup } from "./machine-cleanup.js";
 import { recordUnreferencedMachine } from "./sandbox-cleanup.js";
+import { testSecretStore } from "./secret-store.test-support.js";
 import { GraphileJobPublisher } from "./wakeup.js";
 
 const url = process.env.DATABASE_URL;
@@ -77,6 +78,7 @@ describePostgres("machine cleanup (PostgreSQL)", () => {
     runAsTenant({ spaceId: identity.spaceId, userId: identity.userId }, () =>
       provisionComputer(
         {
+          secretStore: testSecretStore,
           prisma: db.prisma,
           sandbox,
           home: new LocalAgentHomeStore(dataDir),

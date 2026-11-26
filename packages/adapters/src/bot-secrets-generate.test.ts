@@ -1,6 +1,11 @@
 import { GENERATED_SECRET_SYMBOLS, GeneratedSecretRules } from "@robots/contracts";
 import { describe, expect, it, vi } from "vitest";
-import { generateBotSecret, loadCommandVariables, resolveLoginFill } from "./bot-secrets.js";
+import {
+  generateBotSecret,
+  HIDDEN_ITEM,
+  loadCommandVariables,
+  resolveLoginFill,
+} from "./bot-secrets.js";
 import { fakeDatabase } from "./bot-secrets.test-support.js";
 import { generateSecretValue } from "./secret-generator.js";
 import { EncryptedSecretStore } from "./secrets.js";
@@ -240,5 +245,37 @@ describe("generate_secret", () => {
     expect((await loadCommandVariables(db.prisma, secretStore, scope)).env).toEqual({
       DB_PASSWORD,
     });
+  });
+});
+
+describe("a sign-in item is not shown to a bot", () => {
+  it("answers a bot naming a sign-in item as hidden, without its metadata", async () => {
+    const db = fakeDatabase();
+    await db.prisma.vaultCredential.create({
+      data: {
+        id: "session-1",
+        userId: "user-1",
+        spaceId: null,
+        name: "session-example-com",
+        origin: "https://example.com",
+        auth: { type: "session" },
+        ciphertext: "sealed-session-cookies",
+        policy: "allow",
+      },
+    });
+    const botScope = { ...scope, botId: "bot-1" };
+    const result = await generateBotSecret({
+      prisma: db.prisma,
+      secretStore,
+      scope: botScope,
+      args: {
+        name: "session-example-com",
+        type: "login",
+        origin: "https://example.com",
+        username: "person@example.test",
+      },
+    });
+    expect(result).toEqual({ result: { error: HIDDEN_ITEM } });
+    expect(JSON.stringify(result)).not.toContain("session-1");
   });
 });

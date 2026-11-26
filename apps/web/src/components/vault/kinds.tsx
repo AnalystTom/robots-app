@@ -3,11 +3,13 @@ import { useLinkFavicon } from "@robots/chat-ui/web";
 import type { BotSecretMetadata, VaultKind } from "@robots/contracts";
 import { vaultItemSubtitle } from "@robots/contracts";
 import { registrableDomain } from "@robots/core/egress";
+import { vaultSubtitleWithSignIn } from "@robots/i18n/vault";
 import { cn } from "@robots/ui-web";
 import type { LucideIcon } from "lucide-react";
-import { Braces, CreditCard, KeyRound, MapPin, SquareTerminal } from "lucide-react";
+import { Braces, CreditCard, Globe, KeyRound, MapPin, SquareTerminal } from "lucide-react";
 
 export type VaultAuth = NonNullable<BotSecretMetadata["auth"]>;
+export type VaultSavedAuth = Exclude<VaultAuth, { type: "session" }>;
 
 const KIND_ICONS: Record<VaultKind, LucideIcon> = {
   login: KeyRound,
@@ -15,6 +17,7 @@ const KIND_ICONS: Record<VaultKind, LucideIcon> = {
   contact: MapPin,
   api_key: Braces,
   variable: SquareTerminal,
+  session: Globe,
 };
 
 export function useVaultKindLabels() {
@@ -25,6 +28,7 @@ export function useVaultKindLabels() {
     contact: t`Contact`,
     api_key: t`API key`,
     variable: t`Variable`,
+    session: t`Sign-in`,
   };
   const many: Record<VaultKind, string> = {
     login: t`Logins`,
@@ -32,6 +36,7 @@ export function useVaultKindLabels() {
     contact: t`Contacts`,
     api_key: t`Keys`,
     variable: t`Variables`,
+    session: t`Sign-ins`,
   };
   return { one, many };
 }
@@ -113,5 +118,8 @@ export function useVaultSubtitle() {
   const { t } = useLingui();
   const { one } = useVaultKindLabels();
   return (item: BotSecretMetadata): string =>
-    vaultItemSubtitle(item, { apiKey: one.api_key, expires: (expiry) => t`Expires ${expiry}` });
+    vaultSubtitleWithSignIn(
+      vaultItemSubtitle(item, { apiKey: one.api_key, expires: (expiry) => t`Expires ${expiry}` }),
+      item.signInDelivery,
+    );
 }

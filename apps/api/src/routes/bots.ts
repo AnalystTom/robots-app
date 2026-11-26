@@ -19,7 +19,12 @@ import {
   relabelVaultItem,
   revealBotSecret,
   SAVED_LOGIN_UNREADABLE,
+  SESSION_IMPORT_TOO_LARGE,
+  SESSIONS_NEED_OWN_SPACE,
+  SESSIONS_NOT_ON_THIS_COMPUTER,
   SPACE_VAULT_NOT_IN_USE,
+  sessionItemBots,
+  signingOutSites,
   stopCancelledGroupRuns,
   storeBotSecret,
   toComputerRef,
@@ -46,6 +51,7 @@ import {
   encodeLoginSecret,
   noneSkipped,
   resolveBotAvatarSet,
+  sessionOriginSite,
   UNCHOSEN_ITEM_ANSWER,
   VaultPolicy,
   vaultImportLogin,
@@ -78,6 +84,7 @@ import { exportBotPackageFor } from "../bot-package-export.js";
 import { loadBotForRemoval } from "../bot-removal.js";
 import { changedBotSettings } from "../bot-setting-analytics.js";
 import { createBotFromTemplate, listBotTemplates } from "../bot-templates.js";
+import { importSessions, syncSessionBots } from "../browser-session-import.js";
 import { requireIdentityConfirmation } from "../identity-confirmation.js";
 import { managedAppCatalog } from "../onboarding.js";
 import { isPrimaryBot, startPrimaryBot } from "../primary-bot-intro.js";
@@ -129,7 +136,14 @@ function mapBotSecretStoreError(error: unknown): unknown {
   if (error instanceof ORPCError) return error;
   if (
     error instanceof Error &&
-    (error.message === UNSUPPORTED_ACCESS || error.message === UNKNOWN_BOTS)
+    [
+      UNSUPPORTED_ACCESS,
+      UNKNOWN_BOTS,
+      SESSIONS_NEED_OWN_SPACE,
+      SESSION_IMPORT_TOO_LARGE,
+      SESSIONS_NOT_ON_THIS_COMPUTER,
+      "Credential limit reached",
+    ].includes(error.message)
   )
     return new ORPCError("BAD_REQUEST", { message: error.message });
   const mapped = mapBotSecretInputError(error);
@@ -161,6 +175,7 @@ async function saveVaultCredential(
   const bots = { allBots: input.allBots, botIds: input.botIds };
   if (input.value === undefined) {
     if (!name) throw new ORPCError("BAD_REQUEST", { message: "A new item needs its value" });
+    const previousBots = await sessionItemBots(deps.prisma, scope, name);
     try {
       const labels = {
         title: input.title,
@@ -175,6 +190,8 @@ async function saveVaultCredential(
     } catch (error) {
       throw mapBotSecretStoreError(error);
     }
+    const currentBots = await sessionItemBots(deps.prisma, scope, name);
+    syncSessionBots(deps, [...previousBots, ...currentBots]);
     return vaultItemDto(deps, scope, name);
   }
   const { value } = input;
@@ -308,7 +325,9 @@ function botSecretMetadataDto(
   const policy = VaultPolicy.catch("allow").parse(row.policy);
   const parsed = BotSecretAuth.safeParse(row.auth);
   let auth: BotSecretMetadata["auth"] = null;
-  if (parsed.success) {
+  if (parsed.success && parsed.data.type === "session") {
+    auth = sessionOriginSite(row.origin) ? parsed.data : null;
+  } else if (parsed.success) {
     try {
       normalizeSecretDestination({ name: row.name, origin: row.origin, auth: parsed.data });
       auth = parsed.data;
@@ -327,6 +346,7 @@ function botSecretMetadataDto(
     allBots: row.allBots,
     botIds: row.botIds,
     ...(auth?.type === "login" ? { alsoOn: row.alsoOn ?? [] } : {}),
+    ...(row.signInDelivery ? { signInDelivery: row.signInDelivery } : {}),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -993,6 +1013,9 @@ export function botsRoutes(ctx: RouterContext) {
         );
         return rows.map(botSecretMetadataDto);
       }),
+      signingOut: authed.vault.signingOut.handler(({ context, input }) =>
+        signingOutSites(deps.prisma, vaultScope(context.actor, input?.scope)),
+      ),
       put: authed.vault.put.handler(({ context, input }) =>
         saveVaultCredential(deps, vaultScope(context.actor, input.scope), input),
       ),
@@ -1022,6 +1045,13 @@ export function botsRoutes(ctx: RouterContext) {
       import: authed.vault.import.handler(({ context, input }) =>
         importVaultLogins(deps, context.actor, input),
       ),
+      importSessions: authed.vault.importSessions.handler(async ({ context, input }) => {
+        try {
+          return await importSessions(deps, vaultScope(context.actor, input.scope), input);
+        } catch (error) {
+          throw mapBotSecretStoreError(error);
+        }
+      }),
       activity: authed.vault.activity.handler(async ({ context, input }) => {
         const uses = await listVaultItemUses(
           deps.prisma,
@@ -1032,7 +1062,10 @@ export function botsRoutes(ctx: RouterContext) {
         return uses;
       }),
       remove: authed.vault.remove.handler(async ({ context, input }) => {
-        await forgetBotSecret(deps.prisma, vaultScope(context.actor, input.scope), input.name);
+        const scope = vaultScope(context.actor, input.scope);
+        const signedInBots = await sessionItemBots(deps.prisma, scope, input.name);
+        await forgetBotSecret(deps.prisma, scope, input.name);
+        syncSessionBots(deps, signedInBots);
         return { ok: true as const };
       }),
     },

@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
+import { browserStoreKey, WRITE_BROWSER_STORE_KEY_ARGV } from "@robots/core/node/browser-store-key";
 import { ensureScreenCommand } from "@robots/core/node/desktop-runtime";
 import { describe, expect, it } from "vitest";
 
@@ -55,6 +56,11 @@ describe.skipIf(process.env.RUN_COMPUTER_REPLAY_DOCKER !== "1")(
           );
           expect(result).toContain(`:x:${uid}:${gid}:`);
           expect(result).toContain(`:x:${gid}:`);
+          execFileSync("docker", ["exec", "-i", name, ...WRITE_BROWSER_STORE_KEY_ARGV], {
+            input: `${browserStoreKey(randomBytes(32), name)}\n`,
+            stdio: "pipe",
+            timeout: 15_000,
+          });
           execFileSync(
             "docker",
             [

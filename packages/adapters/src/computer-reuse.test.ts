@@ -9,6 +9,7 @@ import { DockerSandboxProvider } from "./docker-sandbox.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
 import { LocalAgentHomeStore } from "./home.js";
 import { HostAwareSandbox } from "./host-aware-sandbox.js";
+import { testSecretStore } from "./secret-store.test-support.js";
 import { InMemoryJobQueue } from "./wakeup.js";
 
 // The plan's size is read from billing, which these Prisma doubles do not model.
@@ -119,7 +120,12 @@ describe("running Docker computer reuse", () => {
       vi.stubGlobal("fetch", fetchMock);
       if (running === "stopped") f.row.state = "stopped";
       try {
-        await provisionComputer(f.deps, "computer", context, "bot");
+        await provisionComputer(
+          { ...f.deps, secretStore: testSecretStore },
+          "computer",
+          context,
+          "bot",
+        );
         expect(f.row.state).toBe("running");
         expect(f.row.screenGeneration).toBe(running === true ? 7 : 8);
         expect(f.provision).toHaveBeenCalledTimes(running === true ? 0 : 1);
@@ -158,7 +164,12 @@ describe("running Docker computer reuse", () => {
       vi.fn(async () => Response.json({ running: true })),
     );
     try {
-      await provisionComputer(f.deps, "computer", context, "bot");
+      await provisionComputer(
+        { ...f.deps, secretStore: testSecretStore },
+        "computer",
+        context,
+        "bot",
+      );
       const runningSince = (f.row as unknown as { runningSince: Date | null }).runningSince;
       if (since) expect(runningSince).toEqual(since);
       else expect(runningSince).toBeInstanceOf(Date);
@@ -187,7 +198,10 @@ describe("running Docker computer reuse", () => {
       );
       try {
         await expect(
-          provisionComputer(f.deps, "computer", { ...context, signal: abort.signal }),
+          provisionComputer({ ...f.deps, secretStore: testSecretStore }, "computer", {
+            ...context,
+            signal: abort.signal,
+          }),
         ).rejects.toThrow(change === "cancel" ? "cancelled" : new ComputerBusyError());
         if (change !== "cancel") {
           expect(f.updateMany).toHaveBeenCalledWith(

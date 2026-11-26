@@ -1,6 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { JobPublisher, JobWorkerHost } from "@robots/adapter-kit";
 import { unwrapEnvFromKeyManager } from "@robots/adapters";
+import { browserStoreSecret } from "@robots/core/node/browser-store-key";
 import { loadRootEnv } from "@robots/core/node/load-root-env";
 import { stopOnShutdownSignals } from "@robots/core/node/shutdown-signals";
 import { startWorkerHealth } from "./health.js";
@@ -167,6 +168,7 @@ async function main() {
     supervisorUrl: process.env.SANDBOX_SUPERVISOR_URL ?? "http://127.0.0.1:7091",
     supervisorToken: sandboxProvider === "docker" ? resolveSupervisorToken(process.env) : undefined,
     dataDir: env.dataDir,
+    browserStoreSecret: browserStoreSecret(env.encryptionKey),
     prisma,
     secrets,
     unreferencedMachines: machineCleanupRecords(jobs),

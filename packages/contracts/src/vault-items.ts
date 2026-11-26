@@ -6,21 +6,21 @@ import {
   VAULT_ALSO_ON_LIMIT,
 } from "./bot-secrets.js";
 
-/**
- * What people add and filter by in the vault, on every surface. API credentials of every auth type
- * are one "API key"; a command variable is a "variable".
- */
-export type VaultKind = "login" | "card" | "contact" | "api_key" | "variable";
+export type VaultKind = "login" | "card" | "contact" | "api_key" | "variable" | "session";
 export const VAULT_KINDS: readonly VaultKind[] = [
   "login",
   "card",
   "contact",
   "api_key",
   "variable",
+  "session",
 ];
+export const VAULT_NEW_KINDS: readonly VaultKind[] = VAULT_KINDS.filter(
+  (kind) => kind !== "session",
+);
 
 export function vaultKind(type: BotSecretAuthType): VaultKind {
-  if (type === "login" || type === "card" || type === "contact") return type;
+  if (type === "login" || type === "card" || type === "contact" || type === "session") return type;
   return type === "command" ? "variable" : "api_key";
 }
 
@@ -58,9 +58,8 @@ export function hasAuthenticatorKey(value: string | undefined): boolean {
   }
 }
 
-// A contact isn't secret, so it has no Allow or Block.
 export function hasVaultAccess(kind: VaultKind): boolean {
-  return kind !== "contact";
+  return kind !== "contact" && kind !== "session";
 }
 
 function host(origin: string): string {
@@ -106,5 +105,7 @@ export function vaultItemSubtitle(
       return line(words.apiKey, ownSite);
     case "variable":
       return `$${commandVariableName(item.name)}`;
+    case "session":
+      return item.note;
   }
 }

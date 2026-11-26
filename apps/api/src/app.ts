@@ -96,6 +96,7 @@ import {
   SERVER_BUILD_HEADER,
 } from "@robots/contracts";
 import { encryptionKeyWarning, signupPolicyFromEnv } from "@robots/core";
+import { browserStoreSecret } from "@robots/core/node/browser-store-key";
 import type { Pool, PrismaClient } from "@robots/db";
 import {
   configureProviderTransactionPool,
@@ -399,6 +400,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       boatApiKey: env.boatApiKey,
       boatApiUrl: env.boatApiUrl,
       dataDir: env.dataDir,
+      browserStoreSecret: browserStoreSecret(env.encryptionKey),
       prisma,
       secrets,
       unreferencedMachines: machineCleanupRecords(jobs),
