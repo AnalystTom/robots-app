@@ -4,13 +4,8 @@ import { cronFromPreset, draftFromRoutine, isOneShotRoutineCrons } from "@robots
 import type { RoutineWebTrigger } from "./routine";
 import { routineTriggerNames } from "./routine";
 
-/**
- * The editor's draft. A web-only trigger is left out until the person removes it here, so a
- * draft only ever turns one off.
- */
 export type MobileRoutineDraft = RoutineDraft & Partial<Pick<Routine, RoutineWebTrigger>>;
 
-/** The routine as this draft would leave it, for the triggers mobile can only remove. */
 export function routineWithDraftTriggers(routine: Routine, draft: MobileRoutineDraft): Routine {
   return {
     ...routine,
@@ -21,7 +16,6 @@ export function routineWithDraftTriggers(routine: Routine, draft: MobileRoutineD
   };
 }
 
-/** A one-shot is set up from chat with its run time; its schedule can't change here. */
 export function routineScheduleLocked(routine: Routine | null): boolean {
   return Boolean(routine && isOneShotRoutineCrons(routine.crons));
 }
@@ -30,13 +24,8 @@ function sameCrons(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((cron, index) => cron === b[index]);
 }
 
-/**
- * What an update would change, compared as the editor writes it. Web-only triggers are sent
- * only when removed here, and the routine's own model never is, so the server keeps them.
- */
 function routineChanges(draft: MobileRoutineDraft, routine: Routine) {
   const crons = draft.schedules.map(cronFromPreset);
-  // A schedule merely opened is not a change, even when the editor would spell it differently.
   const savedCrons = draftFromRoutine(routine).schedules.map(cronFromPreset);
   return {
     ...(draft.name !== routine.name ? { name: draft.name.trim() } : {}),
@@ -51,12 +40,9 @@ function routineChanges(draft: MobileRoutineDraft, routine: Routine) {
   };
 }
 
-/** Whether there is anything to save: a change to the routine, or anything in a new one. */
 export function routineDraftChanged(draft: MobileRoutineDraft, routine: Routine | null): boolean {
   if (!routine) {
-    return Boolean(
-      draft.name.trim() || draft.prompt.trim() || draft.schedules.length || draft.emailSenders,
-    );
+    return Boolean(draft.name.trim() || draft.prompt.trim() || draft.emailSenders);
   }
   return Object.keys(routineChanges(draft, routine)).length > 0;
 }
@@ -67,10 +53,6 @@ export type RoutineSaveRequest =
   | { update: RpcInput<"routines/update"> }
   | { unchanged: true };
 
-/**
- * The create or update call for a draft. An update sends only what the draft changed, so a
- * stale draft never undoes a pause or edit made elsewhere since it opened.
- */
 export function routineSaveRequest(
   draft: MobileRoutineDraft,
   routine: Routine | null,
@@ -82,7 +64,6 @@ export function routineSaveRequest(
   if (!name) return { error: "name" };
   if (!prompt) return { error: "prompt" };
   const crons = draft.schedules.map(cronFromPreset);
-  // Triggers this editor doesn't show still count; the email one counts as the draft has it.
   const otherTriggers = routine
     ? routineTriggerNames({ ...routineWithDraftTriggers(routine, draft), emailSenders: null })
         .length > 0

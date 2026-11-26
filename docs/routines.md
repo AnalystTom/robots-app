@@ -19,7 +19,8 @@ Open the bot's computer with **Agent computer** at the top of the chat. Below th
 bot's **Routines** list. Choose **Create Routine** (the **+**), or click a routine to edit it.
 
 1. **Name** the routine and write the **Instruction**: what it should do each time it runs.
-2. Under **When to run**, choose **Add trigger**.
+2. Under **When to run**, a new routine starts on a daily schedule at 9:00. Change it, or choose
+   **Add trigger** for another kind. Without a trigger, **Save** stays disabled and says why.
 3. Choose **Save**.
 
 Under **Advanced** you can give a routine its own **Model** and **Thinking** level, for example a

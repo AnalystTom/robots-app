@@ -8,7 +8,7 @@ import { useId } from "react";
 import { useIdentityConfirmation } from "../components/ConfirmIdentityDialog";
 import { useSpaceQueries } from "../lib/query";
 import type { RoutineDraftState } from "../lib/routine-draft";
-import { routineNeedsOneShotArm } from "../lib/routine-draft";
+import { routineDraftMissing, routineNeedsOneShotArm } from "../lib/routine-draft";
 import { RoutineRunHistory } from "./RoutineRunHistory";
 import { RoutineSchedule } from "./RoutineSchedule";
 import { AddTriggerMenu } from "./routine-editor/add-trigger-menu";
@@ -64,7 +64,6 @@ export function RoutineEditor({
   const { t } = useLingui();
   const fieldId = useId();
   const { withIdentityConfirmation, identityDialog } = useIdentityConfirmation();
-  // Closing the confirmation is a choice, and other failures show as the editor's error.
   const revealWebhook = () => void withIdentityConfirmation(onRevealWebhook).catch(() => undefined);
   const queries = useSpaceQueries();
   const scheduleStatus = useQuery({
@@ -73,20 +72,13 @@ export function RoutineEditor({
     refetchOnWindowFocus: "always",
     select: (routines) => routines.find((routine) => routine.id === editing?.id) ?? null,
   });
-  // Null when this server receives no email or the bot is another member's, which hides the trigger.
   const email = useQuery(queries.bots.emailAddress.queryOptions({ input: { botId: bot.id } })).data;
   const scheduleDelayed =
     !scheduleStatus.isError &&
     (scheduleStatus.data === undefined
       ? editing?.scheduleDelayed
       : scheduleStatus.data?.scheduleDelayed);
-  const hasTriggers =
-    draft.schedules.length > 0 ||
-    draft.webhookEnabled ||
-    draft.githubEnabled ||
-    Boolean(draft.messageProvider) ||
-    Boolean(draft.emailSenders) ||
-    Boolean(draft.watch);
+  const missing = routineDraftMissing(draft);
   const canTest = Boolean(editing) && !saving && !running;
   const needsOneShotArm =
     editing != null && routineNeedsOneShotArm(editing, draft.schedules.map(cronFromPreset));
@@ -130,13 +122,22 @@ export function RoutineEditor({
           <Trans>Active</Trans>
         </label>
         <div className="flex items-center gap-2">
-          {/* A draft is discarded by going back; only a saved routine can be deleted. */}
           {editing ? (
             <Button variant="secondary" disabled={saving || running} onClick={onDelete}>
               <Trans>Delete</Trans>
             </Button>
           ) : null}
-          <Button variant="secondary" disabled={!canTest} onClick={onTestRun}>
+          {editing ? null : (
+            <span id={`${fieldId}-save-to-run`} className="text-body-sm text-muted-foreground">
+              <Trans>Save to run</Trans>
+            </span>
+          )}
+          <Button
+            variant="secondary"
+            disabled={!canTest}
+            aria-describedby={editing ? undefined : `${fieldId}-save-to-run`}
+            onClick={onTestRun}
+          >
             {running ? t`Running…` : t`Run now`}
           </Button>
         </div>
@@ -239,7 +240,6 @@ export function RoutineEditor({
             />
           ) : null}
 
-          {/* Shown without email too, so a server that stopped receiving mail still lets it go. */}
           {draft.emailSenders ? (
             <EmailTriggerCard
               key={bot.id}
@@ -278,10 +278,19 @@ export function RoutineEditor({
         />
       </div>
 
-      <div className="mt-5">
-        <Button disabled={saving || running || !hasTriggers} onClick={onSave}>
+      <div className="mt-5 flex items-center gap-3">
+        <Button
+          disabled={saving || running || missing !== null}
+          aria-describedby={missing === null ? undefined : `${fieldId}-save-missing`}
+          onClick={onSave}
+        >
           {saving ? t`Saving…` : t`Save`}
         </Button>
+        {missing === null ? null : (
+          <span id={`${fieldId}-save-missing`} className="text-body-sm text-muted-foreground">
+            {missing}
+          </span>
+        )}
       </div>
       {error ? (
         <p role="alert" className="mt-3 text-body-sm text-destructive">

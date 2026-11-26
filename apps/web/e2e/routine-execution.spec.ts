@@ -60,9 +60,7 @@ test("routine test-run completes and survives reload", async ({ page }, testInfo
   await page
     .locator("label:has-text('Instruction') textarea")
     .fill("write routine-run-now-ok into the durable task result");
-  await page.getByRole("button", { name: "Add trigger" }).click();
-  await page.getByRole("menuitem", { name: "On a schedule" }).hover();
-  await page.getByRole("menuitem", { name: "Weekdays", exact: true }).click();
+  await page.getByLabel("How often").selectOption("Weekdays");
   await expect(page.getByLabel("How often")).toHaveValue("Weekdays");
   await captureScreenshot(page, testInfo, "32-routine-configured");
 

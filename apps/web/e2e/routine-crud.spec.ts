@@ -11,12 +11,6 @@ import {
   signup,
 } from "./helpers";
 
-async function addScheduleTrigger(page: Page, freq: string) {
-  await page.getByRole("button", { name: "Add trigger" }).click();
-  await page.getByRole("menuitem", { name: "On a schedule" }).hover();
-  await page.getByRole("menuitem", { name: freq, exact: true }).click();
-}
-
 test("a delayed schedule is visible only while the routine is active", async ({
   page,
 }, testInfo) => {
@@ -140,7 +134,6 @@ test("routine editing updates in place, preserves timezone, deletion persists, a
   await page.getByRole("button", { name: "Create Routine" }).click();
   await page.locator("label:has-text('Name') input").fill("Model check");
   await page.locator("label:has-text('Instruction') textarea").fill("Check the inbox");
-  await addScheduleTrigger(page, "Every day");
 
   await expect(page.getByRole("combobox", { name: "Model", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Advanced", exact: true }).click();
@@ -206,6 +199,10 @@ test("an email trigger claims the bot's address and saves who can start it", asy
   await page.getByRole("button", { name: "Create Routine" }).click();
   await page.locator("label:has-text('Name') input").fill("Inbox triage");
   await page.locator("label:has-text('Instruction') textarea").fill("Summarize what I forward.");
+  await expect(page.getByLabel("How often")).toHaveValue("Every day");
+  await page.getByRole("button", { name: "Remove schedule", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+  await expect(page.getByText("Add a trigger to save")).toBeVisible();
   await page.getByRole("button", { name: "Add trigger" }).click();
   await page.getByRole("menuitem", { name: "Email" }).click();
 
@@ -242,7 +239,6 @@ test("a successful routine create is not reported as failed when refresh fails",
   await page.getByRole("button", { name: "Create Routine" }).click();
   await page.locator("label:has-text('Name') input").fill("Persisted routine");
   await page.locator("label:has-text('Instruction') textarea").fill("Run once each morning");
-  await addScheduleTrigger(page, "Every day");
 
   await page.route(
     "**/rpc/routines/list",
@@ -415,7 +411,6 @@ test("change-trigger screenshot walkthrough", { tag: "@nightly" }, async ({ page
   await page.getByRole("button", { name: "Create Routine" }).click();
   await page.locator("label:has-text('Name') input").fill("Inbox watch");
   await page.locator("label:has-text('Instruction') textarea").fill("Summarize what arrived");
-  await addScheduleTrigger(page, "Every day");
   await expect(page.getByLabel("How often")).toHaveValue("Every day");
   await captureScreenshot(page, testInfo, "routine-watch-02-editor-scheduled");
 
@@ -511,6 +506,7 @@ test("an HTTPS change trigger saves and reopens", async ({ page }, testInfo) => 
   await page.locator("label:has-text('Instruction') textarea").fill("Report what changed.");
   // Keep this saved watch inactive: no real endpoint is contacted by the offline UI test.
   await page.getByRole("switch", { name: "Active", exact: true }).click();
+  await page.getByRole("button", { name: "Remove schedule", exact: true }).click();
   await page.getByRole("button", { name: "Add trigger" }).click();
   await page.getByRole("menuitem", { name: "When something changes" }).click();
   const card = page.getByTestId("routine-watch-card");

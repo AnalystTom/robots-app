@@ -12,6 +12,7 @@ import type { RoutineDraftState } from "../../lib/routine-draft";
 import {
   draftStateFromRoutine,
   emptyRoutineDraftState,
+  routineDraftMissing,
   routineNeedsOneShotArm,
   watchFromDraft,
 } from "../../lib/routine-draft";
@@ -200,15 +201,9 @@ export function useRoutineEditor({
           const targetBotId = active.id;
           const targetRoutine = editingRoutine;
           if (targetRoutine && targetRoutine.botId !== targetBotId) return;
-          if (
-            !routineDraft.schedules.length &&
-            !routineDraft.webhookEnabled &&
-            !routineDraft.githubEnabled &&
-            !routineDraft.messageProvider &&
-            !routineDraft.emailSenders &&
-            !routineDraft.watch
-          ) {
-            setRoutineError(t`Add a trigger to run this routine.`);
+          const missing = routineDraftMissing(routineDraft);
+          if (missing) {
+            setRoutineError(missing);
             return;
           }
           const watchResult = routineDraft.watch ? watchFromDraft(routineDraft.watch) : null;
@@ -258,8 +253,8 @@ export function useRoutineEditor({
               }
               saved = await rpc.routines.update({
                 routineId: targetRoutine.id,
-                name: routineDraft.name || t`Routine`,
-                prompt: routineDraft.prompt || t`Check in.`,
+                name: routineDraft.name,
+                prompt: routineDraft.prompt,
                 crons,
                 // Send on/off only when this save changes it, so a stale draft cannot undo a
                 // disable made elsewhere since the editor opened.
@@ -281,8 +276,8 @@ export function useRoutineEditor({
             } else {
               saved = await rpc.routines.create({
                 botId: targetBotId,
-                name: routineDraft.name || t`Routine`,
-                prompt: routineDraft.prompt || t`Check in.`,
+                name: routineDraft.name,
+                prompt: routineDraft.prompt,
                 crons,
                 timezone: timezone ?? localTimezone(),
                 active: routineDraft.active,
