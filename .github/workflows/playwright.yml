@@ -50,6 +50,7 @@ jobs:
     runs-on: [self-hosted, big-machine]
     timeout-minutes: 30
     strategy:
+      max-parallel: 2
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4, 5, 6]

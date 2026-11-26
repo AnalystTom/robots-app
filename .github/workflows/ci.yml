@@ -148,6 +148,7 @@ jobs:
     name: Unit tests (${{ matrix.shard }}/6)
     runs-on: [self-hosted, big-machine]
     strategy:
+      max-parallel: 2
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
