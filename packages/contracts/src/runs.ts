@@ -14,6 +14,8 @@ export const COMPUTER_PROVIDER_UNAVAILABLE_ERROR =
 /** A running computer did not answer a request; its work may or may not have happened. */
 export const COMPUTER_UNRESPONSIVE_ERROR = "The computer stopped responding. Try again.";
 
+export const COMPUTER_DID_NOT_START_ERROR = "The computer did not start. Try again.";
+
 /** Whether an error says the computer hours are spent, which only a plan change can fix. */
 export function isComputerAllowanceUsed(message: string | null | undefined): boolean {
   return message?.startsWith(COMPUTER_ALLOWANCE_USED_ERROR) ?? false;

@@ -1,5 +1,6 @@
 import type { RunErrorKind } from "@robots/contracts";
 import {
+  COMPUTER_DID_NOT_START_ERROR,
   COMPUTER_PROVIDER_UNAVAILABLE_ERROR,
   COMPUTER_RATE_LIMIT_ERROR,
   COMPUTER_UNRESPONSIVE_ERROR,
@@ -295,6 +296,9 @@ export function normalizeRunError(
   }
   if (isComputerAllowanceUsed(trimmed)) return { summary: details, details, recovery: "plan" };
   // Preserve only known recovery advice: provider diagnostics can also be plain text.
+  if (trimmed.startsWith(COMPUTER_DID_NOT_START_ERROR)) {
+    return { summary: COMPUTER_DID_NOT_START_ERROR, details };
+  }
   if (APP_RUN_ERRORS.has(trimmed)) {
     return MODEL_OUTPUT_RUN_ERRORS.has(trimmed)
       ? { summary: details, details, kind: "output" }

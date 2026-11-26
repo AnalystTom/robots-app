@@ -8,6 +8,7 @@ import {
   VoiceAccountError,
 } from "@robots/adapter-kit";
 import { ComputerRecoveryRequiredError } from "@robots/adapters";
+import { COMPUTER_DID_NOT_START_ERROR } from "@robots/contracts";
 import {
   databaseOutage,
   IsolationError,
@@ -102,7 +103,10 @@ export function handleRpcError(
       reason: unavailable.cause instanceof Error ? unavailable.cause.message : undefined,
     });
     markExpectedFailure();
-    throw new ORPCError("SERVICE_UNAVAILABLE", { message: unavailable.message, cause: error });
+    throw new ORPCError("SERVICE_UNAVAILABLE", {
+      message: COMPUTER_DID_NOT_START_ERROR,
+      cause: error,
+    });
   }
   // A provider kept another transaction busy past the wait; nothing failed, so the caller retries.
   if (error instanceof ProviderTransactionBusyError) {

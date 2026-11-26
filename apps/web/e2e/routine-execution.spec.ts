@@ -134,11 +134,9 @@ test("a routine run that failed to start shows the error in Details", async ({
     active: false,
     notify: false,
   });
-  // The e2e stack runs no supervisor egress probe. A real run stores what the Docker provider
-  // throws for the supervisor's 500 response, so the history response carries that form.
   const message =
     "No SANDBOX_COMPUTER_DNS server answered from a restricted computer network; set servers reachable from there, such as public resolvers (see docs/self-host-docker-computers.md)";
-  const error = `sandbox provision failed: 500 ${JSON.stringify({ error: message })}`;
+  const error = `The computer did not start. Try again.\nsandbox provision failed: 500 ${JSON.stringify({ error: message })}`;
   const at = new Date().toISOString();
   await page.route("**/rpc/routines/history", (route) =>
     route.fulfill({
@@ -164,7 +162,6 @@ test("a routine run that failed to start shows the error in Details", async ({
     }),
   );
   await page.setViewportSize({ width: 1280, height: 900 });
-  // Details then opens without the slide transition, so the capture shows the whole error.
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
   await openBotPanelTab(page, "Routines");
