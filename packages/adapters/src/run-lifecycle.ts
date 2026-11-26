@@ -211,13 +211,13 @@ export function providerOutageRetryDelay(priorFailures: number): number {
 export async function startNextWaitingRun(
   deps: ExecutorDeps,
   botId: string,
-  releasedBy?: string,
+  releasedBy: string,
 ): Promise<void> {
   const next = await deps.prisma.run.findFirst({
     where: {
       botId,
       status: "queued",
-      ...(releasedBy ? { id: { not: releasedBy } } : {}),
+      id: { not: releasedBy },
       OR: [{ wakeAt: null }, { wakeAt: { lte: new Date() } }],
     },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -373,7 +373,7 @@ export async function requeueComputerRun(
     },
     select: { id: true },
   });
-  if (!stillHeld) await startNextWaitingRun(deps, untilReleased.botId);
+  if (!stillHeld) await wakeRun(deps.jobs, runId, { at: retryAt });
 }
 
 /**
