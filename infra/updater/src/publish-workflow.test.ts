@@ -44,6 +44,7 @@ const ci = parse(readFileSync(path.join(workflowsDir, "ci.yml"), "utf8")) as {
 };
 const publisher = parse(publisherText) as { runs: { steps: WorkflowStep[] } };
 const publicationAction = "./.github/actions/publish-image";
+const namespaceAction = "./.github/actions/image-namespace";
 
 describe("server image publish workflow", () => {
   it("builds both architectures on the self-hosted runner, never on GitHub-hosted machines", () => {
@@ -197,7 +198,7 @@ describe("server image publish workflow", () => {
     expect(build?.with?.["cache-to"]).toBeUndefined();
     for (const text of [workflowText, publisherText]) {
       for (const match of text.matchAll(/uses:\s+([^\s#]+)/g)) {
-        if (match[1] === publicationAction) continue;
+        if (match[1] === publicationAction || match[1] === namespaceAction) continue;
         expect(match[1], match[1]).toMatch(/@[0-9a-f]{40}$/);
       }
     }
